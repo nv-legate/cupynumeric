@@ -66,11 +66,7 @@ build:
 {% else %}
 {% set cpu_tag='_cpu' %}
 {% endif %}
-{% if upload_build_bool %}
-{% set upload_tag='_nightly' %}
-{% else %}
-{% set upload_tag='' %}
-{% endif %}
+{% set upload_tag='' if upload_build_bool else '_with_tests' %}
 {% if use_local_path is not defined %}
 # use git hash
   string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}{{ cpu_tag }}{{ upload_tag }}"
