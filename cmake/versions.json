@@ -3,7 +3,7 @@
     "legate_core" : {
       "repo": "legate.core.internal",
       "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-${{ inputs.target-device }}-release-<<git_tag>>",
-      "version": "24.05.00",
+      "version": "24.06.00",
       "git_url" : "git@github.com:nv-legate/legate.core.internal.git",
       "git_shallow": false,
       "always_download": false,
