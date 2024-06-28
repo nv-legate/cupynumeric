@@ -49,7 +49,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       runs-on: ${{ needs.setup-build.outputs.runner_type }}
       build-type: ${{ inputs.build-type }}
-      use-container: ${{ inputs.platform == 'linux' }}
+      use-container: ${{ inputs.platform == 'linux' || inputs.platform == 'linux-aarch64' }}
       platform: ${{ inputs.platform }}
       dependencies-file: "cmake/versions.json"
       dependencies-workflow: ${{ inputs.dependencies-workflow }}
@@ -97,6 +97,7 @@ jobs:
           RUNNERS=(
             'linux-amd64-gpu-v100-latest-1:gpu:gpu:linux' 'linux-amd64-2gpu:gpu:2gpu:linux'
             'linux-amd64-cpu16:cpu:cpu:linux'
+            'linux-arm64-cpu16:cpu:cpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:2gpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:gpu:linux-aarch64'
             'macos-latest:cpu:cpu:mac')
           TEST_CONFIGS=(
             '1 CPU test:test --cpus 1 --debug:cpu'
