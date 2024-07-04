@@ -2,12 +2,12 @@
   "packages" : {
     "legate_core" : {
       "repo": "legate.core.internal",
-      "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-${{ inputs.target-device }}-release-<<git_tag>>",
+      "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ env.PYTHON_VERSION }}-${{ inputs.target-device }}-release-<<git_tag>>",
       "version": "24.06.00",
       "git_url" : "git@github.com:nv-legate/legate.core.internal.git",
       "git_shallow": false,
       "always_download": false,
-      "git_tag" : "cfbf6e3d8d205ec9fbe7681f7fde6db87a3d3975"
+      "git_tag" : "2b0b43ddca77da4bd3e3d1cd2372b664ee1093f0"
     }
   }
 }

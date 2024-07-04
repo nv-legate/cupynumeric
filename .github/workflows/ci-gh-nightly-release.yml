@@ -23,6 +23,10 @@ jobs:
         upload-enabled:
           - true
           - false
+        python-version:
+          - "3.10"
+          - "3.12"
+          - "3.12"
     uses:
       ./.github/workflows/gh-build-and-test.yml
     with:
@@ -30,5 +34,6 @@ jobs:
       platform: ${{ matrix.platform }}
       build-type: release
       upload-enabled: ${{ matrix.upload-enabled }}
+      python-version: ${{ matrix.python-version }}
       dependencies-workflow: "ci-gh-nightly-release.yml"
     secrets: inherit

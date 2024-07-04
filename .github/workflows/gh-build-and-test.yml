@@ -17,6 +17,10 @@ on:
         required: true
         type: string
         description: The workflow file name used by the dependency
+      python-version:
+        required: false
+        type: string
+        default: "3.12"
 
 jobs:
   setup-build:
@@ -41,9 +45,9 @@ jobs:
 
   build:
     needs: setup-build
-    name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }})"
+    name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.8
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.9
     with:
       client-repo: ${{ github.event.repository.name }}
       target-device: ${{ inputs.target-device }}
@@ -53,10 +57,11 @@ jobs:
       platform: ${{ inputs.platform }}
       dependencies-file: "cmake/versions.json"
       dependencies-workflow: ${{ inputs.dependencies-workflow }}
-      legate-gh-ci-tag: "v1.8"
+      legate-gh-ci-tag: "v1.9"
       build-mode: ""
       ucx-enabled: false
       upload-enabled: ${{ inputs.upload-enabled }}
+      python-version: ${{ inputs.python-version }}
     secrets: inherit
 
 
@@ -65,20 +70,21 @@ jobs:
     if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
     name: Upload package to Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.8
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.9
     with:
       client-repo: ${{ github.event.repository.name }}
       build-type: ${{ inputs.build-type }}
       name: Upload package to Server
       target-device: ${{ inputs.target-device }}
       platform: ${{ inputs.platform }}
-      legate-gh-ci-tag: "v1.8"
+      legate-gh-ci-tag: "v1.9"
       build-mode: ""
       ucx-enabled: false
       upload-enabled: ${{ inputs.upload-enabled }}
       upload-action: "upload-package"
       pkgSubString: "cunumeric-"
       repos-Root: "cunumeric"
+      python-version: ${{ inputs.python-version }}
     secrets: inherit    
 
   setup-test:
@@ -150,7 +156,7 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.8
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.9
     with:
       client-repo: ${{ github.event.repository.name }}
       build-type: ${{ inputs.build-type }}
@@ -160,10 +166,11 @@ jobs:
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
       test-options: ${{ matrix.test-config.test-options }}
       platform: ${{ inputs.platform }}
-      legate-gh-ci-tag: "v1.8"
+      legate-gh-ci-tag: "v1.9"
       build-mode: ""
       ucx-enabled: false
       upload-enabled: ${{ inputs.upload-enabled }}
+      python-version: ${{ inputs.python-version }}
     secrets: inherit
 
   updateTestStatus:
@@ -171,18 +178,19 @@ jobs:
     name: Update Test status on Server
     if: ${{ (github.repository_owner == 'nv-legate') && contains(github.workflow, 'Nightly') && (inputs.upload-enabled == true) }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.8
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.9
     with:
       client-repo: ${{ github.event.repository.name }}
       build-type: ${{ inputs.build-type }}
       name: UpdateTestStatus
       target-device: ${{ inputs.target-device }}
       platform: ${{ inputs.platform }}
-      legate-gh-ci-tag: "v1.8"
+      legate-gh-ci-tag: "v1.9"
       build-mode: ""
       ucx-enabled: false
       upload-enabled: true
       upload-action: "update-test-status"
       pkgSubString: "cunumeric-"
-      repos-Root: "cunumeric"  
+      repos-Root: "cunumeric"
+      python-version: ${{ inputs.python-version }}
     secrets: inherit

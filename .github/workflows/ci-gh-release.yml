@@ -24,6 +24,8 @@ jobs:
           - cpu
         upload-enabled:
           - false
+        python-version:
+          - "3.12"
         exclude:
           - platform: linux-aarch64
             target-device: gpu
@@ -34,5 +36,6 @@ jobs:
       platform: ${{ matrix.platform }}
       build-type: release
       upload-enabled: ${{ matrix.upload-enabled }}
+      python-version: ${{ matrix.python-version }}
       dependencies-workflow: "ci-gh-nightly-release.yml"
     secrets: inherit
