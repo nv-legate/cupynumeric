@@ -64,11 +64,11 @@ def array_gen(lib):
         yield arr
     for arr in nonscalar_gen(lib):
         idx_tuple = arr.ndim * (2,)
-        arr[idx_tuple] = -1
+        arr[idx_tuple] = lib.full((1,), -1)
         yield arr
     for arr in nonscalar_gen(lib):
         idx_tuple = arr.ndim * (2,)
-        arr[idx_tuple] = -1
+        arr[idx_tuple] = lib.full((1, 1), -1)
         yield arr
     # set single item on scalar array
     for arr in scalar_gen(lib, 42):
@@ -77,11 +77,11 @@ def array_gen(lib):
         yield arr
     for arr in scalar_gen(lib, 42):
         idx_tuple = arr.ndim * (0,)
-        arr[idx_tuple] = -1
+        arr[idx_tuple] = lib.full((1,), -1)
         yield arr
     for arr in scalar_gen(lib, 42):
         idx_tuple = arr.ndim * (0,)
-        arr[idx_tuple] = -1
+        arr[idx_tuple] = lib.full((1, 1), -1)
         yield arr
     # set "multiple" items on scalar array
     for arr in scalar_gen(lib, 42):

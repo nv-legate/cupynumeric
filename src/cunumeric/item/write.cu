@@ -20,19 +20,19 @@
 
 namespace cunumeric {
 
-template <typename VAL>
+template <typename VAL, int DIM>
 static __global__ void __launch_bounds__(1, 1)
-  write_value(const AccessorWO<VAL, 1> out, const AccessorRO<VAL, 1> value)
+  write_value(const AccessorWO<VAL, 1> out, const AccessorRO<VAL, DIM> value)
 {
-  out[0] = value[0];
+  out[0] = value[Point<DIM>::ZEROES()];
 }
 
-template <typename VAL>
-struct WriteImplBody<VariantKind::GPU, VAL> {
-  void operator()(const AccessorWO<VAL, 1>& out, const AccessorRO<VAL, 1>& value) const
+template <typename VAL, int DIM>
+struct WriteImplBody<VariantKind::GPU, VAL, DIM> {
+  void operator()(const AccessorWO<VAL, 1>& out, const AccessorRO<VAL, DIM>& value) const
   {
     auto stream = get_cached_stream();
-    write_value<VAL><<<1, 1, 0, stream>>>(out, value);
+    write_value<VAL, DIM><<<1, 1, 0, stream>>>(out, value);
     CUNUMERIC_CHECK_CUDA_STREAM(stream);
   }
 };

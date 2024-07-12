@@ -21,11 +21,11 @@ namespace cunumeric {
 
 using namespace legate;
 
-template <typename VAL>
-struct WriteImplBody<VariantKind::CPU, VAL> {
-  void operator()(AccessorWO<VAL, 1> out, const AccessorRO<VAL, 1>& value) const
+template <typename VAL, int DIM>
+struct WriteImplBody<VariantKind::CPU, VAL, DIM> {
+  void operator()(const AccessorWO<VAL, 1>& out, const AccessorRO<VAL, DIM>& value) const
   {
-    out[0] = value[0];
+    out[0] = value[Point<DIM>::ZEROES()];
   }
 };
 
