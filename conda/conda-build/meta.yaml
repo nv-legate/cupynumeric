@@ -89,7 +89,7 @@ build:
 {% endif %}
 
 ignore_run_exports_from:
-  # scikit-build should really be a part of the build env, but then it installs its own Python.  Conda build stacks 
+  # scikit-build should really be a part of the build env, but then it installs its own Python.  Conda build stacks
   # the build environment on the host environment, and the build python takes over causing paths havoc.  So, we put
   # scikit-build into the host env, but we ignore any exports it may bring.
   - scikit-build
@@ -132,6 +132,9 @@ requirements:
     - libcusparse
     - opt_einsum >=3.3
     - scipy
+{% if gpu_enabled_bool %}
+    - cutensor >=1.3,<2.0 =*_*
+{% endif %}
 
   run_constrained:
     - __glibc >=2.17  # [linux]
