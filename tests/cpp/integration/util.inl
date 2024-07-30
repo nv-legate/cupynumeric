@@ -15,32 +15,23 @@
  */
 
 namespace {
+
+template <typename T, typename U = void>
+struct has_operator_left_shift : std::false_type {};
+
+template <typename T>
+struct has_operator_left_shift<T, std::void_t<decltype(std::cout << std::declval<T>())>>
+  : std::true_type {};
+
+template <typename T>
+constexpr bool has_operator_left_shift_v = has_operator_left_shift<T>::value;
+
 template <typename T>
 std::stringstream& print_value(std::stringstream& ss, T value)
 {
-  ss << value;
-  return ss;
-}
-
-template <>
-std::stringstream& print_value<complex<float>>(std::stringstream& ss, complex<float> value)
-{
-  // operator<< missing for cuda::std::complex
-  // The issue is going to be fixed in the next cuda release.
-#if CUDART_VERSION >= 12050
-  ss << value;
-#endif
-  return ss;
-}
-
-template <>
-std::stringstream& print_value<complex<double>>(std::stringstream& ss, complex<double> value)
-{
-  // operator<< missing for cuda::std::complex
-  // The issue is going to be fixed in the next cuda release.
-#if CUDART_VERSION >= 12050
-  ss << value;
-#endif
+  if constexpr (has_operator_left_shift_v<T>) {
+    ss << value;
+  }
   return ss;
 }
 
