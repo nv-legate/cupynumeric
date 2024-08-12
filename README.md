@@ -52,6 +52,14 @@ or install it into an existing environment:
 conda install -c conda-forge -c legate cunumeric
 ```
 
+In an environment without GPUs available, `conda install` will by default choose a CPU-only package.
+To install a version with GPU support in such an environment, use environment variable `CONDA_OVERRIDE_CUDA`.
+
+```shell
+CONDA_OVERRIDE_CUDA="12.2" \
+  conda install -c conda-forge -c legate legate-core
+```
+
 Once installed, you can verify the installation by running one of the examples
 from the cuNumeric repository, for instance:
 

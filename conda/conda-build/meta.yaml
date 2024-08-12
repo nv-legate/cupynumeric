@@ -84,6 +84,9 @@ build:
     - AWS_SECRET_ACCESS_KEY
 {% if not gpu_enabled_bool %}
     - CPU_ONLY=1
+  # The CPU-only packages having more track_features than the GPU builds helps
+  # the solver to prefer the GPU builds when both are viable candidates.
+  # ref: https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#track-features
   track_features:
     - cpu_only
 {% endif %}
@@ -101,12 +104,11 @@ requirements:
     - cmake {{ cmake_version }}
     - {{ compiler('c') }} =11.2
     - {{ compiler('cxx') }} =11.2
-        # the nvcc requirement is necessary because it contains crt/host_config.h used by cuda runtime. This is a packaging bug that has been reported.
-
-    - cuda-nvcc ={{ cuda_version }}
+    # the nvcc requirement is necessary because it contains crt/host_config.h used by cuda runtime. This is a packaging bug that has been reported.
+    - cuda-nvcc
     # cudart needed for CPU and GPU builds because of curand
-
-    - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-dev
+    - cuda-version ={{ cuda_version }}
 
 
   host:
@@ -125,6 +127,7 @@ requirements:
 {% else %}
     - legate-core >={{ core_version }} =*_cpu*
 {% endif %}
+    - cuda-version ={{ cuda_version }}
 
   run:
     - numpy {{ numpy_version }}
@@ -133,12 +136,15 @@ requirements:
     - opt_einsum >=3.3
     - scipy
     - openblas =* =*openmp*
+    # Pin to all minor versions of CUDA newer than the one built against, within the same major version.
+    # cuda-version constrains the CUDA runtime version and ensures a compatible driver is available
+    - {{ pin_compatible('cuda-version', min_pin='x.x', max_pin='x') }}
+{% if gpu_enabled_bool %}
+    - __cuda >={{ cuda_version }}
+{% endif %}
 
   run_constrained:
     - __glibc >=2.17  # [linux]
-{% if gpu_enabled_bool %}
-    - __cuda
-{% endif %}
 
 about:
   home: https://github.com/nv-legate/cunumeric
