@@ -857,9 +857,9 @@ void NDArray::flip(NDArray rhs, std::optional<std::vector<int32_t>> axis)
   runtime->submit(std::move(task));
 }
 
-NDArray NDArray::all(std::optional<std::vector<int32_t>> axis,
+NDArray NDArray::all(std::vector<int32_t> axis,
                      std::optional<NDArray> out,
-                     std::optional<bool> keepdims,
+                     bool keepdims,
                      std::optional<Scalar> initial,
                      std::optional<NDArray> where)
 {
@@ -870,22 +870,53 @@ NDArray NDArray::all(std::optional<std::vector<int32_t>> axis,
                                   legate::bool_(),
                                   out,
                                   keepdims,
-                                  std::nullopt,
+                                  {},
                                   initial,
                                   where);
 }
 
 NDArray NDArray::_perform_unary_reduction(int32_t op,
                                           NDArray src,
-                                          std::optional<std::vector<int32_t>> axis,
+                                          const std::vector<int32_t>& axis,
                                           std::optional<legate::Type> dtype,
                                           std::optional<legate::Type> res_dtype,
                                           std::optional<NDArray> out,
-                                          std::optional<bool> keepdims,
-                                          std::optional<std::vector<NDArray>> args,
+                                          bool keepdims,
+                                          const std::vector<NDArray>& args,
                                           std::optional<Scalar> initial,
                                           std::optional<NDArray> where)
 {
+  if (src.size() == 0 && !initial.has_value()) {
+    if (static_cast<UnaryRedCode>(op) == UnaryRedCode::MAX ||
+        static_cast<UnaryRedCode>(op) == UnaryRedCode::MIN) {
+      throw std::invalid_argument("Min/max reduction is not yet supported for empty arrays");
+    }
+  }
+
+  if (src.type() == legate::complex64() || src.type() == legate::complex128()) {
+    if (static_cast<UnaryRedCode>(op) == UnaryRedCode::MAX ||
+        static_cast<UnaryRedCode>(op) == UnaryRedCode::MIN ||
+        static_cast<UnaryRedCode>(op) == UnaryRedCode::ARGMAX ||
+        static_cast<UnaryRedCode>(op) == UnaryRedCode::ARGMIN) {
+      throw std::runtime_error("(arg)max/min not supported for complex-type arrays");
+    }
+  }
+
+  if (where.has_value() && where.value().type() != legate::bool_()) {
+    throw std::invalid_argument("where array should be bool");
+  }
+
+  if ((dtype.has_value() && !dtype.value().is_primitive()) ||
+      (res_dtype.has_value() && !res_dtype.value().is_primitive())) {
+    throw std::invalid_argument("dtype and res_dtype should be primitive type");
+  }
+
+  // Handle scalar array without any other inputs
+  if (src.dim() == 0 && !dtype.has_value() && !res_dtype.has_value() && !out.has_value() &&
+      !initial.has_value() && !where.has_value()) {
+    return src;
+  }
+
   if (res_dtype.has_value()) {
     assert(!dtype.has_value());
     dtype = src.type();
@@ -901,33 +932,20 @@ NDArray NDArray::_perform_unary_reduction(int32_t op,
     }
   }
 
-  if (src.type() == legate::complex64() || src.type() == legate::complex128()) {
-    auto ops = {UnaryRedCode::ARGMAX, UnaryRedCode::ARGMIN, UnaryRedCode::MAX, UnaryRedCode::MIN};
-    if (std::find(ops.begin(), ops.end(), static_cast<UnaryRedCode>(op)) != ops.end()) {
-      throw std::runtime_error("(arg)max/min not supported for complex-type arrays");
-    }
-  }
-
-  if (where.has_value()) {
-    if (where.value().type() != legate::bool_()) {
-      throw std::invalid_argument("where array should be bool");
-    }
-  }
-
   std::vector<int32_t> axes;
-  if (!axis.has_value()) {
+  if (axis.empty()) {
     for (auto i = 0; i < src.dim(); ++i) {
       axes.push_back(i);
     }
   } else {
-    axes = normalize_axis_vector(axis.value(), src.dim());
+    axes = normalize_axis_vector(axis, src.dim());
   }
 
   std::vector<uint64_t> out_shape;
   for (auto i = 0; i < src.dim(); ++i) {
     if (std::find(axes.begin(), axes.end(), i) == axes.end()) {
       out_shape.push_back(src.shape()[i]);
-    } else if (keepdims.value_or(false)) {
+    } else if (keepdims) {
       out_shape.push_back(1);
     }
   }
@@ -956,9 +974,10 @@ NDArray NDArray::_perform_unary_reduction(int32_t op,
     where_array = broadcast_where(where.value(), src);
   }
 
-  std::vector<UnaryRedCode> ops = {
-    UnaryRedCode::ARGMAX, UnaryRedCode::ARGMIN, UnaryRedCode::NANARGMAX, UnaryRedCode::NANARGMIN};
-  auto argred = std::find(ops.begin(), ops.end(), static_cast<UnaryRedCode>(op)) != ops.end();
+  bool argred = static_cast<UnaryRedCode>(op) == UnaryRedCode::ARGMAX ||
+                static_cast<UnaryRedCode>(op) == UnaryRedCode::ARGMIN ||
+                static_cast<UnaryRedCode>(op) == UnaryRedCode::NANARGMAX ||
+                static_cast<UnaryRedCode>(op) == UnaryRedCode::NANARGMIN;
   if (argred) {
     assert(!initial.has_value());
     auto argred_dtype = runtime->get_argred_type(src.type());
@@ -980,10 +999,10 @@ NDArray NDArray::_perform_unary_reduction(int32_t op,
 void NDArray::unary_reduction(int32_t op,
                               NDArray src,
                               std::optional<NDArray> where,
-                              std::optional<std::vector<int32_t>> orig_axis,
-                              std::optional<std::vector<int32_t>> axes,
-                              std::optional<bool> keepdims,
-                              std::optional<std::vector<NDArray>> args,
+                              const std::vector<int32_t>& orig_axis,
+                              const std::vector<int32_t>& axes,
+                              bool keepdims,
+                              const std::vector<NDArray>& args,
                               std::optional<Scalar> initial)
 {
   auto lhs_array = *this;
@@ -999,12 +1018,10 @@ void NDArray::unary_reduction(int32_t op,
     lhs_array.fill(get_reduction_identity(op_code, lhs_array.type()));
   }
 
-  auto is_where    = where.has_value();
-  bool is_keepdims = keepdims.value_or(false);
+  auto is_where = where.has_value();
   if (lhs_array.size() == 1) {
-    assert(!axes.has_value() ||
-           lhs_array.dim() ==
-             (rhs_array.dim() - (is_keepdims ? 0 : static_cast<int32_t>(axes.value().size()))));
+    assert(axes.empty() || lhs_array.dim() == (rhs_array.dim() -
+                                               (keepdims ? 0 : static_cast<int32_t>(axes.size()))));
 
     auto p_lhs = lhs_array.store_;
     while (p_lhs.dim() > 1) {
@@ -1016,34 +1033,35 @@ void NDArray::unary_reduction(int32_t op,
     task.add_reduction(p_lhs, get_reduction_op(op_code));
     auto p_rhs = task.add_input(rhs_array.store_);
     task.add_scalar_arg(legate::Scalar(op));
-    task.add_scalar_arg(legate::Scalar(rhs_array.shape()));
+    if (rhs_array.dim() > 0) {
+      task.add_scalar_arg(legate::Scalar(rhs_array.shape()));
+    } else {
+      task.add_scalar_arg(legate::Scalar(std::vector<size_t>({1})));
+    }
     task.add_scalar_arg(legate::Scalar(is_where));
     if (is_where) {
       auto p_where = task.add_input(where.value().store_);
       task.add_constraint(align(p_rhs, p_where));
     }
-    if (args.has_value()) {
-      auto arg_array = args.value();
-      for (auto& arg : arg_array) {
-        task.add_input(arg.store_);
-      }
+    for (auto& arg : args) {
+      task.add_input(arg.store_);
     }
 
     runtime->submit(std::move(task));
   } else {
-    assert(axes.has_value());
+    assert(!axes.empty());
     auto result = lhs_array.store_;
-    if (is_keepdims) {
-      for (auto axis : axes.value()) {
+    if (keepdims) {
+      for (auto axis : axes) {
         result = result.project(axis, 0);
       }
     }
     auto rhs_shape = rhs_array.shape();
-    for (auto axis : axes.value()) {
+    for (auto axis : axes) {
       result = result.promote(axis, rhs_shape[axis]);
     }
 
-    if (axes.value().size() > 1) {
+    if (axes.size() > 1) {
       throw std::runtime_error("Need support for reducing multiple dimensions");
     }
 
@@ -1051,18 +1069,15 @@ void NDArray::unary_reduction(int32_t op,
 
     auto p_lhs = task.add_reduction(result, get_reduction_op(op_code));
     auto p_rhs = task.add_input(rhs_array.store_);
-    task.add_scalar_arg(legate::Scalar(axes.value()[0]));
+    task.add_scalar_arg(legate::Scalar(axes[0]));
     task.add_scalar_arg(legate::Scalar(op));
     task.add_scalar_arg(legate::Scalar(is_where));
     if (is_where) {
       auto p_where = task.add_input(where.value().store_);
       task.add_constraint(align(p_rhs, p_where));
     }
-    if (args != std::nullopt) {
-      auto arg_array = args.value();
-      for (auto& arg : arg_array) {
-        task.add_input(arg.store_);
-      }
+    for (auto& arg : args) {
+      task.add_input(arg.store_);
     }
     task.add_constraint(align(p_lhs, p_rhs));
 
@@ -1127,7 +1142,7 @@ NDArray NDArray::diag_helper(int32_t offset,
   if (N != s_axes.size()) {
     throw std::invalid_argument("axes passed to diag_helper should be all different");
   }
-  if (dim() < N) {
+  if (static_cast<size_t>(dim()) < N) {
     throw std::invalid_argument("Dimension of input array shouldn't be less than number of axes");
   }
   std::vector<int32_t> transpose_axes;
@@ -1150,7 +1165,7 @@ NDArray NDArray::diag_helper(int32_t offset,
       offset = -offset;
     }
     a = transpose(transpose_axes);
-    if (offset >= a.shape()[dim() - 1]) {
+    if (offset >= static_cast<int32_t>(a.shape()[dim() - 1])) {
       throw std::invalid_argument("'offset' for diag or diagonal must be in range");
     }
     diag_size = std::max(static_cast<uint64_t>(0),
@@ -1264,9 +1279,8 @@ void NDArray::diag_task(NDArray rhs, int32_t offset, int32_t naxes, bool extract
       }
     }
   } else {
-    matrix    = store_;
-    diag      = rhs.store_;
-    auto ndim = dim();
+    matrix = store_;
+    diag   = rhs.store_;
     if (offset > 0) {
       matrix = matrix.slice(1, slice(offset));
     } else if (offset < 0) {

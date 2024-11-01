@@ -48,16 +48,28 @@ NDArray zeros(std::vector<uint64_t> shape, std::optional<legate::Type> type = st
 NDArray full(std::vector<uint64_t> shape, const Scalar& value);
 
 NDArray all(NDArray input,
-            std::optional<std::vector<int32_t>> axis = std::nullopt,
-            std::optional<NDArray> out               = std::nullopt,
-            std::optional<bool> keepdims             = std::nullopt,
-            std::optional<NDArray> where             = std::nullopt);
+            std::vector<int32_t> axis    = {},
+            std::optional<NDArray> out   = std::nullopt,
+            bool keepdims                = false,
+            std::optional<NDArray> where = std::nullopt);
 
 NDArray sum(NDArray input);
 
-NDArray amax(NDArray input);
+NDArray amax(NDArray input,
+             std::vector<int32_t> axis         = {},
+             std::optional<legate::Type> dtype = std::nullopt,
+             std::optional<NDArray> out        = std::nullopt,
+             bool keepdims                     = false,
+             std::optional<Scalar> initial     = std::nullopt,
+             std::optional<NDArray> where      = std::nullopt);
 
-NDArray amin(NDArray input);
+NDArray amin(NDArray input,
+             std::vector<int32_t> axis         = {},
+             std::optional<legate::Type> dtype = std::nullopt,
+             std::optional<NDArray> out        = std::nullopt,
+             bool keepdims                     = false,
+             std::optional<Scalar> initial     = std::nullopt,
+             std::optional<NDArray> where      = std::nullopt);
 
 NDArray unique(NDArray input);
 

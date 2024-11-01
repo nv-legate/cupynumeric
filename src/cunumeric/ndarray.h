@@ -91,11 +91,11 @@ class NDArray {
   NDArray transpose(std::vector<int32_t> axes);
   NDArray argwhere();
   NDArray flip(std::optional<std::vector<int32_t>> axis = std::nullopt);
-  NDArray all(std::optional<std::vector<int32_t>> axis = std::nullopt,
-              std::optional<NDArray> out               = std::nullopt,
-              std::optional<bool> keepdims             = std::nullopt,
-              std::optional<Scalar> initial            = std::nullopt,
-              std::optional<NDArray> where             = std::nullopt);
+  NDArray all(std::vector<int32_t> axis     = {},
+              std::optional<NDArray> out    = std::nullopt,
+              bool keepdims                 = false,
+              std::optional<Scalar> initial = std::nullopt,
+              std::optional<NDArray> where  = std::nullopt);
   void put(NDArray indices, NDArray values, std::string mode = "raise");
   NDArray diagonal(int32_t offset               = 0,
                    std::optional<int32_t> axis1 = std::nullopt,
@@ -121,6 +121,16 @@ class NDArray {
   NDArray _warn_and_convert(legate::Type const& type);
   NDArray wrap_indices(Scalar const& n);
   NDArray clip_indices(Scalar const& min, Scalar const& max);
+  NDArray _perform_unary_reduction(int32_t op,
+                                   NDArray src,
+                                   const std::vector<int32_t>& axis,
+                                   std::optional<legate::Type> dtype,
+                                   std::optional<legate::Type> res_dtype,
+                                   std::optional<NDArray> out,
+                                   bool keepdims,
+                                   const std::vector<NDArray>& args,
+                                   std::optional<Scalar> initial,
+                                   std::optional<NDArray> where);
   NDArray copy();
 
  private:
@@ -132,22 +142,12 @@ class NDArray {
   void unary_reduction(int32_t op,
                        NDArray src,
                        std::optional<NDArray> where,
-                       std::optional<std::vector<int32_t>> orig_axis,
-                       std::optional<std::vector<int32_t>> axes,
-                       std::optional<bool> keepdims,
-                       std::optional<std::vector<NDArray>> args,
+                       const std::vector<int32_t>& orig_axis,
+                       const std::vector<int32_t>& axes,
+                       bool keepdims,
+                       const std::vector<NDArray>& args,
                        std::optional<Scalar> initial);
   NDArray broadcast_where(NDArray where, NDArray source);
-  NDArray _perform_unary_reduction(int32_t op,
-                                   NDArray src,
-                                   std::optional<std::vector<int32_t>> axis = std::nullopt,
-                                   std::optional<legate::Type> dtype        = std::nullopt,
-                                   std::optional<legate::Type> res_dtype    = std::nullopt,
-                                   std::optional<NDArray> out               = std::nullopt,
-                                   std::optional<bool> keepdims             = std::nullopt,
-                                   std::optional<std::vector<NDArray>> args = std::nullopt,
-                                   std::optional<Scalar> initial            = std::nullopt,
-                                   std::optional<NDArray> where             = std::nullopt);
   void flip(NDArray rhs, std::optional<std::vector<int32_t>> axis);
   void diag_task(NDArray rhs, int32_t offset, int32_t naxes, bool extract, bool trace);
   NDArray diag_helper(int32_t offset,

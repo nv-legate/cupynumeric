@@ -292,9 +292,9 @@ NDArray dot(NDArray rhs1, NDArray rhs2)
 }
 
 NDArray all(NDArray input,
-            std::optional<std::vector<int32_t>> axis,
+            std::vector<int32_t> axis,
             std::optional<NDArray> out,
-            std::optional<bool> keepdims,
+            bool keepdims,
             std::optional<NDArray> where)
 {
   return input.all(axis, out, keepdims, std::nullopt, where);
@@ -302,9 +302,45 @@ NDArray all(NDArray input,
 
 NDArray sum(NDArray input) { return unary_reduction(UnaryRedCode::SUM, std::move(input)); }
 
-NDArray amax(NDArray input) { return unary_reduction(UnaryRedCode::MAX, std::move(input)); }
+NDArray amax(NDArray input,
+             std::vector<int32_t> axis,
+             std::optional<legate::Type> dtype,
+             std::optional<NDArray> out,
+             bool keepdims,
+             std::optional<Scalar> initial,
+             std::optional<NDArray> where)
+{
+  return input._perform_unary_reduction(static_cast<int32_t>(UnaryRedCode::MAX),
+                                        input,
+                                        axis,
+                                        dtype,
+                                        std::nullopt,
+                                        out,
+                                        keepdims,
+                                        {},
+                                        initial,
+                                        where);
+}
 
-NDArray amin(NDArray input) { return unary_reduction(UnaryRedCode::MIN, std::move(input)); }
+NDArray amin(NDArray input,
+             std::vector<int32_t> axis,
+             std::optional<legate::Type> dtype,
+             std::optional<NDArray> out,
+             bool keepdims,
+             std::optional<Scalar> initial,
+             std::optional<NDArray> where)
+{
+  return input._perform_unary_reduction(static_cast<int32_t>(UnaryRedCode::MIN),
+                                        input,
+                                        axis,
+                                        dtype,
+                                        std::nullopt,
+                                        out,
+                                        keepdims,
+                                        {},
+                                        initial,
+                                        where);
+}
 
 NDArray unique(NDArray input) { return input.unique(); }
 
