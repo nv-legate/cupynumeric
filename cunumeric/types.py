@@ -34,4 +34,6 @@ BitOrder: TypeAlias = Literal["big", "little"]
 
 ConvolveMode: TypeAlias = Literal["full", "valid", "same"]
 
+ConvolveMethod: TypeAlias = Literal["auto", "direct", "fft"]
+
 SelectKind: TypeAlias = Literal["introselect"]

@@ -34,6 +34,7 @@ struct ConvolveArgs {
   legate::PhysicalStore filter{nullptr};
   std::vector<legate::PhysicalStore> inputs;
   legate::Domain root_domain;
+  CuNumericConvolveMethod method;
 };
 
 class ConvolveTask : public CuNumericTask<ConvolveTask> {

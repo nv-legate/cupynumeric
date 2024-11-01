@@ -18,15 +18,21 @@ from typing import TYPE_CHECKING
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
+from ..config import ConvolveMethod
 
 if TYPE_CHECKING:
     import numpy.typing as npt
 
-    from ..types import ConvolveMode
+    from ..types import ConvolveMethod as ConvolveMethodType, ConvolveMode
 
 
 @add_boilerplate("a", "v")
-def convolve(a: ndarray, v: ndarray, mode: ConvolveMode = "full") -> ndarray:
+def convolve(
+    a: ndarray,
+    v: ndarray,
+    mode: ConvolveMode = "full",
+    method: ConvolveMethodType = "auto",
+) -> ndarray:
     """
 
     Returns the discrete, linear convolution of two ndarrays.
@@ -52,6 +58,19 @@ def convolve(a: ndarray, v: ndarray, mode: ConvolveMode = "full") -> ndarray:
           The output consists only of those elements that do not
           rely on the zero-padding. In 'valid' mode, either `a` or `v`
           must be at least as large as the other in every dimension.
+    method : ``{'auto', 'direct', 'fft'}``, optional
+        A string indicating which method to use to calculate the convolution.
+
+        'auto':
+         Automatically chooses direct or Fourier method based on an estimate of
+         which is faster (default)
+
+        'direct':
+         The convolution is determined directly from sums, the definition of
+         convolution
+
+        'fft':
+          The Fourier Transform is used to perform the convolution
 
     Returns
     -------
@@ -74,7 +93,7 @@ def convolve(a: ndarray, v: ndarray, mode: ConvolveMode = "full") -> ndarray:
     Multiple GPUs, Multiple CPUs
     """
     if mode != "same":
-        raise NotImplementedError("Need to implement other convolution modes")
+        raise NotImplementedError("Only support mode='same'")
 
     if a.ndim != v.ndim:
         raise RuntimeError("Arrays should have the same dimensions")
@@ -84,6 +103,11 @@ def convolve(a: ndarray, v: ndarray, mode: ConvolveMode = "full") -> ndarray:
     if a.ndim == 1 and a.size < v.size:
         v, a = a, v
 
+    if not hasattr(ConvolveMethod, method.upper()):
+        raise ValueError(
+            "Acceptable method flags are 'auto', 'direct', or 'fft'."
+        )
+
     if a.dtype != v.dtype:
         v = v.astype(a.dtype)
     out = ndarray(
@@ -91,7 +115,7 @@ def convolve(a: ndarray, v: ndarray, mode: ConvolveMode = "full") -> ndarray:
         dtype=a.dtype,
         inputs=(a, v),
     )
-    out._thunk.convolve(a._thunk, v._thunk, mode)
+    out._thunk.convolve(a._thunk, v._thunk, mode, method)
     return out
 
 

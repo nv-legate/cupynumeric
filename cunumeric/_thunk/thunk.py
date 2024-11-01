@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     )
     from ..types import (
         BitOrder,
+        ConvolveMethod,
         ConvolveMode,
         NdShape,
         OrderType,
@@ -93,7 +94,13 @@ class NumPyThunk(ABC):
         ...
 
     @abstractmethod
-    def convolve(self, input: Any, filter: Any, mode: ConvolveMode) -> None:
+    def convolve(
+        self,
+        input: Any,
+        filter: Any,
+        mode: ConvolveMode,
+        method: ConvolveMethod,
+    ) -> None:
         ...
 
     @abstractmethod

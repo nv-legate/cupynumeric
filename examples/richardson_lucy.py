@@ -22,7 +22,9 @@ float_type = "float32"
 # A simplified implementation of Richardson-Lucy deconvolution
 
 
-def run_richardson_lucy(shape, filter_shape, num_iter, warmup, timing):
+def run_richardson_lucy(
+    shape, filter_shape, num_iter, warmup, timing, conv_method
+):
     image = np.random.rand(*shape).astype(float_type)
     psf = np.random.rand(*filter_shape).astype(float_type)
     im_deconv = np.full(image.shape, 0.5, dtype=float_type)
@@ -33,13 +35,16 @@ def run_richardson_lucy(shape, filter_shape, num_iter, warmup, timing):
     for idx in range(num_iter + warmup):
         if idx == warmup:
             timer.start()
-        conv = np.convolve(im_deconv, psf, mode="same")
+        conv = np.convolve(im_deconv, psf, mode="same", method=conv_method)
         relative_blur = image / conv
-        im_deconv *= np.convolve(relative_blur, psf_mirror, mode="same")
+        im_deconv *= np.convolve(
+            relative_blur, psf_mirror, mode="same", method=conv_method
+        )
 
     total = timer.stop()
     if timing:
         print("Elapsed Time: " + str(total) + " ms")
+    return total
 
 
 if __name__ == "__main__":
@@ -109,6 +114,13 @@ if __name__ == "__main__":
         action="store_true",
         help="perform timing",
     )
+    parser.add_argument(
+        "--conv-method",
+        dest="conv_method",
+        type=str,
+        default="auto",
+        help="convolution method (auto by default)",
+    )
 
     args, np, timer = parse_args(parser)
 
@@ -122,5 +134,6 @@ if __name__ == "__main__":
             args.I,
             args.warmup,
             args.timing,
+            args.conv_method,
         ),
     )

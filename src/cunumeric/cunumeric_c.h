@@ -318,6 +318,12 @@ enum CuNumericFFTType {
   CUNUMERIC_FFT_Z2Z = 0x69   // Double-complex to double-complex (interleaved)
 };
 
+enum CuNumericConvolveMethod {
+  CUNUMERIC_CONVOLVE_AUTO,
+  CUNUMERIC_CONVOLVE_DIRECT,
+  CUNUMERIC_CONVOLVE_FFT,
+};
+
 // These fft types match CuNumericFFTDirection in config.py and cufftDirection
 enum CuNumericFFTDirection { CUNUMERIC_FFT_FORWARD = -1, CUNUMERIC_FFT_INVERSE = 1 };
 

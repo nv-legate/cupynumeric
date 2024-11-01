@@ -33,7 +33,8 @@ struct ConvolveImplBody<VariantKind::OMP, CODE, DIM> {
                   AccessorRO<VAL, DIM> in,
                   const Rect<DIM>& root_rect,
                   const Rect<DIM>& subrect,
-                  const Rect<DIM>& filter_rect) const
+                  const Rect<DIM>& filter_rect,
+                  CuNumericConvolveMethod method) const
   {
     const Point<DIM> one = Point<DIM>::ONES();
     Point<DIM> extents   = filter_rect.hi - filter_rect.lo + one;

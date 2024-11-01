@@ -149,6 +149,9 @@ class _CunumericSharedLib:
     CUNUMERIC_CONVERT_NAN_PROD: int
     CUNUMERIC_CONVERT_NAN_SUM: int
     CUNUMERIC_CONVOLVE: int
+    CUNUMERIC_CONVOLVE_AUTO: int
+    CUNUMERIC_CONVOLVE_DIRECT: int
+    CUNUMERIC_CONVOLVE_FFT: int
     CUNUMERIC_DIAG: int
     CUNUMERIC_DOT: int
     CUNUMERIC_EYE: int
@@ -647,6 +650,14 @@ class BitGeneratorDistribution(IntEnum):
     WALD_64 = _cunumeric.CUNUMERIC_BITGENDIST_WALD_64
     BINOMIAL = _cunumeric.CUNUMERIC_BITGENDIST_BINOMIAL
     NEGATIVE_BINOMIAL = _cunumeric.CUNUMERIC_BITGENDIST_NEGATIVE_BINOMIAL
+
+
+# Match these to CuNumericConvolveMethod in cunumeric_c.h
+@unique
+class ConvolveMethod(IntEnum):
+    AUTO = _cunumeric.CUNUMERIC_CONVOLVE_AUTO
+    DIRECT = _cunumeric.CUNUMERIC_CONVOLVE_DIRECT
+    FFT = _cunumeric.CUNUMERIC_CONVOLVE_FFT
 
 
 @unique

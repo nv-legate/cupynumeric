@@ -193,6 +193,24 @@ def test_ndim(ndim):
     assert allclose(out_num, out_np)
 
 
+@pytest.mark.parametrize(
+    "method",
+    ("auto", "direct", "fft"),
+)
+def test_methods(method):
+    shape = (5,) * 2
+    arr1 = num.random.random(shape)
+    arr2 = num.random.random(shape)
+    out_num = num.convolve(arr1, arr2, mode="same", method=method)
+    out_np = sig.convolve(arr1, arr2, mode="same", method=method)
+    assert allclose(out_num, out_np)
+
+
+def test_invalid_method():
+    with pytest.raises(ValueError):
+        num.convolve([], [], mode="same", method="test")
+
+
 if __name__ == "__main__":
     import sys
 

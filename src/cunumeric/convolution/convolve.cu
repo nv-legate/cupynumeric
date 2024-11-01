@@ -1299,7 +1299,8 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
                                               AccessorRO<VAL, DIM> in,
                                               const Rect<DIM>& root_rect,
                                               const Rect<DIM>& subrect,
-                                              const Rect<DIM>& filter_rect)
+                                              const Rect<DIM>& filter_rect,
+                                              CuNumericConvolveMethod method)
 {
   int device           = get_device_ordinal();
   auto& properties     = get_device_properties();
@@ -1354,7 +1355,7 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
   for (int d = 0; d < DIM; d++) {
     smem_size *= (tile[d] + 2 * centers[d]);
   }
-  if (smem_size <= max_smem_size) {
+  if (method != CUNUMERIC_CONVOLVE_FFT && smem_size <= max_smem_size) {
     launch_small_tile_kernel<VAL, DIM>(out,
                                        filter,
                                        in,
@@ -1515,7 +1516,7 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
 /////////////
 
 template <typename VAL, int DIM>
-struct UseCUFFT {
+struct CanUseCUFFT {
   static constexpr bool value = 1 <= DIM && DIM <= 3 && std::is_floating_point<VAL>::value;
 };
 
@@ -1523,24 +1524,34 @@ template <Type::Code CODE, int DIM>
 struct ConvolveImplBody<VariantKind::GPU, CODE, DIM> {
   using VAL = type_of<CODE>;
 
-  template <typename _VAL, int32_t _DIM, std::enable_if_t<UseCUFFT<_VAL, _DIM>::value>* = nullptr>
+  template <typename _VAL,
+            int32_t _DIM,
+            std::enable_if_t<CanUseCUFFT<_VAL, _DIM>::value>* = nullptr>
   __host__ void dispatch(AccessorWO<_VAL, _DIM> out,
                          AccessorRO<_VAL, _DIM> filter,
                          AccessorRO<_VAL, _DIM> in,
                          const Rect<_DIM>& root_rect,
                          const Rect<_DIM>& subrect,
-                         const Rect<_DIM>& filter_rect) const
+                         const Rect<_DIM>& filter_rect,
+                         CuNumericConvolveMethod method) const
   {
-    cufft_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect);
+    if (method == CUNUMERIC_CONVOLVE_DIRECT) {
+      direct_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect);
+    } else {
+      cufft_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect, method);
+    }
   }
 
-  template <typename _VAL, int32_t _DIM, std::enable_if_t<!UseCUFFT<_VAL, _DIM>::value>* = nullptr>
+  template <typename _VAL,
+            int32_t _DIM,
+            std::enable_if_t<!CanUseCUFFT<_VAL, _DIM>::value>* = nullptr>
   __host__ void dispatch(AccessorWO<_VAL, _DIM> out,
                          AccessorRO<_VAL, _DIM> filter,
                          AccessorRO<_VAL, _DIM> in,
                          const Rect<_DIM>& root_rect,
                          const Rect<_DIM>& subrect,
-                         const Rect<_DIM>& filter_rect) const
+                         const Rect<_DIM>& filter_rect,
+                         CuNumericConvolveMethod method) const
   {
     direct_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect);
   }
@@ -1550,9 +1561,10 @@ struct ConvolveImplBody<VariantKind::GPU, CODE, DIM> {
                            AccessorRO<VAL, DIM> in,
                            const Rect<DIM>& root_rect,
                            const Rect<DIM>& subrect,
-                           const Rect<DIM>& filter_rect) const
+                           const Rect<DIM>& filter_rect,
+                           CuNumericConvolveMethod method) const
   {
-    dispatch(out, filter, in, root_rect, subrect, filter_rect);
+    dispatch(out, filter, in, root_rect, subrect, filter_rect, method);
   }
 };
 

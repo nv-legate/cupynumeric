@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from ..config import BitGeneratorType, FFTType
     from ..types import (
         BitOrder,
+        ConvolveMethod,
         ConvolveMode,
         NdShape,
         OrderType,
@@ -336,17 +337,30 @@ class EagerArray(NumPyThunk):
 
         return EagerArray(self.array.conj())
 
-    def convolve(self, input: Any, filter: Any, mode: ConvolveMode) -> None:
+    def convolve(
+        self,
+        input: Any,
+        filter: Any,
+        mode: ConvolveMode,
+        method: ConvolveMethod,
+    ) -> None:
         self.check_eager_args(input, filter)
         if self.deferred is not None:
-            self.deferred.convolve(input, filter, mode)
+            self.deferred.convolve(input, filter, mode, method)
         else:
             if self.ndim == 1:
+                if method != "auto":
+                    runtime.warn(
+                        f"the method {method} is ignored "
+                        "for the 1D convolution"
+                    )
                 self.array[:] = np.convolve(input.array, filter.array, mode)
             else:
                 from scipy.signal import convolve  # type: ignore [import]
 
-                self.array[...] = convolve(input.array, filter.array, mode)
+                self.array[...] = convolve(
+                    input.array, filter.array, mode, method
+                )
 
     def fft(
         self,

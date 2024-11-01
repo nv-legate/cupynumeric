@@ -62,6 +62,7 @@ from ..config import (
     BitGeneratorOperation,
     Bitorder,
     ConvertCode,
+    ConvolveMethod,
     CuNumericOpCode,
     RandGenCode,
     UnaryOpCode,
@@ -87,6 +88,7 @@ if TYPE_CHECKING:
     from ..config import BitGeneratorType, FFTDirection, FFTType, WindowOpCode
     from ..types import (
         BitOrder,
+        ConvolveMethod as ConvolveMethodType,
         ConvolveMode,
         NdShape,
         OrderType,
@@ -1291,7 +1293,16 @@ class DeferredArray(NumPyThunk):
         task.execute()
 
     @auto_convert("input", "filter")
-    def convolve(self, input: Any, filter: Any, mode: ConvolveMode) -> None:
+    def convolve(
+        self,
+        input: Any,
+        filter: Any,
+        mode: ConvolveMode,
+        method: ConvolveMethodType,
+    ) -> None:
+        if method != "auto" and runtime.num_gpus == 0:
+            runtime.warn(f"the method {method} is ignored on CPUs")
+
         task = legate_runtime.create_auto_task(
             self.library, CuNumericOpCode.CONVOLVE
         )
@@ -1304,6 +1315,7 @@ class DeferredArray(NumPyThunk):
         p_halo = task.declare_partition()
         task.add_input(input.base, p_halo)
         task.add_scalar_arg(input.shape, (ty.int64,))
+        task.add_scalar_arg(getattr(ConvolveMethod, method.upper()), ty.int32)
 
         task.add_constraint(align(p_out, p_in))
         task.add_constraint(bloat(p_out, p_halo, offsets, offsets))
