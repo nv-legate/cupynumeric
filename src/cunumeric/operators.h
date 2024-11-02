@@ -159,6 +159,9 @@ NDArray reshape(NDArray a, std::vector<int64_t> newshape, std::string order = "C
 
 NDArray ravel(NDArray a, std::string order = "C");
 
+NDArray squeeze(
+  NDArray a, std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis = std::nullopt);
+
 template <typename T>
 bool vec_is_equal(const std::vector<T>& vec1, const std::vector<T>& vec2)
 {

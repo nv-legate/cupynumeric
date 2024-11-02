@@ -576,4 +576,9 @@ NDArray reshape(NDArray a, std::vector<int64_t> newshape, std::string order)
 
 NDArray ravel(NDArray a, std::string order) { return a.ravel(order); }
 
+NDArray squeeze(NDArray a, std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis)
+{
+  return a.squeeze(axis);
+}
+
 }  // namespace cunumeric

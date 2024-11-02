@@ -111,6 +111,8 @@ class NDArray {
   NDArray reshape(std::vector<int64_t> newshape, std::string order);
   NDArray reshape(std::vector<int64_t> newshape);
   NDArray ravel(std::string order = "C");
+  NDArray squeeze(
+    std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis = std::nullopt) const;
 
  public:
   NDArray as_type(const legate::Type& type);

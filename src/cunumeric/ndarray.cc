@@ -1782,6 +1782,39 @@ NDArray NDArray::reshape(std::vector<int64_t> newshape)
   return NDArray(std::move(out_store));
 }
 
+NDArray NDArray::squeeze(
+  std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis) const
+{
+  auto result = store_;
+  if (!axis.has_value()) {
+    int shift = 0;
+    for (int d = 0; d < dim(); d++) {
+      if (result.extents().data()[d + shift] == 1) {
+        result = result.project(d + shift, 0);
+        shift -= 1;
+      }
+    }
+  } else {
+    auto computed_axis = normalize_axis_vector(axis.value(), dim());
+    for (auto ax : computed_axis) {
+      if (shape()[ax] != 1) {
+        throw std::invalid_argument("can only select axes to squeeze out with size equal to one");
+      }
+    }
+    int shift = 0;
+    for (auto dim : computed_axis) {
+      result = result.project(dim + shift, 0);
+      shift -= 1;
+    }
+  }
+  if (result.extents().data() == store_.extents().data()) {
+    return *this;
+  } else {
+    auto runtime = CuNumericRuntime::get_runtime();
+    return runtime->create_array(std::move(result));
+  }
+}
+
 legate::LogicalStore NDArray::get_store() { return store_; }
 
 legate::LogicalStore NDArray::broadcast(const std::vector<uint64_t>& shape,
