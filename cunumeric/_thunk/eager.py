@@ -1675,10 +1675,10 @@ class EagerArray(NumPyThunk):
             else:
                 self.array[:] = np.triu(rhs.array, k)
 
-    def cholesky(self, src: Any, no_tril: bool) -> None:
+    def cholesky(self, src: Any) -> None:
         self.check_eager_args(src)
         if self.deferred is not None:
-            self.deferred.cholesky(src, no_tril)
+            self.deferred.cholesky(src)
         else:
             try:
                 result = np.linalg.cholesky(src.array)
@@ -1686,8 +1686,7 @@ class EagerArray(NumPyThunk):
                 from ..linalg import LinAlgError
 
                 raise LinAlgError(e) from e
-            if no_tril:
-                result = np.triu(result.T.conj(), k=1) + result
+
             self.array[:] = result
 
     def qr(self, q: Any, r: Any) -> None:

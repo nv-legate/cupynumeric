@@ -169,19 +169,16 @@ def gemm(
     task.execute()
 
 
-MIN_CHOLESKY_TILE_SIZE = 2048
-MIN_CHOLESKY_MATRIX_SIZE = 8192
+MIN_CHOLESKY_TILE_SIZE = 2 if settings.test() else 2048
+MIN_CHOLESKY_MATRIX_SIZE = 4 if settings.test() else 8192
 
 
 # TODO: We need a better cost model
 def choose_color_shape(
     runtime: Runtime, shape: tuple[int, ...]
 ) -> tuple[int, ...]:
-    if settings.test():
-        num_tiles = runtime.num_procs * 2
-        return (num_tiles, num_tiles)
-
     extent = shape[0]
+
     # If there's only one processor or the matrix is too small,
     # don't even bother to partition it at all
     if runtime.num_procs == 1 or extent <= MIN_CHOLESKY_MATRIX_SIZE:
@@ -254,16 +251,9 @@ def _batched_cholesky(
     task.execute()
 
 
-def cholesky_deferred(
-    output: DeferredArray, input: DeferredArray, no_tril: bool
-) -> None:
+def cholesky_deferred(output: DeferredArray, input: DeferredArray) -> None:
     library = runtime.library
     if len(input.base.shape) > 2:
-        if no_tril:
-            raise NotImplementedError(
-                "batched cholesky expects to only "
-                "produce the lower triangular matrix"
-            )
         size = input.base.shape[-1]
         # Choose 32768 as dimension cutoff for warning
         # so that for float64 anything larger than
@@ -280,8 +270,7 @@ def cholesky_deferred(
     if runtime.num_procs == 1:
         transpose_copy_single(library, input.base, output.base)
         potrf_single(library, output.base)
-        if not no_tril:
-            tril_single(library, output.base)
+        tril_single(library, output.base)
         return
 
     shape = tuple(output.base.shape)
@@ -295,8 +284,7 @@ def cholesky_deferred(
             library, shape[0], MIN_CHOLESKY_TILE_SIZE, input.base, output.base
         )
 
-        if not no_tril:
-            tril_single(library, output.base)
+        tril_single(library, output.base)
     else:
         initial_color_shape = choose_color_shape(runtime, shape)
         tile_shape = _rounding_divide(shape, initial_color_shape)
@@ -314,5 +302,4 @@ def cholesky_deferred(
                 syrk(library, p_output, k, i)
                 gemm(library, p_output, k, i, k + 1, n)
 
-        if not no_tril:
-            tril(library, p_output, n)
+        tril(library, p_output, n)

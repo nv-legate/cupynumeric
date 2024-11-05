@@ -3458,8 +3458,8 @@ class DeferredArray(NumPyThunk):
         return result
 
     @auto_convert("src")
-    def cholesky(self, src: Any, no_tril: bool = False) -> None:
-        cholesky_deferred(self, src, no_tril)
+    def cholesky(self, src: Any) -> None:
+        cholesky_deferred(self, src)
 
     @auto_convert("q", "r")
     def qr(self, q: Any, r: Any) -> None:

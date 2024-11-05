@@ -704,7 +704,7 @@ class NumPyThunk(ABC):
         ...
 
     @abstractmethod
-    def cholesky(self, src: Any, no_tril: bool) -> None:
+    def cholesky(self, src: Any) -> None:
         ...
 
     @abstractmethod

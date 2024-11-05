@@ -700,7 +700,7 @@ def norm(
         raise ValueError("Improper number of dimensions to norm")
 
 
-def _thunk_cholesky(a: ndarray, no_tril: bool = False) -> ndarray:
+def _thunk_cholesky(a: ndarray) -> ndarray:
     """Cholesky decomposition.
 
     Return the Cholesky decomposition, `L * L.H`, of the square matrix `a`,
@@ -744,7 +744,7 @@ def _thunk_cholesky(a: ndarray, no_tril: bool = False) -> ndarray:
         dtype=input.dtype,
         inputs=(input,),
     )
-    output._thunk.cholesky(input._thunk, no_tril=no_tril)
+    output._thunk.cholesky(input._thunk)
     return output
 
 
