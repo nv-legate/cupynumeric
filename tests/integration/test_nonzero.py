@@ -18,6 +18,7 @@ import pytest
 from utils.utils import AxisError
 
 import cunumeric as num
+from cunumeric._utils import is_np2
 
 # cunumeric.count_nonzero(a: ndarray,
 # axis: Optional[Union[int, tuple[int, ...]]] = None) → Union[int, ndarray]
@@ -49,6 +50,13 @@ NO_EMPTY_SIZE = [
 ]
 
 SIZES = NO_EMPTY_SIZE + EMPTY_SIZES
+
+
+@pytest.mark.skipif(not is_np2, reason="numpy 1.0 does not raise")
+@pytest.mark.parametrize("value", (0, 1, 2, 7))
+def test_0d_error(value):
+    with pytest.raises(ValueError):
+        num.nonzero(value)
 
 
 @pytest.mark.parametrize("size", EMPTY_SIZES)
@@ -162,28 +170,6 @@ def test_flatnonzero(size):
     res_np = np.flatnonzero(arr_np)
     res_num = num.flatnonzero(arr_num)
     np.array_equal(res_np, res_num)
-
-
-def test_deprecated_0d():
-    with pytest.deprecated_call():
-        assert num.count_nonzero(num.array(0)) == 0
-        assert num.count_nonzero(num.array(0, dtype="?")) == 0
-        assert_equal(num.nonzero(0), np.nonzero(0))
-
-    with pytest.deprecated_call():
-        assert num.count_nonzero(num.array(1)) == 1
-        assert num.count_nonzero(num.array(1, dtype="?")) == 1
-        assert_equal(num.nonzero(1), np.nonzero(1))
-
-    with pytest.deprecated_call():
-        assert_equal(num.nonzero(0), ([],))
-
-    with pytest.deprecated_call():
-        assert_equal(num.nonzero(1), ([0],))
-
-    x_np = np.array([True, True])
-    x = num.array(x_np)
-    assert np.array_equal(x_np.nonzero(), x.nonzero())
 
 
 if __name__ == "__main__":

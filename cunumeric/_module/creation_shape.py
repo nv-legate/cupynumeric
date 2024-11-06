@@ -351,6 +351,8 @@ def full(
     else:
         dtype = np.dtype(dtype)
         val = np.array(value, dtype=dtype)
+    if np.dtype(dtype).itemsize == 1 and value > 255:
+        raise OverflowError(f"Value {value} out of bounds for {dtype}")
     result = empty(shape, dtype=val.dtype)
     result._thunk.fill(val)
     return result
@@ -395,6 +397,8 @@ def full_like(
         dtype = np.dtype(dtype)
     else:
         dtype = a.dtype
+    if np.dtype(dtype).itemsize == 1 and value > 255:
+        raise OverflowError(f"Value {value} out of bounds for {dtype}")
     result = empty_like(a, dtype=dtype, shape=shape)
     val = np.array(value).astype(dtype)
     result._thunk.fill(val)

@@ -16,8 +16,9 @@ import pytest
 
 import cunumeric as num
 
+
 @pytest.mark.xfail(
-    reason = "https://github.com/nv-legate/cunumeric.internal/issues/199"
+    reason="https://github.com/nv-legate/cunumeric.internal/issues/199"
 )
 def test_basic_num() -> None:
     num.random.seed(10)
@@ -28,7 +29,7 @@ def test_basic_num() -> None:
 
 
 @pytest.mark.xfail(
-    reason = "numpy failures in random.mtrand.RandomState.standard_normal"
+    reason="numpy failures in random.mtrand.RandomState.standard_normal"
 )
 def test_basic_np() -> None:
     np.random.seed(10)
@@ -44,7 +45,7 @@ def test_basic_np() -> None:
 
 
 @pytest.mark.xfail(
-    reason = "https://github.com/nv-legate/cunumeric.internal/issues/199"
+    reason="https://github.com/nv-legate/cunumeric.internal/issues/199"
 )
 def test_none_num() -> None:
     num.random.seed()
@@ -60,7 +61,7 @@ def test_none_num() -> None:
 
 
 @pytest.mark.xfail(
-    reason = "numpy failures in random.mtrand.RandomState.standard_normal"
+    reason="numpy failures in random.mtrand.RandomState.standard_normal"
 )
 def test_none_np() -> None:
     np.random.seed()
@@ -76,7 +77,7 @@ def test_none_np() -> None:
 
 
 @pytest.mark.xfail(
-    reason = "numpy failures in random.mtrand.RandomState.standard_normal"
+    reason="numpy failures in random.mtrand.RandomState.standard_normal"
 )
 def test_basic_num_np() -> None:
     np.random.seed(10)
@@ -86,9 +87,6 @@ def test_basic_num_np() -> None:
     assert not np.array_equal(L1, L2)
 
 
-@pytest.mark.xfail(
-    reason = "https://github.com/nv-legate/cunumeric.internal/issues/199"
-)
 def test_RandomState() -> None:
     rdm_num = num.random.RandomState(10)
     L1 = rdm_num.randn(3, 3)

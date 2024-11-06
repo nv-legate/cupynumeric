@@ -17,13 +17,7 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 from functools import WRAPPER_ASSIGNMENTS, wraps
-from types import (
-    BuiltinFunctionType,
-    FunctionType,
-    MethodDescriptorType,
-    MethodType,
-    ModuleType,
-)
+from types import BuiltinFunctionType, FunctionType, ModuleType
 from typing import Any, Callable, Container, Iterable, Mapping, Protocol, cast
 
 from legate.core import track_provenance
@@ -306,7 +300,13 @@ def clone_module(
 
 
 def should_wrap(obj: object) -> bool:
-    return isinstance(obj, (FunctionType, MethodType, MethodDescriptorType))
+    # custom callables, e.g. cython used in np2, do not inherit anything. See
+    # https://github.com/nv-legate/cunumeric.internal/issues/179#issuecomment-2423813051
+    return (
+        callable(obj)
+        and hasattr(obj, "__get__")
+        and not hasattr(obj, "__set__")
+    )
 
 
 def clone_class(

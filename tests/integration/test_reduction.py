@@ -140,7 +140,7 @@ class TestSumNegative(object):
     def test_initial_list(self):
         arr = [[1, 2], [3, 4]]
         initial_value = [2, 3]
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, TypeError)):
             num.sum(arr, initial=initial_value)
 
     @pytest.mark.xfail

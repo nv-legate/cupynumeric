@@ -195,6 +195,11 @@ def test_func_like(fn, x_np, dtype, shape):
 @pytest.mark.parametrize("x_np, dtype", DATA_ARGS)
 @pytest.mark.parametrize("shape", SHAPE_ARG)
 def test_full_like(x_np, dtype, value, shape):
+    if np.dtype(dtype).itemsize == 1 and value > 255:
+        with pytest.raises(OverflowError):
+            num.full_like(x_np, value, dtype=dtype, shape=shape)
+        return
+
     shape = shape if shape is None else x_np.reshape(shape).shape
     x = num.array(x_np)
 
