@@ -63,7 +63,7 @@ include(rapids-cuda)
 include(rapids-export)
 include(rapids-find)
 
-set(cunumeric_version 24.09.00)
+set(cunumeric_version 24.11.00)
 
 # For now we want the optimization flags to match on both normal make and cmake
 # builds so we override the cmake defaults here for release, this changes
