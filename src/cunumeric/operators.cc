@@ -477,7 +477,7 @@ int32_t normalize_axis_index(int32_t axis, int32_t ndim)
   return axis;
 }
 
-std::vector<int32_t> normalize_axis_vector(std::vector<int32_t> axis,
+std::vector<int32_t> normalize_axis_vector(const std::vector<int32_t>& axis,
                                            int32_t ndim,
                                            bool allow_duplicate)
 {
@@ -579,6 +579,36 @@ NDArray ravel(NDArray a, std::string order) { return a.ravel(order); }
 NDArray squeeze(NDArray a, std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis)
 {
   return a.squeeze(axis);
+}
+
+std::vector<NDArray> where(NDArray a) { return nonzero(a); }
+
+NDArray where(NDArray a, NDArray x, NDArray y)
+{
+  auto rhs1        = a._maybe_convert(legate::bool_());
+  auto common_type = find_common_type({x, y});
+  auto rhs2        = x._maybe_convert(common_type);
+  auto rhs3        = y._maybe_convert(common_type);
+
+  auto out_shape = broadcast_shapes({rhs1, rhs2, rhs3});
+  auto runtime   = CuNumericRuntime::get_runtime();
+  auto out       = runtime->create_array(std::move(out_shape), common_type);
+  out.where(std::move(rhs1), std::move(rhs2), std::move(rhs3));
+  return out;
+}
+
+legate::Type find_common_type(const std::vector<NDArray>& arrays)
+{
+  legate::Type max_type = legate::bool_();
+  for (auto arr : arrays) {
+    if (!arr.type().is_primitive()) {
+      throw std::invalid_argument("Type must be a primitive type");
+    }
+    if (arr.type().code() > max_type.code()) {
+      max_type = arr.type();
+    }
+  }
+  return max_type;
 }
 
 }  // namespace cunumeric

@@ -136,7 +136,7 @@ NDArray repeat(NDArray a, int64_t repeats, std::optional<int32_t> axis = std::nu
 // helper methods
 int32_t normalize_axis_index(int32_t axis, int32_t ndim);
 
-std::vector<int32_t> normalize_axis_vector(std::vector<int32_t> axis,
+std::vector<int32_t> normalize_axis_vector(const std::vector<int32_t>& axis,
                                            int32_t ndim,
                                            bool allow_duplicate = false);
 
@@ -161,6 +161,13 @@ NDArray ravel(NDArray a, std::string order = "C");
 
 NDArray squeeze(
   NDArray a, std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis = std::nullopt);
+
+std::vector<NDArray> where(NDArray a);
+
+NDArray where(NDArray a, NDArray x, NDArray y);
+
+// helper methods
+legate::Type find_common_type(const std::vector<NDArray>& arrays);
 
 template <typename T>
 bool vec_is_equal(const std::vector<T>& vec1, const std::vector<T>& vec2)

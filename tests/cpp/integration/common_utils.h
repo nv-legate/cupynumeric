@@ -81,7 +81,7 @@ void check_and_wrap(NDArray& a, const std::vector<T>& values, std::vector<size_t
   }
   ASSERT_EQ(a.size(), values.size());
   ASSERT_EQ(a.shape(), shape);
-  ASSERT_EQ(a.type().code(), legate::type_code_of<T>);
+  ASSERT_EQ(a.type().code(), legate::type_code_of_v<T>);
 
   if (a.dim() > 1) {
     a = a._wrap(a.size());

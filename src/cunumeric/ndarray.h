@@ -113,9 +113,10 @@ class NDArray {
   NDArray ravel(std::string order = "C");
   NDArray squeeze(
     std::optional<std::reference_wrapper<std::vector<int32_t> const>> axis = std::nullopt) const;
+  void where(NDArray rhs1, NDArray rhs2, NDArray rhs3);
 
  public:
-  NDArray as_type(const legate::Type& type);
+  NDArray as_type(const legate::Type& type) const;
   legate::LogicalStore get_store();
   void sort(NDArray rhs, bool argsort, std::optional<int32_t> axis = -1, bool stable = false);
   NDArray _convert_future_to_regionfield(bool change_shape = false);
@@ -134,9 +135,11 @@ class NDArray {
                                    std::optional<Scalar> initial,
                                    std::optional<NDArray> where);
   NDArray copy();
+  NDArray _maybe_convert(const legate::Type& type) const;
 
  private:
-  legate::LogicalStore broadcast(const std::vector<uint64_t>& shape, legate::LogicalStore& store);
+  legate::LogicalStore broadcast(const std::vector<uint64_t>& shape,
+                                 legate::LogicalStore& store) const;
   legate::LogicalStore broadcast(NDArray rhs1, NDArray rhs2);
   void sort_task(NDArray rhs, bool argsort, bool stable);
   void sort_swapped(NDArray rhs, bool argsort, int32_t sort_axis, bool stable);

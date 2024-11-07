@@ -712,7 +712,7 @@ NDArray NDArray::swapaxes(int32_t axis1, int32_t axis2)
   return runtime->create_array(std::move(transposed));
 }
 
-NDArray NDArray::as_type(const legate::Type& type)
+NDArray NDArray::as_type(const legate::Type& type) const
 {
   auto runtime = CuNumericRuntime::get_runtime();
 
@@ -1815,10 +1815,48 @@ NDArray NDArray::squeeze(
   }
 }
 
+void NDArray::where(NDArray rhs1, NDArray rhs2, NDArray rhs3)
+{
+  const auto& out_shape = shape();
+  auto rhs1_store       = broadcast(out_shape, rhs1.store_);
+  auto rhs2_store       = broadcast(out_shape, rhs2.store_);
+  auto rhs3_store       = broadcast(out_shape, rhs3.store_);
+  assert(store_.type() == rhs2.store_.type());
+  assert(store_.type() == rhs3.store_.type());
+
+  auto runtime = CuNumericRuntime::get_runtime();
+  auto task    = runtime->create_task(CuNumericOpCode::CUNUMERIC_WHERE);
+
+  auto p_lhs  = task.declare_partition();
+  auto p_rhs1 = task.declare_partition();
+  auto p_rhs2 = task.declare_partition();
+  auto p_rhs3 = task.declare_partition();
+
+  task.add_output(store_, p_lhs);
+  task.add_input(rhs1_store, p_rhs1);
+  task.add_input(rhs2_store, p_rhs2);
+  task.add_input(rhs3_store, p_rhs3);
+
+  task.add_constraint(legate::align(p_lhs, p_rhs1));
+  task.add_constraint(legate::align(p_lhs, p_rhs2));
+  task.add_constraint(legate::align(p_lhs, p_rhs3));
+
+  runtime->submit(std::move(task));
+}
+
+NDArray NDArray::_maybe_convert(const legate::Type& type) const
+{
+  if (type == store_.type()) {
+    return *this;
+  } else {
+    return as_type(type);
+  }
+}
+
 legate::LogicalStore NDArray::get_store() { return store_; }
 
 legate::LogicalStore NDArray::broadcast(const std::vector<uint64_t>& shape,
-                                        legate::LogicalStore& store)
+                                        legate::LogicalStore& store) const
 {
   int32_t diff = static_cast<int32_t>(shape.size()) - store.dim();
 
