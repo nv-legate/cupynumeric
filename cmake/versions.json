@@ -4,6 +4,7 @@
       "repo": "legate.core.internal",
       "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ inputs.python-version }}-${{ inputs.target-device }}-release-with_tests-${{ inputs.network }}-<<git_tag>>",
       "org": "nv-legate",
+      "artifact_workflow": "ci-gh.yml",
       "nightly_workflow": "ci-gh-nightly-release.yml",
       "version": "24.11.00",
       "git_url" : "git@github.com:nv-legate/legate.core.internal.git",
