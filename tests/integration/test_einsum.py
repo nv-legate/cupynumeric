@@ -309,6 +309,17 @@ def test_order(order):
     assert allclose(np_res, num_res)
 
 
+def test_negative() -> None:
+    a = np.random.rand(256, 256)
+    b = np.random.rand(256, 256)
+    msg = r"invalid subscript"
+    with pytest.raises(ValueError, match=msg):
+        np.einsum("ik,1j->ij", a, b)
+    msg = r"Non-alphabetic mode labels"
+    with pytest.raises(NotImplementedError, match=msg):
+        num.einsum("ik,1j->ij", a, b)
+
+
 if __name__ == "__main__":
     import sys
 
