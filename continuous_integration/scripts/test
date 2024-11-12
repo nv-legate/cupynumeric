@@ -22,7 +22,7 @@ setup_test_env() {
 
 setup_docs_env() {
     mamba install -y pandoc doxygen
-    pip install ipython jinja2 "markdown<3.4.0" "pydata-sphinx-theme>=0.13"  myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=4.4.0"
+    pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme
 }
 
 setup_mypy_env() {

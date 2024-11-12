@@ -60,38 +60,15 @@ html_context = {
 
 html_static_path = ["_static"]
 
-# This is pretty kludgy but the nv theme is not publicly available to
-# install on CI, etc. We will use the pydata theme in those situations
-if getenv("NV_THEME") == "1":
-    html_theme = "nvidia_sphinx_theme"
+html_theme = "nvidia_sphinx_theme"
 
-    html_theme_options = {
-        "switcher": {
-            "json_url": JSON_URL,
-            "navbar_start": ["navbar-logo", "version-switcher"],
-            "version_match": ".".join(__version__.split(".", 2)[:2]),
-        }
+html_theme_options = {
+    "switcher": {
+        "json_url": JSON_URL,
+        "navbar_start": ["navbar-logo", "version-switcher"],
+        "version_match": ".".join(__version__.split(".", 2)[:2]),
     }
-
-else:
-    html_theme = "pydata_sphinx_theme"
-
-    html_theme_options = {
-        "footer_start": ["copyright"],
-        "github_url": "https://github.com/nv-legate/cunumeric",
-        # https://github.com/pydata/pydata-sphinx-theme/issues/1220
-        "icon_links": [],
-        "logo": {
-            "text": project,
-            "link": "https://nv-legate.github.io/cunumeric",
-        },
-        "navbar_align": "left",
-        "navbar_end": ["navbar-icon-links", "theme-switcher"],
-        "primary_sidebar_end": ["indices.html"],
-        "secondary_sidebar_items": ["page-toc"],
-        "show_nav_level": 2,
-        "show_toc_level": 2,
-    }
+}
 
 templates_path = ["_templates"]
 
