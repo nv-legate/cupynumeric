@@ -67,7 +67,11 @@ html_theme_options = {
         "json_url": JSON_URL,
         "navbar_start": ["navbar-logo", "version-switcher"],
         "version_match": ".".join(__version__.split(".", 2)[:2]),
-    }
+    },
+    "extra_footer": [
+        "This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.",  # NOQA
+        '<script type="text/javascript">if (typeof _satellite !== “undefined”){ _satellite.pageBottom();}</script>',  # NOQA
+    ],
 }
 
 templates_path = ["_templates"]

@@ -15,6 +15,8 @@ limitations under the License.
 
 -->
 
+*This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.*
+
 [![Build Nightly release package](https://github.com/nv-legate/cunumeric.internal/actions/workflows/ci-gh-nightly-release.yml/badge.svg)](https://github.com/nv-legate/cunumeric.internal/actions/workflows/ci-gh-nightly-release.yml)
 
 # cuNumeric
