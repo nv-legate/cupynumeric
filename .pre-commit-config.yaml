@@ -40,7 +40,7 @@ repos:
           'types_or': [c++, c, cuda]
           require_serial: false
           stages: [pre-commit]
-          exclude: '^src/cupynumeric/cunumeric_c\.h$'
+          exclude: '^src/cupynumeric/cupynumeric_c\.h$'
 
 ci:
     skip: [mypy]

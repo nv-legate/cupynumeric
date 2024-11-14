@@ -96,10 +96,10 @@ jobs:
       legate-gh-ci-tag: "v1.19"
       name: Upload package to Server
       network: "ucx"
-      pkgSubString: "cunumeric-"
+      pkgSubString: "cupynumeric-"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
-      repos-Root: "cunumeric"
+      repos-Root: "cupynumeric"
       target-device: ${{ inputs.target-device }}
       upload-action: "upload-package"
       upload-enabled: ${{ inputs.upload-enabled }}
@@ -206,10 +206,10 @@ jobs:
       legate-gh-ci-tag: "v1.19"
       name: UpdateTestStatus
       network: "ucx"
-      pkgSubString: "cunumeric-"
+      pkgSubString: "cupynumeric-"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
-      repos-Root: "cunumeric"
+      repos-Root: "cupynumeric"
       target-device: ${{ inputs.target-device }}
       upload-action: "update-test-status"
       upload-enabled: true

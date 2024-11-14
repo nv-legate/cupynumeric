@@ -8,7 +8,7 @@ body:
       value: "# Bug report"
   - type: markdown
     attributes:
-      value: Thank you for reporting a bug and helping us improve Cunumeric!
+      value: Thank you for reporting a bug and helping us improve cuPyNumeric!
   - type: markdown
     attributes:
       value: >
@@ -29,7 +29,7 @@ body:
         Platform    :  Linux-6.8.0-40-generic-x86_64-with-glibc2.35
         Legion      :  (failed to detect)
         Legate      :  24.05.00+255.g2656afbd
-        Cunumeric   :  24.05.00+132.gc4741d57
+        cuPynumeric :  24.05.00+132.gc4741d57
         Numpy       :  1.26.4
         Scipy       :  1.13.1
         Numba       :  (failed to detect)
