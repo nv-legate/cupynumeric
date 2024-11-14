@@ -108,13 +108,15 @@ def find_cmake_val(pattern, filepath):
 
 
 def was_previously_built_with_different_build_isolation(
-    isolated, cunumeric_build_dir
+    isolated, cupynumeric_build_dir
 ):
     if (
-        cunumeric_build_dir is not None
-        and os.path.exists(cunumeric_build_dir)
+        cupynumeric_build_dir is not None
+        and os.path.exists(cupynumeric_build_dir)
         and os.path.exists(
-            cmake_cache := os.path.join(cunumeric_build_dir, "CMakeCache.txt")
+            cmake_cache := os.path.join(
+                cupynumeric_build_dir, "CMakeCache.txt"
+            )
         )
     ):
         try:
@@ -167,7 +169,7 @@ def find_legate_cmake_dir() -> Path:
     return path
 
 
-def install_cunumeric(
+def install_cupynumeric(
     arch,
     build_isolation,
     with_tests,
@@ -251,7 +253,7 @@ def install_cunumeric(
     dirname = os.path.dirname
     realpath = os.path.realpath
 
-    cunumeric_dir = dirname(realpath(__file__))
+    cupynumeric_dir = dirname(realpath(__file__))
 
     if thread_count is None:
         thread_count = multiprocessing.cpu_count()
@@ -260,7 +262,7 @@ def install_cunumeric(
         if path is None or (path := str(path)) == "":
             return None
         if not os.path.isabs(path):
-            path = join(cunumeric_dir, path)
+            path = join(cupynumeric_dir, path)
         if not exists(path := realpath(path)):
             print(f"Error: path does not exist: {path}")
             sys.exit(1)
@@ -288,20 +290,20 @@ def install_cunumeric(
         print("cutensor_dir: ", cutensor_dir)
         print("openblas_dir: ", openblas_dir)
 
-    skbuild_dir = join(cunumeric_dir, "_skbuild")
-    cunumeric_build_dir = scikit_build_cmake_build_dir(skbuild_dir)
+    skbuild_dir = join(cupynumeric_dir, "_skbuild")
+    cupynumeric_build_dir = scikit_build_cmake_build_dir(skbuild_dir)
 
     if was_previously_built_with_different_build_isolation(
-        build_isolation and not editable, cunumeric_build_dir
+        build_isolation and not editable, cupynumeric_build_dir
     ):
         print("Performing a clean build to accommodate build isolation.")
         clean_first = True
 
     cmd_env = dict(os.environ.items())
 
-    # Explicitly uninstall cunumeric if doing a clean/isolated build.
+    # Explicitly uninstall cupynumeric if doing a clean/isolated build.
     #
-    # A prior installation may have built and installed cunumeric C++
+    # A prior installation may have built and installed cupynumeric C++
     # dependencies (like BLAS or tblis).
     #
     # CMake will find and use them for the current build, which would normally
@@ -313,19 +315,19 @@ def install_cunumeric(
     # these dependencies, triggering CMake to build and install them again.
     if clean_first or (build_isolation and not editable):
         execute_command(
-            [sys.executable, "-m", "pip", "uninstall", "-y", "cunumeric"],
+            [sys.executable, "-m", "pip", "uninstall", "-y", "cupynumeric"],
             verbose,
             ignore_errors=True,
-            cwd=cunumeric_dir,
+            cwd=cupynumeric_dir,
             env=cmd_env,
         )
 
     if clean_first:
         shutil.rmtree(skbuild_dir, ignore_errors=True)
-        shutil.rmtree(join(cunumeric_dir, "dist"), ignore_errors=True)
-        shutil.rmtree(join(cunumeric_dir, "build"), ignore_errors=True)
+        shutil.rmtree(join(cupynumeric_dir, "dist"), ignore_errors=True)
+        shutil.rmtree(join(cupynumeric_dir, "build"), ignore_errors=True)
         shutil.rmtree(
-            join(cunumeric_dir, "cunumeric.egg-info"),
+            join(cupynumeric_dir, "cupynumeric.egg-info"),
             ignore_errors=True,
         )
 
@@ -389,7 +391,7 @@ def install_cunumeric(
 -DLegion_USE_LLVM={("ON" if llvm else "OFF")}
 -DLegion_NETWORKS={";".join(networks)}
 -DLegion_USE_HDF5={("ON" if hdf else "OFF")}
--Dcunumeric_BUILD_TESTS={("ON" if with_tests else "OFF")}
+-Dcupynumeric_BUILD_TESTS={("ON" if with_tests else "OFF")}
 """.splitlines()
 
     if march:
@@ -412,7 +414,7 @@ def install_cunumeric(
         cmake_flags += ["-Dcutensor_DIR=%s" % cutensor_dir]
     # A custom path to cuRAND is ignored when CUDA support is available
     if cuda and curand_dir is not None:
-        cmake_flags += ["-Dcunumeric_cuRAND_INCLUDE_DIR=%s" % curand_dir]
+        cmake_flags += ["-Dcupynumeric_cuRAND_INCLUDE_DIR=%s" % curand_dir]
 
     cmake_flags += ["-Dlegate_ROOT=%s" % str(legate_dir)]
     cmake_flags += ["-DCMAKE_BUILD_PARALLEL_LEVEL=%s" % thread_count]
@@ -433,7 +435,7 @@ def install_cunumeric(
         }
     )
 
-    execute_command(pip_install_cmd, verbose, cwd=cunumeric_dir, env=cmd_env)
+    execute_command(pip_install_cmd, verbose, cwd=cupynumeric_dir, env=cmd_env)
 
 
 def driver():
@@ -701,7 +703,7 @@ def driver():
     )
     args, unknown = parser.parse_known_args()
 
-    install_cunumeric(unknown=unknown, **vars(args))
+    install_cupynumeric(unknown=unknown, **vars(args))
 
 
 if __name__ == "__main__":
