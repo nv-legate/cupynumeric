@@ -18,7 +18,7 @@ from itertools import combinations_with_replacement
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 SCALARS_INF = (np.inf, -np.inf, np.nan, 0)
 ARRAYS_INF = ([np.inf, -np.inf, np.nan, 0],)
@@ -126,7 +126,7 @@ def test_isscalar_array():
 
     # NumPy's scalar reduction returns a Python scalar
     assert num.isscalar(np.sum(in_np)) is True
-    # but cuNumeric's scalar reduction returns a 0-D array that behaves like
+    # but cuPyNumeric's scalar reduction returns a 0-D array that behaves like
     # a deferred scalar
     assert num.isscalar(num.sum(in_np)) is False
 
@@ -238,7 +238,7 @@ def test_isclose_arrays_rtol_atol(rtol, atol):
 def test_isclose_euqal_nan(equal_nan):
     # If equal_nan is True,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     values = [np.inf, -np.inf, np.nan, 0.0, -0.0]
     pairs = tuple(combinations_with_replacement(values, 2))
     in1_np = np.array([x for x, _ in pairs])

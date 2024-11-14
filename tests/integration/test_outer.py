@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 SHAPES = ((), (0,), (1,), (10,), (4, 5), (1, 4, 5))
 

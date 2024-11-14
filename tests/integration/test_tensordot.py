@@ -18,8 +18,8 @@ from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
-from cunumeric._utils.linalg import tensordot_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import tensordot_modes
 
 
 def gen_axes(a_ndim, b_ndim):
@@ -71,7 +71,7 @@ class TestTensorDotErrors:
     )
     def test_axis_invalid_index(self, axis):
         # In Numpy, for both cases, it raises IndexError
-        # In cuNumeric, for both cases, it raises ValueError
+        # In cuPyNumeric, for both cases, it raises ValueError
         with pytest.raises(IndexError):
             num.tensordot(self.A, self.B, axis)
 

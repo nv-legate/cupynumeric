@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test():

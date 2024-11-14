@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.parametrize("write", (None, False, True, 1, -1, 100, "11"))
@@ -73,7 +73,7 @@ def test_writeable():
     array_num = num.array([0, 0, 0, 0, 0])
     array_np.setflags(1)
     array_num.setflags(1)
-    # cuNumeric raises ValueError: cannot set WRITEABLE flag to
+    # cuPyNumeric raises ValueError: cannot set WRITEABLE flag to
     # True of this array
     array_np[2] = 1
     array_num[2] = 1
@@ -95,7 +95,7 @@ def test_logic():
     expected_exc = ValueError
     with pytest.raises(expected_exc):
         array_num.setflags(uic=True)
-        # cuNumeric raises ValueError: cannot set WRITEBACKIFCOPY flag to True
+        # cuPyNumeric: ValueError: cannot set WRITEBACKIFCOPY flag to True
 
 
 @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))

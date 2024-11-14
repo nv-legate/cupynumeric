@@ -22,10 +22,10 @@ if (NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
-find_package(cunumeric REQUIRED)
+find_package(cupynumeric REQUIRED)
 
 add_executable(stencil stencil.cc)
 
-target_link_libraries(stencil PRIVATE cunumeric::cunumeric)
+target_link_libraries(stencil PRIVATE cupynumeric::cupynumeric)
 
 install(TARGETS stencil DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/cmake-install")

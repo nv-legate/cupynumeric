@@ -175,7 +175,7 @@ struct copy_array_fn {
 };
 
 template <typename T, int32_t DIM>
-void print_array(cunumeric::NDArray array)
+void print_array(cupynumeric::NDArray array)
 {
   auto acc            = array.get_read_accessor<T, DIM>();
   auto& shape         = array.shape();
@@ -186,7 +186,7 @@ void print_array(cunumeric::NDArray array)
 }
 
 template <typename T, int32_t DIM>
-void check_array_eq(cunumeric::NDArray array, T* values_ptr, size_t length)
+void check_array_eq(cupynumeric::NDArray array, T* values_ptr, size_t length)
 {
   assert(array.size() == length);
   if (length == 0) {
@@ -202,7 +202,7 @@ void check_array_eq(cunumeric::NDArray array, T* values_ptr, size_t length)
 }
 
 template <typename T, int32_t DIM>
-void assign_values_to_array(cunumeric::NDArray array, T* values_ptr, size_t length)
+void assign_values_to_array(cupynumeric::NDArray array, T* values_ptr, size_t length)
 {
   assert(array.size() == length);
   if (length == 0) {
@@ -217,7 +217,7 @@ void assign_values_to_array(cunumeric::NDArray array, T* values_ptr, size_t leng
 }
 
 template <typename T, int32_t DIM>
-std::vector<T> assign_array_to_values(cunumeric::NDArray array)
+std::vector<T> assign_array_to_values(cupynumeric::NDArray array)
 {
   std::vector<T> result(array.size());
   if (array.size() > 0) {
@@ -233,7 +233,7 @@ std::vector<T> assign_array_to_values(cunumeric::NDArray array)
 }
 
 template <typename T, int32_t DIM>
-void check_array_eq(cunumeric::NDArray array1, cunumeric::NDArray array2)
+void check_array_eq(cupynumeric::NDArray array1, cupynumeric::NDArray array2)
 {
   assert(array1.size() == array2.size());
   if (array1.size() == 0) {

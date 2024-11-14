@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 template <size_t SIZE, int32_t DIM>
@@ -26,15 +26,15 @@ void transpose_int32_test(std::array<int32_t, SIZE> input,
                           std::vector<uint64_t> out_shape,
                           std::optional<std::vector<int32_t>> axes = std::nullopt)
 {
-  auto a_input = cunumeric::zeros(in_shape, legate::int32());
+  auto a_input = cupynumeric::zeros(in_shape, legate::int32());
   assign_values_to_array<int32_t, DIM>(a_input, input.data(), input.size());
 
-  auto a_output = cunumeric::array(out_shape, legate::int32());
+  auto a_output = cupynumeric::array(out_shape, legate::int32());
 
   if (axes) {
-    a_output = cunumeric::transpose(a_input, axes.value());
+    a_output = cupynumeric::transpose(a_input, axes.value());
   } else {
-    a_output = cunumeric::transpose(a_input);
+    a_output = cupynumeric::transpose(a_input);
   }
   check_array_eq<int32_t, DIM>(a_output, exp.data(), exp.size());
   EXPECT_EQ(a_output.shape(), out_shape);
@@ -114,9 +114,9 @@ TEST(Transpose, DefaultType)
   std::vector<uint64_t> in_shape  = {2, 3};
   std::vector<uint64_t> out_shape = {3, 2};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, dim>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::transpose(a_input);
+  auto a_output = cupynumeric::transpose(a_input);
   check_array_eq<double, dim>(a_output, exp.data(), exp.size());
   EXPECT_EQ(a_output.shape(), out_shape);
 }
@@ -129,10 +129,11 @@ TEST(TransposeErrors, InvalidAxes)
   std::vector<uint64_t> in_shape  = {2, 3};
   std::vector<uint64_t> out_shape = {3, 2};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, dim>(a_input, input.data(), input.size());
-  EXPECT_THROW(cunumeric::transpose(a_input, (std::vector<int32_t>){0, 1, 2}),
+  EXPECT_THROW(cupynumeric::transpose(a_input, (std::vector<int32_t>){0, 1, 2}),
                std::invalid_argument);
-  EXPECT_THROW(cunumeric::transpose(a_input, (std::vector<int32_t>){1}), std::invalid_argument);
-  EXPECT_THROW(cunumeric::transpose(a_input, (std::vector<int32_t>){3, 4}), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::transpose(a_input, (std::vector<int32_t>){1}), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::transpose(a_input, (std::vector<int32_t>){3, 4}),
+               std::invalid_argument);
 }

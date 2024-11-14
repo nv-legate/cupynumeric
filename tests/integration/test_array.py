@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 SCALARS = (
     0,
@@ -61,7 +61,7 @@ def test_array_basic(obj):
 
 @pytest.mark.parametrize("obj", UNSUPPORTED_OBJECTS)
 def test_array_unsupported(obj):
-    with pytest.raises(TypeError, match="cuNumeric does not support dtype"):
+    with pytest.raises(TypeError, match="cuPyNumeric does not support dtype"):
         num.array(obj)
 
 
@@ -153,7 +153,7 @@ def test_asarray_basic(obj):
 
 @pytest.mark.parametrize("obj", UNSUPPORTED_OBJECTS)
 def test_asarray_unsupported(obj):
-    with pytest.raises(TypeError, match="cuNumeric does not support dtype"):
+    with pytest.raises(TypeError, match="cuPyNumeric does not support dtype"):
         num.array(obj)
 
 

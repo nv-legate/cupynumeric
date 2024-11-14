@@ -18,16 +18,16 @@ import math
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.split(a: ndarray, indices: Union[int, ndarray], axis: int = 0)
-# → list[cunumeric.array.ndarray]
-# cunumeric.vsplit(a: ndarray, indices: Union[int, ndarray])
-# → list[cunumeric.array.ndarray]    (axis=0)
-# cunumeric.hsplit(a: ndarray, indices: Union[int, ndarray])
-# → list[cunumeric.array.ndarray]    (axis=1)
-# cunumeric.dsplit(a: ndarray, indices: Union[int, ndarray])
-# → list[cunumeric.array.ndarray]    (axis=2)
+# cupynumeric.split(a: ndarray, indices: Union[int, ndarray], axis: int = 0)
+# → list[cupynumeric.array.ndarray]
+# cupynumeric.vsplit(a: ndarray, indices: Union[int, ndarray])
+# → list[cupynumeric.array.ndarray]    (axis=0)
+# cupynumeric.hsplit(a: ndarray, indices: Union[int, ndarray])
+# → list[cupynumeric.array.ndarray]    (axis=1)
+# cupynumeric.dsplit(a: ndarray, indices: Union[int, ndarray])
+# → list[cupynumeric.array.ndarray]    (axis=2)
 
 
 DIM = 6
@@ -142,7 +142,7 @@ class TestSplitErrors:
         expected_exc = ValueError
         with pytest.raises(expected_exc):
             num.vsplit(ary, 1)
-            # cuNumeric returns [array([], dtype=float64)]
+            # cuPyNumeric returns [array([], dtype=float64)]
         with pytest.raises(expected_exc):
             np.vsplit(ary, 1)
             # Numpy raises
@@ -154,7 +154,7 @@ class TestSplitErrors:
         expected_exc = ValueError
         with pytest.raises(expected_exc):
             num.vsplit(ary, 1)
-            # cuNumeric returns the array
+            # cuPyNumeric returns the array
         with pytest.raises(expected_exc):
             np.vsplit(ary, 1)
             # Numpy raises

@@ -18,7 +18,7 @@ from functools import reduce
 import pytest
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 128
 NO_EMPTY_SIZES = [

@@ -22,7 +22,7 @@ from legate.core.utils import OrderedSet
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array, permutes_to
 
-import cunumeric as num
+import cupynumeric as num
 
 # Limits for exhaustive expression generation routines
 MAX_MODES = 3
@@ -294,7 +294,7 @@ def test_expr_opposite():
         # sum subscripts string, subscripts must be letters
     with pytest.raises(expected_exc):
         num.einsum("ik,kj=>ij", a, b)
-        # cuNumeric raises ValueError: Subscripts can only contain one '->'
+        # cuPyNumeric raises ValueError: Subscripts can only contain one '->'
 
 
 @pytest.mark.xfail

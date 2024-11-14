@@ -15,7 +15,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 template <size_t IN_SIZE, size_t IN_DIM, size_t EXP_SIZE, size_t EXP_DIM>
@@ -27,9 +27,9 @@ void diagonal_test(std::array<double, IN_SIZE> input,
                    int32_t axis2  = 1,
                    bool extract   = true)
 {
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, IN_DIM>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::diagonal(a_input, offset, axis1, axis2, extract);
+  auto a_output = cupynumeric::diagonal(a_input, offset, axis1, axis2, extract);
   check_array_eq<double, EXP_DIM>(a_output, exp.data(), exp.size());
 }
 
@@ -45,9 +45,9 @@ TEST(Diagonal, Singleton)
                                        0.,  0., 0.,  0., 5., 0., 0., 0., 0., 0., 0., 6.};
   std::vector<uint64_t> in_shape    = {6};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, false);
+  auto a_output = cupynumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, false);
   check_array_eq<double, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -55,8 +55,8 @@ TEST(Diagonal, SingletonExtract)
 {
   std::vector<uint64_t> in_shape = {6};
 
-  auto a_input = cunumeric::zeros(in_shape);
-  EXPECT_THROW(cunumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, true),
+  auto a_input = cupynumeric::zeros(in_shape);
+  EXPECT_THROW(cupynumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, true),
                std::invalid_argument);
 }
 
@@ -64,8 +64,8 @@ TEST(Diagonal, SingletonAxes)
 {
   std::vector<uint64_t> in_shape = {6};
 
-  auto a_input = cunumeric::zeros(in_shape);
-  EXPECT_THROW(cunumeric::diagonal(a_input, 0, 0, 1, false), std::invalid_argument);
+  auto a_input = cupynumeric::zeros(in_shape);
+  EXPECT_THROW(cupynumeric::diagonal(a_input, 0, 0, 1, false), std::invalid_argument);
 }
 
 TEST(Diagonal, Defaults)
@@ -78,9 +78,9 @@ TEST(Diagonal, Defaults)
   std::array<double, exp_size> exp  = {9, 2, 6};
   std::vector<uint64_t> in_shape    = {3, 3};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::diagonal(a_input);
+  auto a_output = cupynumeric::diagonal(a_input);
   check_array_eq<double, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -90,8 +90,8 @@ TEST(Diagonal, EmptyArray)
   const size_t exp_dim              = 2;
   std::array<int32_t, exp_size> exp = {};
 
-  auto a_input  = cunumeric::array({0}, legate::int32());
-  auto a_output = cunumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, false);
+  auto a_input  = cupynumeric::array({0}, legate::int32());
+  auto a_output = cupynumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, false);
   check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -141,10 +141,10 @@ TEST(Diagonal, InvalidAxes)
   std::array<double, in_size> input = {1.3, 2, 3.6, 4, 5, 6};
   std::vector<uint64_t> in_shape    = {2, 3};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  EXPECT_THROW(cunumeric::diagonal(a_input, 0, 2, 6, true), std::invalid_argument);
-  EXPECT_THROW(cunumeric::diagonal(a_input, 0, 1, 1, true), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::diagonal(a_input, 0, 2, 6, true), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::diagonal(a_input, 0, 1, 1, true), std::invalid_argument);
 }
 
 TEST(Diagonal, InvalidOffset)
@@ -154,9 +154,9 @@ TEST(Diagonal, InvalidOffset)
   std::array<double, in_size> input = {1.3, 2, 3.6, 4, 5, 6};
   std::vector<uint64_t> in_shape    = {2, 3};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  EXPECT_THROW(cunumeric::diagonal(a_input, 3), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::diagonal(a_input, 3), std::invalid_argument);
 }
 
 TEST(Diagonal, IntArray)
@@ -169,9 +169,9 @@ TEST(Diagonal, IntArray)
   std::array<int32_t, exp_size> exp  = {1, 5};
   std::vector<uint64_t> in_shape     = {2, 3};
 
-  auto a_input = cunumeric::zeros(in_shape, legate::int32());
+  auto a_input = cupynumeric::zeros(in_shape, legate::int32());
   assign_values_to_array<int32_t, in_dim>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::diagonal(a_input);
+  auto a_output = cupynumeric::diagonal(a_input);
   check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -201,15 +201,15 @@ template <size_t IN_SIZE, size_t IN_DIM, size_t EXP_SIZE, size_t EXP_DIM>
 void trace_test(std::array<double, IN_SIZE> input,
                 std::array<double, EXP_SIZE> exp,
                 std::vector<uint64_t> in_shape,
-                int32_t offset                        = 0,
-                int32_t axis1                         = 0,
-                int32_t axis2                         = 1,
-                std::optional<legate::Type> type      = std::nullopt,
-                std::optional<cunumeric::NDArray> out = std::nullopt)
+                int32_t offset                          = 0,
+                int32_t axis1                           = 0,
+                int32_t axis2                           = 1,
+                std::optional<legate::Type> type        = std::nullopt,
+                std::optional<cupynumeric::NDArray> out = std::nullopt)
 {
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, IN_DIM>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::trace(a_input, offset, axis1, axis2, type, out);
+  auto a_output = cupynumeric::trace(a_input, offset, axis1, axis2, type, out);
   check_array_eq<double, EXP_DIM>(a_output, exp.data(), exp.size());
 }
 
@@ -258,9 +258,9 @@ TEST(Trace, IntArray)
   std::array<int32_t, in_size> input = {9, 7, 5, 3, 2, 6, 4, 1};
   std::array<int32_t, exp_size> exp  = {15};
   std::vector<uint64_t> in_shape     = {2, 4, 1};
-  auto a_input                       = cunumeric::zeros(in_shape, legate::int32());
+  auto a_input                       = cupynumeric::zeros(in_shape, legate::int32());
   assign_values_to_array<int32_t, in_dim>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::trace(a_input, 0, 0, 1);
+  auto a_output = cupynumeric::trace(a_input, 0, 0, 1);
   check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -274,9 +274,9 @@ TEST(Trace, TypeInt)
   std::array<int32_t, exp_size> exp = {12};
   std::vector<uint64_t> in_shape    = {2, 4, 1};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::trace(a_input, 0, 0, 1, legate::int32());
+  auto a_output = cupynumeric::trace(a_input, 0, 0, 1, legate::int32());
   check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -291,10 +291,10 @@ TEST(Trace, OutType)
   std::vector<uint64_t> in_shape    = {2, 4, 1};
   std::vector<uint64_t> out_shape   = {1};
 
-  auto a_input  = cunumeric::zeros(in_shape);
-  auto a_output = cunumeric::zeros(out_shape, legate::int32());
+  auto a_input  = cupynumeric::zeros(in_shape);
+  auto a_output = cupynumeric::zeros(out_shape, legate::int32());
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  cunumeric::trace(a_input, 0, 0, 1, std::nullopt, a_output);
+  cupynumeric::trace(a_input, 0, 0, 1, std::nullopt, a_output);
   check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -305,7 +305,7 @@ TEST(Trace, InvalidArray)
   std::array<double, in_size> input = {9, 7, 0.5, 1.3, 2, 3.6, 4, 5};
   std::vector<uint64_t> in_shape    = {8};
 
-  auto a_input = cunumeric::zeros(in_shape);
+  auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
-  EXPECT_THROW(cunumeric::trace(a_input), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::trace(a_input), std::invalid_argument);
 }

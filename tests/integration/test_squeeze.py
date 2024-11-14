@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 5
 SIZES = [

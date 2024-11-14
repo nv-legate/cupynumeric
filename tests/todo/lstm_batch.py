@@ -16,7 +16,7 @@
 """
 This is a batched LSTM forward and backward pass
 """
-import cunumeric as np
+import cupynumeric as np
 
 
 class LSTM:

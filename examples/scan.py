@@ -62,7 +62,7 @@ def check_scan(OP, A, B, ax):
     else:
         print("FAIL!")
         print(f"INPUT    : {A}")
-        print(f"CUNUMERIC: {B}")
+        print(f"CUPYNUMERIC: {B}")
         print(f"NUMPY    : {C}")
         assert False
 

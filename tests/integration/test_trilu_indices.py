@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import check_module_function
 
-import cunumeric as num
+import cupynumeric as num
 
 KS = (0, -1, 1, -2, 2)
 FUNCTIONS_INDICES = ("tril_indices", "triu_indices")
@@ -39,7 +39,7 @@ def _test_from(func, shape, k):
 @pytest.mark.parametrize("n", (0, 1, 100), ids=lambda n: f"(n={n})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES)
 def test_trilu_indices_default(func, n):
-    print_msg = f"np & cunumeric.{func}({n})"
+    print_msg = f"np & cupynumeric.{func}({n})"
     check_module_function(func, [n], {}, print_msg)
 
 
@@ -48,14 +48,14 @@ def test_trilu_indices_default(func, n):
 @pytest.mark.parametrize("n", (1, N), ids=lambda n: f"(n={n})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES)
 def test_trilu_indices_full(func, n, m, k):
-    print_msg = f"np & cunumeric.{func}({n}, k={k}, m={m})"
+    print_msg = f"np & cupynumeric.{func}({n}, k={k}, m={m})"
     check_module_function(func, [n], {"k": k, "m": m}, print_msg)
 
 
 @pytest.mark.parametrize("m", (0, None), ids=lambda m: f"(m={m})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES)
 def test_trilu_indices_m(func, m):
-    print_msg = f"np & cunumeric.{func}({N}, m={m})"
+    print_msg = f"np & cupynumeric.{func}({N}, m={m})"
     check_module_function(func, [N], {"m": m}, print_msg)
 
 
@@ -63,9 +63,9 @@ def test_trilu_indices_m(func, m):
 @pytest.mark.parametrize("k", (-10.5, 0.0, 10.5), ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES)
 def test_trilu_indices_float_k(func, k):
-    # cuNumeric: struct.error: required argument is not an integer
+    # cuPyNumeric: struct.error: required argument is not an integer
     # Numpy: pass
-    print_msg = f"np & cunumeric.{func}({N}, k={k})"
+    print_msg = f"np & cupynumeric.{func}({N}, k={k})"
     check_module_function(func, [N], {"k": k}, print_msg)
 
 
@@ -141,7 +141,7 @@ class TestTriluIndicesErrors:
 
     @pytest.mark.xfail
     def test_k_none(self):
-        # In cuNumeric, it raises struct.error,
+        # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer
         # In Numpy, it raises TypeError,
         # msg is bad operand type for unary -: 'NoneType'
@@ -181,7 +181,7 @@ def test_trilu_indices_from_empty_array(func, shape):
 @pytest.mark.parametrize("k", (-10.5, 0.0, 10.5), ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES_FROM)
 def test_trilu_indices_from_float_k(func, k):
-    # cuNumeric: struct.error: required argument is not an integer
+    # cuPyNumeric: struct.error: required argument is not an integer
     # Numpy: pass
     shape = (10, 10)
     _test_from(func, shape, k)
@@ -221,7 +221,7 @@ class TestTriluIndicesFromErrors:
 
     @pytest.mark.xfail
     def test_k_none(self):
-        # In cuNumeric, it raises struct.error,
+        # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer
         # In Numpy, it raises TypeError,
         # msg is bad operand type for unary -: 'NoneType'

@@ -18,7 +18,7 @@ import pytest
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 DTYPES = [np.float32, np.complex64]
 
@@ -104,7 +104,7 @@ class TestVdotErrors:
     def test_a_b_invalid_shape(self, shapeAB):
         # for ((0,), (1,)) and ((1,), (0,))
         # In Numpy, it raises ValueError
-        # In cuNumeric, it pass
+        # In cuPyNumeric, it pass
         expected_exc = ValueError
         shapeA, shapeB = shapeAB
         A_np = mk_0to1_array(np, shapeA)
@@ -126,7 +126,7 @@ class TestVdotErrors:
     def test_a_b_scalar_and_arrays(self, shapeB):
         # For shape of (0,), (2,), (1, 2),
         # In Numpy, it raises ValueError
-        # In cuNumeric, it pass
+        # In cuPyNumeric, it pass
         expected_exc = ValueError
         A = 5
         B_np = mk_0to1_array(np, shapeB)

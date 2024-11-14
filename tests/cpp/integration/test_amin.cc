@@ -20,21 +20,21 @@ void test_amin(const std::vector<T>& in_array,
                const std::vector<size_t>& shape,
                const std::vector<OUT_T>& expect_result,
                const std::vector<size_t>& expect_shape,
-               std::vector<int32_t> axis               = {},
-               std::optional<legate::Type> dtype       = std::nullopt,
-               std::optional<cunumeric::NDArray> out   = std::nullopt,
-               bool keepdims                           = false,
-               std::optional<legate::Scalar> initial   = std::nullopt,
-               std::optional<cunumeric::NDArray> where = std::nullopt)
+               std::vector<int32_t> axis                 = {},
+               std::optional<legate::Type> dtype         = std::nullopt,
+               std::optional<cupynumeric::NDArray> out   = std::nullopt,
+               bool keepdims                             = false,
+               std::optional<legate::Scalar> initial     = std::nullopt,
+               std::optional<cupynumeric::NDArray> where = std::nullopt)
 {
-  auto array = cunumeric::mk_array<T>(in_array, shape);
+  auto array = cupynumeric::mk_array<T>(in_array, shape);
 
   if (!out.has_value()) {
-    auto result = cunumeric::amin(array, axis, dtype, std::nullopt, keepdims, initial, where);
-    cunumeric::check_array<OUT_T>(result, expect_result, expect_shape);
+    auto result = cupynumeric::amin(array, axis, dtype, std::nullopt, keepdims, initial, where);
+    cupynumeric::check_array<OUT_T>(result, expect_result, expect_shape);
   } else {
-    cunumeric::amin(array, axis, dtype, out, keepdims, initial, where);
-    cunumeric::check_array<OUT_T>(out.value(), expect_result, expect_shape);
+    cupynumeric::amin(array, axis, dtype, out, keepdims, initial, where);
+    cupynumeric::check_array<OUT_T>(out.value(), expect_result, expect_shape);
   }
 }
 
@@ -163,8 +163,8 @@ void test_amin_out_input()
   std::vector<size_t> shape1     = {6};
   std::vector<size_t> exp_shape1 = {};
   auto df                        = std::nullopt;
-  auto out1                      = cunumeric::zeros(exp_shape1, legate::int32());
-  auto out1_1                    = cunumeric::zeros(exp_shape1, legate::float64());
+  auto out1                      = cupynumeric::zeros(exp_shape1, legate::int32());
+  auto out1_1                    = cupynumeric::zeros(exp_shape1, legate::float64());
   std::vector<int32_t> exp1      = {-1};
   std::vector<double> exp1_1     = {-1.0};
   test_amin<int32_t, int32_t>(arr, shape1, exp1, exp_shape1, {}, df, out1);
@@ -174,8 +174,8 @@ void test_amin_out_input()
   std::vector<size_t> shape2       = {2, 3};
   std::vector<size_t> exp_shape2   = {2};
   std::vector<size_t> exp_shape2_k = {2, 1};
-  auto out2                        = cunumeric::zeros(exp_shape2, legate::int32());
-  auto out2_k                      = cunumeric::zeros(exp_shape2_k, legate::int32());
+  auto out2                        = cupynumeric::zeros(exp_shape2, legate::int32());
+  auto out2_k                      = cupynumeric::zeros(exp_shape2_k, legate::int32());
   std::vector<int32_t> axis        = {-1};
   auto ini                         = legate::Scalar(2);
   std::vector<int32_t> exp2        = {-1, 0};
@@ -247,7 +247,7 @@ void test_amin_scalar_array()
   std::vector<int32_t> arr  = {10};
   std::vector<size_t> shape = {};
   std::vector<int32_t> exp  = {10};
-  auto out                  = cunumeric::zeros(shape, legate::int32());
+  auto out                  = cupynumeric::zeros(shape, legate::int32());
   auto df                   = std::nullopt;
   test_amin<int32_t, int32_t>(arr, shape, exp, shape);
   test_amin<int32_t, int32_t>(arr, shape, exp, shape, {}, df, out);
@@ -263,65 +263,65 @@ void test_amin_invalid_array()
   // Test zero size array
   std::vector<int32_t> arr1  = {};
   std::vector<size_t> shape1 = {0};
-  auto arr_emp               = cunumeric::mk_array<int32_t>(arr1, shape1);
-  EXPECT_THROW(cunumeric::amin(arr_emp), std::invalid_argument);
+  auto arr_emp               = cupynumeric::mk_array<int32_t>(arr1, shape1);
+  EXPECT_THROW(cupynumeric::amin(arr_emp), std::invalid_argument);
 
   // Test complex array (not supported now)
   std::vector<complex<float>> arr2 = {complex<float>(0, 1), complex<float>(1, 1)};
   std::vector<size_t> shape2       = {2};
-  auto arr_comp                    = cunumeric::mk_array<complex<float>>(arr2, shape2);
-  EXPECT_THROW(cunumeric::amin(arr_comp), std::runtime_error);
+  auto arr_comp                    = cupynumeric::mk_array<complex<float>>(arr2, shape2);
+  EXPECT_THROW(cupynumeric::amin(arr_comp), std::runtime_error);
 }
 
 void test_amin_invalid_axis()
 {
   std::vector<int32_t> arr  = {1, 2, 3, 4, 5, 6};
   std::vector<size_t> shape = {1, 3, 2};
-  auto array                = cunumeric::mk_array<int32_t>(arr, shape);
+  auto array                = cupynumeric::mk_array<int32_t>(arr, shape);
 
   // Test out-of-bound
   std::vector<int32_t> axis1 = {-4, 3};
   std::vector<int32_t> axis2 = {0, 3};
-  EXPECT_THROW(cunumeric::amin(array, axis1), std::invalid_argument);
-  EXPECT_THROW(cunumeric::amin(array, axis2), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::amin(array, axis1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::amin(array, axis2), std::invalid_argument);
 
   // Test repeated axes
   std::vector<int32_t> axis3 = {1, 1};
   std::vector<int32_t> axis4 = {-1, 2};
-  EXPECT_THROW(cunumeric::amin(array, axis3), std::invalid_argument);
-  EXPECT_THROW(cunumeric::amin(array, axis4), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::amin(array, axis3), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::amin(array, axis4), std::invalid_argument);
 
   // Not reduce to one value (valid but not supported now)
   std::vector<int32_t> axis5 = {0, 1};
-  EXPECT_THROW(cunumeric::amin(array, axis5), std::runtime_error);
+  EXPECT_THROW(cupynumeric::amin(array, axis5), std::runtime_error);
 }
 
 void test_amin_invalid_shape()
 {
   std::vector<int32_t> arr  = {1, 2, 3, 4, 5, 6};
   std::vector<size_t> shape = {1, 3, 2};
-  auto array                = cunumeric::mk_array<int32_t>(arr, shape);
+  auto array                = cupynumeric::mk_array<int32_t>(arr, shape);
   auto df                   = std::nullopt;
 
   std::vector<size_t> out_shape1 = {1};
-  auto out1                      = cunumeric::zeros(out_shape1, legate::int32());
-  EXPECT_THROW(cunumeric::amin(array, {}, df, out1), std::invalid_argument);
+  auto out1                      = cupynumeric::zeros(out_shape1, legate::int32());
+  EXPECT_THROW(cupynumeric::amin(array, {}, df, out1), std::invalid_argument);
 
   std::vector<size_t> out_shape2 = {2};
   std::vector<int32_t> axis2     = {1};
-  auto out2                      = cunumeric::zeros(out_shape2, legate::int32());
-  EXPECT_THROW(cunumeric::amin(array, axis2, df, out2), std::invalid_argument);
+  auto out2                      = cupynumeric::zeros(out_shape2, legate::int32());
+  EXPECT_THROW(cupynumeric::amin(array, axis2, df, out2), std::invalid_argument);
 }
 
 void test_amin_invalid_dtype()
 {
   std::vector<int32_t> arr  = {1, 2, 3, 4, 5, 6};
   std::vector<size_t> shape = {1, 3, 2};
-  auto array                = cunumeric::mk_array<int32_t>(arr, shape);
+  auto array                = cupynumeric::mk_array<int32_t>(arr, shape);
 
   // Test invalid dtype
   auto dtype = legate::point_type(2);
-  EXPECT_THROW(cunumeric::amin(array, {}, dtype), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::amin(array, {}, dtype), std::invalid_argument);
 }
 
 // void cpp_test()

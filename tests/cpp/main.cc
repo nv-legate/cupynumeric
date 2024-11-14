@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 
 class Environment : public ::testing::Environment {
  public:
@@ -25,7 +25,7 @@ class Environment : public ::testing::Environment {
   void SetUp() override
   {
     EXPECT_EQ(legate::start(argc_, argv_), 0);
-    cunumeric::initialize(argc_, argv_);
+    cupynumeric::initialize(argc_, argv_);
   }
   void TearDown() override { EXPECT_EQ(legate::finish(), 0); }
 

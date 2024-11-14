@@ -35,8 +35,8 @@ function(find_or_configure_legate)
 
   set(FIND_PKG_ARGS
       GLOBAL_TARGETS     legate::legate
-      BUILD_EXPORT_SET   cunumeric-exports
-      INSTALL_EXPORT_SET cunumeric-exports)
+      BUILD_EXPORT_SET   cupynumeric-exports
+      INSTALL_EXPORT_SET cupynumeric-exports)
 
   # First try to find legate via find_package()
   # so the `Legion_USE_*` variables are visible
@@ -55,11 +55,11 @@ function(find_or_configure_legate)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/cpm_helpers.cmake)
     get_cpm_git_args(legate_cpm_git_args REPOSITORY ${git_repo} BRANCH ${git_branch})
 
-    message(VERBOSE "cunumeric: legate version: ${version}")
-    message(VERBOSE "cunumeric: legate git_repo: ${git_repo}")
-    message(VERBOSE "cunumeric: legate git_branch: ${git_branch}")
-    message(VERBOSE "cunumeric: legate exclude_from_all: ${exclude_from_all}")
-    message(VERBOSE "cunumeric: legate legate_cpm_git_args: ${legate_cpm_git_args}")
+    message(VERBOSE "cupynumeric: legate version: ${version}")
+    message(VERBOSE "cupynumeric: legate git_repo: ${git_repo}")
+    message(VERBOSE "cupynumeric: legate git_branch: ${git_branch}")
+    message(VERBOSE "cupynumeric: legate exclude_from_all: ${exclude_from_all}")
+    message(VERBOSE "cupynumeric: legate legate_cpm_git_args: ${legate_cpm_git_args}")
 
     rapids_cpm_find(legate ${version} ${FIND_PKG_ARGS}
         CPM_ARGS
@@ -78,27 +78,27 @@ function(find_or_configure_legate)
   message(VERBOSE "Legion_BOUNDS_CHECKS=${Legion_BOUNDS_CHECKS}")
 endfunction()
 
-foreach(_var IN ITEMS "cunumeric_LEGATE_VERSION"
-                      "cunumeric_LEGATE_BRANCH"
-                      "cunumeric_LEGATE_REPOSITORY"
-                      "cunumeric_EXCLUDE_LEGATE_FROM_ALL")
+foreach(_var IN ITEMS "cupynumeric_LEGATE_VERSION"
+                      "cupynumeric_LEGATE_BRANCH"
+                      "cupynumeric_LEGATE_REPOSITORY"
+                      "cupynumeric_EXCLUDE_LEGATE_FROM_ALL")
   if(DEFINED ${_var})
-    # Create a cunumeric_LEGATE_BRANCH variable in the current scope either from the existing
+    # Create a cupynumeric_LEGATE_BRANCH variable in the current scope either from the existing
     # current-scope variable, or the cache variable.
     set(${_var} "${${_var}}")
-    # Remove cunumeric_LEGATE_BRANCH from the CMakeCache.txt. This ensures reconfiguring the same
-    # build dir without passing `-Dcunumeric_LEGATE_BRANCH=` reverts to the value in versions.json
-    # instead of reusing the previous `-Dcunumeric_LEGATE_BRANCH=` value.
+    # Remove cupynumeric_LEGATE_BRANCH from the CMakeCache.txt. This ensures reconfiguring the same
+    # build dir without passing `-Dcupynumeric_LEGATE_BRANCH=` reverts to the value in versions.json
+    # instead of reusing the previous `-Dcupynumeric_LEGATE_BRANCH=` value.
     unset(${_var} CACHE)
   endif()
 endforeach()
 
-if(NOT DEFINED cunumeric_LEGATE_VERSION)
-  set(cunumeric_LEGATE_VERSION "${cunumeric_VERSION}")
+if(NOT DEFINED cupynumeric_LEGATE_VERSION)
+  set(cupynumeric_LEGATE_VERSION "${cupynumeric_VERSION}")
 endif()
 
-find_or_configure_legate(VERSION          ${cunumeric_LEGATE_VERSION}
-                         REPOSITORY       ${cunumeric_LEGATE_REPOSITORY}
-                         BRANCH           ${cunumeric_LEGATE_BRANCH}
-                         EXCLUDE_FROM_ALL ${cunumeric_EXCLUDE_LEGATE_FROM_ALL}
+find_or_configure_legate(VERSION          ${cupynumeric_LEGATE_VERSION}
+                         REPOSITORY       ${cupynumeric_LEGATE_REPOSITORY}
+                         BRANCH           ${cupynumeric_LEGATE_BRANCH}
+                         EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_LEGATE_FROM_ALL}
 )

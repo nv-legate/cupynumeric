@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 SQUARE_CASES = [
     (10, 5, 2),
@@ -133,7 +133,7 @@ class TestRect:
     def test_0d(self, shape):
         # for shape=None,
         # In Numpy, pass, returns the flattened 1-D array
-        # In cuNumeric, raises TypeError: 'NoneType' object is not iterable
+        # In cuPyNumeric, raises TypeError: 'NoneType' object is not iterable
         a = num.array(self.anp)
         assert np.array_equal(
             num.reshape(a, shape),
@@ -154,7 +154,7 @@ class TestRect:
     )
     def test_ravel(self, order):
         # In Numpy, pass with 'K'
-        # In cuNumeric, when order is 'K', raise ValueError:
+        # In cuPyNumeric, when order is 'K', raise ValueError:
         # order 'K' is not permitted for reshaping
         a = num.array(self.anp)
         assert np.array_equal(
@@ -165,7 +165,7 @@ class TestRect:
     @pytest.mark.xfail
     def test_ravel_a_none(self):
         # In Numpy, pass and returns [None]
-        # In cuNumeric, raises AttributeError:
+        # In cuPyNumeric, raises AttributeError:
         # 'NoneType' object has no attribute 'ravel'
         assert np.array_equal(
             num.ravel(None),
@@ -197,7 +197,7 @@ class TestReshapeErrors:
     @pytest.mark.xfail
     def test_a_none(self):
         # In Numpy, it raises ValueError: cannot reshape array
-        # In cuNumeric, it raises AttributeError:
+        # In cuPyNumeric, it raises AttributeError:
         # 'NoneType' object has no attribute
         with pytest.raises(ValueError):
             num.reshape(None, self.shape)

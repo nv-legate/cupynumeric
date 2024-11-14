@@ -21,12 +21,12 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.comparisons import allclose
 
-import cunumeric as num
-from cunumeric.settings import settings
+import cupynumeric as num
+from cupynumeric.settings import settings
 
 NAN_FUNCS = ("nanmax", "nanmin", "nanprod", "nansum")
 
-EAGER_TEST = os.environ.get("CUNUMERIC_FORCE_THUNK", None) == "eager"
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 NDIMS = range(LEGATE_MAX_DIM + 1)
 
@@ -47,7 +47,7 @@ class TestNanReductions:
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_basic_nan_sum_prod(self, func_name, ndim, keepdims):
         """This test sets an element to NaN and checks if the output
-        from cuNumeric and numpy match."""
+        from cuPyNumeric and numpy match."""
         shape = (5,) * ndim
         size = prod(shape)
         in_np = np.random.random(shape)
@@ -72,7 +72,7 @@ class TestNanReductions:
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_basic_nan_min_max(self, func_name, ndim, keepdims):
         """This test sets an element to NaN and checks if the output
-        from cuNumeric and numpy match."""
+        from cuPyNumeric and numpy match."""
         shape = (5,) * ndim
         size = prod(shape)
         in_np = np.random.random(shape)

@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.ones(shape: NdShapeLike,
+# cupynumeric.ones(shape: NdShapeLike,
 # dtype: npt.DTypeLike = <class 'numpy.float64'>) → ndarray
 
 DIM = 5
@@ -54,9 +54,9 @@ class TestOnes(object):
     def test_size_none(self):
         res_np = np.ones(None)  # output is 1.0
         res_num = num.ones(None)
-        # cunumeric raises AssertionError
+        # cupynumeric raises AssertionError
         # 'assert shape is not None'
-        # in cunumeric/array.py:ndarray:__init__
+        # in cupynumeric/array.py:ndarray:__init__
         assert np.equal(res_np, res_num)
 
     @pytest.mark.parametrize("size", (200 + 20j, "hello"))

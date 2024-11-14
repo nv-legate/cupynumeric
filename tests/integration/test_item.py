@@ -17,7 +17,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import generate_item
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.xfail
@@ -32,7 +32,7 @@ def test_no_item():
         # Numpy raises KeyError: 'invalid key'
     with pytest.raises(expected_exc):
         arr_num.item()
-        # cuNumeric raises ValueError: can only convert an array
+        # cuPyNumeric raises ValueError: can only convert an array
         # of size 1 to a Python scalar
 
 
@@ -47,7 +47,7 @@ def test_out_of_bound():
         # Numpy raises IndexError: index 10 is out of bounds for size 9
     with pytest.raises(expected_exc):
         arr_num.item(10)
-        # cuNumeric returns some value
+        # cuPyNumeric returns some value
 
 
 @pytest.mark.xfail
@@ -62,7 +62,7 @@ def test_out_of_index():
         # for axis 1 with size 3
     with pytest.raises(expected_exc):
         arr_num.item(2, 4)
-        # cuNumeric raises ValueError: Out-of-bounds projection on dimension 0
+        # cuPyNumeric: ValueError: Out-of-bounds projection on dimension 0
         # with index 4 for a store of shape Shape((3,))
 
 

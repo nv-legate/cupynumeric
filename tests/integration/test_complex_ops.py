@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 ARRAYS = (
     [1, 2, 3],
@@ -69,7 +69,7 @@ SCALARS = (1, 0.0, 1 + 1j, 1.1 + 1j, 0j)
 def test_scalar(val):
     # e.g., np.array_equal(1.1, array(1.1))
     # In numpy, it returns val as a scalar
-    # In cunumeric, it returns a 0-dim array(val)
+    # In cupynumeric, it returns a 0-dim array(val)
     assert np.array_equal(np.real(val), num.real(val))
     assert np.array_equal(np.imag(val), num.imag(val))
 
@@ -79,7 +79,7 @@ def test_scalar(val):
 @pytest.mark.parametrize("real_val", ([7, 8, 9], 9))
 def test_assignment(real_val, imag_val):
     # In numpy, x_np.real = real_val pass
-    # In cunumeric, it rasies AttributeError: can't set attribute
+    # In cupynumeric, it rasies AttributeError: can't set attribute
     arr = [1 + 4j, 2 + 5j, 3 + 6j]
     x_np = np.array(arr)
     x_num = num.array(x_np)

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from utils.generators import broadcasts_to, mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def equivalent_shapes_gen(shape):
@@ -206,10 +206,10 @@ def test_empty_array_retstep(shape, endpoint):
     "axis", range(-3, 3), ids=lambda axis: f"(axis={axis})"
 )
 def test_arrays_axis(axis, number):
-    # In cuNumeric, if axis < -1, raise ValueError
+    # In cuPyNumeric, if axis < -1, raise ValueError
     # 'Point cannot exceed 4 dimensions set from LEGATE_MAX_DIM'
     # In Numpy, if axis is -2 or -3, also pass
-    # In cuNumeric, for axis >= -1, if num=0, raise IndexError:
+    # In cuPyNumeric, for axis >= -1, if num=0, raise IndexError:
     # tuple index out of range
     # In Numpy, if num=0, pass and returns empty array
     x = np.array([[0, 1], [2, 3]])
@@ -253,7 +253,7 @@ class TestLinspaceErrors:
     @pytest.mark.xfail
     def test_num_float(self):
         # In Numpy, raise TypeError
-        # In cuNumeric, pass
+        # In cuPyNumeric, pass
         msg = "cannot be interpreted as an integer"
         with pytest.raises(TypeError, match=msg):
             num.linspace(0, 10, num=4.5)
@@ -273,7 +273,7 @@ class TestLinspaceErrors:
         "axis", (-4, 3), ids=lambda axis: f"(axis={axis})"
     )
     def test_axis_out_of_bound_array(self, axis):
-        # In cuNumeric, if axis < -1, raise ValueError
+        # In cuPyNumeric, if axis < -1, raise ValueError
         # 'Point cannot exceed 4 dimensions set from LEGATE_MAX_DIM'
         msg = "out of bounds"
         # In Numpy, it raises AxisError
@@ -285,7 +285,7 @@ class TestLinspaceErrors:
         "axis", (-2, 1), ids=lambda axis: f"(axis={axis})"
     )
     def test_axis_out_of_bound_scalar(self, axis):
-        # In cuNumeric, it pass and the result equals when axis=0
+        # In cuPyNumeric, it pass and the result equals when axis=0
         # In Numpy, it raises AxisError
         msg = "out of bounds"
         with pytest.raises(ValueError, match=msg):
@@ -299,7 +299,7 @@ class TestLinspaceErrors:
 
     @pytest.mark.xfail
     def test_axis_none(self):
-        # In cuNumeric, pass and treat it as axis=0
+        # In cuPyNumeric, pass and treat it as axis=0
         # In Numpy, raises TypeError
         axis = None
         msg = "'NoneType' object is not iterable"

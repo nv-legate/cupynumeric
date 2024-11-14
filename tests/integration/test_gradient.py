@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as cn
+import cupynumeric as cn
 
 
 def test_gradient_with_scalar_dx():

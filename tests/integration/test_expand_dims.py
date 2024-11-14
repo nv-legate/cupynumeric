@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 5
 SIZES = [
@@ -37,7 +37,7 @@ SIZES = [
 def test_none_array_compare():
     res_num = num.expand_dims(
         None, 0
-    )  # TypeError: cuNumeric does not support dtype=object
+    )  # TypeError: cuPyNumeric does not support dtype=object
     res_np = np.expand_dims(None, 0)  # return array([None], dtype=object)
     assert np.array_equal(res_num, res_np, equal_nan=True)
 

@@ -18,7 +18,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 FLOAT = (
     np.float32,

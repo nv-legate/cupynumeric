@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import check_module_function
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def _deepen(depth, x):
@@ -58,7 +58,7 @@ class TestBlock:
         arg = [a_2d, b_2d]
 
         print_msg = (
-            f"np & cunumeric.block([array({a_2d.shape}), "
+            f"np & cupynumeric.block([array({a_2d.shape}), "
             f"array({b_2d.shape})])"
         )
         check_module_function("block", [arg], {}, print_msg)
@@ -69,7 +69,7 @@ class TestBlock:
         arg = [[a_2d], [b_2d]]
 
         print_msg = (
-            f"np & cunumeric.block([[array({a_2d.shape})], "
+            f"np & cupynumeric.block([[array({a_2d.shape})], "
             f"[array({b_2d.shape})]])"
         )
         check_module_function("block", [arg], {}, print_msg)
@@ -80,7 +80,7 @@ class TestBlock:
         arg = [[a, b], [a, b]]
 
         print_msg = (
-            f"np & cunumeric.block([[array({a.shape}), array({b.shape})], "
+            f"np & cupynumeric.block([[array({a.shape}), array({b.shape})], "
             f"[array({a.shape}), array({b.shape})]])"
         )
         check_module_function("block", [arg], {}, print_msg, check_type=False)
@@ -91,7 +91,7 @@ class TestBlock:
         arg = [[a_2d], [b_1d]]
 
         print_msg = (
-            f"np & cunumeric.block([[array({a_2d.shape})], "
+            f"np & cupynumeric.block([[array({a_2d.shape})], "
             f"[array({b_1d.shape})]])"
         )
         check_module_function("block", [arg], {}, print_msg)
@@ -112,7 +112,7 @@ class TestBlock:
             [zero_2d],
         ]
 
-        print_msg = "np & cunumeric.block()"
+        print_msg = "np & cupynumeric.block()"
         check_module_function("block", [arg], {}, print_msg)
 
     def test_nested(self):
@@ -164,7 +164,7 @@ class TestBlock:
             ],
         ]
 
-        print_msg = "np & cunumeric.block()"
+        print_msg = "np & cupynumeric.block()"
         check_module_function("block", [arg], {}, print_msg, check_type=False)
 
 
@@ -197,11 +197,11 @@ class TestBlockErrors:
 
     def test_no_lists(self):
         # numpy: pass, output is np.array(1)
-        # cunumeric: raises TypeError, cunumeric doesn't support 0-D array
+        # cupynumeric: raises TypeError, cupynumeric doesn't support 0-D array
         # assert np.array_equal(num.block(1), np.array(1))
 
         # numpy: pass, output is np.eye(3)
-        # cunumeric: pass, output is 1-D array: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+        # cupynumeric: pass, output is 1-D array: [1, 0, 0, 0, 1, 0, 0, 0, 1]
         # assert np.array_equal(num.block(np.eye(3)), np.eye(3))
         np.array_equal(num.block(num.eye(3)), [1, 0, 0, 0, 1, 0, 0, 0, 1])
 
@@ -235,7 +235,7 @@ class TestBlockErrors:
         # TypeError: arrays is a tuple. Only lists can be used
         # to arrange blocks,and np.block does not allow implicit
         # conversion from tuple to ndarray.
-        # cunumeric: pass
+        # cupynumeric: pass
         np.array_equal(num.block(([1, 2], [3, 4])), [1, 2, 3, 4])
         np.array_equal(num.block([(1, 2), (3, 4)]), [1, 2, 3, 4])
 
@@ -246,7 +246,7 @@ class TestBlockErrors:
         c = 3 * np.ones((1, 1, 3))
 
         # numpy: pass, output is np.array([[[1., 2., 2., 3., 3., 3.]]])
-        # cunumeric: raises ValueError
+        # cupynumeric: raises ValueError
         with pytest.raises(ValueError, match=msg):
             num.block([a, b, c])
 
@@ -259,7 +259,7 @@ class TestBlockErrors:
         # numpy: pass,output is np.array([[[1., 2., 2.],
         #                       [3., 3., 3.],
         #                       [3., 3., 3.]]])
-        # cunumeric: raises ValueError
+        # cupynumeric: raises ValueError
         with pytest.raises(ValueError, match=msg):
             num.block([[a, b], [c]])
 

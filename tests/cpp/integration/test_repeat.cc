@@ -19,7 +19,7 @@
 #include <cassert>
 #include <cstdlib>
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 
@@ -115,7 +115,7 @@ TEST(Repeat, test_array_empty_repeats_valid)
   }
 }
 
-// numpy fail, cunumeric pass
+// numpy fail, cupynumeric pass
 TEST(Repeat, test_array_empty_repeats_invalid_negative)
 {
   std::vector<std::vector<uint64_t>> repeats_list{{3, 4}, {1, 2, 3}};

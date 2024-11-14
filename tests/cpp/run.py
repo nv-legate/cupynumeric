@@ -29,7 +29,7 @@ LAUNCHER_VAR_PREFIXES = (
     "PYTHON",
     "UCX_",
     "NCCL_",
-    "CUNUMERIC_",
+    "CUPYNUMERIC_",
     "NVIDIA_",
 )
 
@@ -95,14 +95,14 @@ def run_test(config, test_name, log, extra_args):
 
 
 def main():
-    CUNUMERIC_DIR = Path(__file__).resolve().parent.parent.parent
+    CUPYNUMERIC_DIR = Path(__file__).resolve().parent.parent.parent
     parser = argparse.ArgumentParser(description="Run Legate cpp tests.")
     parser.add_argument(
         "--binary-path",
         dest="binary_path",
         required=False,
         default=str(
-            CUNUMERIC_DIR / "build" / "tests" / "cpp" / "bin" / "cpp_tests"
+            CUPYNUMERIC_DIR / "build" / "tests" / "cpp" / "bin" / "cpp_tests"
         ),
         help="Path to binary under test.",
     )
@@ -110,7 +110,7 @@ def main():
         "--log-path",
         dest="log_path",
         required=False,
-        default=str(CUNUMERIC_DIR / "build" / "results.log"),
+        default=str(CUPYNUMERIC_DIR / "build" / "results.log"),
         help="Path to output log file.",
     )
     parser.add_argument(

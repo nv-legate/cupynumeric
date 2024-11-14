@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 5
 SIZES = [
@@ -42,7 +42,7 @@ SIZES = [
 SORT_TYPES = ["quicksort", "mergesort", "heapsort", "stable"]
 
 
-# cunumeric.sort(a: ndarray, axis: int = -1,
+# cupynumeric.sort(a: ndarray, axis: int = -1,
 # kind: SortType = 'quicksort', order: Optional = None) → ndarray
 # ndarray.sort(axis=-1, kind=None, order=None)
 
@@ -78,7 +78,7 @@ class TestSort(object):
         res_num = num.sort(arr_num, kind="negative")
         # Numpy raises "ValueError: sort kind must be one of 'quick', 'heap',
         # or 'stable' (got 'negative')"
-        # cuNumeric passed. The code basically supports ‘stable’
+        # cuPyNumeric passed. The code basically supports ‘stable’
         # or not ‘stable’.
         assert np.array_equal(res_num, res_np)
 
@@ -104,7 +104,7 @@ class TestSort(object):
     @pytest.mark.skip
     @pytest.mark.parametrize("size", SIZES)
     def test_arr_basic_axis(self, size):
-        # Set skip due to https://github.com/nv-legate/cunumeric/issues/781
+        # Set skip due to https://github.com/nv-legate/cupynumeric/issues/781
         arr_np = np.random.randint(-100, 100, size)
         arr_num = num.array(arr_np)
         for axis in range(-arr_num.ndim + 1, arr_num.ndim):
@@ -118,7 +118,7 @@ class TestSort(object):
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
     def test_arr_basic_axis_sort(self, size, sort_type):
-        # Set skip due to https://github.com/nv-legate/cunumeric/issues/781
+        # Set skip due to https://github.com/nv-legate/cupynumeric/issues/781
         arr_np = np.random.randint(-100, 100, size)
         arr_num = num.array(arr_np)
         for axis in range(-arr_num.ndim + 1, arr_num.ndim):
@@ -131,7 +131,7 @@ class TestSort(object):
     @pytest.mark.skip
     @pytest.mark.parametrize("size", SIZES)
     def test_compare_arr_axis(self, size):
-        # Set skip due to https://github.com/nv-legate/cunumeric/issues/781
+        # Set skip due to https://github.com/nv-legate/cupynumeric/issues/781
         arr_num = num.random.randint(-100, 100, size)
         for axis in range(-arr_num.ndim + 1, arr_num.ndim):
             arr_num_copy = arr_num
@@ -143,7 +143,7 @@ class TestSort(object):
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
     def test_compare_arr_axis_sort(self, size, sort_type):
-        # Set skip due to https://github.com/nv-legate/cunumeric/issues/781
+        # Set skip due to https://github.com/nv-legate/cupynumeric/issues/781
         arr_num = num.random.randint(-100, 100, size)
         for axis in range(-arr_num.ndim + 1, arr_num.ndim):
             arr_num_copy = arr_num
@@ -181,7 +181,7 @@ class TestSort(object):
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
     def test_compare_complex_arr_axis_sort(self, size, sort_type):
-        # Set skip due to https://github.com/nv-legate/cunumeric/issues/781
+        # Set skip due to https://github.com/nv-legate/cupynumeric/issues/781
         arr_num = (
             num.random.randint(-100, 100, size)
             + num.random.randint(-100, 100, size) * 1.0j

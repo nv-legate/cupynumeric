@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_with_nonzero():
@@ -56,7 +56,7 @@ def test_parameters(return_index, return_inverse, return_counts, axis):
         return_inverse=return_inverse,
         return_counts=return_counts,
     )
-    # cuNumeric raises NotImplementedError: Keyword arguments
+    # cuPyNumeric raises NotImplementedError: Keyword arguments
     # for `unique` are not yet supported
     res_np = np.unique(
         arr_np,

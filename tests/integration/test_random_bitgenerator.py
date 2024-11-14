@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.random import ModuleGenerator, assert_distribution
 
-import cunumeric as num
+import cupynumeric as num
 
 BITGENERATOR_ARGS = [
     ModuleGenerator,
@@ -60,7 +60,7 @@ def test_bitgenerator_size_none():
     gen_num = num.random.XORWOW(seed=seed)
     a_np = gen_np.random_raw(size=None)
     a_num = gen_num.random_raw(shape=None)
-    # cuNumeric returns singleton array
+    # cuPyNumeric returns singleton array
     # NumPy returns scalar
     assert np.ndim(a_np) == np.ndim(a_num)
 
@@ -254,7 +254,7 @@ def test_random_size_none(func):
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
     a_np = getattr(gen_np, func)(size=None)
     a_num = getattr(gen_num, func)(size=None)
-    # cuNumeric returns singleton array
+    # cuPyNumeric returns singleton array
     # NumPy returns scalar
     assert np.ndim(a_np) == np.ndim(a_num)
 

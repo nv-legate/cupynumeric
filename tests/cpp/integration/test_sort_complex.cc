@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 template <typename T>
@@ -197,7 +197,7 @@ void test_sort_complex(std::array<T_IN, SIZE>& in_array,
                        legate::Type leg_type,
                        std::vector<uint64_t> shape)
 {
-  auto A1 = cunumeric::zeros(shape, leg_type);
+  auto A1 = cupynumeric::zeros(shape, leg_type);
   if (in_array.size() != 0) {
     if (in_array.size() == 1) {
       A1.fill(legate::Scalar(in_array[0]));
@@ -205,7 +205,7 @@ void test_sort_complex(std::array<T_IN, SIZE>& in_array,
       assign_values_to_array<T_IN, DIM>(A1, in_array.data(), in_array.size());
     }
   }
-  auto B1 = cunumeric::sort_complex(A1);
+  auto B1 = cupynumeric::sort_complex(A1);
   if (in_array.size() != 0) {
     check_array_eq<T_OUT, DIM>(B1, expect.data(), expect.size());
   }

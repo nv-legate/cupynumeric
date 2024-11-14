@@ -19,7 +19,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 template <typename T,
@@ -32,12 +32,12 @@ void test_all(std::array<T, IN_SIZE>& in_array,
               std::array<OUT_T, OUT_SIZE>& expect_result,
               legate::Type leg_type,
               std::vector<uint64_t> shape,
-              std::vector<int32_t> axis               = {},
-              std::optional<cunumeric::NDArray> out   = std::nullopt,
-              bool keepdims                           = false,
-              std::optional<cunumeric::NDArray> where = std::nullopt)
+              std::vector<int32_t> axis                 = {},
+              std::optional<cupynumeric::NDArray> out   = std::nullopt,
+              bool keepdims                             = false,
+              std::optional<cupynumeric::NDArray> where = std::nullopt)
 {
-  auto A1 = cunumeric::zeros(shape, leg_type);
+  auto A1 = cupynumeric::zeros(shape, leg_type);
   if (in_array.size() != 0) {
     if (in_array.size() == 1) {
       A1.fill(legate::Scalar(in_array[0]));
@@ -47,10 +47,10 @@ void test_all(std::array<T, IN_SIZE>& in_array,
   }
 
   if (!out.has_value()) {
-    auto B1 = cunumeric::all(A1, axis, std::nullopt, keepdims, where);
+    auto B1 = cupynumeric::all(A1, axis, std::nullopt, keepdims, where);
     check_array_eq<OUT_T, OUT_DIM>(B1, expect_result.data(), expect_result.size());
   } else {
-    cunumeric::all(A1, axis, out, keepdims, where);
+    cupynumeric::all(A1, axis, out, keepdims, where);
     check_array_eq<OUT_T, OUT_DIM>(out.value(), expect_result.data(), expect_result.size());
   }
 }
@@ -222,7 +222,7 @@ void test_all_where_input()
 
   // Test where with multiple bool values
   std::array<bool, 2> where_in1 = {true, false};
-  auto where_array1             = cunumeric::zeros({2}, legate::bool_());
+  auto where_array1             = cupynumeric::zeros({2}, legate::bool_());
   assign_values_to_array<bool, 1>(where_array1, where_in1.data(), where_in1.size());
 
   std::array<bool, 1> expect_val1 = {true};
@@ -231,7 +231,7 @@ void test_all_where_input()
 
   // Test where with single bool value
   std::array<bool, 1> where_in2 = {true};
-  auto where_array2             = cunumeric::zeros({1}, legate::bool_());
+  auto where_array2             = cupynumeric::zeros({1}, legate::bool_());
   assign_values_to_array<bool, 1>(where_array2, where_in2.data(), where_in2.size());
 
   std::array<bool, 1> expect_val2 = {false};
@@ -239,7 +239,7 @@ void test_all_where_input()
     in_array, expect_val2, legate::bool_(), shape, {}, std::nullopt, false, where_array2);
 
   std::array<bool, 1> where_in3 = {false};
-  auto where_array3             = cunumeric::zeros({1}, legate::bool_());
+  auto where_array3             = cupynumeric::zeros({1}, legate::bool_());
   assign_values_to_array<bool, 1>(where_array3, where_in3.data(), where_in3.size());
 
   std::array<bool, 1> expect_val3 = {true};
@@ -254,21 +254,21 @@ void test_all_out_input()
   std::vector<uint64_t> out_shape = {2, 2};
   std::vector<int32_t> axis       = {0};
 
-  auto out1                          = cunumeric::zeros(out_shape, legate::int32());
+  auto out1                          = cupynumeric::zeros(out_shape, legate::int32());
   std::array<int32_t, 4> expect_val1 = {0, 1, 1, 1};
   test_all<int32_t, int32_t, 8, 4, 3, 2>(in_array, expect_val1, legate::int32(), shape, axis, out1);
 
-  auto out2                         = cunumeric::zeros(out_shape, legate::float64());
+  auto out2                         = cupynumeric::zeros(out_shape, legate::float64());
   std::array<double, 4> expect_val2 = {0.0, 1.0, 1.0, 1.0};
   test_all<int32_t, double, 8, 4, 3, 2>(in_array, expect_val2, legate::int32(), shape, axis, out2);
 
-  auto out3                                 = cunumeric::zeros(out_shape, legate::complex64());
+  auto out3                                 = cupynumeric::zeros(out_shape, legate::complex64());
   std::array<complex<float>, 4> expect_val3 = {
     complex<float>(0, 0), complex<float>(1, 0), complex<float>(1, 0), complex<float>(1, 0)};
   test_all<int32_t, complex<float>, 8, 4, 3, 2>(
     in_array, expect_val3, legate::int32(), shape, axis, out3);
 
-  auto out4                       = cunumeric::zeros(out_shape, legate::bool_());
+  auto out4                       = cupynumeric::zeros(out_shape, legate::bool_());
   std::array<bool, 4> expect_val4 = {false, true, true, true};
   test_all<int32_t, bool, 8, 4, 3, 2>(in_array, expect_val4, legate::int32(), shape, axis, out4);
 }
@@ -375,65 +375,65 @@ void test_all_invalid_axis()
 {
   std::array<int32_t, 4> in_array = {5, 10, 0, 100};
   std::vector<uint64_t> shape     = {1, 2, 2};
-  auto array                      = cunumeric::zeros(shape, legate::int32());
+  auto array                      = cupynumeric::zeros(shape, legate::int32());
   assign_values_to_array<int32_t, 3>(array, in_array.data(), in_array.size());
 
   // Test out-of-bound
   std::vector<int32_t> axis1 = {-4, 3};
-  EXPECT_THROW(cunumeric::all(array, axis1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::all(array, axis1), std::invalid_argument);
 
   std::vector<int32_t> axis2 = {0, 3};
-  EXPECT_THROW(cunumeric::all(array, axis2), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::all(array, axis2), std::invalid_argument);
 
   // Test repeated axes
   std::vector<int32_t> axis3 = {1, 1};
-  EXPECT_THROW(cunumeric::all(array, axis3), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::all(array, axis3), std::invalid_argument);
 
   std::vector<int32_t> axis4 = {-1, 2};
-  EXPECT_THROW(cunumeric::all(array, axis4), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::all(array, axis4), std::invalid_argument);
 }
 
 void test_all_invalid_shape()
 {
   std::array<int32_t, 4> in_array = {5, 10, 0, 100};
   std::vector<uint64_t> shape     = {1, 2, 2};
-  auto array                      = cunumeric::zeros(shape, legate::int32());
+  auto array                      = cupynumeric::zeros(shape, legate::int32());
   assign_values_to_array<int32_t, 3>(array, in_array.data(), in_array.size());
 
   std::vector<uint64_t> out_shape1 = {1};
-  auto out1                        = cunumeric::zeros(out_shape1, legate::int32());
-  EXPECT_THROW(cunumeric::all(array, {}, out1), std::invalid_argument);
+  auto out1                        = cupynumeric::zeros(out_shape1, legate::int32());
+  EXPECT_THROW(cupynumeric::all(array, {}, out1), std::invalid_argument);
 
   std::vector<uint64_t> out_shape2 = {2};
   std::vector<int32_t> axis2       = {1};
-  auto out2                        = cunumeric::zeros(out_shape2, legate::int32());
-  EXPECT_THROW(cunumeric::all(array, axis2, out2), std::invalid_argument);
+  auto out2                        = cupynumeric::zeros(out_shape2, legate::int32());
+  EXPECT_THROW(cupynumeric::all(array, axis2, out2), std::invalid_argument);
 
   std::vector<uint64_t> out_shape3 = {2, 2};
   std::vector<int32_t> axis3       = {1};
-  auto out3                        = cunumeric::zeros(out_shape3, legate::int32());
-  EXPECT_THROW(cunumeric::all(array, axis3, out3), std::invalid_argument);
+  auto out3                        = cupynumeric::zeros(out_shape3, legate::int32());
+  EXPECT_THROW(cupynumeric::all(array, axis3, out3), std::invalid_argument);
 }
 
 void test_all_invalid_where()
 {
   std::array<int32_t, 4> in_array = {5, 10, 0, 100};
   std::vector<uint64_t> shape     = {1, 2, 2};
-  auto array                      = cunumeric::zeros(shape, legate::int32());
+  auto array                      = cupynumeric::zeros(shape, legate::int32());
   assign_values_to_array<int32_t, 3>(array, in_array.data(), in_array.size());
 
   // Test where with invalid type
   std::array<int32_t, 4> in_where1 = {0, 1, 0, 1};
-  auto where1                      = cunumeric::zeros(shape, legate::int32());
+  auto where1                      = cupynumeric::zeros(shape, legate::int32());
   assign_values_to_array<int32_t, 3>(where1, in_where1.data(), in_where1.size());
-  EXPECT_THROW(cunumeric::all(array, {}, std::nullopt, false, where1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::all(array, {}, std::nullopt, false, where1), std::invalid_argument);
 
   // Test where with invalid shape
   std::vector<uint64_t> where_shape = {2, 2, 1};
   std::array<bool, 4> in_where2     = {false, true, false, true};
-  auto where2                       = cunumeric::zeros(where_shape, legate::bool_());
+  auto where2                       = cupynumeric::zeros(where_shape, legate::bool_());
   assign_values_to_array<bool, 3>(where2, in_where2.data(), in_where2.size());
-  EXPECT_THROW(cunumeric::all(array, {}, std::nullopt, false, where2), std::exception);
+  EXPECT_THROW(cupynumeric::all(array, {}, std::nullopt, false, where2), std::exception);
 }
 
 // void cpp_test()

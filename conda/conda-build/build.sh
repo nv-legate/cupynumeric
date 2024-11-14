@@ -26,7 +26,7 @@ if [ -z "$CPU_ONLY" ]; then
 else
   # When we build without cuda, we need to provide the location of curand
   CMAKE_ARGS+="
--Dcunumeric_cuRAND_INCLUDE_DIR=$PREFIX/targets/x86_64-linux/include"
+-Dcupynumeric_cuRAND_INCLUDE_DIR=$PREFIX/targets/x86_64-linux/include"
 fi
 
 export CMAKE_GENERATOR=Ninja
@@ -45,8 +45,8 @@ cmake --build build -j$CPU_COUNT --verbose
 cmake --install build
 
 CMAKE_ARGS="
--DFIND_CUNUMERIC_CPP=ON
--Dcunumeric_ROOT=$PREFIX"
+-DFIND_CUPYNUMERIC_CPP=ON
+-Dcupynumeric_ROOT=$PREFIX"
 
 SKBUILD_BUILD_OPTIONS=-j$CPU_COUNT \
 $PYTHON -m pip install             \

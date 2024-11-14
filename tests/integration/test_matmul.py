@@ -24,8 +24,8 @@ from utils.contractions import (
     check_types,
 )
 
-import cunumeric as num
-from cunumeric._utils.linalg import matmul_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import matmul_modes
 
 
 @pytest.mark.parametrize("a_ndim", range(1, LEGATE_MAX_DIM + 1))
@@ -163,7 +163,7 @@ class TestMatmulErrors:
     def test_invalid_shape_with_vector(self, shapesAB):
         # For ((4, 1), (3,)), ((3,), (1, 4)), ((3,), (1,)),
         # In Numpy, raise ValueError
-        # In cuNumeric, broadcast 1 to 3 and pass
+        # In cuPyNumeric, broadcast 1 to 3 and pass
         expected_exc = ValueError
         shapeA, shapeB = shapesAB
         A_np = np.ones(shapeA)
@@ -221,7 +221,7 @@ class TestMatmulErrors:
     @pytest.mark.xfail
     def test_out_invalid_shape_DIVERGENCE(self):
         # In Numpy, PASS
-        # In cuNumeric, raise ValueError
+        # In cuPyNumeric, raise ValueError
         A = num.ones((3, 2, 4))
         B = num.ones((3, 4, 3))
         shape = (3, 3, 2, 3)
@@ -279,7 +279,7 @@ class TestMatmulErrors:
         # In Numpy, raise ValueError
         with pytest.raises(expected_exc):
             np.matmul(A_np, B_np, casting=casting)
-        # cuNumeric does not check casting when A and B are of the same dtype
+        # cuPyNumeric does not check casting when A and B are of the same dtype
         with pytest.raises(expected_exc):
             num.matmul(A_num, B_num, casting=casting)
 

@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 xn = np.array([1 + 4j, 2 + 5j, 3 + 6j], np.complex64)
 yn = np.array([4 + 7j, 5 + 8j, 6 + 9j], np.complex64)

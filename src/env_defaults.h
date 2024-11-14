@@ -14,7 +14,7 @@
  *
  */
 
-// These values are copied manually in cunumeric.settings and there is a Python
+// These values are copied manually in cupynumeric.settings and there is a Python
 // unit test that will maintain that these values and the Python settings
 // values agree. If these values are modified, the corresponding Python values
 // must also be updated.

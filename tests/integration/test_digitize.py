@@ -18,7 +18,7 @@ import math
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 DTYPES = (
     np.uint32,
@@ -49,7 +49,7 @@ class TestDigitizeErrors(object):
         bins = [0, 5, 3]
         expected_exc = ValueError
         with pytest.raises(expected_exc):
-            # cunumeric raises TypeError
+            # cupynumeric raises TypeError
             num.digitize(None, bins)
         with pytest.raises(expected_exc):
             np.digitize(None, bins)
@@ -59,7 +59,7 @@ class TestDigitizeErrors(object):
         a = [2, 3, 10, 9]
         expected_exc = ValueError
         with pytest.raises(expected_exc):
-            # cunumeric raises TypeError
+            # cupynumeric raises TypeError
             num.digitize(a, None)
         with pytest.raises(expected_exc):
             np.digitize(a, None)

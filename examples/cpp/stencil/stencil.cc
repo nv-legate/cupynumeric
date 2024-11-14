@@ -15,15 +15,15 @@
  */
 
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "realm/cmdline.h"
 
 #include <iomanip>
 
 namespace stencil {
 
-using cunumeric::open;
-using cunumeric::slice;
+using cupynumeric::open;
+using cupynumeric::slice;
 
 struct Config {
   bool timing{false};
@@ -32,7 +32,7 @@ struct Config {
   uint64_t N{100};
 };
 
-void print_array(cunumeric::NDArray array)
+void print_array(cupynumeric::NDArray array)
 {
   auto acc    = array.get_read_accessor<double, 2>();
   auto& shape = array.shape();
@@ -49,9 +49,9 @@ void print_array(cunumeric::NDArray array)
   std::cerr << std::move(ss).str();
 }
 
-cunumeric::NDArray initialize(uint64_t N)
+cupynumeric::NDArray initialize(uint64_t N)
 {
-  auto grid = cunumeric::zeros({N + 2, N + 2});
+  auto grid = cupynumeric::zeros({N + 2, N + 2});
   grid[{slice(), slice(0, 1)}].assign(legate::Scalar{-273.15});
   grid[{slice(), slice(-1, open)}].assign(legate::Scalar{-273.15});
   grid[{slice(-1, open), slice()}].assign(legate::Scalar{-273.15});
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
   auto result = legate::start(argc, argv);
   assert(result == 0);
 
-  cunumeric::initialize(argc, argv);
+  cupynumeric::initialize(argc, argv);
 
   stencil::Config config{};
 

@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+build_cupynumeric_wheel() {
+    set -xeuo pipefail;
+
+    mkdir -p /tmp/out;
+
+    local pip_args=(-vv);
+    pip_args+=(--wheel-dir /tmp/out);
+
+    if type conda 2>&1 >/dev/null; then
+        pip_args+=(--no-deps);
+        pip_args+=(--no-build-isolation);
+    fi
+
+    local cmake_args=(${CMAKE_ARGS:-});
+    cmake_args+=("-DFIND_CUPYNUMERIC_CPP=ON");
+
+    pwd
+    echo $REPO_DIR
+    ls -lahR $REPO_DIR
+
+    cmake_args+=("-Dcupynumeric_ROOT=$REPO_DIR/build");
+
+    # Build + package cuPyNumeric Python wheel
+    CMAKE_ARGS="${cmake_args[@]}" \
+        pip wheel ${pip_args[@]} "${REPO_DIR}";
+
+    { set +x; } 2>/dev/null;
+}
+
+(build_cupynumeric_wheel "$@");

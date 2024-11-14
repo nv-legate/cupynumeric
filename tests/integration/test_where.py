@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 CONDITIONS = [
     [[True, False], [True, True]],
@@ -73,7 +73,7 @@ def test_broadcast(shape_a):
 @pytest.mark.xfail
 def test_condition_none():
     # In Numpy, pass and returns [1, 2]
-    # In cuNumeric, raises AttributeError:
+    # In cuPyNumeric, raises AttributeError:
     # 'NoneType' object has no attribute '_maybe_convert'
     x = 0
     y_np = np.array([1, 2])
@@ -90,10 +90,10 @@ def test_condition_none():
 def test_x_y_none(values):
     # For x=None and y=None,
     # In Numpy, pass and returns [None, None]
-    # In cuNumeric, pass and returns (array([0]),)
+    # In cuPyNumeric, pass and returns (array([0]),)
     # For x=None and y=1
     # In Numpy, pass and returns [None, 1]
-    # In cuNumeric, raises ValueError: both 'x' and 'y' parameters
+    # In cuPyNumeric, raises ValueError: both 'x' and 'y' parameters
     # must be specified together for where
     cond = [True, False]
     a_np = np.array(cond)
@@ -164,7 +164,7 @@ def test_argwhere(input):
 @pytest.mark.xfail
 def test_argwhere_none():
     # In Numpy, it pass and returns []
-    # In cuNumeric, it raises AttributeError:
+    # In cuPyNumeric, it raises AttributeError:
     # 'NoneType' object has no attribute '_thunk'
     assert np.array_equal(np.argwhere(None), num.argwhere(None))
 

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 
 class TestIndicesErrors:
@@ -47,7 +47,7 @@ class TestIndicesErrors:
     def test_negative_tuple_dimensions(self):
         dimensions = (1, -1)
         # numpy raises: "ValueError: negative dimensions are not allowed"
-        # In cunumeric Eager Executions test,
+        # In cupynumeric Eager Executions test,
         # it raises "ValueError: negative dimensions are not allowed"
         # in other conditions, it raises
         # "ValueError: Invalid shape: Shape((2, 1, -1))"

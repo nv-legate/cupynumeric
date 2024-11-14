@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.parametrize("n", [10, -10.5, -1])

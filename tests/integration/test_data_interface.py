@@ -15,8 +15,8 @@
 
 import pytest
 
-import cunumeric as num
-from cunumeric._utils.array import SUPPORTED_DTYPES
+import cupynumeric as num
+from cupynumeric._utils.array import SUPPORTED_DTYPES
 
 DTYPES = SUPPORTED_DTYPES.keys()
 

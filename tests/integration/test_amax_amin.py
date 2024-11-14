@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 FUNCS = ("amax", "amin")
 
@@ -54,7 +54,7 @@ def test_basic(func_name, ndim, keepdims, initial):
 def test_src_dt(func_name, keepdims, src_dt):
     # For src_dt=np.complex128,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     ndim = 3
     shape = (5,) * ndim
     in_np = np.random.randint(-5, 5, size=shape).astype(src_dt)
@@ -97,7 +97,7 @@ def test_axis(func_name, ndim, keepdims, initial):
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_axis_tuple(func_name, keepdims, axes):
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     shape = (3, 4, 5)
     in_np = np.random.randint(-5, 5, size=shape)
     in_num = num.array(in_np)
@@ -189,7 +189,7 @@ def test_out(func_name, ndim, keepdims, initial):
 def test_out_with_dtype(func_name, keepdims, out_dt):
     # For out_dt=np.complex128
     # In Numpy, it pass
-    # In cuNumeric, it raises KeyError
+    # In cuPyNumeric, it raises KeyError
     ndim = 3
     shape = (5,) * ndim
     in_np = np.random.randint(-5, 5, size=shape)
@@ -216,7 +216,7 @@ def test_out_with_dtype(func_name, keepdims, out_dt):
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_where(func_name):
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     shape = (3, 4, 5)
     in_np = np.random.randint(-5, 5, size=shape)
     in_num = num.array(in_np)

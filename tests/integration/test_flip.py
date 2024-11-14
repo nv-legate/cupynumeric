@@ -19,7 +19,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 a = num.random.random((10, 10, 10))
 AXES_1d = [-2, 0, 1, 2]

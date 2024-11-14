@@ -18,7 +18,7 @@
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
 
-namespace cunumeric {
+namespace cupynumeric {
 
 template <typename T>
 void show_array(NDArray& a)
@@ -67,9 +67,9 @@ void debug_array(NDArray a, bool show_data)
   }
 }
 
-}  // namespace cunumeric
+}  // namespace cupynumeric
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 // unit test for common_utils
 namespace {
@@ -153,7 +153,7 @@ TEST(Utils, test_ndarray_warn_and_convert)
   auto y    = x._warn_and_convert(legate::int32());
   debug_array(x);
   debug_array(y);
-  cunumeric_log().warning() << "Just a test!";
+  cupynumeric_log().warning() << "Just a test!";
 }
 
 TEST(Utils, test_wrap_indices_and_clip_indices)

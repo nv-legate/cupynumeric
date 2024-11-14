@@ -18,9 +18,8 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.fill_diagonal(a: ndarray, val: ndarray, wrap: bool = False) → None
 WRAP = [True, False]
 
 
@@ -121,7 +120,7 @@ class TestFillDiagonalErrors:
         # a bytes-like object or a real number, not 'NoneType'
         with pytest.raises(expected_exc):
             num.fill_diagonal(num_array, val)
-        # cuNumeric raises AttributeError:
+        # cuPyNumeric raises AttributeError:
         # 'NoneType' object has no attribute 'size'
 
 

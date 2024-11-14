@@ -17,8 +17,8 @@
 execute_process(
   COMMAND ${CMAKE_C_COMPILER}
     -E -DLEGATE_USE_PYTHON_CFFI
-    -I "${CMAKE_CURRENT_LIST_DIR}/../src/cunumeric"
-    -P "${CMAKE_CURRENT_LIST_DIR}/../src/cunumeric/cunumeric_c.h"
+    -I "${CMAKE_CURRENT_LIST_DIR}/../src/cupynumeric"
+    -P "${CMAKE_CURRENT_LIST_DIR}/../src/cupynumeric/cupynumeric_c.h"
   ECHO_ERROR_VARIABLE
   OUTPUT_VARIABLE header
   COMMAND_ERROR_IS_FATAL ANY
@@ -26,6 +26,6 @@ execute_process(
 
 set(libpath "")
 configure_file(
-  "${CMAKE_CURRENT_LIST_DIR}/../cunumeric/install_info.py.in"
-  "${CMAKE_CURRENT_LIST_DIR}/../cunumeric/install_info.py"
+  "${CMAKE_CURRENT_LIST_DIR}/../cupynumeric/install_info.py.in"
+  "${CMAKE_CURRENT_LIST_DIR}/../cupynumeric/install_info.py"
 @ONLY)

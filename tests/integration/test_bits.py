@@ -18,14 +18,14 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 
 class TestPackbits(object):
     def test_none_arr(self):
         # Numpy raises "TypeError:
         # Expected an input array of integer or boolean data type"
-        # For cuNumeric raises:
+        # For cuPyNumeric raises:
         #  > if a.dtype.kind not in ("u", "i", "b"):
         #  E AttributeError: 'NoneType' object has no attribute 'dtype'
         with pytest.raises(AttributeError):
@@ -50,7 +50,7 @@ class TestPackbits(object):
         in_num = num.random.randint(low=0, high=2, size=shape, dtype="i")
         # when bitorder is 1 or True, Numpy raises
         # "TypeError: pack() argument 3 must be str".
-        # while cuNumeric raises valueError.
+        # while cuPyNumeric raises valueError.
         with pytest.raises(ValueError):
             num.packbits(in_num, bitorder=bitorder)
 
@@ -94,7 +94,7 @@ class TestUnpackbits(object):
     def test_none_arr(self):
         # Numpy raises "TypeError:
         # TypeError: Expected an input array of unsigned byte data type
-        # For cuNumeric raises:
+        # For cuPyNumeric raises:
         # > if a.dtype != "B":
         # E AttributeError: 'NoneType' object has no attribute 'dtype'
         with pytest.raises(AttributeError):
@@ -121,7 +121,7 @@ class TestUnpackbits(object):
         in_num = num.array(in_np)
         # when bitorder is 1 or True, Numpy raises
         # "TypeError: unpack() argument 4 must be str".
-        # while cuNumeric raises valueError.
+        # while cuPyNumeric raises valueError.
         with pytest.raises(ValueError):
             num.unpackbits(in_num, bitorder=bitorder)
 

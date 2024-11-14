@@ -17,7 +17,7 @@
 #include "common_utils.h"
 #include <tuple>
 
-using namespace cunumeric;
+using namespace cupynumeric;
 namespace {
 
 typedef std::vector<std::tuple<std::vector<size_t>, std::vector<int32_t>>> VEC_SHAPE_AXES;

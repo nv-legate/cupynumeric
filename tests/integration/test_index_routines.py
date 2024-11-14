@@ -21,8 +21,8 @@ from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
 from utils.utils import AxisError
 
-import cunumeric as num
-from cunumeric._thunk.eager import diagonal_reference
+import cupynumeric as num
+from cupynumeric._thunk.eager import diagonal_reference
 
 
 class TestChoose1d:
@@ -176,7 +176,7 @@ def test_choose_out():
     num_a = mk_seq_array(num, shape_a) % shape_choices[0]
     num_a = num_a.astype(
         np.int32
-    )  # cuNumeric would convert np.int32 to default type np.int64
+    )  # cuPyNumeric would convert np.int32 to default type np.int64
     np_choices = mk_seq_array(np, shape_choices)
     num_choices = mk_seq_array(num, shape_choices)
     np_aout = mk_seq_array(np, shape_a_out) - 10
@@ -191,7 +191,7 @@ def test_choose_out():
 @pytest.mark.xfail
 def test_choose_mode_none():
     # In Numpy, pass and returns array equals default mode
-    # In cuNumeric, raises ValueError: mode=None not understood.
+    # In cuPyNumeric, raises ValueError: mode=None not understood.
     # Must be 'raise', 'wrap', or 'clip'
     shape_choices = (3, 2, 4)
     shape_a = (2, 4)
@@ -242,7 +242,7 @@ class TestChooseErrors:
     @pytest.mark.xfail
     def test_a_none(self):
         # In Numpy, it raises TypeError
-        # In cuNumeric, it raises AttributeError:
+        # In cuPyNumeric, it raises AttributeError:
         # 'NoneType' object has no attribute 'choose'
         with pytest.raises(TypeError):
             num.choose(None, self.choices)
@@ -255,7 +255,7 @@ class TestChooseErrors:
     @pytest.mark.xfail
     def test_choices_none(self):
         # In Numpy, it raises TypeError
-        # In cuNumeric, it raises IndexError: tuple index out of range
+        # In cuPyNumeric, it raises IndexError: tuple index out of range
         with pytest.raises(TypeError):
             num.choose(self.a, None)
 
@@ -444,7 +444,7 @@ KS = (0, -1, 1, -2, 2)
 def test_diagonal_offset(shape, k):
     # for shape=(5, 1) and k=1, 2,
     # for shape=(1, 5) and k=-1, -2,
-    # In cuNumeric,  raise ValueError: 'offset'
+    # In cuPyNumeric,  raise ValueError: 'offset'
     # for diag or diagonal must be in range
     # In Numpy, pass and returns empty array
     a = mk_seq_array(num, shape)
@@ -462,7 +462,7 @@ def test_diagonal_offset(shape, k):
 )
 def test_diagonal_empty_array(shape):
     # for shape=(3, 0) and k=0,
-    # In cuNumeric,  raise ValueError: 'offset'
+    # In cuPyNumeric,  raise ValueError: 'offset'
     # for diag or diagonal must be in range
     # In Numpy, pass and returns empty array
     a = mk_seq_array(num, shape)
@@ -473,13 +473,13 @@ def test_diagonal_empty_array(shape):
     assert np.array_equal(b, bn)
 
 
-@pytest.mark.xfail(reason="cuNumeric does not take single axis")
+@pytest.mark.xfail(reason="cuPyNumeric does not take single axis")
 def test_diagonal_axis1():
     shape = (3, 1, 2)
     a = mk_seq_array(num, shape)
     an = mk_seq_array(np, shape)
 
-    # cuNumeric hits AssertionError in _diag_helper: assert axes is not None
+    # cuPyNumeric hits AssertionError in _diag_helper: assert axes is not None
     b = num.diagonal(a, axis1=2)
     # NumPy passes
     bn = np.diagonal(an, axis1=2)
@@ -504,7 +504,7 @@ class TestDiagonalErrors:
 
     @pytest.mark.xfail
     def test_array_none(self):
-        # In cuNumeric, it raises AttributeError:
+        # In cuPyNumeric, it raises AttributeError:
         # 'NoneType' object has no attribute 'diagonal'
         # In Numpy, it raises ValueError:
         # diag requires an array of at least two dimensions.
@@ -518,7 +518,7 @@ class TestDiagonalErrors:
     )
     def test_axes_same(self, axes):
         # For axes =  (0, -3),
-        # In cuNumeric, it raises ValueError:
+        # In cuPyNumeric, it raises ValueError:
         # axes must be the same size as ndim for transpose
         # In Numpy, it raises ValueError: axis1 and axis2 cannot be the same
         axis1, axis2 = axes
@@ -532,7 +532,7 @@ class TestDiagonalErrors:
     )
     def test_axes_out_of_bound(self, axes):
         # In Numpy, it raises AxisError: is out of bounds
-        # In cuNumeric, it raises ValueError:
+        # In cuPyNumeric, it raises ValueError:
         # axes must be the same size as ndim for transpose
         axis1, axis2 = axes
         with pytest.raises(AxisError):
@@ -541,14 +541,14 @@ class TestDiagonalErrors:
     @pytest.mark.xfail
     def test_axes_float(self):
         # In Numpy, it raise TypeError
-        # In cuNumeric, it raises AssertionError
+        # In cuPyNumeric, it raises AssertionError
         with pytest.raises(TypeError):
             num.diagonal(self.a, 0, 0.0, 1)
 
     @pytest.mark.xfail
     def test_axes_none(self):
         # In Numpy, it raise TypeError
-        # In cuNumeric, it raises AssertionError
+        # In cuPyNumeric, it raises AssertionError
         with pytest.raises(TypeError):
             num.diagonal(self.a, 0, None, 0)
 
@@ -572,7 +572,7 @@ class TestDiagonalErrors:
     )
     def test_k_float(self, k):
         # for k=0.0,
-        # In cuNumeric, pass
+        # In cuPyNumeric, pass
         # In Numpy, raises TypeError: integer argument expected, got float
         with pytest.raises(TypeError):
             num.diagonal(self.a, k)
@@ -596,7 +596,7 @@ class TestDiagonalErrors:
 def test_diag(shape, k):
     # for shape=(5, 1) and k=1, 2,
     # for shape=(1, 5) and k=-1, -2,
-    # In cuNumeric,  raise ValueError:
+    # In cuPyNumeric,  raise ValueError:
     # 'offset' for diag or diagonal must be in range
     # In Numpy, pass and returns empty array
     a = mk_seq_array(num, shape)
@@ -614,7 +614,7 @@ def test_diag(shape, k):
 )
 def test_diag_empty_array(shape):
     # for shape=(3, 0) and k=0,
-    # In cuNumeric,  raise ValueError:
+    # In cuPyNumeric,  raise ValueError:
     # 'offset' for diag or diagonal must be in range
     # In Numpy, pass and returns empty array
     a = mk_seq_array(num, shape)
@@ -640,7 +640,7 @@ class TestDiagErrors:
 
     @pytest.mark.xfail
     def test_array_none(self):
-        # In cuNumeric, it raises AttributeError,
+        # In cuPyNumeric, it raises AttributeError,
         # 'NoneType' object has no attribute 'ndim'
         # In Numpy, it raises ValueError, Input must be 1- or 2-d.
         with pytest.raises(ValueError):
@@ -653,7 +653,7 @@ class TestDiagErrors:
     )
     def test_k_float(self, k):
         # for k=0.0,
-        # In cuNumeric, pass
+        # In cuPyNumeric, pass
         # In Numpy, raises TypeError: integer argument expected, got float
         shape = (3, 3)
         a = mk_seq_array(num, shape)

@@ -32,7 +32,7 @@ class Timer(Protocol):
         ...
 
 
-class CuNumericTimer(Timer):
+class CuPyNumericTimer(Timer):
     def __init__(self):
         self._start_time = None
 
@@ -112,9 +112,9 @@ def parse_args(parser):
     )
     args, _ = parser.parse_known_args()
     if args.package == "legate":
-        import cunumeric as np
+        import cupynumeric as np
 
-        timer = CuNumericTimer()
+        timer = CuPyNumericTimer()
     elif args.package == "cupy":
         import cupy as np
 

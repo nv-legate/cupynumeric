@@ -17,13 +17,13 @@ import numpy as np
 import pytest
 from utils.utils import AxisError
 
-import cunumeric as num
-from cunumeric._utils import is_np2
+import cupynumeric as num
+from cupynumeric._utils import is_np2
 
-# cunumeric.count_nonzero(a: ndarray,
+# cupynumeric.count_nonzero(a: ndarray,
 # axis: Optional[Union[int, tuple[int, ...]]] = None) → Union[int, ndarray]
-# cunumeric.nonzero(a: ndarray) → tuple[cunumeric.array.ndarray, ...]
-# cunumeric.flatnonzero(a: ndarray) → ndarray
+# cupynumeric.nonzero(a: ndarray) → tuple[cupynumeric.array.ndarray, ...]
+# cupynumeric.flatnonzero(a: ndarray) → ndarray
 
 DIM = 5
 EMPTY_SIZES = [
@@ -104,9 +104,9 @@ def test_axis_tuple(axis):
     out_np = np.count_nonzero(arr_np, axis=axis)
     # Numpy passed all axis values
     out_num = num.count_nonzero(arr_num, axis=axis)
-    # For (-1, 1), cuNumeric raises 'ValueError:
+    # For (-1, 1), cuPyNumeric raises 'ValueError:
     # Invalid promotion on dimension 2 for a 1-D store'
-    # For the others, cuNumeric raises 'NotImplementedError:
+    # For the others, cuPyNumeric raises 'NotImplementedError:
     # Need support for reducing multiple dimensions'
     assert np.array_equal(out_np, out_num)
 
@@ -131,7 +131,7 @@ def test_empty_axis(size):
     for axis in range(-ndim + 1, ndim, 1):
         out_np = np.count_nonzero(arr_np, axis=axis)
         out_num = num.count_nonzero(arr_num, axis=axis)
-        # Numpy and cuNumeric have diffrent out.
+        # Numpy and cuPyNumeric have diffrent out.
         # out_np = array([[0]])
         # out_num = 0
         assert np.array_equal(out_np, out_num)
@@ -148,8 +148,8 @@ def test_axis_keepdims(size, keepdims):
         out_np = np.count_nonzero(arr_np, axis=axis, keepdims=keepdims)
         out_num = num.count_nonzero(arr_num, axis=axis, keepdims=keepdims)
         # Numpy has the parameter 'keepdims',
-        # cuNumeric do not have this parameter.
-        # cuNumeric raises "TypeError: count_nonzero() got an unexpected
+        # cuPyNumeric do not have this parameter.
+        # cuPyNumeric raises "TypeError: count_nonzero() got an unexpected
         # keyword argument 'keepdims'"
         assert np.array_equal(out_np, out_num)
 

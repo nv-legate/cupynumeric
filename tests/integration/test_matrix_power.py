@@ -19,7 +19,7 @@ from legate.core import LEGATE_MAX_DIM
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 # TODO: add negative exponents here, once they become supported
 EXPONENTS = (0, 1, 2, 3, 5)
@@ -38,7 +38,7 @@ EXPONENTS = (0, 1, 2, 3, 5)
 def test_matrix_power(ndim, exp, dtype):
     # If dtype=np.int32 and exp greater than 1,
     # In Numpy, pass
-    # In cuNumeric, raises TypeError: Unsupported type: int32
+    # In cuPyNumeric, raises TypeError: Unsupported type: int32
     shape = (3,) * ndim + (2, 2)
     a_np = mk_0to1_array(np, shape, dtype=dtype)
     a_num = mk_0to1_array(num, shape, dtype=dtype)
@@ -59,7 +59,7 @@ def test_matrix_power(ndim, exp, dtype):
 def test_matrix_power_empty_matrix(exp):
     # If exp =2 or 3,
     # In Numpy, pass and returns empty array
-    # In cuNumeric, raise AssertionError in _contract
+    # In cuPyNumeric, raise AssertionError in _contract
     shape = (0, 0)
     a_np = mk_0to1_array(np, shape)
     a_num = mk_0to1_array(num, shape)

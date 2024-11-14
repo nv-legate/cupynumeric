@@ -20,7 +20,7 @@ import pytest
 import scipy.signal as sig
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 CUDA_TEST = os.environ.get("LEGATE_NEED_CUDA") == "1"
 
@@ -80,7 +80,7 @@ def test_none():
     expected_exc = TypeError
     with pytest.raises(expected_exc):
         num.convolve(None, None, mode="same")
-        # cuNumeric raises AttributeError
+        # cuPyNumeric raises AttributeError
     with pytest.raises(expected_exc):
         np.convolve(None, None, mode="same")
 
@@ -166,7 +166,7 @@ def test_modes(mode):
     arr1 = num.random.random(shape)
     arr2 = num.random.random(shape)
     out_num = num.convolve(arr1, arr2, mode=mode)
-    # when mode!="same", cunumeric raises
+    # when mode!="same", cupynumeric raises
     # NotImplementedError: Need to implement other convolution modes
     out_np = np.convolve(arr1, arr2, mode=mode)
     assert allclose(out_num, out_np)
@@ -188,7 +188,7 @@ def test_ndim(ndim):
     arr1 = num.random.random(shape)
     arr2 = num.random.random(shape)
     out_num = num.convolve(arr1, arr2, mode="same")
-    # cunumeric raises,  NotImplementedError: 4-D arrays are not yet supported
+    # cupynumeric raises NotImplementedError: 4-D arrays are not yet supported
     out_np = np.convolve(arr1, arr2, mode="same")
     assert allclose(out_num, out_np)
 

@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_0to1_array, mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_ndarray_dumps():

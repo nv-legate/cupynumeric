@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 # roll tests adapted directly from numpy/_core/tests/test_numeric.py
 

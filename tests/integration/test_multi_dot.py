@@ -18,7 +18,7 @@ import pytest
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 SHAPES = [
     # 2 arrays
@@ -124,7 +124,7 @@ class TestMultiDotErrors:
 
     @pytest.mark.xfail
     def test_out_invalid_shape(self):
-        # In cuNumeric, it raises AssertionError
+        # In cuPyNumeric, it raises AssertionError
         out = num.zeros((2, 1))
         with pytest.raises(ValueError):
             num.linalg.multi_dot(self.arrays, out=out)
@@ -135,7 +135,7 @@ class TestMultiDotErrors:
     )
     def test_out_invalid_dtype(self, dtype):
         # In Numpy, for np.float32 and np.int64, it raises ValueError
-        # In cuNumeric,
+        # In cuPyNumeric,
         # for np.float32, it pass
         # for np.int64, it raises TypeError: Unsupported type: int64
         out = num.zeros((2, 2), dtype=dtype)

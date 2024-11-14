@@ -21,10 +21,10 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "common_utils.h"
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 
@@ -36,8 +36,8 @@ auto test_standard(uint64_t m, uint64_t n, uint64_t k, legate::Type leg_type)
   std::iota(data_a.begin(), data_a.end(), 0);
   std::iota(data_b.begin(), data_b.end(), 0.0);
 
-  auto A = cunumeric::zeros({m, k}, leg_type);
-  auto B = cunumeric::zeros({k, n}, leg_type);
+  auto A = cupynumeric::zeros({m, k}, leg_type);
+  auto B = cupynumeric::zeros({k, n}, leg_type);
 
   assign_values_to_array<T, 2>(A, data_a.data(), m * k);
   assign_values_to_array<T, 2>(B, data_b.data(), n * k);

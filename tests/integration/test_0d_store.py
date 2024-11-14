@@ -17,7 +17,7 @@ from itertools import product
 
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 SIZE = 3
 

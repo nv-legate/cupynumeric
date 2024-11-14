@@ -20,8 +20,8 @@ import numpy as np
 
 
 def allclose(
-    a: Any,  # numpy or cunumeric array-like
-    b: Any,  # numpy or cunumeric array-like
+    a: Any,  # numpy or cupynumeric array-like
+    b: Any,  # numpy or cupynumeric array-like
     rtol: float = 1e-5,
     atol: float = 1e-8,
     equal_nan: bool = False,
@@ -50,7 +50,7 @@ def allclose(
         inds = islice(zip(*np.where(~close)), diff_limit)
         diffs = [f"  index {i}: {a[i]} {b[i]}" for i in inds]
         N = len(diffs)
-        print(f"First {N} difference{'s' if N>1 else ''} for allclose:\n")
+        print(f"First {N} difference{'s' if N > 1 else ''} for allclose:\n")
         print("\n".join(diffs))
         print(f"\nWith diff_limit={diff_limit}\n")
 

@@ -34,14 +34,14 @@ function(find_or_configure_tblis)
                 HEADER_NAMES "tblis/tblis.h"
                 LIBRARY_NAMES "libtblis${lib_suffix}"
                 NO_CONFIG
-                BUILD_EXPORT_SET   cunumeric-exports
-                INSTALL_EXPORT_SET cunumeric-exports
+                BUILD_EXPORT_SET   cupynumeric-exports
+                INSTALL_EXPORT_SET cupynumeric-exports
   )
 
   rapids_cpm_find(tblis ${PKG_VERSION}
       GLOBAL_TARGETS    tblis::tblis
-      BUILD_EXPORT_SET   cunumeric-exports
-      INSTALL_EXPORT_SET cunumeric-exports
+      BUILD_EXPORT_SET   cupynumeric-exports
+      INSTALL_EXPORT_SET cupynumeric-exports
       CPM_ARGS
         ${tblis_cpm_git_args}
         EXCLUDE_FROM_ALL  ${PKG_EXCLUDE_FROM_ALL}
@@ -95,8 +95,8 @@ function(find_or_configure_tblis)
 
       set(ENV{CC} "${_CC}")
       set(ENV{CXX} "${_CXX}")
-      message(VERBOSE "cunumeric: ENV{CC}=\"$ENV{CC}\"")
-      message(VERBOSE "cunumeric: ENV{CXX}=\"$ENV{CXX}\"")
+      message(VERBOSE "cupynumeric: ENV{CC}=\"$ENV{CC}\"")
+      message(VERBOSE "cupynumeric: ENV{CXX}=\"$ENV{CXX}\"")
 
       set(tblis_verbosity "--enable-silent-rules")
       if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25")
@@ -167,20 +167,20 @@ function(find_or_configure_tblis)
   endif()
 
   set(tblis_BINARY_DIR ${tblis_BINARY_DIR} PARENT_SCOPE)
-  set(cunumeric_INSTALL_TBLIS ${should_build_tblis} PARENT_SCOPE)
+  set(cupynumeric_INSTALL_TBLIS ${should_build_tblis} PARENT_SCOPE)
 endfunction()
 
-if(NOT DEFINED cunumeric_TBLIS_BRANCH)
-  set(cunumeric_TBLIS_BRANCH arm-build)
+if(NOT DEFINED cupynumeric_TBLIS_BRANCH)
+  set(cupynumeric_TBLIS_BRANCH arm-build)
 endif()
 
-if(NOT DEFINED cunumeric_TBLIS_REPOSITORY)
-  set(cunumeric_TBLIS_REPOSITORY https://github.com/nv-legate/tblis.git)
+if(NOT DEFINED cupynumeric_TBLIS_REPOSITORY)
+  set(cupynumeric_TBLIS_REPOSITORY https://github.com/nv-legate/tblis.git)
 endif()
 
 find_or_configure_tblis(VERSION          1.2.0
-                        REPOSITORY       ${cunumeric_TBLIS_REPOSITORY}
-                        BRANCH           ${cunumeric_TBLIS_BRANCH}
-                        EXCLUDE_FROM_ALL ${cunumeric_EXCLUDE_TBLIS_FROM_ALL}
+                        REPOSITORY       ${cupynumeric_TBLIS_REPOSITORY}
+                        BRANCH           ${cupynumeric_TBLIS_BRANCH}
+                        EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_TBLIS_FROM_ALL}
                         USE_OPENMP       ${Legion_USE_OpenMP}
 )

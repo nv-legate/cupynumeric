@@ -15,54 +15,66 @@
 
 import os
 
-import numpy as np
 import pytest
-import scipy.signal as sig
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 CUDA_TEST = os.environ.get("LEGATE_NEED_CUDA") == "1"
 
 
 def test_interpolation_x():
-    import scipy.signal as signal 
+    import scipy.signal as signal
 
-    nz = 100 
-    nx = 200 
-    hs = 2 
-    nvariables = 4 
-    shape = (nvariables, nz + 2 * hs, nx + 2 * hs) 
+    nz = 100
+    nx = 200
+    hs = 2
+    nvariables = 4
+    shape = (nvariables, nz + 2 * hs, nx + 2 * hs)
     nelements = num.prod(shape)
 
-    kernel = num.array([-1.0 / 12, 7.0 / 12, 7.0 / 12, -1.0 / 12], dtype=num.float64).reshape(1, 1, 4)
+    kernel = num.array(
+        [-1.0 / 12, 7.0 / 12, 7.0 / 12, -1.0 / 12], dtype=num.float64
+    ).reshape(1, 1, 4)
     state = num.arange(nelements).astype(num.float64).reshape(shape)
-    out_legate = num.convolve(state[:, 2 : nz + 2, :], kernel, mode="same",)
-    out_scipy = signal.convolve(state[:, 2 : nz + 2, :], kernel, mode="same",)
-
-    #print(f"min/max, legate: {out_legate.min()}, {out_legate.max()}", flush=True)
-    #print(f"min/max, scipy : {out_scipy.min()}, {out_scipy.max()}", flush=True)
+    out_legate = num.convolve(
+        state[:, 2 : nz + 2, :],
+        kernel,
+        mode="same",
+    )
+    out_scipy = signal.convolve(
+        state[:, 2 : nz + 2, :],
+        kernel,
+        mode="same",
+    )
 
     assert allclose(out_scipy, out_legate)
 
 
 def test_interpolation_z():
-    import scipy.signal as signal 
+    import scipy.signal as signal
 
-    nz = 100 
-    nx = 200 
-    hs = 2 
-    nvariables = 4 
-    shape = (nvariables, nz + 2 * hs, nx + 2 * hs) 
+    nz = 100
+    nx = 200
+    hs = 2
+    nvariables = 4
+    shape = (nvariables, nz + 2 * hs, nx + 2 * hs)
     nelements = num.prod(shape)
 
-    kernel = num.array([-1.0 / 12, 7.0 / 12, 7.0 / 12, -1.0 / 12], dtype=num.float64).reshape(1, 4, 1)
+    kernel = num.array(
+        [-1.0 / 12, 7.0 / 12, 7.0 / 12, -1.0 / 12], dtype=num.float64
+    ).reshape(1, 4, 1)
     state = num.arange(nelements).astype(num.float64).reshape(shape)
-    out_legate = num.convolve(state[:, :, 2 : nx + 2], kernel, mode="same",)
-    out_scipy = signal.convolve(state[:, :, 2 : nx + 2], kernel, mode="same",)
-
-    #print(f"min/max, legate: {out_legate.min()}, {out_legate.max()}", flush=True)
-    #print(f"min/max, scipy : {out_scipy.min()}, {out_scipy.max()}", flush=True)
+    out_legate = num.convolve(
+        state[:, :, 2 : nx + 2],
+        kernel,
+        mode="same",
+    )
+    out_scipy = signal.convolve(
+        state[:, :, 2 : nx + 2],
+        kernel,
+        mode="same",
+    )
 
     assert allclose(out_scipy, out_legate)
 

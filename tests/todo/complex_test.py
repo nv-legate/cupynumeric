@@ -15,7 +15,7 @@
 
 import numpy as np
 
-import cunumeric as num
+import cupynumeric as num
 
 M = 32
 alpha = 4.0

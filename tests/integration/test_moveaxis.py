@@ -19,7 +19,7 @@ from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 AXES = (
     (0, 0),

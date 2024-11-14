@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.random import ModuleGenerator, assert_distribution
 
-import cunumeric as num
+import cupynumeric as num
 
 BITGENERATOR_ARGS = [
     ModuleGenerator,
@@ -140,7 +140,7 @@ def test_gamma_size_none(func):
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
     a_np = getattr(gen_np, func)(3.1415, 1.414, size=None)
     a_num = getattr(gen_num, func)(3.1415, 1.414, size=None)
-    # cuNumeric returns singleton array
+    # cuPyNumeric returns singleton array
     # NumPy returns scalar
     assert np.ndim(a_np) == np.ndim(a_num)
 

@@ -18,7 +18,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 class TestClipErrors:
@@ -28,7 +28,7 @@ class TestClipErrors:
         with pytest.raises(expected_exc):
             np.clip(None, a_min=0, a_max=0)
         with pytest.raises(expected_exc):
-            # cunumeric raises
+            # cupynumeric raises
             # AttributeError: 'NoneType' object has no attribute 'clip'
             num.clip(None, a_min=0, a_max=0)
 
@@ -41,7 +41,7 @@ class TestClipErrors:
             # ValueError: One of max or min must be given
             np.clip(array, a_min=None, a_max=None)
         with pytest.raises(expected_exc):
-            # cunumeric raises:
+            # cupynumeric raises:
             # TypeError: int() argument must be a string,
             # a bytes-like object or a real number, not 'NoneType'
             num.clip(array, a_min=None, a_max=None)
@@ -95,7 +95,7 @@ def test_amin_value(amin):
     # res_np is not match res_num
     # in Numpy, when one of a_min of a_max is float,
     # all data are marked as float,
-    # while in cunumeric, all datas are int.
+    # while in cupynumeric, all datas are int.
     # for example, amin = 5
     # array = array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     # res_np = array([5., 5., 5., 5., 5., 5., 6., 7., 8., 8.5])
@@ -111,7 +111,7 @@ def test_amin_complex():
     #  res_np = array([5. +5.j, 5. +5.j, 5. +5.j, 5. +5.j, 5. +5.j,
     #  5. +5.j, 6. +0.j, 7. +0.j, 8. +0.j, 8.5+0.j])
     res_num = num.clip(array, a_min=amin, a_max=8.5)
-    # cunumeric raises:
+    # cupynumeric raises:
     # TypeError: int() argument must be a string, a bytes-like object
     # or a real number, not 'complex'
     assert np.array_equal(res_np, res_num)

@@ -22,7 +22,7 @@ from utils.generators import (
     mk_seq_array,
 )
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def equivalent_shapes_gen(shape):
@@ -127,7 +127,7 @@ def test_empty_indice():
         pytest.param(
             np.array((0,)),
             marks=pytest.mark.xfail(
-                reason="NumPy: IndexError, cuNumeric: return None"
+                reason="NumPy: IndexError, cuPyNumeric: return None"
             ),
         ),
     ],

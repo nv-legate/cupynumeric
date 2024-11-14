@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 SCALARS_TRUE_DEFAULT = (
     (0, -1e-8),
@@ -150,7 +150,7 @@ SHAPES_BROADCASTING1 = (
 def test_broadcast_true1(shape_b):
     # for all cases,
     # In Numpy, it pass
-    # In cuNumeric, it raises AttributeError:
+    # In cuPyNumeric, it raises AttributeError:
     # 'Store' object has no attribute '_broadcast'
     len_scalars = len(SCALARS_TRUE_DEFAULT)
 
@@ -186,7 +186,7 @@ SHAPES_BROADCASTING2 = (
 def test_broadcast_true2(shape_b):
     # for all cases,
     # In Numpy, it pass
-    # In cuNumeric, it raises AttributeError:
+    # In cuPyNumeric, it raises AttributeError:
     # 'Store' object has no attribute '_broadcast'
     shape_a = (3,)
     size_a = np.prod(shape_a)
@@ -219,7 +219,7 @@ def test_broadcast_true2(shape_b):
 def test_equal_nan_basic(arr, equal_nan):
     # If equal_nan is True,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     res_np = np.allclose(arr, arr, equal_nan=equal_nan)
     res_num = num.allclose(arr, arr, equal_nan=equal_nan)
     assert res_np == res_num
@@ -257,7 +257,7 @@ SCALAR_BROADCASTING = (
 def test_scalar_broadcasting(a, b):
     # for all cases,
     # In Numpy, it pass
-    # In cuNumeric, it raises AttributeError:
+    # In cuPyNumeric, it raises AttributeError:
     # 'Store' object has no attribute '_broadcast'
     res_np = np.allclose(a, b)
     res_num = num.allclose(a, b)

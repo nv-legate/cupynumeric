@@ -15,10 +15,10 @@
 
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
-# ref: https://github.com/nv-legate/cunumeric/pull/430
+# ref: https://github.com/nv-legate/cupynumeric/pull/430
 def test_unimplemented_method_self_fallback():
     ones = num.ones((10,))
     ones.mean()
@@ -27,7 +27,7 @@ def test_unimplemented_method_self_fallback():
     # to verify a behaviour of unimplemented ndarray method wrappers. If std
     # becomes implemeneted in the future, this assertion will start to fail,
     # and a new (unimplemented) ndarray method should be found to replace it
-    assert not ones.std._cunumeric.implemented
+    assert not ones.std._cupynumeric.implemented
 
     ones.std()
 

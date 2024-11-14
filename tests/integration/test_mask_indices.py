@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 KS = (0, -1, 1, -2, 2)
 FUNCTIONS = ("tril", "triu")
@@ -61,7 +61,7 @@ def test_mask_indices(k, mask_func):
 )
 @pytest.mark.parametrize("mask_func", FUNCTIONS)
 def test_mask_indices_float_k(k, mask_func):
-    # cuNumeric: struct.error: required argument is not an integer
+    # cuPyNumeric: struct.error: required argument is not an integer
     # Numpy: pass
     _test(mask_func, N, k)
 
@@ -79,7 +79,7 @@ class TestMaskIndicesErrors:
 
     @pytest.mark.xfail
     def test_k_complex(self):
-        # In cuNumeric, it raises struct.error,
+        # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer
         # In Numpy, it raises TypeError,
         # msg is '<=' not supported between instances of 'complex' and 'int'
@@ -88,7 +88,7 @@ class TestMaskIndicesErrors:
 
     @pytest.mark.xfail
     def test_k_none(self):
-        # In cuNumeric, it raises struct.error,
+        # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer
         # In Numpy, it raises TypeError,
         # msg is unsupported operand type(s) for -: 'NoneType' and 'int'

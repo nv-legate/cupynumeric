@@ -18,9 +18,9 @@
 #include <ostream>
 #include <numeric>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
-#include "cunumeric/utilities/repartition.h"
+#include "cupynumeric/utilities/repartition.h"
 
 namespace repartition_test {
 
@@ -120,17 +120,17 @@ void repartition_2dbc_test(legate::AccessorRO<int32_t, 2> input,
   size_t input_lld =
     in_rect.empty() ? 1 : (in_rect.hi[in_row_major ? 1 : 0] - in_rect.lo[in_row_major ? 1 : 0] + 1);
 
-  auto [buffer_2dbc, volume_2dbc, lld_2dbc] = cunumeric::repartition_matrix_2dbc(input_ptr,
-                                                                                 input_volume,
-                                                                                 in_row_major,
-                                                                                 input_offset_r,
-                                                                                 input_offset_c,
-                                                                                 input_lld,
-                                                                                 proc_r,
-                                                                                 proc_c,
-                                                                                 tile_r,
-                                                                                 tile_c,
-                                                                                 comm);
+  auto [buffer_2dbc, volume_2dbc, lld_2dbc] = cupynumeric::repartition_matrix_2dbc(input_ptr,
+                                                                                   input_volume,
+                                                                                   in_row_major,
+                                                                                   input_offset_r,
+                                                                                   input_offset_c,
+                                                                                   input_lld,
+                                                                                   proc_r,
+                                                                                   proc_c,
+                                                                                   tile_r,
+                                                                                   tile_c,
+                                                                                   comm);
 
   int32_t* output_ptr    = output.ptr(out_rect.lo);
   size_t output_volume   = out_rect.volume();
@@ -151,23 +151,23 @@ void repartition_2dbc_test(legate::AccessorRO<int32_t, 2> input,
     std::cerr << stringStream.str();
   }
 
-  cunumeric::repartition_matrix_block(buffer_2dbc,
-                                      volume_2dbc,
-                                      lld_2dbc,
-                                      local_rank,
-                                      proc_r,
-                                      proc_c,
-                                      tile_r,
-                                      tile_c,
-                                      output_ptr,
-                                      output_volume,
-                                      output_lld,
-                                      num_rows,
-                                      num_cols,
-                                      out_row_major,
-                                      output_offset_r,
-                                      output_offset_c,
-                                      comm);
+  cupynumeric::repartition_matrix_block(buffer_2dbc,
+                                        volume_2dbc,
+                                        lld_2dbc,
+                                        local_rank,
+                                        proc_r,
+                                        proc_c,
+                                        tile_r,
+                                        tile_c,
+                                        output_ptr,
+                                        output_volume,
+                                        output_lld,
+                                        num_rows,
+                                        num_cols,
+                                        out_row_major,
+                                        output_offset_r,
+                                        output_offset_c,
+                                        comm);
 }
 #endif
 
@@ -272,8 +272,8 @@ void run_test_aligned_default_launch(std::vector<uint64_t>& data_shape,
 
   // generate data
   size_t volume    = data_shape[0] * data_shape[1];
-  auto data_input  = cunumeric::zeros(data_shape, legate::int32());
-  auto data_output = cunumeric::zeros(data_shape, legate::int32());
+  auto data_input  = cupynumeric::zeros(data_shape, legate::int32());
+  auto data_output = cupynumeric::zeros(data_shape, legate::int32());
   if (volume != 0) {
     if (volume == 1) {
       data_input.fill(legate::Scalar(0));

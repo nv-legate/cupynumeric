@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.exp(*args: Any, out: Union[ndarray, None] = None,
+# cupynumeric.exp(*args: Any, out: Union[ndarray, None] = None,
 # where: bool = True, casting: CastingKind = 'same_kind',
 # order: str = 'K',
 # dtype: Union[np.dtype[Any], None] = None, **kwargs: Any) → ndarray
@@ -69,7 +69,7 @@ def test_casting_negative(casting):
     arr_np = np.array(arr_num)
     res_num = num.exp(arr_num, casting=casting)
     res_np = np.exp(arr_np, casting=casting)
-    # cuNumeric run successfully.
+    # cuPyNumeric run successfully.
     # Numpy raises " numpy.core._exceptions._UFuncInputCastingError:
     # Cannot cast ufunc 'exp' input from dtype('int64') to dtype('float64')
     # with casting rule 'no'
@@ -98,7 +98,7 @@ def test_where_false():
     arr_np = np.array(arr_num)
     np_out = np.ones(shape=shape)
     # Numpy get the results.
-    # cuNumeric raises "NotImplementedError:
+    # cuPyNumeric raises "NotImplementedError:
     # the 'where' keyword is not yet supported"
     num.exp(arr_num, where=False, out=num_out)
     np.exp(arr_np, where=False, out=np_out)

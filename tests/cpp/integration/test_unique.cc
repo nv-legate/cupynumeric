@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 

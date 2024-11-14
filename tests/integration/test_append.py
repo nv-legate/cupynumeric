@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import check_module_function
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 10
 

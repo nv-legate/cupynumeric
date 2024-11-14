@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM_CASES = [5, 40]
 
@@ -29,11 +29,11 @@ def _check_result(print_msg, err_arrs):
             print_output += (
                 f"Attr, {err_arr[0]}\n"
                 f"numpy result: {err_arr[1]}\n"
-                f"cunumeric_result: {err_arr[2]}\n"
+                f"cupynumeric_result: {err_arr[2]}\n"
             )
         assert False, (
             f"{print_output}"
-            f"cunumeric and numpy shows"
+            f"cupynumeric and numpy shows"
             f" different result\n"
         )
     else:

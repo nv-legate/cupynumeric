@@ -19,7 +19,7 @@ from numpy.lib import NumpyVersion
 from utils.comparisons import allclose
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def setitem(lib, a, slice_lhs, slice_rhs):

@@ -16,7 +16,7 @@
 
 #include "common_utils.h"
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 

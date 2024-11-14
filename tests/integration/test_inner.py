@@ -18,8 +18,8 @@ from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
-from cunumeric._utils.linalg import inner_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import inner_modes
 
 
 @pytest.mark.parametrize("b_ndim", range(LEGATE_MAX_DIM + 1))

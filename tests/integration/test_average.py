@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 axes = [None, 0, 1, 2, (0, 1, 2)]
 

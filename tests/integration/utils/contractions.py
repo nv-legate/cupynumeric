@@ -17,7 +17,7 @@ import numpy as np
 from legate.core import LEGATE_MAX_DIM
 from legate.core.utils import OrderedSet
 
-import cunumeric as num
+import cupynumeric as num
 
 from .comparisons import allclose
 from .generators import mk_0to1_array

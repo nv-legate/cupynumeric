@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
 INPUTS = (
     [-1, 4, 5],
@@ -39,7 +39,7 @@ FUNCTIONS = ("all", "any")
 @pytest.mark.parametrize("func", FUNCTIONS)
 def test_basic(func, input, keepdims):
     in_np = np.array(input)
-    # cuNumeric doesn't support reductions for complex128
+    # cuPyNumeric doesn't support reductions for complex128
     if in_np.dtype.kind == "c":
         in_np = in_np.astype("F")
     in_num = num.array(in_np)
@@ -64,7 +64,7 @@ def test_basic(func, input, keepdims):
 def test_axis_tuple(func, axes):
     # For axes=(-1, 0),
     # in Numpy, it pass
-    # in cuNumeric, raises ValueError:
+    # in cuPyNumeric, raises ValueError:
     # Invalid promotion on dimension 2 for a 1-D store
     input = [[[5, 10], [0, 100]]]
     in_np = np.array(input)

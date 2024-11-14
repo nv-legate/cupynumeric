@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def _gen_array(n0, shape, dt, axis, outtype):
@@ -86,7 +86,7 @@ def _run_tests(op, n0, shape, dt, axis, out0, outtype):
     else:
         print("FAIL!")
         print(f"INPUT    : {A}")
-        print(f"CUNUMERIC: {B}")
+        print(f"CUPYNUMERIC: {B}")
         print(f"NUMPY    : {C}")
         assert False
 
@@ -136,7 +136,7 @@ n0s = [
     "dtype, outtype",
     [
         pytest.param(np.int16, np.float64, marks=pytest.mark.xfail),
-        # NumPy and cuNumeric produce different values
+        # NumPy and cuPyNumeric produce different values
         # out_np: array([0., 0., 0., 0., 0., 0.])
         # out_num: array([0.16666667, 0.05555556, 0.02777778, 0.01851852,
         #                 0.0154321, 0.0154321 ]))
@@ -149,7 +149,7 @@ n0s = [
     "op",
     [
         pytest.param("cumsum", marks=pytest.mark.xfail),
-        # cunumeric.cumsum returns different value to numpy.cumsum
+        # cupynumeric.cumsum returns different value to numpy.cumsum
         # out_np: array([0., 0., 0., 0., 0., 0.])
         # out_num:
         # array([6.8983227e-310, 6.8983227e-310, 6.8983227e-310,
@@ -256,7 +256,7 @@ class TestScanErrors:
     def test_out_invalid_shape(self, op, out_shape):
         # for all ops and all out_shape,
         # in Numpy, it raises ValueError
-        # in cuNumeric, it raises NotImplementedError
+        # in cuPyNumeric, it raises NotImplementedError
         expected_exc = ValueError
         A = [1, 2, 3, 4]
         out_np = np.zeros(out_shape)

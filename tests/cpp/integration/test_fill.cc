@@ -18,7 +18,7 @@
 #include <limits>
 #include <cmath>
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 

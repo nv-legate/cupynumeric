@@ -19,7 +19,7 @@ from legate.core import LEGATE_MAX_DIM
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 VECTOR_ORDS = [None, np.inf, -np.inf, 0, 1, -1, 2, -2]
 
@@ -44,7 +44,7 @@ num_arrays = [
 def test_noaxis_1d(ord, keepdims, dtype):
     # for ord=0, dtype is np.complex64
     # Numpy output array is float32
-    # cuNumeric output array is complex64
+    # cuPyNumeric output array is complex64
     np_res = np.linalg.norm(
         np_arrays[1].astype(dtype), ord=ord, keepdims=keepdims
     )
@@ -101,7 +101,7 @@ def test_axis_1d(ndim, ord, keepdims):
 )
 def test_axis_2d(ndim, ord, keepdims, axis):
     # For all cases when axis is (1, 0) and ord is None or fro,
-    # output values of cuNumeric and Numpy are different and not close enough
+    # output values of cuPyNumeric and Numpy are different and not close enough
     np_res = np.linalg.norm(
         np_arrays[ndim], ord=ord, axis=axis, keepdims=keepdims
     )
@@ -113,7 +113,7 @@ def test_axis_2d(ndim, ord, keepdims, axis):
 
 class TestNormErrors:
     def test_axis_invalid_type(self):
-        # In cuNumeric, raises error in normalize_axis_tuple
+        # In cuPyNumeric, raises error in normalize_axis_tuple
         expected_exc = TypeError
         x_np = np.array([1, 2, 3])
         x_num = num.array([1, 2, 3])
@@ -131,7 +131,7 @@ class TestNormErrors:
         ids=lambda axis: f"(axis={axis})",
     )
     def test_axis_invalid_value(self, axis):
-        # for (1, 1), In cuNumeric, raises error in normalize_axis_tuple
+        # for (1, 1), In cuPyNumeric, raises error in normalize_axis_tuple
         expected_exc = ValueError
         ndim = 2
 

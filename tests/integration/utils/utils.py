@@ -15,8 +15,8 @@
 
 import numpy as np
 
-import cunumeric as num
-from cunumeric._utils import is_np2
+import cupynumeric as num
+from cupynumeric._utils import is_np2
 
 if is_np2:
     from numpy.exceptions import AxisError  # noqa: F401
@@ -50,8 +50,8 @@ def compare_array_and_print_results(a, b, print_msg, check_type=True):
         assert is_equal, (
             f"Failed, {print_msg}\n"
             f"numpy result: {err_arr[0]}\n"
-            f"cunumeric_result: {err_arr[1]}\n"
-            f"cunumeric and numpy shows"
+            f"cupynumeric_result: {err_arr[1]}\n"
+            f"cupynumeric and numpy shows"
             f" different result\n"
         )
         print(f"Passed, {print_msg}")
@@ -61,13 +61,13 @@ def compare_array_and_print_results(a, b, print_msg, check_type=True):
         assert is_equal, (
             f"Failed, {print_msg}\n"
             f"numpy result: {err_arr[0]}, {a.shape}\n"
-            f"cunumeric_result: {err_arr[1]}, {b.shape}\n"
-            f"cunumeric and numpy shows"
+            f"cupynumeric_result: {err_arr[1]}, {b.shape}\n"
+            f"cupynumeric and numpy shows"
             f" different result\n"
         )
         print(
             f"Passed, {print_msg}, np: ({a.shape}, {a.dtype})"
-            f", cunumeric: ({b.shape}, {b.dtype})"
+            f", cupynumeric: ({b.shape}, {b.dtype})"
         )
 
 

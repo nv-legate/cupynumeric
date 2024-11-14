@@ -22,7 +22,7 @@ function(find_or_configure_OpenBLAS)
   set(BLAS_name "OpenBLAS")
   set(BLAS_target "openblas")
 
-  # cuNumeric presently requires OpenBLAS
+  # cuPyNumeric presently requires OpenBLAS
   set(BLA_VENDOR OpenBLAS)
 
   # TODO: should we find (or build) 64-bit BLAS?
@@ -35,8 +35,8 @@ function(find_or_configure_OpenBLAS)
 
   set(FIND_PKG_ARGS      ${PKG_VERSION}
       GLOBAL_TARGETS     ${BLAS_target}
-      BUILD_EXPORT_SET   cunumeric-exports
-      INSTALL_EXPORT_SET cunumeric-exports)
+      BUILD_EXPORT_SET   cupynumeric-exports
+      INSTALL_EXPORT_SET cupynumeric-exports)
 
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/cpm_helpers.cmake)
   if(PKG_BRANCH)
@@ -105,35 +105,35 @@ function(find_or_configure_OpenBLAS)
       FINAL_CODE_BLOCK code_string)
 
     # Do `CPMFindPackage(BLAS)` in build dir
-    rapids_export_package(BUILD BLAS cunumeric-exports
+    rapids_export_package(BUILD BLAS cupynumeric-exports
       VERSION ${PKG_VERSION} GLOBAL_TARGETS ${BLAS_target})
 
     # Tell cmake where it can find the generated blas-config.cmake
     include("${rapids-cmake-dir}/export/find_package_root.cmake")
-    rapids_export_find_package_root(BUILD BLAS [=[${CMAKE_CURRENT_LIST_DIR}]=] EXPORT_SET cunumeric-exports)
+    rapids_export_find_package_root(BUILD BLAS [=[${CMAKE_CURRENT_LIST_DIR}]=] EXPORT_SET cupynumeric-exports)
   endif()
 endfunction()
 
-if(NOT DEFINED cunumeric_OPENBLAS_VERSION)
+if(NOT DEFINED cupynumeric_OPENBLAS_VERSION)
   # Before v0.3.18, OpenBLAS's throws CMake errors when configuring
-  set(cunumeric_OPENBLAS_VERSION "0.3.20")
+  set(cupynumeric_OPENBLAS_VERSION "0.3.20")
 endif()
 
-if(NOT DEFINED cunumeric_OPENBLAS_BRANCH)
-  set(cunumeric_OPENBLAS_BRANCH "")
+if(NOT DEFINED cupynumeric_OPENBLAS_BRANCH)
+  set(cupynumeric_OPENBLAS_BRANCH "")
 endif()
 
-if(NOT DEFINED cunumeric_OPENBLAS_TAG)
-  set(cunumeric_OPENBLAS_TAG v${cunumeric_OPENBLAS_VERSION})
+if(NOT DEFINED cupynumeric_OPENBLAS_TAG)
+  set(cupynumeric_OPENBLAS_TAG v${cupynumeric_OPENBLAS_VERSION})
 endif()
 
-if(NOT DEFINED cunumeric_OPENBLAS_REPOSITORY)
-  set(cunumeric_OPENBLAS_REPOSITORY https://github.com/xianyi/OpenBLAS.git)
+if(NOT DEFINED cupynumeric_OPENBLAS_REPOSITORY)
+  set(cupynumeric_OPENBLAS_REPOSITORY https://github.com/xianyi/OpenBLAS.git)
 endif()
 
-find_or_configure_OpenBLAS(VERSION          ${cunumeric_OPENBLAS_VERSION}
-                           REPOSITORY       ${cunumeric_OPENBLAS_REPOSITORY}
-                           BRANCH           ${cunumeric_OPENBLAS_BRANCH}
-                           PINNED_TAG       ${cunumeric_OPENBLAS_TAG}
-                           EXCLUDE_FROM_ALL ${cunumeric_EXCLUDE_OPENBLAS_FROM_ALL}
+find_or_configure_OpenBLAS(VERSION          ${cupynumeric_OPENBLAS_VERSION}
+                           REPOSITORY       ${cupynumeric_OPENBLAS_REPOSITORY}
+                           BRANCH           ${cupynumeric_OPENBLAS_BRANCH}
+                           PINNED_TAG       ${cupynumeric_OPENBLAS_TAG}
+                           EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_OPENBLAS_FROM_ALL}
 )

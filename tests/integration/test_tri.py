@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import check_module_function
 
-import cunumeric as num
+import cupynumeric as num
 
 KS = (0, -1, 1, -2, 2)
 N = 100
@@ -25,7 +25,7 @@ N = 100
 
 @pytest.mark.parametrize("n", (0, 1, N), ids=lambda n: f"(n={n})")
 def test_tri_n(n):
-    print_msg = f"np & cunumeric.tri({n})"
+    print_msg = f"np & cupynumeric.tri({n})"
     check_module_function("tri", [n], {}, print_msg)
 
 
@@ -33,13 +33,13 @@ def test_tri_n(n):
 @pytest.mark.parametrize("m", (1, 10, N), ids=lambda m: f"(M={m})")
 @pytest.mark.parametrize("n", (1, N), ids=lambda n: f"(n={n})")
 def test_tri_full(n, m, k):
-    print_msg = f"np & cunumeric.tri({n}, k={k}, M={m})"
+    print_msg = f"np & cupynumeric.tri({n}, k={k}, M={m})"
     check_module_function("tri", [n], {"k": k, "M": m}, print_msg)
 
 
 @pytest.mark.parametrize("m", (0, None), ids=lambda m: f"(M={m})")
 def test_tri_m(m):
-    print_msg = f"np & cunumeric.tri({N}, M={m})"
+    print_msg = f"np & cupynumeric.tri({N}, M={m})"
     check_module_function("tri", [N], {"M": m}, print_msg)
 
 
@@ -53,18 +53,18 @@ DTYPES = (
 
 @pytest.mark.parametrize("dtype", DTYPES, ids=str)
 def test_tri_dtype(dtype):
-    # cuNumeric: returns an array with dtype=int
+    # cuPyNumeric: returns an array with dtype=int
     # Numpy: returns an array with dtype=float
-    print_msg = f"np & cunumeric.tri({N}, dtype={dtype})"
+    print_msg = f"np & cupynumeric.tri({N}, dtype={dtype})"
     check_module_function("tri", [N], {"dtype": dtype}, print_msg)
 
 
 @pytest.mark.xfail
 @pytest.mark.parametrize("k", (-10.5, 0.0, 10.5), ids=lambda k: f"(k={k})")
 def test_tri_float_k(k):
-    # cuNumeric: struct.error: required argument is not an integer
+    # cuPyNumeric: struct.error: required argument is not an integer
     # Numpy: pass
-    print_msg = f"np & cunumeric.tri({N}, k={k})"
+    print_msg = f"np & cupynumeric.tri({N}, k={k})"
     check_module_function("tri", [N], {"k": k}, print_msg)
 
 
@@ -140,7 +140,7 @@ class TestTriErrors:
 
     @pytest.mark.xfail
     def test_k_none(self):
-        # In cuNumeric, it raises struct.error,
+        # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer
         # In Numpy, it raises TypeError,
         # msg is bad operand type for unary -: 'NoneType'

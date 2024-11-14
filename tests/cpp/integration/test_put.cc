@@ -17,7 +17,7 @@
 #include "common_utils.h"
 #include <tuple>
 
-using namespace cunumeric;
+using namespace cupynumeric;
 namespace {
 
 template <typename T, typename U, typename V>

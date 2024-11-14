@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 auto get_expect_result_int()
@@ -498,7 +498,7 @@ void test_sort(std::array<T, SIZE>& in_array,
                std::vector<uint64_t> shape,
                std::optional<int32_t> axis)
 {
-  auto A1 = cunumeric::zeros(shape, leg_type);
+  auto A1 = cupynumeric::zeros(shape, leg_type);
   if (in_array.size() != 0) {
     if (in_array.size() == 1) {
       A1.fill(legate::Scalar(in_array[0]));
@@ -508,7 +508,7 @@ void test_sort(std::array<T, SIZE>& in_array,
   }
   std::vector<std::string> algos = {"quicksort", "mergesort", "heapsort", "stable"};
   for (auto algo = algos.begin(); algo < algos.end(); ++algo) {
-    auto B1 = cunumeric::sort(A1, axis, *algo);
+    auto B1 = cupynumeric::sort(A1, axis, *algo);
     if (in_array.size() != 0) {
       check_array_eq<T, DIM>(B1, expect.data(), expect.size());
     }
@@ -615,14 +615,14 @@ void sort_single_item_array()
 
 void sort_negative_test()
 {
-  auto in_ar1 = cunumeric::zeros({2, 3}, legate::int32());
+  auto in_ar1 = cupynumeric::zeros({2, 3}, legate::int32());
 
   // Test invalid input sort axis
-  EXPECT_THROW(cunumeric::sort(in_ar1, 2, "quicksort"), std::invalid_argument);
-  EXPECT_THROW(cunumeric::sort(in_ar1, -3, "quicksort"), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::sort(in_ar1, 2, "quicksort"), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::sort(in_ar1, -3, "quicksort"), std::invalid_argument);
 
   // Test invalid input algorithm
-  EXPECT_THROW(cunumeric::sort(in_ar1, 0, "negative"), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::sort(in_ar1, 0, "negative"), std::invalid_argument);
 }
 
 // void cpp_test()

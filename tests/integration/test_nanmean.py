@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 7
 
@@ -94,7 +94,7 @@ def test_basic_where(size):
 @pytest.mark.parametrize("axis", ((-3, -1), (-1, 0), (-2, 2), (0, 2)))
 def test_axis_tuple(axis):
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     size = (3, 4, 7)
     arr_np = np.random.randint(-5, 5, size=size).astype(float)
     arr_np[arr_np % 2 == 1] = np.nan

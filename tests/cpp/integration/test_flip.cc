@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 auto get_flip_expect_result_int()
@@ -330,7 +330,7 @@ void test_flip(std::array<T, SIZE>& in_array,
                std::vector<uint64_t> shape,
                std::optional<std::vector<int32_t>> axis = std::nullopt)
 {
-  auto A1 = cunumeric::zeros(shape, leg_type);
+  auto A1 = cupynumeric::zeros(shape, leg_type);
   if (in_array.size() != 0) {
     if (in_array.size() == 1) {
       A1.fill(legate::Scalar(in_array[0]));
@@ -339,7 +339,7 @@ void test_flip(std::array<T, SIZE>& in_array,
     }
   }
 
-  auto B1 = cunumeric::flip(A1, axis);
+  auto B1 = cupynumeric::flip(A1, axis);
   check_array_eq<T, DIM>(B1, expect.data(), expect.size());
 }
 
@@ -636,23 +636,23 @@ void flip_single_item_array()
 
 void flip_negative_test()
 {
-  auto in_array = cunumeric::zeros({2, 3}, legate::int32());
+  auto in_array = cupynumeric::zeros({2, 3}, legate::int32());
 
   // Test axis out-of-bound
   auto axes1 = {12};
-  EXPECT_THROW(cunumeric::flip(in_array, axes1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::flip(in_array, axes1), std::invalid_argument);
 
   // Test axis out-of-bound negative
   auto axes2 = {-12};
-  EXPECT_THROW(cunumeric::flip(in_array, axes2), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::flip(in_array, axes2), std::invalid_argument);
 
   // Test axis repeated axis
   auto axes3 = {1, 1};
-  EXPECT_THROW(cunumeric::flip(in_array, axes3), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::flip(in_array, axes3), std::invalid_argument);
 
   // Test axis out-of-bound multiple
   auto axes4 = {1, 2};
-  EXPECT_THROW(cunumeric::flip(in_array, axes4), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::flip(in_array, axes4), std::invalid_argument);
 }
 
 // void cpp_test()

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.utils import check_array_method
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 10
 
@@ -39,7 +39,7 @@ SIZES = [
 @pytest.mark.parametrize("size", SIZES, ids=str)
 def test_basic(order, size):
     a = np.random.randint(low=0, high=100, size=size)
-    print_msg = f"np & cunumeric.ndarray.flatten({order})"
+    print_msg = f"np & cupynumeric.ndarray.flatten({order})"
     check_array_method(a, "flatten", [order], {}, print_msg)
 
 

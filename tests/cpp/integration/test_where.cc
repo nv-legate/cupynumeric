@@ -20,10 +20,10 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "common_utils.h"
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 template <typename T>
 void test_where_basic(std::vector<T> in_a,

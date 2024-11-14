@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose as _allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def allclose(A, B):

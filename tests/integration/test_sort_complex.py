@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.sort_complex(a: ndarray) → ndarray
+# cupynumeric.sort_complex(a: ndarray) → ndarray
 
 DIM = 5
 SIZES = [

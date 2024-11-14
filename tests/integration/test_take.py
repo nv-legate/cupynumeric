@@ -18,7 +18,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 x = mk_seq_array(np, (3, 4, 5))
 x_num = mk_seq_array(num, (3, 4, 5))
@@ -114,7 +114,7 @@ def test_empty_array_and_indices():
 def test_ndim_default_mode(ndim, shape_in):
     # for shape_in=(2, 2) and ndim=4,
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError:
+    # In cuPyNumeric, it raises ValueError:
     # Point cannot exceed 4 dimensions set from LEGATE_MAX_DIM
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -142,7 +142,7 @@ def test_ndim_default_mode(ndim, shape_in):
 def test_ndim_mode(ndim, mode, shape_in):
     # for shape_in=(3, 4) and ndim=4,
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError:
+    # In cuPyNumeric, it raises ValueError:
     # Point cannot exceed 4 dimensions set from LEGATE_MAX_DIM
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -260,7 +260,7 @@ class TestTakeErrors:
         # In Numpy,
         # for np.float32, it raises TypeError
         # for np.int64 and np.int32, it pass
-        # In cuNumeric,
+        # In cuPyNumeric,
         # for np.float32, it raises ValueError
         # for np.int32, it raises ValueError
         # for np.int64, it pass

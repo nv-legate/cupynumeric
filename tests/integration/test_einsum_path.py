@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 expr = "ij,jk,kl->il"
 np_a = np.empty((2, 2))
@@ -61,7 +61,7 @@ def test_einsum_path_optimize_opposite(optimize):
         path_num, _ = num.einsum_path(
             expr, num_a, num_b, num_c, optimize=optimize
         )
-        # cuNumeric raises ValueError: einsum_path: unexpected value
+        # cuPyNumeric raises ValueError: einsum_path: unexpected value
         # for optimize: 2
 
 
@@ -71,7 +71,7 @@ def test_einsum_path_optimize_none():
     path_np, _ = np.einsum_path(expr, np_a, np_b, np_c, optimize=optimize)
     # Numpy returns results
     path_num, _ = num.einsum_path(expr, num_a, num_b, num_c, optimize=optimize)
-    # cunumeric raises ValueError: einsum_path: unexpected value
+    # cupynumeric raises ValueError: einsum_path: unexpected value
     # for optimize: None
     assert path_np == path_num
 

@@ -18,7 +18,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array, mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_scalar():
@@ -178,7 +178,7 @@ def test_ndim(ndim):
 def test_a_values_different_shapes(shape_val):
     # for (2, 3, 4),
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError
+    # In cuPyNumeric, it raises ValueError
     shape_arr = (3, 4)
     np_arr = mk_seq_array(np, shape_arr)
     num_arr = mk_seq_array(num, shape_arr)
@@ -226,7 +226,7 @@ class TestPutmaskErrors:
     def test_a_values_different_dtype(self, dtype_val):
         # for both cases,
         # In Numpy, it raises TypeError
-        # In cuNumeric, it pass
+        # In cuPyNumeric, it pass
         expected_exc = TypeError
         shape = (3, 4)
         dtype_arr = int

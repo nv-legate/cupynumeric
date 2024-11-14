@@ -15,7 +15,7 @@
 
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 LIST_X = [1, 2, 3]
 

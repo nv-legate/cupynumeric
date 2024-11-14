@@ -18,8 +18,8 @@ from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
-from cunumeric._utils.linalg import dot_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import dot_modes
 
 
 @pytest.mark.parametrize("b_ndim", range(LEGATE_MAX_DIM + 1))
@@ -64,7 +64,7 @@ class TestDotErrors:
     )
     def test_out_invalid_dtype(self, dtype):
         # In Numpy, for np.float32 and np.int64, it raises ValueError
-        # In cuNumeric,
+        # In cuPyNumeric,
         # for np.float32, it pass
         # for np.int64, it raises TypeError: Unsupported type: int64
         out = num.zeros((5, 2), dtype=dtype)

@@ -1,0 +1,52 @@
+[
+  {
+    "name": "22.05",
+    "version": "22.05",
+    "url": "https://nv-legate.github.io/cupynumeric/22.05/"
+  },
+  {
+    "name": "22.08",
+    "version": "22.08",
+    "url": "https://nv-legate.github.io/cupynumeric/22.08/"
+  },
+  {
+    "name": "22.10",
+    "version": "22.10",
+    "url": "https://nv-legate.github.io/cupynumeric/22.10/"
+  },
+  {
+    "name": "23.01",
+    "version": "23.01",
+    "url": "https://nv-legate.github.io/cupynumeric/23.01/"
+  },
+  {
+    "name": "23.03",
+    "version": "23.03",
+    "url": "https://nv-legate.github.io/cupynumeric/23.03/"
+  },
+  {
+    "name": "23.07",
+    "version": "23.07",
+    "url": "https://nv-legate.github.io/cupynumeric/23.07/"
+  },
+  {
+    "name": "23.09",
+    "version": "23.09",
+    "url": "https://nv-legate.github.io/cupynumeric/23.09/"
+  },
+  {
+    "name": "23.11",
+    "version": "23.11",
+    "url": "https://nv-legate.github.io/cupynumeric/23.11/"
+  },
+  {
+    "name": "24.06",
+    "version": "24.06",
+    "url": "https://docs.nvidia.com/cupynumeric/24.06/"
+  },
+  {
+    "name": "24.11",
+    "version": "24.11",
+    "url": "https://docs.nvidia.com/cupynumeric/24.11/"
+  }
+]

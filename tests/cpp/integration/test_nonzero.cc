@@ -120,8 +120,8 @@ void test_nonzero(const std::vector<T>& in_array,
                   const std::vector<std::vector<int64_t>>& expect,
                   const std::vector<uint64_t>& shape)
 {
-  auto array         = cunumeric::mk_array<T>(in_array, shape);
-  auto result_vec    = cunumeric::nonzero(array);
+  auto array         = cupynumeric::mk_array<T>(in_array, shape);
+  auto result_vec    = cupynumeric::nonzero(array);
   size_t result_size = result_vec.size();
   ASSERT_EQ(result_size, expect.size());
   std::vector<uint64_t> expect_shape = {};
@@ -133,7 +133,7 @@ void test_nonzero(const std::vector<T>& in_array,
     }
   }
   for (size_t i = 0; i < result_size; ++i) {
-    cunumeric::check_array<int64_t>(result_vec[i], expect[i], expect_shape);
+    cupynumeric::check_array<int64_t>(result_vec[i], expect[i], expect_shape);
   }
 }
 

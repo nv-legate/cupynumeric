@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 auto get_msort_expect_result_int()
@@ -193,7 +193,7 @@ void test_msort(std::array<T, SIZE>& in_array,
                 legate::Type leg_type,
                 std::vector<uint64_t> shape)
 {
-  auto A1 = cunumeric::zeros(shape, leg_type);
+  auto A1 = cupynumeric::zeros(shape, leg_type);
   if (in_array.size() != 0) {
     if (in_array.size() == 1) {
       A1.fill(legate::Scalar(in_array[0]));
@@ -203,7 +203,7 @@ void test_msort(std::array<T, SIZE>& in_array,
     print_array<T, DIM>(A1);
   }
 
-  auto B1 = cunumeric::msort(A1);
+  auto B1 = cupynumeric::msort(A1);
   check_array_eq<T, DIM>(B1, expect.data(), expect.size());
 }
 

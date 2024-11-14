@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 template <typename T>
@@ -77,13 +77,13 @@ auto test_eye_3_2(std::vector<int32_t>& k_vals, std::optional<legate::Type> type
   std::vector<uint64_t> expect_shape = {3, 2};
   for (auto k : k_vals) {
     if (type.has_value()) {
-      auto result = cunumeric::eye(3, 2, k, type.value());
+      auto result = cupynumeric::eye(3, 2, k, type.value());
       EXPECT_EQ(result.type(), type.value());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[k];
       check_array_eq<T, 2>(result, expect.data(), expect.size());
     } else {
-      auto result = cunumeric::eye(3, 2, k);
+      auto result = cupynumeric::eye(3, 2, k);
       EXPECT_EQ(result.type(), legate::float64());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[k];
@@ -99,13 +99,13 @@ auto test_eye_3_3(std::vector<int32_t>& k_vals, std::optional<legate::Type> type
   std::vector<uint64_t> expect_shape = {3, 3};
   for (auto k : k_vals) {
     if (type.has_value()) {
-      auto result = cunumeric::eye(3, 3, k, type.value());
+      auto result = cupynumeric::eye(3, 3, k, type.value());
       EXPECT_EQ(result.type(), type.value());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[k];
       check_array_eq<T, 2>(result, expect.data(), expect.size());
     } else {
-      auto result = cunumeric::eye(3, 3, k);
+      auto result = cupynumeric::eye(3, 3, k);
       EXPECT_EQ(result.type(), legate::float64());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[k];
@@ -121,13 +121,13 @@ auto test_eye_3_4(std::vector<int32_t>& k_vals, std::optional<legate::Type> type
   std::vector<uint64_t> expect_shape = {3, 4};
   for (auto k : k_vals) {
     if (type.has_value()) {
-      auto result = cunumeric::eye(3, 4, k, type.value());
+      auto result = cupynumeric::eye(3, 4, k, type.value());
       EXPECT_EQ(result.type(), type.value());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[k];
       check_array_eq<T, 2>(result, expect.data(), expect.size());
     } else {
-      auto result = cunumeric::eye(3, 4, k);
+      auto result = cupynumeric::eye(3, 4, k);
       EXPECT_EQ(result.type(), legate::float64());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[k];
@@ -145,13 +145,13 @@ auto test_eye_square_3(std::optional<std::vector<int32_t>> k_vals = std::nullopt
   if (k_vals.has_value()) {
     for (auto k : k_vals.value()) {
       if (type.has_value()) {
-        auto result = cunumeric::eye(3, std::nullopt, k, type.value());
+        auto result = cupynumeric::eye(3, std::nullopt, k, type.value());
         EXPECT_EQ(result.type(), type.value());
         EXPECT_EQ(result.shape(), expect_shape);
         auto expect = expect_result[k];
         check_array_eq<T, 2>(result, expect.data(), expect.size());
       } else {
-        auto result = cunumeric::eye(3, std::nullopt, k);
+        auto result = cupynumeric::eye(3, std::nullopt, k);
         EXPECT_EQ(result.type(), legate::float64());
         auto expect = expect_result[k];
         check_array_eq<T, 2>(result, expect.data(), expect.size());
@@ -159,13 +159,13 @@ auto test_eye_square_3(std::optional<std::vector<int32_t>> k_vals = std::nullopt
     }
   } else {
     if (type.has_value()) {
-      auto result = cunumeric::eye(3, std::nullopt, 0, type.value());
+      auto result = cupynumeric::eye(3, std::nullopt, 0, type.value());
       EXPECT_EQ(result.type(), type.value());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[0];
       check_array_eq<T, 2>(result, expect.data(), expect.size());
     } else {
-      auto result = cunumeric::eye(3);
+      auto result = cupynumeric::eye(3);
       EXPECT_EQ(result.type(), legate::float64());
       EXPECT_EQ(result.shape(), expect_shape);
       auto expect = expect_result[0];
@@ -214,14 +214,14 @@ void eye_square()
 void eye_input_zero()
 {
   // Test n=0
-  auto result1                        = cunumeric::eye(0);
+  auto result1                        = cupynumeric::eye(0);
   std::vector<uint64_t> expect_shape1 = {0, 0};
   EXPECT_EQ(result1.type(), legate::float64());
   EXPECT_EQ(result1.size(), 0);
   EXPECT_EQ(result1.shape(), expect_shape1);
 
   // Test m=0
-  auto result2                        = cunumeric::eye(3, 0);
+  auto result2                        = cupynumeric::eye(3, 0);
   std::vector<uint64_t> expect_shape2 = {3, 0};
   EXPECT_EQ(result2.type(), legate::float64());
   EXPECT_EQ(result2.size(), 0);
@@ -233,7 +233,7 @@ void eye_large_array()
   const size_t n_or_m = 1000;
 
   // Test 1000 * 1000 array
-  auto result1                        = cunumeric::eye(n_or_m);
+  auto result1                        = cupynumeric::eye(n_or_m);
   std::vector<uint64_t> expect_shape1 = {n_or_m, n_or_m};
   std::array<double, n_or_m * n_or_m> expect_result1;
   expect_result1.fill(0);
@@ -246,7 +246,7 @@ void eye_large_array()
 
   // Test 3 * 1000 array
   const size_t n                      = 3;
-  auto result2                        = cunumeric::eye(n, n_or_m, 0, legate::int32());
+  auto result2                        = cupynumeric::eye(n, n_or_m, 0, legate::int32());
   std::vector<uint64_t> expect_shape2 = {n, n_or_m};
   std::array<int32_t, n * n_or_m> expect_result2;
   expect_result2.fill(0);
@@ -259,7 +259,7 @@ void eye_large_array()
 
   // Test 1000 * 3 array
   const size_t m                      = 3;
-  auto result3                        = cunumeric::eye(n_or_m, m, 0, legate::complex64());
+  auto result3                        = cupynumeric::eye(n_or_m, m, 0, legate::complex64());
   std::vector<uint64_t> expect_shape3 = {n_or_m, m};
   std::array<complex<float>, n_or_m * m> expect_result3;
   expect_result3.fill(0);
@@ -276,16 +276,16 @@ void eye_large_array()
 void eye_negative()
 {
   // Test bad n
-  EXPECT_THROW(cunumeric::eye(-1), std::invalid_argument);
-  EXPECT_THROW(cunumeric::eye(-1, 3), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::eye(-1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::eye(-1, 3), std::invalid_argument);
 
   // Test bad m
-  EXPECT_THROW(cunumeric::eye(3, -1), std::invalid_argument);
-  EXPECT_THROW(cunumeric::eye(-1, -1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::eye(3, -1), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::eye(-1, -1), std::invalid_argument);
 
   // Test bad dtype
-  EXPECT_THROW(cunumeric::eye(3, std::nullopt, 0, legate::binary_type(2)), std::invalid_argument);
-  EXPECT_THROW(cunumeric::eye(3, std::nullopt, 0, legate::point_type(2)), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::eye(3, std::nullopt, 0, legate::binary_type(2)), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::eye(3, std::nullopt, 0, legate::point_type(2)), std::invalid_argument);
 }
 
 // void cpp_test()

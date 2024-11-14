@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_array_equal():
@@ -33,7 +33,7 @@ def test_ufunc():
     # methods. If logical_and.accumulate becomes implemented in the future,
     # this assertion will start to fail, and a new (unimplemented) ufunc method
     # should be found to replace it
-    assert not num.logical_and.accumulate._cunumeric.implemented
+    assert not num.logical_and.accumulate._cupynumeric.implemented
 
     out_num = num.logical_and.accumulate(in_num)
     out_np = np.logical_and.accumulate(in_np)

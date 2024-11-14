@@ -14,11 +14,11 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.xfail(
-    reason="https://github.com/nv-legate/cunumeric.internal/issues/199"
+    reason="https://github.com/nv-legate/cupynumeric.internal/issues/199"
 )
 def test_basic_num() -> None:
     num.random.seed(10)
@@ -45,7 +45,7 @@ def test_basic_np() -> None:
 
 
 @pytest.mark.xfail(
-    reason="https://github.com/nv-legate/cunumeric.internal/issues/199"
+    reason="https://github.com/nv-legate/cupynumeric.internal/issues/199"
 )
 def test_none_num() -> None:
     num.random.seed()
@@ -100,7 +100,7 @@ def test_float() -> None:
         np.random.seed(10.5)
         # TypeError: 'float' object cannot be interpreted as an integer
     num.random.seed(10.5)
-    # cuNumeric passed with float
+    # cuPyNumeric passed with float
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 

@@ -18,7 +18,7 @@ import re
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 INF_VALUES = [-np.inf, np.inf]
 FLOAT_FILL_VALUES = (-2.4e120, -1.3, 8.9e-130, 0.0, 5.7e-150, 0.6, 3.7e160)
@@ -53,11 +53,11 @@ def test_fill_int_with_none():
     a_np = np.full((2, 3), 1)
     a_num = num.array(a_np)
     # numpy fill with -9223372036854775808,
-    # while cunumeric raises TypeError
+    # while cupynumeric raises TypeError
     #
     # Update (wonchan): Numpy 1.23.3 no longer fills
     # the array with -9223372036854775808 on 'array.fill(None)'
-    # but raises the same exception as cuNumeric
+    # but raises the same exception as cuPyNumeric
     try:
         int(None)
     except TypeError as e:
@@ -70,7 +70,7 @@ def test_fill_int_with_nan():
     a_np = np.full((2, 3), 1)
     a_num = num.array(a_np)
     # numpy fill with -9223372036854775808,
-    # while cunumeric raises ValueError
+    # while cupynumeric raises ValueError
     msg = r"cannot convert float NaN to integer"
     with pytest.raises(ValueError, match=msg):
         a_num.fill(np.nan)
@@ -81,7 +81,7 @@ def test_fill_inf_to_int(value: float) -> None:
     a_np = np.full((2, 3), 1)
     a_num = num.array(a_np)
     # numpy fill with -9223372036854775808,
-    # while cunumeric raises OverflowError
+    # while cupynumeric raises OverflowError
     msg = r"cannot convert float infinity to integer"
     with pytest.raises(OverflowError, match=msg):
         a_num.fill(value)
@@ -110,7 +110,7 @@ def test_fill_float_to_int(value: float) -> None:
     a_np = np.full((2, 3), 1)
     a_num = num.array(a_np)
     # numpy fill with -9223372036854775808,
-    # while cunumeric raises OverflowError
+    # while cupynumeric raises OverflowError
     msg = r"Python int too large to convert to C long"
     with pytest.raises(OverflowError, match=msg):
         a_num.fill(value)

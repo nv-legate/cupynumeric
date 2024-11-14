@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from numpy.lib import NumpyVersion
 
-import cunumeric as num
+import cupynumeric as num
 
 arr_np = np.eye(4)
 vec_np = np.arange(4).astype(np.float64)

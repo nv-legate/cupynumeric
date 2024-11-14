@@ -17,7 +17,7 @@ import gc
 
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_all():

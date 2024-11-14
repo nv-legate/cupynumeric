@@ -17,7 +17,7 @@ import inspect
 
 import pytest
 
-import cunumeric._utils.stack as m  # module under test
+import cupynumeric._utils.stack as m  # module under test
 
 
 def test_find_last_user_stacklevel() -> None:

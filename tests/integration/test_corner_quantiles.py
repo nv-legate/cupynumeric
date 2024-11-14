@@ -19,7 +19,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 ALL_METHODS = (
     "inverted_cdf",
@@ -116,8 +116,8 @@ def test_quantiles_w_output(str_method, axes, qs_arr, keepdims):
         q_out = num.zeros((*qs_arr.shape, *remaining_shape), dtype=float)
         # np_q_out = np.zeros((*qs_arr.shape, *remaining_shape), dtype=float)
 
-    # cunumeric:
-    # print("cunumeric axis = %d:"%(axis))
+    # cupynumeric:
+    # print("cupynumeric axis = %d:"%(axis))
     num.quantile(
         arr, qs_arr, axis=axes, out=q_out, method=str_method, keepdims=keepdims
     )
@@ -189,8 +189,8 @@ def test_quantiles_axis_none(str_method, qin_arr, keepdims):
     else:
         qs_arr = np.array(qin_arr)
 
-    # cunumeric:
-    # print("cunumeric axis = %d:"%(axis))
+    # cupynumeric:
+    # print("cupynumeric axis = %d:"%(axis))
     q_out = num.quantile(
         arr,
         qs_arr,

@@ -27,11 +27,11 @@
 #include <gtest/gtest.h>
 
 #include "legate.h"
-#include "cunumeric.h"
-#include "cunumeric/runtime.h"
+#include "cupynumeric.h"
+#include "cupynumeric/runtime.h"
 #include "util.inl"
 
-namespace cunumeric {
+namespace cupynumeric {
 
 void debug_array(NDArray a, bool show_data = true);
 
@@ -66,7 +66,7 @@ NDArray mk_array(std::vector<T> const& values, std::vector<uint64_t> shape = {})
   } else {
     auto a1 = zeros({out.size()}, out.type());
     assign_values(a1, values);
-    auto runtime = CuNumericRuntime::get_runtime();
+    auto runtime = CuPyNumericRuntime::get_runtime();
     auto a2      = runtime->create_array(std::move(a1.get_store().delinearize(0, shape)));
     out.assign(a2);
   }
@@ -134,7 +134,7 @@ void check_array_near(NDArray a,
 template <typename T>
 struct PrintArray {
   template <int32_t DIM>
-  void operator()(cunumeric::NDArray array)
+  void operator()(cupynumeric::NDArray array)
   {
     auto acc            = array.get_read_accessor<T, DIM>();
     auto& shape         = array.shape();
@@ -193,4 +193,4 @@ std::vector<T> as_type_vector(std::vector<U> const& in)
   return out;
 }
 
-}  // namespace cunumeric
+}  // namespace cupynumeric

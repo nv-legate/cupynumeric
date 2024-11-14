@@ -17,7 +17,7 @@
 #include <gtest/gtest.h>
 #include "common_utils.h"
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 
@@ -157,7 +157,7 @@ TEST_P(BartlettTest, Basic)
 {
   auto& [input, expected_values, expected_shape] = GetParam();
 
-  auto result = cunumeric::bartlett(input);
+  auto result = cupynumeric::bartlett(input);
   check_array_near(result, expected_values, expected_shape);
 }
 
@@ -165,7 +165,7 @@ TEST_P(BlackmanTest, Basic)
 {
   auto& [input, expected_values, expected_shape] = GetParam();
 
-  auto result = cunumeric::blackman(input);
+  auto result = cupynumeric::blackman(input);
   check_array_near(result, expected_values, expected_shape);
 }
 
@@ -173,7 +173,7 @@ TEST_P(HammingTest, Basic)
 {
   auto& [input, expected_values, expected_shape] = GetParam();
 
-  auto result = cunumeric::hamming(input);
+  auto result = cupynumeric::hamming(input);
   check_array_near(result, expected_values, expected_shape);
 }
 
@@ -181,7 +181,7 @@ TEST_P(HanningTest, Basic)
 {
   auto& [input, expected_values, expected_shape] = GetParam();
 
-  auto result = cunumeric::hanning(input);
+  auto result = cupynumeric::hanning(input);
   check_array_near(result, expected_values, expected_shape);
 }
 
@@ -189,7 +189,7 @@ TEST_P(KaiserTest, Basic)
 {
   auto& [input, beta_input, expected_values, expected_shape] = GetParam();
 
-  auto result = cunumeric::kaiser(input, beta_input);
+  auto result = cupynumeric::kaiser(input, beta_input);
   check_array_near(result, expected_values, expected_shape);
 }
 

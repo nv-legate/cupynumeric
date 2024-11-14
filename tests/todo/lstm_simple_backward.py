@@ -15,7 +15,7 @@
 
 import numpy as np
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def testtion():

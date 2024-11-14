@@ -17,7 +17,7 @@ build_release_product() {
     conda_build_args+=(-c conda-forge);
     conda_build_args+=(--override-channels);
     conda_build_args+=(-c file:///tmp/conda-build/legate);
-    conda_build_args+=(--croot /tmp/conda-build/cunumeric);
+    conda_build_args+=(--croot /tmp/conda-build/cupynumeric);
     conda_build_args+=(--numpy 1.22);
     conda_build_args+=(--no-test);
     conda_build_args+=(--no-verify);
@@ -36,7 +36,7 @@ build_release_product() {
 
     conda_build_args+=(--variants "$variantOpts")
 
-    # https://github.com/nv-legate/cunumeric.internal/pull/351#issuecomment-2286922486
+    # https://github.com/nv-legate/cupynumeric.internal/pull/351#issuecomment-2286922486
     export CONDA_OVERRIDE_CUDA="${CUDA_VERSION}"
     conda mambabuild "${conda_build_args[@]}" "${REPO_DIR}/conda/conda-build";
 
@@ -65,25 +65,25 @@ copy_ci_artifacts() {
 build_ci_product() {
     set -xeuo pipefail;
 
-    printf "\n\n\n\n********* BUILDING CUNUMERIC CPP *********\n"
-    build-cunumeric-cpp;
+    printf "\n\n\n\n********* BUILDING CUPYNUMERIC CPP *********\n"
+    build-cupynumeric-cpp;
 
-    printf "\n\n\n\n********* BUILDING CUNUMERIC WHEEL *********\n"
-    build-cunumeric-wheel;
+    printf "\n\n\n\n********* BUILDING CUPYNUMERIC WHEEL *********\n"
+    build-cupynumeric-wheel;
 
-    printf "\n\n\n\n********* BUILDING CUNUMERIC CONDA *********\n"
-    build-cunumeric-conda;
+    printf "\n\n\n\n********* BUILDING CUPYNUMERIC CONDA *********\n"
+    build-cupynumeric-conda;
 
     copy_ci_artifacts;
 }
 
-build_cunumeric_fake() {
+build_cupynumeric_fake() {
     set -xeuo pipefail;
 
-    mkdir -p /tmp/out /tmp/conda-build/legate /tmp/conda-build/cunumeric
+    mkdir -p /tmp/out /tmp/conda-build/legate /tmp/conda-build/cupynumeric
     touch /tmp/out/legate-23.11.00-dummy.tar.bz2
     touch /tmp/conda-build/legate/dummy.txt
-    touch /tmp/conda-build/cunumeric/dummy.txt
+    touch /tmp/conda-build/cupynumeric/dummy.txt
 
     copy_ci_artifacts
 }

@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def check_result(op, in_np, out_np, out_num):
@@ -33,7 +33,7 @@ def check_result(op, in_np, out_np, out_num):
         getattr(out_np, "dtype", None) == getattr(out_num, "dtype", None)
     )
     if not result:
-        print(f"cunumeric.{op} failed the test")
+        print(f"cupynumeric.{op} failed the test")
         print("Inputs:")
         for arr in in_np:
             print(arr)
@@ -42,7 +42,7 @@ def check_result(op, in_np, out_np, out_num):
         print("NumPy output:")
         print(out_np)
         print(f"dtype: {out_np.dtype}")
-        print("cuNumeric output:")
+        print("cuPyNumeric output:")
         print(out_num)
         print(f"dtype: {out_num.dtype}")
         assert False
@@ -70,7 +70,7 @@ def check_op(op, in_np, out_dtype="D"):
 
         check_result(op, in_np, out_np, out_num)
 
-        # Ask cuNumeric to produce outputs to NumPy ndarrays
+        # Ask cuPyNumeric to produce outputs to NumPy ndarrays
         out_num = np.empty(out_np.shape, dtype=out_dtype)
         op_num(*in_num, out=out_num)
 
@@ -297,7 +297,7 @@ def test_bit_ops_arr_scalar(op) -> None:
     check_op(op, (arrs[0], scalars[0]))
     check_op(op, (arrs[0], scalars[1]))
     check_op(op, (arrs[0], scalars[2]))
-    # Cunumeric << and >> have problems with python integers:
+    # cuPyNumeric << and >> have problems with python integers:
     # check_op(op, (scalars[0], arrs[0]))
     check_op(op, (scalars[1], arrs[0]))
     check_op(op, (scalars[2], arrs[0]))

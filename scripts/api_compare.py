@@ -18,9 +18,9 @@ import csv
 import sys
 from dataclasses import astuple, dataclass
 
-from cunumeric._sphinxext._comparison_config import GROUPED_CONFIGS
-from cunumeric._sphinxext._comparison_util import filter_names
-from cunumeric.coverage import is_implemented
+from cupynumeric._sphinxext._comparison_config import GROUPED_CONFIGS
+from cupynumeric._sphinxext._comparison_util import filter_names
+from cupynumeric.coverage import is_implemented
 
 
 @dataclass
@@ -35,16 +35,20 @@ def get_namespaces(attr):
     import cupy
     import numpy
 
-    import cunumeric
+    import cupynumeric
 
     if attr is None:
-        return numpy, cunumeric, cupy
+        return numpy, cupynumeric, cupy
 
-    return getattr(numpy, attr), getattr(cunumeric, attr), getattr(cupy, attr)
+    return (
+        getattr(numpy, attr),
+        getattr(cupynumeric, attr),
+        getattr(cupy, attr),
+    )
 
 
 def write_rows(rows):
-    headers = ("group", "numpy", "cunumeric", "cupy")
+    headers = ("group", "numpy", "cupynumeric", "cupy")
     writer = csv.writer(sys.stdout)
     writer.writerow(headers)
     for row in rows:

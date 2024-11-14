@@ -17,9 +17,9 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.searchsorted(a: ndarray, v: Union[int, float, ndarray],
+# cupynumeric.searchsorted(a: ndarray, v: Union[int, float, ndarray],
 # side: Literal['left', 'right'] = 'left',
 # sorter: Optional[ndarray] = None) → Union[int, ndarray]
 
@@ -80,13 +80,13 @@ class TestSearchSortedErrors(object):
             # instances of 'NoneType' and 'NoneType'
         with pytest.raises(expected_exc):
             num.searchsorted(arr, None)
-            # cuNumeric raises AssertionError
+            # cuPyNumeric raises AssertionError
             #       if self.deferred is None:
             #           if self.parent is None:
             #    >          assert self.runtime.is_supported_dtype
             #                    (self.array.dtype)
             #    E               AssertionError
-            # cunumeric/cunumeric/eager.py:to_deferred_array()
+            # cupynumeric/cupynumeric/eager.py:to_deferred_array()
 
     @pytest.mark.xfail
     def test_side_invalid(self):
@@ -98,7 +98,7 @@ class TestSearchSortedErrors(object):
             # (got 'hi')
         with pytest.raises(expected_exc):
             num.searchsorted(arr, 10, "hi")
-            # cuNumeric passed, and the result is the same as that of 'right'.
+            # cuPyNumeric passed, and result is the same as that of 'right'.
 
     def test_ndim_mismatch(self):
         a = np.random.random((5, 5, 5))

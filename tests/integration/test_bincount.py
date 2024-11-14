@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 N = 8000
 MAX_VAL = 9

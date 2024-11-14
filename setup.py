@@ -21,10 +21,10 @@ from skbuild import setup
 import versioneer
 
 setup(
-    name="cunumeric",
+    name="cupynumeric",
     version=versioneer.get_version(),
     description="An Aspiring Drop-In Replacement for NumPy at Scale",
-    url="https://github.com/nv-legate/cunumeric",
+    url="https://github.com/nv-legate/cupynumeric",
     author="NVIDIA Corporation",
     license="Apache 2.0",
     classifiers=[
@@ -39,9 +39,9 @@ setup(
     ],
     packages=find_packages(
         where=".",
-        include=["cunumeric*"],
+        include=["cupynumeric*"],
     ),
-    package_data={"cunumeric": ["_sphinxext/_templates/*.rst"]},
+    package_data={"cupynumeric": ["_sphinxext/_templates/*.rst"]},
     include_package_data=True,
     cmdclass=versioneer.get_cmdclass(),
     install_requires=["numpy>=1.22,<2"],

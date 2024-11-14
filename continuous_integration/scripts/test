@@ -11,7 +11,7 @@ setup_env() {
     apt-get update
     apt-get install -y numactl make
 
-    mamba create -yn legate -c "${ARTIFACTS_DIR}/conda-build/legate" -c "${ARTIFACTS_DIR}/conda-build/cunumeric" -c conda-forge legate cunumeric
+    mamba create -yn legate -c "${ARTIFACTS_DIR}/conda-build/legate" -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c conda-forge legate cupynumeric
 }
 
 setup_test_env() {
@@ -33,7 +33,7 @@ setup_unit_env() {
     mamba install -y pytest pytest-mock mock
 }
 
-test_cunumeric() {
+test_cupynumeric() {
     set -xeo pipefail
 
     . conda-utils;
@@ -57,13 +57,13 @@ test_cunumeric() {
             echo "Installing and executing mypy..."
             shift;
             setup_mypy_env;
-            mypy cunumeric
+            mypy cupynumeric
             ;;
         "docs")
             echo "Building docs..."
             shift;
             setup_docs_env;
-            cd docs/cunumeric
+            cd docs/cupynumeric
             make clean html
             ;;
         "unit")
@@ -79,4 +79,4 @@ test_cunumeric() {
     esac
 }
 
-(test_cunumeric "$@");
+(test_cupynumeric "$@");

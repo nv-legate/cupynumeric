@@ -20,7 +20,7 @@ project(cpp_tests VERSION 0.1 LANGUAGES C CXX)
 
 if(PROJECT_IS_TOP_LEVEL)
   # To catch people trying to build the tests from within tests/cpp instead of top-level
-  message(FATAL_ERROR "Error: Tests can only be built as part of the main library build. Please re-run cmake from top-level directory (\${CMAKE_SOURCE_DIR}) with -Dcunumeric_BUILD_TESTS=ON"
+  message(FATAL_ERROR "Error: Tests can only be built as part of the main library build. Please re-run cmake from top-level directory (\${CMAKE_SOURCE_DIR}) with -Dcupynumeric_BUILD_TESTS=ON"
   )
 endif()
 
@@ -37,8 +37,8 @@ include(${rapids-cmake-dir}/cpm/gtest.cmake)
 
 # BUILD_EXPORT_SET and INSTALL_EXPORT_SET are crucial, otherwise gtest does not get
 # installed
-rapids_cpm_gtest(BUILD_EXPORT_SET cunumeric-exports
-                 INSTALL_EXPORT_SET cunumeric-exports)
+rapids_cpm_gtest(BUILD_EXPORT_SET cupynumeric-exports
+                 INSTALL_EXPORT_SET cupynumeric-exports)
 
 file(GLOB main_SRC ${PROJECT_SOURCE_DIR}/main.cc)
 file(GLOB integration_SRC ${PROJECT_SOURCE_DIR}/integration/*.cc)
@@ -50,7 +50,7 @@ endif()
 
 add_executable(cpp_tests ${main_SRC} ${tasks_SRC} ${integration_SRC} ${unit_SRC})
 
-target_link_libraries(cpp_tests PRIVATE legate::legate cunumeric::cunumeric GTest::gtest)
+target_link_libraries(cpp_tests PRIVATE legate::legate cupynumeric::cupynumeric GTest::gtest)
 if(Legion_USE_CUDA)
   target_link_libraries(cpp_tests PRIVATE NCCL::NCCL)
 endif()

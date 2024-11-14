@@ -18,7 +18,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array, scalar_gen
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def nonscalar_gen(lib):
@@ -55,7 +55,7 @@ def array_gen(lib):
     # get "multiple" items from scalar array
     for arr in scalar_gen(lib, 42):
         yield arr[arr.ndim * (slice(None),)]  # arr[:,:]
-        # TODO: fix cunumeric#34
+        # TODO: fix cupynumeric#34
         # yield arr[arr.ndim * (slice(1, None),)] # arr[1:,1:]
     # set single item on non-scalar array
     for arr in nonscalar_gen(lib):
@@ -87,7 +87,7 @@ def array_gen(lib):
     for arr in scalar_gen(lib, 42):
         arr[arr.ndim * (slice(None),)] = -1  # arr[:,:] = -1
         yield arr
-    # TODO: fix cunumeric#34
+    # TODO: fix cupynumeric#34
     # for arr in scalar_gen(lib, 42):
     #     arr[arr.ndim * (slice(1, None),)] = -1 # arr[1:,1:] = -1
     #     yield arr

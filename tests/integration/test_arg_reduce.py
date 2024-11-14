@@ -18,7 +18,7 @@ import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 ARG_FUNCS = ("argmax", "argmin")
 

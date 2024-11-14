@@ -1,4 +1,4 @@
-{% set name = "cunumeric" %}
+{% set name = "cupynumeric" %}
 {% if gpu_enabled == "true" %}
   {% set gpu_enabled_bool = true %}
 {% elif gpu_enabled == "false" %}
@@ -148,16 +148,16 @@ requirements:
     - __glibc >=2.17  # [linux]
 
 about:
-  home: https://github.com/nv-legate/cunumeric
+  home: https://github.com/nv-legate/cupynumeric
   license: Apache-2.0
   license_file: LICENSE
   summary: 'Drop-in Replacment for NumPy'
   description: |
-    cuNumeric is a Legate library that aims to provide
+    cuPyNumeric is a Legate library that aims to provide
     a distributed and accelerated drop-in replacement
     for the NumPy API on top of the Legion runtime.
-  doc_url: https://github.com/nv-legate/cunumeric
-  dev_url: https://github.com/nv-legate/cunumeric
+  doc_url: https://github.com/nv-legate/cupynumeric
+  dev_url: https://github.com/nv-legate/cupynumeric
 
 extra:
   recipe-maintainers:

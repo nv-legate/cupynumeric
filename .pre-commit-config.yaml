@@ -5,7 +5,7 @@ repos:
         - id: mypy
           language: system
           pass_filenames: false
-          args: ['cunumeric']
+          args: ['cupynumeric']
     - repo: https://github.com/PyCQA/isort
       rev: 5.12.0
       hooks:
@@ -40,7 +40,7 @@ repos:
           'types_or': [c++, c, cuda]
           require_serial: false
           stages: [pre-commit]
-          exclude: '^src/cunumeric/cunumeric_c\.h$'
+          exclude: '^src/cupynumeric/cunumeric_c\.h$'
 
 ci:
     skip: [mypy]

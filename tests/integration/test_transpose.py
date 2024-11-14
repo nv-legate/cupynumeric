@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 5
 SIZES = [
@@ -61,7 +61,7 @@ class TestModule:
         size = (2, 3, 4)
         a = num.random.randint(low=-10, high=10, size=size)
         # numpy raises "ValueError: axes don't match array".
-        # cunumeric raises "TypeError".
+        # cupynumeric raises "TypeError".
         with pytest.raises(TypeError):
             num.transpose(a, axes=2)
 
@@ -70,7 +70,7 @@ class TestModule:
         size = (2, 3, 4)
         a = num.random.randint(low=-10, high=10, size=size)
         # numpy raises "ValueError: axes don't match array".
-        # cunumeric raises "TypeError".
+        # cupynumeric raises "TypeError".
         with pytest.raises(ValueError):
             num.transpose(a, axes=2)
 
@@ -101,8 +101,8 @@ class TestModule:
     @pytest.mark.parametrize("size", (0, 1, DIM))
     @pytest.mark.parametrize("axes", (-3, 3))
     def test_axes_1d_int(self, size, axes):
-        # For cunumeric, if array.dim==1, it returns the array itself directly,
-        # no matter what the axes value is.
+        # For cupynumeric, if array.dim==1, it returns the array itself
+        # directly, no matter what the axes value is.
         # For numpy, it raises
         # "AxisError: axis * is out of bounds for array of dimension 1".
         a = np.random.randint(low=-10, high=10, size=size)
@@ -115,8 +115,8 @@ class TestModule:
     @pytest.mark.parametrize("size", (0, 1, DIM))
     @pytest.mark.parametrize("axes", ((1,), (3, 1)))
     def test_axes_1d_tuple(self, size, axes):
-        # For cunumeric, if array.dim==1, it returns the array itself directly,
-        # no matter what the axes value is.
+        # For cupynumeric, if array.dim==1, it returns the array itself
+        # directly, no matter what the axes value is.
         # For numpy, it raises "ValueError: axes don't match array".
         a = np.random.randint(low=-10, high=10, size=size)
         b = num.array(a)
@@ -172,7 +172,7 @@ class TestArrayMethod:
         size = (2, 3, 4)
         a = num.random.randint(low=-10, high=10, size=size)
         # numpy raises "ValueError: axes don't match array".
-        # cunumeric raises "TypeError".
+        # cupynumeric raises "TypeError".
         with pytest.raises(TypeError):
             a.transpose(axes=2)
 
@@ -181,7 +181,7 @@ class TestArrayMethod:
         size = (2, 3, 4)
         a = num.random.randint(low=-10, high=10, size=size)
         # numpy raises "ValueError: axes don't match array".
-        # cunumeric raises "TypeError".
+        # cupynumeric raises "TypeError".
         with pytest.raises(ValueError):
             a.transpose(axes=2)
 
@@ -212,8 +212,8 @@ class TestArrayMethod:
     @pytest.mark.parametrize("size", (0, 1, DIM))
     @pytest.mark.parametrize("axes", (-3, 3))
     def test_axes_1d_int(self, size, axes):
-        # For cunumeric, if array.dim==1, it returns the array itself directly,
-        # no matter what the axes value is.
+        # For cupynumeric, if array.dim==1, it returns the array itself
+        # directly, no matter what the axes value is.
         # For Numpy, it raises
         # "AxisError: axis * is out of bounds for array of dimension 1".
         a = np.random.randint(low=-10, high=10, size=size)
@@ -226,8 +226,8 @@ class TestArrayMethod:
     @pytest.mark.parametrize("size", (0, 1, DIM))
     @pytest.mark.parametrize("axes", ((1,), (3, 1)))
     def test_axes_1d_tuple(self, size, axes):
-        # For cunumeric, if array.dim==1, it returns the array itself directly,
-        # no matter what the axes value is.
+        # For cupynumeric, if array.dim==1, it returns the array itself
+        # directly, no matter what the axes value is.
         # For Numpy, it raises "ValueError: axes don't match array".
         a = np.random.randint(low=-10, high=10, size=size)
         b = num.array(a)

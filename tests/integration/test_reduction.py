@@ -17,7 +17,7 @@ import pytest
 from utils.comparisons import allclose
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>,
 # initial=<no value>, where=<no value>)
@@ -88,7 +88,7 @@ class TestSumNegative(object):
         out_np = np.sum(arr_np)  # Numpy return sum of all datas
         out_num = num.sum(
             arr_num
-        )  # cuNumeric return an array with different data
+        )  # cuPyNumeric return an array with different data
         assert allclose(out_np, out_num)
 
     def test_axis_out_bound(self):
@@ -104,7 +104,7 @@ class TestSumNegative(object):
         arr_np = np.random.random(size) * 10
         arr_num = num.array(arr_np)
         out_np = np.sum(arr_np, axis=axis)
-        # cuNumeric raises NotImplementedError:
+        # cuPyNumeric raises NotImplementedError:
         # 'Need support for reducing multiple dimensions'
         # Numpy get results
         out_num = num.sum(arr_num, axis=axis)
@@ -296,7 +296,7 @@ class TestSumPositive(object):
         for axis in range(-ndim + 1, ndim, 1):
             out_np = np.sum(arr_np, axis=axis, keepdims=keepdims)
             out_num = num.sum(arr_num, axis=axis, keepdims=keepdims)
-            # in cunumeric/deferred/unary_reduction:
+            # in cupynumeric/deferred/unary_reduction:
             # if lhs_array.size == 1:
             #     > assert axes is None or len(axes) == rhs_array.ndim - (
             #         0 if keepdims else lhs_array.ndim

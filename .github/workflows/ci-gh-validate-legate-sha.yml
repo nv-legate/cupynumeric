@@ -20,7 +20,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        path: cunumeric.internal
+        path: cupynumeric.internal
 
     - name: Set up environment
       run: |
@@ -30,7 +30,7 @@ jobs:
     - name: Parse versions.json
       shell: bash --noprofile --norc -xeuo pipefail {0}
       run: |
-        DEPENDENCIES_FILE="cunumeric.internal/cmake/versions.json"
+        DEPENDENCIES_FILE="cupynumeric.internal/cmake/versions.json"
         GIT_REPO=$(jq -r '.packages.legate.repo' ${DEPENDENCIES_FILE})
         GIT_ORG=$(jq -r '.packages.legate.org' ${DEPENDENCIES_FILE})
         GIT_TAG=$(jq -r '.packages.legate.git_tag' ${DEPENDENCIES_FILE})

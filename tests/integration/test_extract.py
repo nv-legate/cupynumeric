@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 5
 SIZES = [
@@ -91,7 +91,7 @@ def test_negative_condition(con):
 @pytest.mark.xfail
 def test_complex_condition():
     # when condition is complex type a+bj,
-    # if a==0, cuNumeric take it as 0, while Numpy take it as 1
+    # if a==0, cuPyNumeric take it as 0, while Numpy take it as 1
     a = np.array([1, 2, 3, 4])
     b = num.array([1, 2, 3, 4])
     condition = [1 + 2j, 2, 2, 5j]
@@ -179,7 +179,7 @@ def test_place_basic(shape, vals):
     assert np.array_equal(arr_np, arr_num)
 
 
-@pytest.mark.xfail(reason="cunumeric raises exception when vals is ndim")
+@pytest.mark.xfail(reason="cupynumeric raises exception when vals is ndim")
 @pytest.mark.parametrize("vals", VALUES, ids=str)
 @pytest.mark.parametrize("ndim", range(2, DIM), ids=str)
 def test_place_vals_ndim(vals, ndim):
@@ -194,7 +194,7 @@ def test_place_vals_ndim(vals, ndim):
 
     # NumPy pass, array([[[2, 2, 2], [2, 2, 2]]])
     np.place(arr_np, mask_np, vals_np)
-    # cuNumeric raises ValueError: vals array has to be 1-dimensional
+    # cuPyNumeric raises ValueError: vals array has to be 1-dimensional
     num.place(arr_num, mask_num, vals_num)
     assert np.array_equal(arr_np, arr_num)
 

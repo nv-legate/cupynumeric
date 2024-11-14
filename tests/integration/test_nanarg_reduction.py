@@ -20,12 +20,12 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
-from cunumeric.settings import settings
+import cupynumeric as num
+from cupynumeric.settings import settings
 
 NAN_ARG_FUNCS = ("nanargmax", "nanargmin")
 
-EAGER_TEST = os.environ.get("CUNUMERIC_FORCE_THUNK", None) == "eager"
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 DISALLOWED_DTYPES = (
     np.complex64,
@@ -33,7 +33,7 @@ DISALLOWED_DTYPES = (
 )
 
 # Note that when an element is repeated mulitple times in an array,
-# the output from cuNumeric and numpy will vary. This is expected and
+# the output from cuPyNumeric and numpy will vary. This is expected and
 # is not a bug. So, whenever we compare with numpy, we try to make
 # sure the elements in the array are unique. Another way to circumvent
 # this problem would be to make sure that argument corresponding
@@ -50,7 +50,7 @@ class TestNanArgReductions:
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_basic(self, func_name, ndim, keepdims):
         """This test inserts a NaN in the array and checks if the
-        output from cuNumeric and numpy match
+        output from cuPyNumeric and numpy match
         """
         shape = (5,) * ndim
         size = prod(shape)
@@ -66,7 +66,7 @@ class TestNanArgReductions:
         func_np = getattr(np, func_name)
         func_num = getattr(num, func_name)
 
-        # make sure numpy and cunumeric give the same out array and max val
+        # make sure numpy and cupynumeric give the same out array and max val
         out_np = np.unravel_index(func_np(in_np, keepdims=keepdims), shape)
         out_num = np.unravel_index(func_num(in_num, keepdims=keepdims), shape)
 
@@ -181,7 +181,7 @@ class TestNanArgReductions:
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
     def test_slice_nan_numpy_compat(self, func_name):
         """This test checks if we comply with the numpy when
-        a slice contains only NaNs and CUNUMERIC_NUMPY_COMPATABILITY
+        a slice contains only NaNs and CUPYNUMERIC_NUMPY_COMPATABILITY
         is set to 1.
         """
         settings.numpy_compat = True
@@ -211,7 +211,7 @@ class TestNanArgReductions:
     )
     def test_slice_nan_no_numpy_compat(self, identity, func_name):
         """This test checks if we return identity for a slice that
-        contains NaNs when CUNUMERIC_NUMPY_COMPATABILITY is set to 0.
+        contains NaNs when CUPYNUMERIC_NUMPY_COMPATABILITY is set to 0.
         """
         settings.numpy_compat = False
 

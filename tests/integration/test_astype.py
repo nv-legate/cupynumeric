@@ -17,7 +17,7 @@ import inspect
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 TEST_VECTOR = [0, 0, 1, 2, 3, 0, 1, 2, 3]
 ALL_BUT_COMPLEX = ["?", "b", "h", "i", "l", "B", "H", "I", "L", "e", "f", "d"]
@@ -120,14 +120,14 @@ def test_complex_negative(src_dtype):
     out_np = in_np.astype(to_dtype("?"))
     out_num = in_num.astype(to_dtype("?"))
 
-    # Numpy and cuNumeric have different performance.
-    # For complex data 0.+1.j, Numpy set as True, cuNumeric set as False.
+    # Numpy and cuPyNumeric have different performance.
+    # For complex data 0.+1.j, Numpy set as True, cuPyNumeric set as False.
     assert np.array_equal(out_num, out_np)
 
 
 def test_default_copy_value():
     # it was decided to explicitly diverge from the numpy default value in
-    # https://github.com/nv-legate/cunumeric.internal/issues/421
+    # https://github.com/nv-legate/cupynumeric.internal/issues/421
     a = num.array([])
     assert inspect.signature(a.astype).parameters["copy"].default is False
 

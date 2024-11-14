@@ -18,7 +18,7 @@ import itertools
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def run_test(arr, routine, input_size):
@@ -56,8 +56,8 @@ def run_test(arr, routine, input_size):
         assert is_equal, (
             f"Failed, {print_msg}\n"
             f"numpy result: {err_arr[0]}, {b.shape}\n"
-            f"cunumeric_result: {err_arr[1]}, {c.shape}\n"
-            f"cunumeric and numpy shows"
+            f"cupynumeric_result: {err_arr[1]}, {c.shape}\n"
+            f"cupynumeric and numpy shows"
             f" different result\n"
             f"array({arr}),"
             f"routine: {routine},"
@@ -65,7 +65,7 @@ def run_test(arr, routine, input_size):
         )
         print(
             f"Passed, {print_msg}, np: ({b.shape}, {b.dtype})"
-            f", cunumeric: ({c.shape}, {c.dtype}"
+            f", cupynumeric: ({c.shape}, {c.dtype}"
         )
 
 

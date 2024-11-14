@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 np.random.seed(143)
 
@@ -43,14 +43,14 @@ def check_result(in_np, out_np, out_num, **isclose_kwargs):
         and out_np.dtype == out_num.dtype
     )
     if not result and not is_negative_test:
-        print("cunumeric failed the test")
+        print("cupynumeric failed the test")
         print("Input:")
         print(in_np)
         print(f"dtype: {in_np.dtype}")
         print("NumPy output:")
         print(out_np)
         print(f"dtype: {out_np.dtype}")
-        print("cuNumeric output:")
+        print("cuPyNumeric output:")
         print(out_num)
         print(f"dtype: {out_num.dtype}")
     return result

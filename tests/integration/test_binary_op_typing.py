@@ -18,7 +18,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def value_type(obj):
@@ -87,7 +87,7 @@ def generate_array_array_cases():
 # the code somewhat compatible with NumPy for cases where Python scalars
 # are passed.
 #
-# If anyone can do a better job than me and finally make cuNumeric
+# If anyone can do a better job than me and finally make cuPyNumeric
 # implement the same typing rules, please put these tests back.
 def generate_array_scalar_cases():
     for idx, lhs_type in enumerate(TYPES):
@@ -129,7 +129,7 @@ def test_array_array(lhs_np, rhs_np, lhs_num, rhs_num):
 
     print(f"LHS {lhs_np}")
     print(f"RHS {rhs_np}")
-    print(f"NumPy type: {out_np.dtype}, cuNumeric type: {out_num.dtype}")
+    print(f"NumPy type: {out_np.dtype}, cuPyNumeric type: {out_num.dtype}")
 
     assert out_np.dtype == out_num.dtype
 
@@ -145,7 +145,7 @@ def test_array_scalar(lhs_np, rhs_np, lhs_num, rhs_num):
 
     print(f"LHS {lhs_np}")
     print(f"RHS {rhs_np}")
-    print(f"NumPy type: {out_np.dtype}, cuNumeric type: {out_num.dtype}")
+    print(f"NumPy type: {out_np.dtype}, cuPyNumeric type: {out_num.dtype}")
 
     assert out_np.dtype == out_num.dtype
 

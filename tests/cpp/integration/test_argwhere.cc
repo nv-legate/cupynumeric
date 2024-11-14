@@ -20,10 +20,10 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "common_utils.h"
 
-using namespace cunumeric;
+using namespace cupynumeric;
 
 namespace {
 std::vector<std::vector<uint64_t>> get_in_shapes_basic()
@@ -268,7 +268,7 @@ TEST(Argwhere, EmptyArray)
     {0, 0},
     {0, 0},
     {0, 0},
-    {0, 0}  // This is shape of cunumeric output array
+    {0, 0}  // This is shape of cupynumeric output array
   };
 
   assert(in_shapes.size() == exp_shapes.size());
@@ -289,7 +289,7 @@ TEST(Argwhere, Scalar)
   std::vector<uint64_t> exp_shape2 = {1, 0};
   auto A2                          = zeros({}, legate::float64());
   A2.fill(legate::Scalar(static_cast<double>(1)));
-  auto B2 = cunumeric::argwhere(A2);
+  auto B2 = cupynumeric::argwhere(A2);
   EXPECT_EQ(B2.size(), 0);
   EXPECT_EQ(B2.type(), legate::int64());
   EXPECT_EQ(B2.shape(), exp_shape2);

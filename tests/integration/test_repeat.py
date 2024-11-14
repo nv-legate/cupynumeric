@@ -18,7 +18,7 @@ from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
 from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.parametrize(
@@ -49,7 +49,7 @@ def test_array_empty_repeats_invalid_negative(repeats):
         # together with shape (0,) (2,)
     with pytest.raises(expected_exc):
         num.repeat([], repeats)
-        # while cunumeric is pass with the result []
+        # while cupynumeric is pass with the result []
 
 
 @pytest.mark.xfail
@@ -158,7 +158,7 @@ def test_array_1d_repeats_fatal_error(arr, repeats):
         # numpy raises "ValueError: negative dimensions are not allowed"
     with pytest.raises(expected_exc):
         num.repeat(anum, repeats)
-        # cuNumeric got "Fatal Python error: Aborted"
+        # cuPyNumeric got "Fatal Python error: Aborted"
 
 
 @pytest.mark.parametrize("arr", (None, [], 3, [1, 2, 3], [[1, 3], [2, 4]]))

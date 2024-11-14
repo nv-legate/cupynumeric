@@ -154,8 +154,8 @@ def find_legate_cmake_dir() -> Path:
         # conda env.
         return path
 
-    # Possibly installed in an editable installation, in which case legate-config.cmake
-    # and friends will live in the root binary directory.
+    # Possibly installed in an editable installation, in which case legate
+    # config.cmake and friends will live in the root binary directory.
     root_path = path.root
     assert isinstance(root_path, str)
     while not any(p.name == "legate-config.cmake" for p in path.iterdir()):
@@ -329,7 +329,7 @@ def install_cunumeric(
             ignore_errors=True,
         )
 
-    # Configure and build cuNumeric via setup.py
+    # Configure and build cuPyNumeric via setup.py
     pip_install_cmd = [sys.executable, "-m", "pip", "install"]
 
     install_dir = None
@@ -376,8 +376,8 @@ def install_cunumeric(
 
     cmake_flags += f"""\
 -DCMAKE_BUILD_TYPE={(
-    "Debug" if debug else "RelWithDebInfo" if debug_release else "Release"
-)}
+        "Debug" if debug else "RelWithDebInfo" if debug_release else "Release"
+    )}
 -DBUILD_SHARED_LIBS=ON
 -DCMAKE_CUDA_ARCHITECTURES={str(arch)}
 -DLegion_MAX_DIM={str(maxdim)}
@@ -437,14 +437,14 @@ def install_cunumeric(
 
 
 def driver():
-    parser = argparse.ArgumentParser(description="Install cuNumeric.")
+    parser = argparse.ArgumentParser(description="Install cuPyNumeric.")
     parser.add_argument(
         "--debug",
         dest="debug",
         action="store_true",
         required=False,
         default=os.environ.get("DEBUG", "0") == "1",
-        help="Build cuNumeric with no optimizations.",
+        help="Build cuPyNumeric with no optimizations.",
     )
     parser.add_argument(
         "--debug-release",
@@ -452,7 +452,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("DEBUG_RELEASE", "0") == "1",
-        help="Build cuNumeric with optimizations, but include debugging "
+        help="Build cuPyNumeric with optimizations, but include debugging "
         "symbols.",
     )
     parser.add_argument(
@@ -461,7 +461,7 @@ def driver():
         action="store_true",
         required=False,
         default=False,
-        help="Build cuNumeric tests.",
+        help="Build cuPyNumeric tests.",
     )
     parser.add_argument(
         "--check-bounds",
@@ -469,21 +469,21 @@ def driver():
         action="store_true",
         required=False,
         default=False,
-        help="Build cuNumeric with bounds checks.",
+        help="Build cuPyNumeric with bounds checks.",
     )
     parser.add_argument(
         "--max-dim",
         dest="maxdim",
         type=int,
         default=int(os.environ.get("LEGION_MAX_DIM", 4)),
-        help="Maximum number of dimensions that cuNumeric will support",
+        help="Maximum number of dimensions that cuPyNumeric will support",
     )
     parser.add_argument(
         "--max-fields",
         dest="maxfields",
         type=int,
         default=int(os.environ.get("LEGION_MAX_FIELDS", 256)),
-        help="Maximum number of fields that cuNumeric will support",
+        help="Maximum number of fields that cuPyNumeric will support",
     )
     parser.add_argument(
         "--network",
@@ -510,7 +510,7 @@ def driver():
         default=os.environ.get("OPENBLAS_PATH"),
         help="Path to OpenBLAS installation directory. Note that providing a "
         "user-defined BLAS library may lead to dynamic library conflicts with "
-        "BLAS loaded by Python's Numpy. When using cuNumeric's BLAS, this "
+        "BLAS loaded by Python's Numpy. When using cuPyNumeric's BLAS, this "
         "issue is prevented by a custom library name.",
     )
     parser.add_argument(
@@ -579,7 +579,7 @@ def driver():
         "--cuda",
         action=BooleanFlag,
         default=os.environ.get("USE_CUDA", "0") == "1",
-        help="Build cuNumeric with CUDA support.",
+        help="Build cuPyNumeric with CUDA support.",
     )
     parser.add_argument(
         "--with-cuda",
@@ -601,7 +601,7 @@ def driver():
         "--openmp",
         action=BooleanFlag,
         default=os.environ.get("USE_OPENMP", "0") == "1",
-        help="Build cuNumeric with OpenMP support.",
+        help="Build cuPyNumeric with OpenMP support.",
     )
     parser.add_argument(
         "--march",
@@ -616,7 +616,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("USE_LLVM", "0") == "1",
-        help="Build cuNumeric with LLVM support.",
+        help="Build cuPyNumeric with LLVM support.",
     )
     parser.add_argument(
         "--hdf5",
@@ -625,7 +625,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("USE_HDF", "0") == "1",
-        help="Build cuNumeric with HDF support.",
+        help="Build cuPyNumeric with HDF support.",
     )
     parser.add_argument(
         "--spy",
@@ -633,7 +633,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("USE_SPY", "0") == "1",
-        help="Build cuNumeric with detailed Legion Spy enabled.",
+        help="Build cuPyNumeric with detailed Legion Spy enabled.",
     )
     parser.add_argument(
         "--conduit",
@@ -645,7 +645,7 @@ def driver():
         # See https://github.com/nv-legate/legate.core/issues/294.
         choices=["ibv", "ucx", "aries", "mpi"],
         default=os.environ.get("CONDUIT"),
-        help="Build cuNumeric with specified GASNet conduit.",
+        help="Build cuPyNumeric with specified GASNet conduit.",
     )
     parser.add_argument(
         "--clean",

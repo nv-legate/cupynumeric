@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 ALL_METHODS = (
     "inverted_cdf",
@@ -84,8 +84,8 @@ def test_multi_axes(str_method, axes, qin_arr, keepdims, overwrite_input):
     else:
         qs_arr = np.array(qin_arr)
 
-    # cunumeric:
-    # print("cunumeric axis = %d:"%(axis))
+    # cupynumeric:
+    # print("cupynumeric axis = %d:"%(axis))
     q_out = num.percentile(
         arr,
         qs_arr,

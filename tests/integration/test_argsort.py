@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.argsort(a: ndarray, axis: int = -1, kind: SortType = 'quicksort',
+# cupynumeric.argsort(a: ndarray, axis: int = -1, kind: SortType = 'quicksort',
 # order: Optional = None) → ndarray
 
 # ndarray.argsort(axis=-1, kind=None, order=None)
@@ -93,8 +93,8 @@ class TestArgSort(object):
 
         res_np = np.argsort(a_np, order="height")
         res_num = num.argsort(a_num, order="height")
-        # cuNumeric raises AssertionError in
-        # function cunumeric/cunumeric/eager.py:to_deferred_array
+        # cuPyNumeric raises AssertionError in
+        # function cupynumeric/cupynumeric/eager.py:to_deferred_array
         #     if self.deferred is None:
         #         if self.parent is None:
         #
@@ -124,7 +124,7 @@ class TestArgSort(object):
         res_num = num.argsort(arr_num, kind="negative")
         # Numpy raises "ValueError: sort kind must be one of 'quick',
         # 'heap', or 'stable' (got 'negative')"
-        # cuNumeric passed. The code basically supports ‘stable’
+        # cuPyNumeric passed. The code basically supports ‘stable’
         # or not ‘stable’.
         assert np.array_equal(res_num, res_np)
 
@@ -151,7 +151,7 @@ class TestArgSort(object):
     @pytest.mark.parametrize("sort_type", UNSTABLE_SORT_TYPES)
     def test_basic_axis_sort_type_unstable(self, size, sort_type):
         # have to guarantee unique values in input
-        # see https://github.com/nv-legate/cunumeric/issues/782
+        # see https://github.com/nv-legate/cupynumeric/issues/782
         arr_np = np.arange(np.prod(size))
         np.random.shuffle(arr_np)
         arr_np = arr_np.reshape(size)
@@ -188,7 +188,7 @@ class TestArgSort(object):
     @pytest.mark.parametrize("sort_type", UNSTABLE_SORT_TYPES)
     def test_arr_basic_axis_sort_unstable(self, size, sort_type):
         # have to guarantee unique values in input
-        # see https://github.com/nv-legate/cunumeric/issues/782
+        # see https://github.com/nv-legate/cupynumeric/issues/782
         arr_np = np.arange(np.prod(size))
         np.random.shuffle(arr_np)
         arr_np = arr_np.reshape(size)

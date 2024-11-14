@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 #include "legate.h"
-#include "cunumeric.h"
+#include "cupynumeric.h"
 #include "util.inl"
 
 template <int32_t DIM>
@@ -31,9 +31,9 @@ static void moveaxis_int32_test(std::vector<int32_t> input,
                                 std::vector<int32_t> source,
                                 std::vector<int32_t> destination)
 {
-  auto a_input = cunumeric::zeros(in_shape, legate::int32());
+  auto a_input = cupynumeric::zeros(in_shape, legate::int32());
   assign_values_to_array<int32_t, DIM>(a_input, input.data(), input.size());
-  auto a_output = cunumeric::moveaxis(a_input, source, destination);
+  auto a_output = cupynumeric::moveaxis(a_input, source, destination);
   check_array_eq<int32_t, DIM>(a_output, exp.data(), exp.size());
   EXPECT_EQ(a_output.shape(), out_shape);
 }
@@ -43,8 +43,8 @@ static void moveaxis_int32_test_2(std::vector<uint64_t> in_shape,
                                   std::vector<int32_t> source,
                                   std::vector<int32_t> destination)
 {
-  auto a_input  = cunumeric::zeros(in_shape, legate::int32());
-  auto a_output = cunumeric::moveaxis(a_input, source, destination);
+  auto a_input  = cupynumeric::zeros(in_shape, legate::int32());
+  auto a_output = cupynumeric::moveaxis(a_input, source, destination);
   EXPECT_EQ(a_output.shape(), out_shape);
 }
 
@@ -66,25 +66,25 @@ TEST(MoveAxis, SpecialArrays)
   // test single element array
   {
     std::vector<int32_t> input{99};
-    auto a = cunumeric::zeros({1}, legate::int32());
+    auto a = cupynumeric::zeros({1}, legate::int32());
     a.fill(legate::Scalar(input[0]));
-    auto a_out = cunumeric::moveaxis(a, {0}, {-1});
+    auto a_out = cupynumeric::moveaxis(a, {0}, {-1});
     check_array_eq<int32_t, 1>(a_out, input.data(), input.size());
     EXPECT_EQ(a_out.shape(), a.shape());
   }
   {
     std::vector<int32_t> input{-100};
-    auto a = cunumeric::zeros({1, 1}, legate::int32());
+    auto a = cupynumeric::zeros({1, 1}, legate::int32());
     a.fill(legate::Scalar(input[0]));
-    auto a_out = cunumeric::moveaxis(a, {0, 1}, {-1, -2});
+    auto a_out = cupynumeric::moveaxis(a, {0, 1}, {-1, -2});
     check_array_eq<int32_t, 2>(a_out, input.data(), input.size());
     EXPECT_EQ(a_out.shape(), a.shape());
   }
 
   // test empty array
   {
-    auto a     = cunumeric::zeros({0}, legate::int32());
-    auto a_out = cunumeric::moveaxis(a, {0}, {-1});
+    auto a     = cupynumeric::zeros({0}, legate::int32());
+    auto a_out = cupynumeric::moveaxis(a, {0}, {-1});
     EXPECT_EQ(a_out.shape(), a.shape());
   }
 }
@@ -129,22 +129,22 @@ TEST(MoveAxis, With_empty_array)
 
 TEST(MoveAxisErrors, Repeated_axis)
 {
-  auto x = cunumeric::zeros({3, 4, 5}, legate::int32());
-  EXPECT_THROW(cunumeric::moveaxis(x, {0, 0}, {1, 0}), std::invalid_argument);
-  EXPECT_THROW(cunumeric::moveaxis(x, {0, 1}, {0, -3}), std::invalid_argument);
+  auto x = cupynumeric::zeros({3, 4, 5}, legate::int32());
+  EXPECT_THROW(cupynumeric::moveaxis(x, {0, 0}, {1, 0}), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::moveaxis(x, {0, 1}, {0, -3}), std::invalid_argument);
 }
 
 TEST(MoveAxisErrors, Axis_out_of_bound)
 {
-  auto x = cunumeric::zeros({3, 4, 5}, legate::int32());
-  EXPECT_THROW(cunumeric::moveaxis(x, {0, 3}, {0, 1}), std::invalid_argument);
-  EXPECT_THROW(cunumeric::moveaxis(x, {0, 1}, {0, -4}), std::invalid_argument);
-  EXPECT_THROW(cunumeric::moveaxis(x, {4}, {0}), std::invalid_argument);
-  EXPECT_THROW(cunumeric::moveaxis(x, {0}, {-4}), std::invalid_argument);
+  auto x = cupynumeric::zeros({3, 4, 5}, legate::int32());
+  EXPECT_THROW(cupynumeric::moveaxis(x, {0, 3}, {0, 1}), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::moveaxis(x, {0, 1}, {0, -4}), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::moveaxis(x, {4}, {0}), std::invalid_argument);
+  EXPECT_THROW(cupynumeric::moveaxis(x, {0}, {-4}), std::invalid_argument);
 }
 
 TEST(MoveAxisErrors, Axis_with_different_length)
 {
-  auto x = cunumeric::zeros({3, 4, 5}, legate::int32());
-  EXPECT_THROW(cunumeric::moveaxis(x, {0}, {1, 0}), std::invalid_argument);
+  auto x = cupynumeric::zeros({3, 4, 5}, legate::int32());
+  EXPECT_THROW(cupynumeric::moveaxis(x, {0}, {1, 0}), std::invalid_argument);
 }

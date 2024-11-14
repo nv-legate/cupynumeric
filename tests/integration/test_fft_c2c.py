@@ -18,7 +18,7 @@ import pytest
 from utils.comparisons import allclose as _allclose
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def allclose(A, B):
@@ -247,7 +247,7 @@ def test_4d():
         pytest.param(np.uint64, marks=pytest.mark.xfail),
         pytest.param(np.float16, marks=pytest.mark.xfail),
         # NumPy accepts the dtypes
-        # cuNumeric raises
+        # cuPyNumeric raises
         # TypeError: FFT input not supported (missing a conversion?)
     ),
     ids=str,

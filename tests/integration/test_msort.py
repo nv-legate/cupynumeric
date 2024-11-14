@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
-from cunumeric._utils import is_np2
+import cupynumeric as num
+from cupynumeric._utils import is_np2
 
-# cunumeric.msort(a: ndarray) → ndarray
+# cupynumeric.msort(a: ndarray) → ndarray
 
 DIM = 5
 SIZES = [

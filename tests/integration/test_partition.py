@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def assert_partition(a_num, kth, axis):
@@ -184,7 +184,7 @@ class TestPartitionErrors:
     def test_kth_out_of_bound(self, kth):
         # For all cases,
         # In numpy, it raises ValueError
-        # In cunumeric, it pass
+        # In cupynumeric, it pass
         expected_exc = ValueError
         axis = 0
         with pytest.raises(expected_exc):
@@ -214,7 +214,7 @@ class TestArgPartitionErrors:
     def test_kth_out_of_bound(self, kth):
         # For all cases,
         # In numpy, it raises ValueError
-        # In cunumeric, it pass
+        # In cupynumeric, it pass
         expected_exc = ValueError
         axis = 0
         with pytest.raises(expected_exc):

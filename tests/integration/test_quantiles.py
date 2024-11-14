@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 ALL_METHODS = (
     "inverted_cdf",
@@ -84,8 +84,8 @@ def test_multi_axes(str_method, axes, qin_arr, keepdims, overwrite_input):
     else:
         qs_arr = np.array(qin_arr)
 
-    # cunumeric:
-    # print("cunumeric axis = %d:"%(axis))
+    # cupynumeric:
+    # print("cupynumeric axis = %d:"%(axis))
     q_out = num.quantile(
         arr,
         qs_arr,
@@ -143,8 +143,8 @@ def test_nd_quantile(str_method, ls_in, axes, keepdims):
         buffer=np.array([0.001, 0.37, 0.42, 0.5, 0.67, 0.83, 0.99, 0.39]).data,
     )
 
-    # cunumeric:
-    # print("cunumeric axis = %d:"%(axis))
+    # cupynumeric:
+    # print("cupynumeric axis = %d:"%(axis))
     q_out = num.quantile(
         arr, qs_arr, axis=axes, method=str_method, keepdims=keepdims
     )
