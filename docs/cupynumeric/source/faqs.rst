@@ -158,10 +158,10 @@ increase the problem size and correspondingly increase the resources needed
 for the problem size as described in the Usage section. Take a look at our
 :ref:`practices` on how to do that.
 
-Why is cuPyNumeric slower than cuPy on my laptop?
------------------------------------------------
+Why is cuPyNumeric slower than CuPy on my laptop?
+-------------------------------------------------
 
-For small problem sizes, cuPyNumeric might be slower than cuPy. We suggest you
+For small problem sizes, cuPyNumeric might be slower than CuPy. We suggest you
 increase the problem size and correspondingly increase the resources needed for
 the problem size as described in the :ref:`Usage` section. Take a look at
 performance :ref:`practices`.
