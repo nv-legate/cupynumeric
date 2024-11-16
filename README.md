@@ -15,8 +15,6 @@ limitations under the License.
 
 -->
 
-*This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.*
-
 [![Build Nightly release package](https://github.com/nv-legate/cupynumeric.internal/actions/workflows/ci-gh-nightly-release.yml/badge.svg)](https://github.com/nv-legate/cupynumeric.internal/actions/workflows/ci-gh-nightly-release.yml)
 
 # cuPyNumeric
@@ -62,3 +60,6 @@ For technical questions about cuPyNumeric and Legate-based tools, please visit
 the [community discussion forum](https://github.com/nv-legate/discussion).
 
 If you have other questions, please contact us at legate(at)nvidia.com.
+
+## Note
+*This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.*
