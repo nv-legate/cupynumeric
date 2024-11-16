@@ -11,3 +11,4 @@ Examples
   edge_detection
   newton_raphson_2d
   compact_finite_difference
+  torchswe
