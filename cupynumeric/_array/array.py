@@ -416,7 +416,7 @@ class ndarray:
         flatten : Return a copy of the array collapsed into one dimension.
 
         Availability
-        --------
+        ------------
         Single CPU
 
         """

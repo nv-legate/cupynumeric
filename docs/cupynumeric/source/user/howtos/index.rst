@@ -6,5 +6,4 @@ Howtos
 
   measuring
   benchmarking
-  jupyter
   patching

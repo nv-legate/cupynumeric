@@ -57,7 +57,7 @@ class Generator:
         default_rng : Recommended constructor for `Generator`.
 
         Availability
-        --------
+        ------------
         Multiple GPUs, Multiple CPUs
 
         """

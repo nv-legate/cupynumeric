@@ -11,7 +11,7 @@ Legate offers three different task variants: CPU, OMP, and GPU. A task variant
 determines the type of processor Legate chooses to perform the computations.
 
 What is the difference between Legate and cuPyNumeric?
-----------------------------------------------------
+------------------------------------------------------
 
 Legate is a task-based runtime software stack that enables development of
 scalable and composable libraries for distributed and accelerated computing.
@@ -101,14 +101,13 @@ How to handle Out-Of-Memory errors?
 
 .. code-block:: text
 
-    [0 - 7fb9fc426000]    0.985000 {5}{cupynumeric.mapper}: Mapper cupynumeric on Node 0 failed to allocate 144000000 bytes on memory 1e00000000000000 (of kind SYSTEM_MEM: Visible to all processors on a node) for region requirement 1 of Task cupynumeric::WhereTask[./script.py:90] (UID 39).
+    [0 - 7fda18f26000]    0.805182 {5}{cunumeric.mapper}: Failed to allocate 8388608 bytes on memory 1e00000000000000 (of kind SYSTEM_MEM) for region requirement(s) 1 of Task cupynumeric::BinaryOpTask[oom.py:24] (UID 18)
 
 The above error indicates that the application ran out of memory during
 execution. More granular details on the type of memory, the task that triggered
-the error are provided in the error message, but this usually indicates that
-resources (add more cores/threads/ GPUs, or increase the amount of system
-memory or framebuffer memory) or decrease the problem size and confirm that you
-are able to run the program to completion.
+the error, and what was using up the available memory are provided in the error
+message. If possible, try increasing the amount of system memory or framebuffer
+memory allocated to the program, or decrease the problem size.
 
 Reducing the ``--eager-alloc-percentage`` to, say, 10 or less can also help
 since this reduces the amount of available memory available to the eager memory
@@ -151,7 +150,7 @@ Check out the :ref:`benchmarking` section for information on how to accurately
 measure cuPyNumeric execution.
 
 Why is cuPyNumeric slower than NumPy on my laptop?
-------------------------------------------------
+--------------------------------------------------
 
 For small problem sizes, cuPyNumeric might be slower than NumPy. We suggest you
 increase the problem size and correspondingly increase the resources needed
@@ -169,7 +168,7 @@ performance :ref:`practices`.
 How do I use Jupyter Notebooks?
 -------------------------------
 
-Notebooks are useful for experimentation and evaluation on a single node.
+See https://docs.nvidia.com/legate/latest/jupyter.html.
 
 How to pass Legion and Realm arguments?
 ---------------------------------------
@@ -191,19 +190,17 @@ What are the defaults?
 The default values for several input arguments to Legate are mentioned in
 Legate's documentation.
 
-Are there resources where I can read more about Legate?
--------------------------------------------------------
+Where I can read more about cuPyNumeric?
+----------------------------------------
 
 Check out this `blog post <https://developer.nvidia.com/blog/accelerating-python-applications-with-cupynumeric-and-legate/>`_
+or this `tutorial <https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_X_Distributed_Computing_cuPyNumeric.ipynb>`_
 to learn more about cuPyNumeric.
 
-Technical questions?
---------------------
+Questions?
+----------
 
 For technical questions about cuPyNumeric and Legate-based tools, please visit
 the `community discussion forum <https://github.com/nv-legate/discussion>`_.
 
-Other questions?
-----------------
-
-Follow us on `GitHub <https://github.com/nv-legate>`_ or reach out to us there.
+If you have other questions, please contact us at *legate@nvidia.com*.

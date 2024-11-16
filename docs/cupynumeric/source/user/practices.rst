@@ -17,10 +17,10 @@ etc.) is noted in the docstring of the API. This would be useful to know while
 designing the application since it can impact the scalability.
 
 Guidelines on using cuPyNumeric APIs
-----------------------------------
+------------------------------------
 
 Use cuPyNumeric or NumPy arrays, AVOID native lists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Create a cuPyNumeric array from data structures native to Python like lists,
 tuples, etc., and operate on the cuPyNumeric array, as shown in the example
@@ -232,7 +232,7 @@ Faster I/O Routines
 As of 23.07, we recommend using `h5py <https://github.com/h5py/h5py>`_ to perform I/O.
 
 Guidelines on designing cuPyNumeric applications
-----------------------------------------------
+------------------------------------------------
 
 Use output arguments to reduce memory allocation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

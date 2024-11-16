@@ -79,7 +79,7 @@ See Also
 numpy.{}
 
 Availability
---------
+------------
 Multiple GPUs, Multiple CPUs
 """
 
@@ -117,7 +117,7 @@ See Also
 numpy.{}
 
 Availability
---------
+------------
 Multiple GPUs, Multiple CPUs
 """
 
@@ -155,7 +155,7 @@ See Also
 numpy.{}
 
 Availability
---------
+------------
 Multiple GPUs, Multiple CPUs
 """
 

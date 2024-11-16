@@ -53,7 +53,7 @@ class BitGenerator:
         numpy.random.BitGenerator
 
         Availability
-        --------
+        ------------
         Multiple GPUs, Multiple CPUs
         """
         if type(self) is BitGenerator:

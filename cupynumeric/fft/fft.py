@@ -104,7 +104,7 @@ def fft(
     numpy.fft.fft
 
     Availability
-    --------
+    ------------
     Multiple GPUs
     """
     s = (n,) if n is not None else None

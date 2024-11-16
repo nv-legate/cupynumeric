@@ -4,6 +4,9 @@ Installation
 Default conda install
 ---------------------
 
+cuPyNumeric supports the
+`same platforms as Legate <https://docs.nvidia.com/legate/latest/installation.html#support-matrix>`_.
+
 cuPyNumeric is available from
 `conda <https://docs.conda.io/projects/conda/en/latest/index.html>`_
 on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
@@ -33,7 +36,9 @@ environment, use environment variable ``CONDA_OVERRIDE_CUDA``:
       conda install -c conda-forge -c legate cupynumeric
 
 Once installed, you can verify the installation by running one of the examples
-from the cuPyNumeric repository, for instance:
+from the
+`cuPyNumeric repository <https://github.com/nv-legate/cunumeric/tree/HEAD/examples>`_,
+for instance:
 
 .. code-block:: sh
 
