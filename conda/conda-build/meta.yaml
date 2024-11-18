@@ -40,7 +40,7 @@
     {% set legate_version = (version.rsplit('.',1)[0] ~ ".dev" ~ "|>=" ~ version.rsplit('.',1)[0]) %}
 {% else %}
     {% set version = environ.get('GIT_DESCRIBE_TAG', placeholder_version).lstrip('v') %}
-    {% set legate_version = version %}
+    {% set legate_version = "24.11.00" %}
 {% endif %}
 
 package:
