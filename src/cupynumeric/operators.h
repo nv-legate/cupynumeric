@@ -37,7 +37,7 @@ NDArray add(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullop
 
 NDArray multiply(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
 
-NDArray dot(NDArray rhs1, NDArray rhs2);
+NDArray dot(NDArray a, NDArray b);
 
 NDArray negative(NDArray input);
 
@@ -195,6 +195,22 @@ std::vector<U> vec_convert(const std::vector<T>& input)
   }
   return output;
 }
+
+template <typename T>
+bool _is_in_vector(const std::vector<T>& vec, T item)
+{
+  if (std::find(vec.begin(), vec.end(), item) != vec.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+std::vector<std::vector<char>> dot_modes(uint a_ndim, uint b_ndim);
+
+template <typename T>
+std::vector<T> merge_vectors(
+  std::vector<T> a, std::vector<T> b, uint start_a, uint end_a, uint start_b, uint end_b);
 
 }  // namespace cupynumeric
 #include "cupynumeric/operators.inl"

@@ -260,37 +260,6 @@ NDArray tril(NDArray rhs, int32_t k) { return trilu(rhs, k, true); }
 
 NDArray triu(NDArray rhs, int32_t k) { return trilu(rhs, k, false); }
 
-NDArray dot(NDArray rhs1, NDArray rhs2)
-{
-  if (rhs1.dim() != 2 || rhs2.dim() != 2) {
-    LEGATE_ABORT("cupynumeric::dot only supports matrices now");
-  }
-
-  auto& rhs1_shape = rhs1.shape();
-  auto& rhs2_shape = rhs2.shape();
-
-  if (rhs1_shape[1] != rhs2_shape[0]) {
-    LEGATE_ABORT("Incompatible matrices: (",
-                 rhs1_shape[0],
-                 ", ",
-                 rhs1_shape[1],
-                 ") x (",
-                 rhs2_shape[0],
-                 ", ",
-                 rhs2_shape[1],
-                 ")");
-  }
-
-  auto runtime = CuPyNumericRuntime::get_runtime();
-  std::vector<uint64_t> shape;
-  shape.push_back(rhs1_shape[0]);
-  shape.push_back(rhs2_shape[1]);
-
-  auto out = runtime->create_array(std::move(shape), rhs1.type());
-  out.dot(std::move(rhs1), std::move(rhs2));
-  return out;
-}
-
 NDArray all(NDArray input,
             std::vector<int32_t> axis,
             std::optional<NDArray> out,
@@ -609,6 +578,104 @@ legate::Type find_common_type(const std::vector<NDArray>& arrays)
     }
   }
   return max_type;
+}
+
+NDArray dot(NDArray a, NDArray b)
+{
+  if (a.type().code() != b.type().code()) {
+    throw std::invalid_argument("Type of array a is not equal to type of array b");
+  }
+
+  if (a.dim() == 0 || b.dim() == 0) {
+    return multiply(a, b);
+  }
+
+  auto modes_vec = dot_modes(a.dim(), b.dim());
+  auto a_modes   = modes_vec[0];
+  auto b_modes   = modes_vec[1];
+  auto c_modes   = modes_vec[2];
+  std::map<char, int> mode2extent;
+  for (uint i = 0; i < a_modes.size(); i++) {
+    auto mode   = a_modes[i];
+    auto extent = a.shape()[i];
+    auto search = mode2extent.find(mode);
+    if (search != mode2extent.end()) {
+      if (search->second != extent) {
+        throw std::invalid_argument("Incompatible sizes between matched dimensions");
+      }
+    }
+    mode2extent[mode] = extent;
+  }
+  for (uint i = 0; i < b_modes.size(); i++) {
+    auto mode   = b_modes[i];
+    auto extent = b.shape()[i];
+    auto search = mode2extent.find(mode);
+    if (search != mode2extent.end()) {
+      if (search->second != extent) {
+        throw std::invalid_argument("Incompatible sizes between matched dimensions");
+      }
+    }
+    mode2extent[mode] = extent;
+  }
+
+  std::vector<size_t> c_shape;
+  for (auto mode : c_modes) {
+    auto search = mode2extent.find(mode);
+    if (search != mode2extent.end()) {
+      c_shape.push_back(mode2extent[mode]);
+    } else {
+      c_shape.push_back(1);
+    }
+  }
+
+  auto runtime = CuPyNumericRuntime::get_runtime();
+  auto c_dtype = a.type();
+  auto c       = runtime->create_array(std::move(c_shape), c_dtype);
+  // Perform operation
+  c.contract(modes_vec[2], std::move(a), modes_vec[0], std::move(b), modes_vec[1], mode2extent);
+  return c;
+}
+
+template <typename T>
+std::vector<T> merge_vectors(
+  std::vector<T> a, std::vector<T> b, uint start_a, uint end_a, uint start_b, uint end_b)
+{
+  std::vector<T> out;
+  for (uint i = start_a; i < end_a; i++) {
+    out.push_back(a[i]);
+  }
+  for (uint i = start_b; i < end_b; i++) {
+    out.push_back(b[i]);
+  }
+  return out;
+}
+
+std::vector<std::vector<char>> dot_modes(uint a_ndim, uint b_ndim)
+{
+  std::vector<char> a_modes, b_modes, out_modes;
+  assert(a_ndim < 26);
+  assert(b_ndim < 26);
+  for (uint i = 0; i < a_ndim; i++) {
+    a_modes.push_back('a' + i);
+  }
+  for (uint i = 0; i < b_ndim; i++) {
+    b_modes.push_back('A' + i);
+  }
+  if (a_ndim == 0) {
+    out_modes = b_modes;
+  } else if (b_ndim == 0) {
+    out_modes = a_modes;
+  } else if (b_ndim == 1) {
+    b_modes[b_modes.size() - 1] = a_modes[a_modes.size() - 1];
+    for (int i = 0; i < a_modes.size() - 1; i++) {
+      out_modes.push_back(a_modes[i]);
+    }
+  } else {
+    b_modes[b_modes.size() - 2] = a_modes[a_modes.size() - 1];
+    out_modes = merge_vectors<char>(a_modes, b_modes, 0, a_modes.size() - 1, 0, b_modes.size() - 2);
+    out_modes.push_back(b_modes[b_modes.size() - 1]);
+  }
+  return {a_modes, b_modes, out_modes};
 }
 
 }  // namespace cupynumeric

@@ -193,4 +193,22 @@ std::vector<T> as_type_vector(std::vector<U> const& in)
   return out;
 }
 
+template <typename T>
+std::vector<T> to_vector(NDArray a)
+{
+  std::vector<T> result;
+  if (a.size() == 0) {
+    return result;
+  }
+  if (a.dim() > 1) {
+    a = a._wrap(a.size());
+  }
+  auto acc = a.get_read_accessor<T, 1>();
+  result.reserve(a.size());
+  for (size_t i = 0; i < a.size(); ++i) {
+    result.push_back(acc[i]);
+  }
+  return result;
+}
+
 }  // namespace cupynumeric

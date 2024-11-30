@@ -560,22 +560,17 @@ void NDArray::unary_reduction(int32_t op_code_, NDArray input)
 
 uint64_t ceildiv(uint64_t a, uint64_t b) { return (a + b - 1) / b; }
 
-void NDArray::dot(NDArray rhs1, NDArray rhs2)
+void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs2_store)
 {
-  if (size() == 0) {
-    return;
-  }
-
   auto runtime = CuPyNumericRuntime::get_runtime();
 
   fill(get_reduction_identity(UnaryRedCode::SUM, type()));
 
-  assert(dim() == 2 && rhs1.dim() == 2 && rhs2.dim() == 2);
+  assert(dim() == 2 && rhs1_store.dim() == 2 && rhs2_store.dim() == 2);
 
-  auto m = rhs1.shape()[0];
-  auto n = rhs2.shape()[1];
-  auto k = rhs1.shape()[1];
-
+  auto m = rhs1_store.shape()[0];
+  auto n = rhs2_store.shape()[1];
+  auto k = rhs1_store.shape()[1];
   // compute tilesize for lhs and batch_size for k
   // TODO make generic
   std::vector<std::uint64_t> initial_tile_shape = {512, 512};
@@ -600,8 +595,8 @@ void NDArray::dot(NDArray rhs1, NDArray rhs2)
   auto color_k                               = ceildiv(k, k_batch_size);
 
   auto p_lhs  = store_.partition_by_tiling(tile_shape);
-  auto p_rhs1 = rhs1.store_.partition_by_tiling(tile_shape_rhs1);
-  auto p_rhs2 = rhs2.store_.partition_by_tiling(tile_shape_rhs2);
+  auto p_rhs1 = rhs1_store.partition_by_tiling(tile_shape_rhs1);
+  auto p_rhs2 = rhs2_store.partition_by_tiling(tile_shape_rhs2);
 
   for (std::uint64_t i = 0; i < color_k; ++i) {
     auto task = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_MATMUL, color_shape);
@@ -1851,6 +1846,238 @@ NDArray NDArray::_maybe_convert(const legate::Type& type) const
   } else {
     return as_type(type);
   }
+}
+
+void NDArray::_verify_mode_extent(const std::map<char, int>& mode2extent,
+                                  const std::vector<char>& modes,
+                                  const std::vector<size_t>& shape) const
+{
+  for (int32_t i = 0; i < modes.size(); i++) {
+    assert(mode2extent.at(modes[i]) == shape[i]);
+  }
+}
+
+legate::LogicalStore NDArray::_alphabetical_transpose(legate::LogicalStore store,
+                                                      const std::vector<char>& modes) const
+{
+  std::map<char, unsigned int> map_mode_id;
+  for (int i = 0; i < modes.size(); i++) {
+    map_mode_id[modes[i]] = i;
+  }
+
+  auto modes_copy{modes};
+  std::sort(modes_copy.begin(), modes_copy.end());
+  std::vector<int32_t> axes;
+  for (int i = 0; i < modes_copy.size(); i++) {
+    axes.push_back(map_mode_id[modes_copy[i]]);
+  }
+  return store.transpose(std::move(axes));
+}
+
+enum BlasOps {
+  BlasOperationNone = 0,
+  BlasOperationVV   = 1,
+  BlasOperationMV   = 2,
+  BlasOperationMM   = 3,
+};
+
+// This function ports contract function in cupynumeric/_thunk/deferred.py
+// to-do: handle store overlap
+// to-do: support np.float16
+void NDArray::contract(const std::vector<char>& lhs_modes,
+                       NDArray rhs1,
+                       const std::vector<char>& rhs1_modes,
+                       NDArray rhs2,
+                       const std::vector<char>& rhs2_modes,
+                       const std::map<char, int>& mode2extent)
+{
+  // Sanity checks
+  // no duplicate modes within an array
+  std::set<char> s_lhs_modes(lhs_modes.begin(), lhs_modes.end());
+  assert(lhs_modes.size() == s_lhs_modes.size());
+  std::set<char> s_rhs1_modes(rhs1_modes.begin(), rhs1_modes.end());
+  assert(rhs1_modes.size() == s_rhs1_modes.size());
+  std::set<char> s_rhs2_modes(rhs2_modes.begin(), rhs2_modes.end());
+  assert(rhs2_modes.size() == s_rhs2_modes.size());
+  // no singleton modes
+  std::unordered_map<char, size_t> mode_counts;
+  for (auto v : lhs_modes) {
+    ++mode_counts[v];
+  }
+  for (auto v : rhs1_modes) {
+    ++mode_counts[v];
+  }
+  for (auto v : rhs2_modes) {
+    ++mode_counts[v];
+  }
+  for (auto const& count : mode_counts) {
+    assert(count.second == 2 || count.second == 3);
+  }
+
+  // arrays and mode lists agree on dimensionality
+  assert(dim() == lhs_modes.size());
+  assert(rhs1.dim() == rhs1_modes.size());
+  assert(rhs2.dim() == rhs2_modes.size());
+  // array shapes agree with mode extents (broadcasting should have been
+  // handled by the frontend)
+  _verify_mode_extent(mode2extent, lhs_modes, shape());
+  _verify_mode_extent(mode2extent, rhs1_modes, rhs1.shape());
+  _verify_mode_extent(mode2extent, rhs2_modes, rhs2.shape());
+  // casting has been handled by the frontend
+  assert(type() == rhs1.type());
+  assert(type() == rhs2.type());
+
+  // to-do: Handle store overlap
+
+  enum BlasOps blas_op    = BlasOperationNone;
+  bool count_unequals_two = false;
+  for (auto const& count : mode_counts) {
+    if (count.second != 2) {
+      count_unequals_two = true;
+      break;
+    }
+  }
+  if (!count_unequals_two) {
+    if (lhs_modes.size() == 0 && rhs1_modes.size() == 1 && rhs2_modes.size() == 1) {
+      blas_op = BlasOperationVV;
+    } else if (lhs_modes.size() == 1 && (rhs1_modes.size() == 2 and rhs2_modes.size() == 1 ||
+                                         rhs1_modes.size() == 1 and rhs2_modes.size() == 2)) {
+      blas_op = BlasOperationMV;
+    } else if (lhs_modes.size() == 2 and rhs1_modes.size() == 2 and rhs2_modes.size() == 2) {
+      blas_op = BlasOperationMM;
+    }
+  }
+  // to-do: support np.float16
+
+  // Clear output array
+  auto zero = legate::type_dispatch(type().code(), generate_zero_fn{});
+  fill(zero);
+  // Pull out the stores
+  auto lhs_s   = store_;
+  auto rhs1_s  = rhs1.store_;
+  auto rhs2_s  = rhs2.store_;
+  auto runtime = CuPyNumericRuntime::get_runtime();
+
+  if (blas_op != BlasOperationNone) {
+    if (blas_op == BlasOperationVV) {  // for Scalar, dim() == 0 or 1?
+      auto task  = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_DOT);
+      auto redop = get_reduction_op(UnaryRedCode::SUM);
+      task.add_reduction(lhs_s, redop);
+      auto p_rhs1 = task.add_input(rhs1_s);
+      auto p_rhs2 = task.add_input(rhs2_s);
+      task.add_constraint(align(p_rhs1, p_rhs2));
+      runtime->submit(std::move(task));
+    } else if (blas_op == BlasOperationMV) {
+      // Matrix-vector or vector-matrix multiply
+      // b,(ab/ba)->a --> (ab/ba),b->a
+      if (rhs1_modes.size() == 1) {
+        std::swap(rhs1_s, rhs2_s);
+      }
+      // ba,b->a --> ab,b->a
+      if (rhs1_modes[0] == rhs2_modes[0]) {
+        rhs1_s = rhs1_s.transpose({1, 0});
+      }
+      auto m = rhs1_s.extents().data()[0];
+      auto n = rhs1_s.extents().data()[1];
+      rhs2_s = rhs2_s.promote(0, m);
+      lhs_s  = lhs_s.promote(1, n);
+
+      auto task   = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_MATVECMUL);
+      auto redop  = get_reduction_op(UnaryRedCode::SUM);
+      auto p_lhs  = task.add_reduction(lhs_s, redop);
+      auto p_rhs1 = task.add_input(rhs1_s);
+      auto p_rhs2 = task.add_input(rhs2_s);
+      task.add_constraint(align(p_lhs, p_rhs1));
+      task.add_constraint(align(p_rhs1, p_rhs2));
+      runtime->submit(std::move(task));
+    } else if (blas_op == BlasOperationMM) {
+      auto rhs1_modes_copy{rhs1_modes};
+      auto rhs2_modes_copy{rhs2_modes};
+      // (cb/bc),(ab/ba)->ac --> (ab/ba),(cb/bc)->ac
+      if (!_is_in_vector<char>(rhs1_modes, lhs_modes[0])) {
+        std::swap(rhs1_s, rhs2_s);
+        std::swap(rhs1_modes_copy, rhs2_modes_copy);
+      }
+      assert(_is_in_vector<char>(rhs1_modes_copy, lhs_modes[0]) &&
+             _is_in_vector<char>(rhs2_modes_copy, lhs_modes[1]));
+      // ba,?->ac --> ab,?->ac
+      if (lhs_modes[0] != rhs1_modes_copy[0]) {
+        rhs1_s = rhs1_s.transpose({1, 0});
+      }
+      // ?,cb->ac --> ?,bc->ac
+      if (lhs_modes[1] != rhs2_modes_copy[1]) {
+        rhs2_s = rhs2_s.transpose({1, 0});
+      }
+      auto m = shape()[0];
+      auto n = shape()[1];
+      auto k = rhs1.shape()[1];
+      assert(m == rhs1.shape()[0]);
+      assert(n == rhs2.shape()[1]);
+      assert(k == rhs2.shape()[0]);
+
+      dot_MM(rhs1_s, rhs2_s);
+    } else {
+      assert(false);
+    }
+    return;
+  }
+
+  lhs_s  = _alphabetical_transpose(lhs_s, lhs_modes);
+  rhs1_s = _alphabetical_transpose(rhs1_s, rhs1_modes);
+  rhs2_s = _alphabetical_transpose(rhs2_s, rhs2_modes);
+
+  std::vector<int8_t> lhs_dim_mask;
+  std::vector<int8_t> rhs1_dim_mask;
+  std::vector<int8_t> rhs2_dim_mask;
+
+  std::vector<char> sorted_modes;
+  for (std::map<char, int>::const_iterator it = mode2extent.begin(); it != mode2extent.end();
+       it++) {
+    sorted_modes.push_back(it->first);
+  }
+  std::sort(sorted_modes.begin(), sorted_modes.end());
+  for (int i = 0; i < sorted_modes.size(); i++) {
+    auto dim    = i;
+    auto mode   = sorted_modes[i];
+    auto extent = mode2extent.at(mode);
+
+    auto add_mode = [&](legate::LogicalStore store,
+                        const std::vector<char>& modes,
+                        std::vector<int8_t>& dim_mask) {
+      if (!_is_in_vector<char>(modes, mode)) {
+        dim_mask.emplace_back(false);
+        return store.promote(dim, extent);
+      } else {
+        dim_mask.emplace_back(true);
+        return store;
+      }
+    };
+
+    lhs_s  = add_mode(lhs_s, lhs_modes, lhs_dim_mask);
+    rhs1_s = add_mode(rhs1_s, rhs1_modes, rhs1_dim_mask);
+    rhs2_s = add_mode(rhs2_s, rhs2_modes, rhs2_dim_mask);
+  }
+
+  assert(lhs_s.extents().data() == rhs1_s.extents().data());
+  assert(lhs_s.extents().data() == rhs2_s.extents().data());
+
+  auto task   = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_CONTRACT);
+  auto redop  = get_reduction_op(UnaryRedCode::SUM);
+  auto p_lhs  = task.add_reduction(lhs_s, redop);
+  auto p_rhs1 = task.add_input(rhs1_s);
+  auto p_rhs2 = task.add_input(rhs2_s);
+
+  auto add_scalar_arg = [&](std::vector<int8_t> dim_mask) {
+    auto arg_type = legate::fixed_array_type(legate::bool_(), dim_mask.size());
+    task.add_scalar_arg(legate::Scalar(arg_type, dim_mask.data(), true));
+  };
+  add_scalar_arg(lhs_dim_mask);
+  add_scalar_arg(rhs1_dim_mask);
+  add_scalar_arg(rhs2_dim_mask);
+
+  task.add_constraint(align(p_lhs, p_rhs1));
+  task.add_constraint(align(p_rhs1, p_rhs2));
+  runtime->submit(std::move(task));
 }
 
 legate::LogicalStore NDArray::get_store() { return store_; }
