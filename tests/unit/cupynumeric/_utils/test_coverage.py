@@ -117,6 +117,23 @@ class _Test_ufunc(cupynumeric._ufunc.ufunc):
 _test_ufunc = _Test_ufunc()
 
 
+class Test_helpers:
+    def test_is_wrapped_true(self) -> None:
+        wrapped = m.implemented(_test_func, "foo", "_test_func")
+        assert m.is_wrapped(wrapped)
+
+    def test_is_wrapped_false(self) -> None:
+        assert not m.is_wrapped(10)
+
+    def test_is_implemented_true(self) -> None:
+        wrapped = m.implemented(_test_func, "foo", "_test_func")
+        assert m.is_implemented(wrapped)
+
+    def test_is_implemented_false(self) -> None:
+        wrapped = m.unimplemented(_test_func, "foo", "_test_func")
+        assert not m.is_implemented(wrapped)
+
+
 class Test_implemented:
     @patch("cupynumeric.runtime.record_api_call")
     def test_reporting_True_func(
@@ -347,10 +364,10 @@ class Test_clone_module:
         assert _Dest.attr2 == 30
 
         assert _Dest.function1.__wrapped__ is _OriginMod.function1
-        assert not _Dest.function1._cupynumeric.implemented
+        assert not _Dest.function1._cupynumeric_metadata.implemented
 
         assert _Dest.function2.__wrapped__
-        assert _Dest.function2._cupynumeric.implemented
+        assert _Dest.function2._cupynumeric_metadata.implemented
 
         assert not hasattr(_Dest.extra, "_cupynumeric")
 
@@ -373,10 +390,10 @@ class Test_clone_module:
         assert _Dest.attr2 == 30
 
         assert _Dest.function1.__wrapped__ is _OriginMod.function1
-        assert not _Dest.function1._cupynumeric.implemented
+        assert not _Dest.function1._cupynumeric_metadata.implemented
 
         assert _Dest.function2.__wrapped__
-        assert _Dest.function2._cupynumeric.implemented
+        assert _Dest.function2._cupynumeric_metadata.implemented
 
         assert not hasattr(_Dest.extra, "_cupynumeric")
 
@@ -428,10 +445,10 @@ class Test_clone_class:
         assert _Test_ndarray.attr2 == 30
 
         assert _Test_ndarray.foo.__wrapped__ is _Orig_ndarray.foo
-        assert not _Test_ndarray.foo._cupynumeric.implemented
+        assert not _Test_ndarray.foo._cupynumeric_metadata.implemented
 
         assert _Test_ndarray.bar.__wrapped__
-        assert _Test_ndarray.bar._cupynumeric.implemented
+        assert _Test_ndarray.bar._cupynumeric_metadata.implemented
 
         assert not hasattr(_Test_ndarray.extra, "_cupynumeric")
 
@@ -447,10 +464,10 @@ class Test_clone_class:
         assert _Test_ndarray.attr2 == 30
 
         assert _Test_ndarray.foo.__wrapped__ is _Orig_ndarray.foo
-        assert not _Test_ndarray.foo._cupynumeric.implemented
+        assert not _Test_ndarray.foo._cupynumeric_metadata.implemented
 
         assert _Test_ndarray.bar.__wrapped__
-        assert _Test_ndarray.bar._cupynumeric.implemented
+        assert _Test_ndarray.bar._cupynumeric_metadata.implemented
 
         assert not hasattr(_Test_ndarray.extra, "_cupynumeric")
 
@@ -469,32 +486,32 @@ def test_ufunc_methods_binary() -> None:
 
     # reduce is implemented
     assert np.add.reduce.__wrapped__
-    assert np.add.reduce._cupynumeric.implemented
+    assert np.add.reduce._cupynumeric_metadata.implemented
 
     # the rest are not
     assert np.add.reduceat.__wrapped__
-    assert not np.add.reduceat._cupynumeric.implemented
+    assert not np.add.reduceat._cupynumeric_metadata.implemented
     assert np.add.outer.__wrapped__
-    assert not np.add.outer._cupynumeric.implemented
+    assert not np.add.outer._cupynumeric_metadata.implemented
     assert np.add.at.__wrapped__
-    assert not np.add.at._cupynumeric.implemented
+    assert not np.add.at._cupynumeric_metadata.implemented
     assert np.add.accumulate.__wrapped__
-    assert not np.add.accumulate._cupynumeric.implemented
+    assert not np.add.accumulate._cupynumeric_metadata.implemented
 
 
 def test_ufunc_methods_unary() -> None:
     import cupynumeric as np
 
     assert np.negative.reduce.__wrapped__
-    assert not np.negative.reduce._cupynumeric.implemented
+    assert not np.negative.reduce._cupynumeric_metadata.implemented
     assert np.negative.reduceat.__wrapped__
-    assert not np.negative.reduceat._cupynumeric.implemented
+    assert not np.negative.reduceat._cupynumeric_metadata.implemented
     assert np.negative.outer.__wrapped__
-    assert not np.negative.outer._cupynumeric.implemented
+    assert not np.negative.outer._cupynumeric_metadata.implemented
     assert np.negative.at.__wrapped__
-    assert not np.negative.at._cupynumeric.implemented
+    assert not np.negative.at._cupynumeric_metadata.implemented
     assert np.negative.accumulate.__wrapped__
-    assert not np.negative.accumulate._cupynumeric.implemented
+    assert not np.negative.accumulate._cupynumeric_metadata.implemented
 
 
 if __name__ == "__main__":

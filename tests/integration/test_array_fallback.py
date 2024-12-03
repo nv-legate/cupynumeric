@@ -27,7 +27,7 @@ def test_unimplemented_method_self_fallback():
     # to verify a behaviour of unimplemented ndarray method wrappers. If std
     # becomes implemeneted in the future, this assertion will start to fail,
     # and a new (unimplemented) ndarray method should be found to replace it
-    assert not ones.std._cupynumeric.implemented
+    assert not ones.std._cupynumeric_metadata.implemented
 
     ones.std()
 

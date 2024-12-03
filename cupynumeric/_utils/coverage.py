@@ -17,7 +17,7 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 from functools import WRAPPER_ASSIGNMENTS, wraps
-from types import BuiltinFunctionType, FunctionType, ModuleType
+from types import BuiltinFunctionType, ModuleType
 from typing import Any, Callable, Container, Iterable, Mapping, Protocol, cast
 
 from legate.core import track_provenance
@@ -69,7 +69,7 @@ class CuWrapperMetadata:
 
 
 class CuWrapped(AnyCallable, Protocol):
-    _cupynumeric: CuWrapperMetadata
+    _cupynumeric_metadata: CuWrapperMetadata
     __wrapped__: AnyCallable
     __name__: str
     __qualname__: str
@@ -116,7 +116,7 @@ def implemented(
     multi = "Multiple GPUs" in (getattr(func, "__doc__", None) or "")
     single = "Single GPU" in (getattr(func, "__doc__", None) or "") or multi
 
-    wrapper._cupynumeric = CuWrapperMetadata(
+    wrapper._cupynumeric_metadata = CuWrapperMetadata(
         implemented=True, single=single, multi=multi
     )
 
@@ -185,7 +185,7 @@ def unimplemented(
     --------
     {name}
     """
-    wrapper._cupynumeric = CuWrapperMetadata(implemented=False)
+    wrapper._cupynumeric_metadata = CuWrapperMetadata(implemented=False)
 
     return wrapper
 
@@ -242,7 +242,7 @@ def clone_module(
         # Only need to wrap things that are in the origin module to begin with
         if attr not in origin_module.__dict__:
             continue
-        if isinstance(value, (FunctionType, lgufunc)) or (
+        if should_wrap(value) or (
             include_builtin_function_type
             and isinstance(value, BuiltinFunctionType)
         ):
@@ -273,7 +273,7 @@ def clone_module(
     from numpy import ufunc as npufunc
 
     for attr, value in missing.items():
-        if isinstance(value, (FunctionType, npufunc)) or (
+        if should_wrap(value) or (
             include_builtin_function_type
             and isinstance(value, BuiltinFunctionType)
         ):
@@ -300,13 +300,19 @@ def clone_module(
 
 
 def should_wrap(obj: object) -> bool:
-    # custom callables, e.g. cython used in np2, do not inherit anything. See
-    # https://github.com/nv-legate/cupynumeric.internal/issues/179#issuecomment-2423813051
+    from numpy import ufunc as npufunc
+
+    from .._ufunc.ufunc import ufunc as lgufunc
+
+    # Custom callables, e.g. cython functions used in np2, do not inherit
+    # anything, so we check callable() instead (and include the __get__/__set__
+    # checks to filter out classes). OTOH ufuncs need to be checked specially
+    # because they do not have __get__.
     return (
         callable(obj)
         and hasattr(obj, "__get__")
         and not hasattr(obj, "__set__")
-    )
+    ) or isinstance(obj, (lgufunc, npufunc))
 
 
 def clone_class(
@@ -363,13 +369,17 @@ def clone_class(
     return _clone_class
 
 
+def is_wrapped(obj: Any) -> bool:
+    return hasattr(obj, "_cupynumeric_metadata")
+
+
 def is_implemented(obj: Any) -> bool:
-    return hasattr(obj, "_cupynumeric") and obj._cupynumeric.implemented
+    return is_wrapped(obj) and obj._cupynumeric_metadata.implemented
 
 
 def is_single(obj: Any) -> bool:
-    return hasattr(obj, "_cupynumeric") and obj._cupynumeric.single
+    return is_wrapped(obj) and obj._cupynumeric_metadata.single
 
 
 def is_multi(obj: Any) -> bool:
-    return hasattr(obj, "_cupynumeric") and obj._cupynumeric.multi
+    return is_wrapped(obj) and obj._cupynumeric_metadata.multi

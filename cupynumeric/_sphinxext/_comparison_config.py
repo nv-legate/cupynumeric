@@ -83,12 +83,11 @@ METHODS = (MethodType, MethodDescriptorType)
 UFUNCS = (numpy.ufunc,)
 
 NUMPY_CONFIGS = [
-    SectionConfig("Module-Level", None, types=FUNCTIONS),
-    SectionConfig("Ufuncs", None, types=UFUNCS),
-    SectionConfig("Multi-Dimensional Array", "ndarray", types=METHODS),
-    SectionConfig("Linear Algebra", "linalg", types=FUNCTIONS),
-    SectionConfig("Discrete Fourier Transform", "fft", types=FUNCTIONS),
-    SectionConfig("Random Sampling", "random", types=FUNCTIONS),
+    SectionConfig("Module-Level", None),
+    SectionConfig("Multi-Dimensional Array", "ndarray"),
+    SectionConfig("Linear Algebra", "linalg"),
+    SectionConfig("Discrete Fourier Transform", "fft"),
+    SectionConfig("Random Sampling", "random"),
 ]
 
 CONVOLVE = ("convolve", "correlate")

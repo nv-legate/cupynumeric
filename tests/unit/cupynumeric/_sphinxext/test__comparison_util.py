@@ -35,26 +35,31 @@ def test_get_namespaces_attr(attr):
     assert res[1] is getattr(num, attr)
 
 
+class _wrapped:
+    class _cupynumeric_metadata:
+        implemeneted = True
+
+
 class _TestObj:
-    a = 10
-    b = 10.2
-    c = "str"
-    _priv = "priv"
+    a = _wrapped
+    b = _wrapped
+    c = _wrapped
+    d = 10
+    _priv = _wrapped
 
 
-class Test_filter_names:
+class Test_filter_wrapped_names:
     def test_default(self):
-        assert set(m.filter_names(_TestObj)) == {"a", "b", "c"}
-
-    def test_types(self):
-        assert set(m.filter_names(_TestObj, (int,))) == {"a"}
-        assert set(m.filter_names(_TestObj, (int, str))) == {"a", "c"}
-        assert set(m.filter_names(_TestObj, (int, set))) == {"a"}
-        assert set(m.filter_names(_TestObj, (set,))) == set()
+        assert set(m.filter_wrapped_names(_TestObj())) == {"a", "b", "c"}
 
     def test_skip(self):
-        assert set(m.filter_names(_TestObj, skip=("a",))) == {"b", "c"}
-        assert set(m.filter_names(_TestObj, skip=("a", "c"))) == {"b"}
+        assert set(m.filter_wrapped_names(_TestObj(), skip=("a",))) == {
+            "b",
+            "c",
+        }
+        assert set(m.filter_wrapped_names(_TestObj(), skip=("a", "c"))) == {
+            "b"
+        }
 
 
 if __name__ == "__main__":

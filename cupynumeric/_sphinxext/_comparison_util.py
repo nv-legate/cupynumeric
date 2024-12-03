@@ -16,9 +16,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Type
+from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
-from .._utils.coverage import is_implemented, is_multi, is_single
+from .._utils.coverage import is_implemented, is_multi, is_single, is_wrapped
 from ._comparison_config import MISSING_NP_REFS, SKIP
 
 if TYPE_CHECKING:
@@ -73,17 +73,31 @@ def _lgref(name: str, obj: Any, implemented: bool) -> str:
     return f":{role}:`{full_name}`"
 
 
-def filter_names(
+def filter_wrapped_names(
     obj: Any,
-    types: tuple[Type[Any], ...] | None = None,
+    *,
     skip: Iterable[str] = (),
 ) -> Iterator[str]:
     names = (n for n in dir(obj))  # every name in the module or class
+    names = (
+        n for n in names if is_wrapped(getattr(obj, n))
+    )  # that is wrapped
     names = (n for n in names if n not in skip)  # except the ones we skip
     names = (n for n in names if not n.startswith("_"))  # or any private names
-    if types:
-        # optionally filtered by type
-        names = (n for n in names if isinstance(getattr(obj, n), types))
+    return names
+
+
+def filter_type_names(
+    obj: Any,
+    *,
+    skip: Iterable[str] = (),
+) -> Iterator[str]:
+    names = (n for n in dir(obj))  # every name in the module or class
+    names = (
+        n for n in names if isinstance(getattr(obj, n), type)
+    )  # that is a type (class, dtype, etc)
+    names = (n for n in names if n not in skip)  # except the ones we skip
+    names = (n for n in names if not n.startswith("_"))  # or any private names
     return names
 
 
@@ -123,9 +137,14 @@ def generate_section(config: SectionConfig) -> SectionDetail:
     names: Iterable[str]
 
     if config.names:
-        names = config.names
+        names = set(config.names)
     else:
-        names = filter_names(np_obj, config.types, skip=SKIP)
+        wrapped_names = filter_wrapped_names(lg_obj, skip=SKIP)
+        type_names = filter_type_names(lg_obj, skip=SKIP)
+        names = set(wrapped_names) | set(type_names)
+
+    # we can omit anything that isn't in np namespace to begin with
+    names = {n for n in names if n in dir(np_obj)}
 
     items = [get_item(name, np_obj, lg_obj) for name in names]
 
