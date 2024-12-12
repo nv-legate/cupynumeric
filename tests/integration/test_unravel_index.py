@@ -122,7 +122,16 @@ def test_large_index():
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize(
     "order",
     (
@@ -141,7 +150,16 @@ def test_basic(ndim, order):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize(
     "order",
     (
@@ -152,8 +170,8 @@ def test_basic(ndim, order):
 def test_uneven_shape(ndim, order):
     shape = np.random.randint(1, 6, ndim, dtype=int)
     size = ndim
-    np_arr = mk_seq_array(np, size)
-    num_arr = mk_seq_array(num, size)
+    np_arr = mk_seq_array(np, size) - 1
+    num_arr = mk_seq_array(num, size) - 1
 
     res_np = np.unravel_index(np_arr, shape, order)
     res_num = num.unravel_index(num_arr, shape, order)

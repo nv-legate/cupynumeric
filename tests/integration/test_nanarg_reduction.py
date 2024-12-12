@@ -46,7 +46,16 @@ class TestNanArgReductions:
     """
 
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_basic(self, func_name, ndim, keepdims):
         """This test inserts a NaN in the array and checks if the
@@ -77,7 +86,16 @@ class TestNanArgReductions:
         assert np.array_equal(index_array_num, index_array_np)
 
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_out(self, func_name, ndim):
         """This test checks that the out argument is updated with the
         output"""
@@ -103,7 +121,17 @@ class TestNanArgReductions:
             assert np.array_equal(out_np, out_num)
 
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("dtype", (np.float32, np.float64))
     def test_floating_point_types(self, func_name, ndim, dtype):
         """This test checks the most frequently used datatypes
@@ -127,7 +155,16 @@ class TestNanArgReductions:
         assert np.array_equal(out_num, out_np)
 
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_all_nan_numpy_compat(self, func_name, ndim):
         """This test checks if we comply with the expected behavior when
         the array contains only NaNs. The expected behavior is to
@@ -152,7 +189,16 @@ class TestNanArgReductions:
         reason="Eager and Deferred mode will give different results",
     )
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_all_nan_no_numpy_compat(self, func_name, ndim):
         """This test checks that we return identity for all-NaN arrays.
         Note that scalar reductions (e.g., argmin/argmax) on arrays
@@ -248,7 +294,17 @@ class TestXFail:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("disallowed_dtype", DISALLOWED_DTYPES)
     def test_disallowed_dtypes(self, func_name, ndim, disallowed_dtype):
         """This test checks if we raise an error for types that are

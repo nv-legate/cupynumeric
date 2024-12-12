@@ -76,7 +76,17 @@ def test_empty_no_item():
     assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim(ndim):
     shape = (4,) * ndim
     arr_num = num.random.randint(0, 3, size=shape)

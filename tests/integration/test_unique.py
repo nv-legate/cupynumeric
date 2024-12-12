@@ -30,7 +30,16 @@ def test_with_nonzero():
     assert np.array_equal(b, b_np)
 
 
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim(ndim):
     shape = (4,) * ndim
     a = num.random.randint(0, 3, size=shape)

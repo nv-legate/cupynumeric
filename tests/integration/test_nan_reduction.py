@@ -28,7 +28,14 @@ NAN_FUNCS = ("nanmax", "nanmin", "nanprod", "nansum")
 
 EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
-NDIMS = range(LEGATE_MAX_DIM + 1)
+NDIMS = (
+    0,
+    1,
+    2,
+    3,
+    4,
+    LEGATE_MAX_DIM,
+)
 
 DTYPE = ["l", "L", "f", "d", "h", "i", "H", "I", "?", "b", "B"]
 
@@ -43,7 +50,16 @@ class TestNanReductions:
     """
 
     @pytest.mark.parametrize("func_name", ("nansum", "nanprod"))
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_basic_nan_sum_prod(self, func_name, ndim, keepdims):
         """This test sets an element to NaN and checks if the output
@@ -68,7 +84,16 @@ class TestNanReductions:
         assert allclose(out_num, out_np, rtol=1e-4)
 
     @pytest.mark.parametrize("func_name", ("nanmin", "nanmax"))
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_basic_nan_min_max(self, func_name, ndim, keepdims):
         """This test sets an element to NaN and checks if the output
@@ -93,7 +118,16 @@ class TestNanReductions:
         assert np.array_equal(out_num, out_np)
 
     @pytest.mark.parametrize("func_name", NAN_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_out(self, func_name, ndim):
         """This test checks that the out argument is updated with the
         output"""
@@ -118,7 +152,16 @@ class TestNanReductions:
 
             assert allclose(out_num, out_np, rtol=1e-4)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("dtype", (np.float32, np.float64))
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_complex_dtype_nansum(self, ndim, dtype, keepdims):
@@ -151,7 +194,16 @@ class TestNanReductions:
 
         assert allclose(out_num, out_np, rtol=1e-4)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_complex_dtype_nanprod(self, ndim, keepdims):
         """This test checks if nanprod works as expected for complex
@@ -230,7 +282,16 @@ class TestNanReductions:
         settings.numpy_compat.unset_value()
 
     @pytest.mark.parametrize("func_name", ("nanmin", "nanmax"))
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_all_nans_numpy_compat(self, ndim, func_name):
         """This test checks if we comply with the expected behavior when
         the array contains only NaNs.
@@ -260,7 +321,16 @@ class TestNanReductions:
         ],
         ids=str,
     )
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_all_nans_no_numpy_compat(self, ndim, identity, func_name):
         """This test checks if we comply with the expected behavior when
         the array contains only NaNs for nanmin and nanmax.
@@ -278,7 +348,16 @@ class TestNanReductions:
 
         settings.numpy_compat.unset_value()
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_all_nans_nanprod(self, ndim):
         shape = (3,) * ndim
         in_num = num.random.random(shape)
@@ -310,7 +389,16 @@ class TestNanReductions:
         out_num = num.nansum(in_num)
         assert allclose(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_all_nans_nansum(self, ndim):
         shape = (3,) * ndim
         in_num = num.random.random(shape)

@@ -31,7 +31,15 @@ AXES = (
 )
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("axes", AXES)
 def test_moveaxis(ndim, axes):
     source, destination = axes

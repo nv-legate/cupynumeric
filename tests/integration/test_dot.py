@@ -22,8 +22,28 @@ import cupynumeric as num
 from cupynumeric._utils.linalg import dot_modes
 
 
-@pytest.mark.parametrize("b_ndim", range(LEGATE_MAX_DIM + 1))
-@pytest.mark.parametrize("a_ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "b_ndim",
+    (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
+@pytest.mark.parametrize(
+    "a_ndim",
+    (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_dot(a_ndim, b_ndim):
     name = f"dot({a_ndim} x {b_ndim})"
     modes = dot_modes(a_ndim, b_ndim)

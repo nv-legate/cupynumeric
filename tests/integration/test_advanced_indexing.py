@@ -120,7 +120,13 @@ def mk_deferred_array(lib, shape):
 
 
 def gen_args():
-    for arr_ndim in range(1, LEGATE_MAX_DIM + 1):
+    for arr_ndim in (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM - 1,
+    ):
         for idx_ndim in range(1, arr_ndim + 1):
             for zero_dim in range(arr_ndim):
                 yield arr_ndim, idx_ndim, zero_dim
@@ -919,7 +925,12 @@ def test():
 
     # we do less than LEGATE_MAX_DIM becasue the dimension will be increased by
     # 1 when passig 2d index array
-    for ndim in range(2, LEGATE_MAX_DIM):
+    for ndim in (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM - 1,
+    ):
         a_shape = tuple(np.random.randint(2, 5) for i in range(ndim))
         np_array = mk_seq_array(np, a_shape)
         num_array = mk_seq_array(num, a_shape)

@@ -75,7 +75,17 @@ class TestIndices:
 
         assert np.array_equal(np_res, num_res)
 
-    @pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM - 1,
+        ),
+    )
     def test_indices_basic(self, ndim):
         dimensions = tuple(np.random.randint(1, 5) for _ in range(ndim))
 
@@ -83,7 +93,17 @@ class TestIndices:
         num_res = num.indices(dimensions)
         assert np.array_equal(np_res, num_res)
 
-    @pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM - 1,
+        ),
+    )
     def test_indices_dtype_none(self, ndim):
         dimensions = tuple(np.random.randint(1, 5) for _ in range(ndim))
 
@@ -91,14 +111,34 @@ class TestIndices:
         num_res = num.indices(dimensions, dtype=None)
         assert np.array_equal(np_res, num_res)
 
-    @pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM - 1,
+        ),
+    )
     def test_indices_dtype_float(self, ndim):
         dimensions = tuple(np.random.randint(1, 5) for _ in range(ndim))
         np_res = np.indices(dimensions, dtype=float)
         num_res = num.indices(dimensions, dtype=float)
         assert np.array_equal(np_res, num_res)
 
-    @pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM - 1,
+        ),
+    )
     def test_indices_sparse(self, ndim):
         dimensions = tuple(np.random.randint(1, 5) for _ in range(ndim))
         np_res = np.indices(dimensions, sparse=True)

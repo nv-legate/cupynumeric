@@ -64,7 +64,16 @@ class TestPackbits(object):
         out_num = num.packbits(in_num, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("dtype", ("B", "i", "?"))
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_common(self, ndim, dtype, bitorder):
@@ -76,7 +85,16 @@ class TestPackbits(object):
         out_num = num.packbits(in_num, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("dtype", ("B", "i", "?"))
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_axis(self, ndim, dtype, bitorder):
@@ -145,7 +163,16 @@ class TestUnpackbits(object):
         out_num = num.unpackbits(in_num, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_common(self, ndim, bitorder):
         shape = (5,) * ndim
@@ -157,7 +184,16 @@ class TestUnpackbits(object):
         assert np.array_equal(out_np, out_num)
 
     @pytest.mark.parametrize("count", (-9, 4, -1, 0, 4, 8, 9))
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_count(self, ndim, count, bitorder):
         shape = (5,) * ndim
@@ -168,7 +204,16 @@ class TestUnpackbits(object):
         out_num = num.unpackbits(in_num, count=count, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_axis(self, ndim, bitorder):
         shape = (5,) * ndim
@@ -180,7 +225,16 @@ class TestUnpackbits(object):
             out_num = num.unpackbits(in_num, axis=axis, bitorder=bitorder)
             assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     @pytest.mark.parametrize("count", (-2, 0, 2, 5))
     def test_axis_count(self, ndim, bitorder, count):
@@ -198,7 +252,16 @@ class TestUnpackbits(object):
             assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("bitorder", ("little", "big"))
 @pytest.mark.parametrize("dtype", ("B", "i", "?"))
 def test_pack_unpack(ndim, bitorder, dtype):

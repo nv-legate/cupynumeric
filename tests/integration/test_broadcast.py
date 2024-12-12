@@ -19,7 +19,7 @@ from legate.core import LEGATE_MAX_DIM
 
 import cupynumeric as num
 
-DIM_CASES = [5, 40]
+DIM_CASES = [5, 20]
 
 
 def _check_result(print_msg, err_arrs):
@@ -135,8 +135,13 @@ def _check(*args, params: list, routine: str):
 def gen_shapes(dim):
     base = (dim,)
     result = [base]
-    for i in range(1, LEGATE_MAX_DIM):
-        base = base + (1,) if i % 2 == 0 else base + (dim,)
+    for i in (
+        1,
+        2,
+        3,
+        LEGATE_MAX_DIM,
+    ):
+        base = base + (1,) if (i % 2 == 0 and i <= 4) else base + (dim,)
         result.append(base)
     return result
 

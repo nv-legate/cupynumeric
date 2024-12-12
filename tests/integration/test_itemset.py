@@ -97,7 +97,17 @@ def test_tuple_out_of_index():
         # dimension 0 with index 3 for a store of shape Shape((3,))
 
 
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim(ndim):
     shape = (4,) * ndim
     arr_num = num.random.randint(0, 30, size=shape)

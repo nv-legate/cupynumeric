@@ -201,7 +201,16 @@ def test_array_axis_negative_equal():
     assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_nd_basic(ndim):
     a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
     np_array = mk_seq_array(np, a_shape)
@@ -212,7 +221,16 @@ def test_nd_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_nd_axis(ndim):
     for axis in range(0, ndim):
         a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
@@ -224,7 +242,16 @@ def test_nd_axis(ndim):
         assert np.array_equal(res_num2, res_np2)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_nd_repeats(ndim):
     a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
     np_array = mk_seq_array(np, a_shape)

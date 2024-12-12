@@ -110,7 +110,16 @@ def test_empty_array_and_indices():
     ((4,), (0,), pytest.param((2, 2), marks=pytest.mark.xfail)),
     ids=lambda shape_in: f"(shape_in={shape_in})",
 )
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim_default_mode(ndim, shape_in):
     # for shape_in=(2, 2) and ndim=4,
     # In Numpy, pass
@@ -138,7 +147,7 @@ def test_ndim_default_mode(ndim, shape_in):
     ((8,), pytest.param((3, 4), marks=pytest.mark.xfail)),
     ids=lambda shape_in: f"(shape_in={shape_in})",
 )
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", (1, 2, 3, 4, LEGATE_MAX_DIM))
 def test_ndim_mode(ndim, mode, shape_in):
     # for shape_in=(3, 4) and ndim=4,
     # In Numpy, pass

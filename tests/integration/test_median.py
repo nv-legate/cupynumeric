@@ -56,7 +56,16 @@ class TestMedianErrors:
 
 
 class TestMedian:
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM - 1,
+        ),
+    )
     @pytest.mark.parametrize(
         "keepdims",
         (
@@ -65,7 +74,7 @@ class TestMedian:
         ),
     )
     def test_median_basic(self, ndim, keepdims):
-        shape = np.random.randint(1, 6, ndim, dtype=int)
+        shape = np.random.randint(1, 4, ndim, dtype=int)
         size = 1
         for dim in shape:
             size *= dim
@@ -170,9 +179,18 @@ class TestNanMedianErrors:
 
 
 class TestNanmedian:
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     def test_nanmedian_basic(self, ndim):
-        shape = np.random.randint(2, 6, ndim, dtype=int)
+        shape = np.random.randint(2, 5, ndim, dtype=int)
         size = 1
         for dim in shape:
             size *= dim

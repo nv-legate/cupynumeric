@@ -40,9 +40,18 @@ def test_empty_array(decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-3, 3))
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_basic_float16(ndim, decimals):
-    shape = (5,) * ndim
+    shape = (3,) * ndim
     np_arr = mk_0to1_array(np, shape, dtype=np.float16)
     num_arr = mk_0to1_array(num, shape, dtype=np.float16)
 
@@ -53,10 +62,19 @@ def test_basic_float16(ndim, decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("dtype", FLOAT)
 def test_basic_float(dtype, ndim, decimals):
-    shape = (5,) * ndim
+    shape = (3,) * ndim
     np_arr = mk_0to1_array(np, shape, dtype=dtype)
     num_arr = mk_0to1_array(num, shape, dtype=dtype)
 
@@ -67,10 +85,19 @@ def test_basic_float(dtype, ndim, decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("dtype", FLOAT)
 def test_randomized_float(dtype, ndim, decimals):
-    shape = (5,) * ndim
+    shape = (3,) * ndim
     values = np.random.uniform(-10, 10, shape) * 10**6
     np_arr = np.array(values, dtype=dtype)
     num_arr = num.array(values, dtype=dtype)
@@ -82,7 +109,16 @@ def test_randomized_float(dtype, ndim, decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("dtype", COMPLEX)
 def test_randomized_complex(dtype, ndim, decimals):
     shape = (1,) * ndim

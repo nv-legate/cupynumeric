@@ -104,7 +104,17 @@ class TestArgMaxAndArgMin:
     """
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            0,
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_argmax_and_argmin_basic(self, func_name, ndim, keepdims):
         shape = (5,) * ndim
@@ -120,7 +130,16 @@ class TestArgMaxAndArgMin:
         )
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_argmax_and_argmin_axis(self, func_name, ndim, keepdims):
         shape = (5,) * ndim
@@ -175,7 +194,15 @@ class TestArgMaxAndArgMin:
         assert np.array_equal(res_np, res_num)
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_argmax_and_argmin_out(self, func_name, ndim, keepdims):
         shape = (5,) * ndim

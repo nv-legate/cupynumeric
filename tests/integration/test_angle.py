@@ -51,7 +51,16 @@ class TestAngle:
         assert np.array_equal(num.angle(5j), np.angle(5j))
         assert np.array_equal(num.angle(-5j), np.angle(-5j))
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize(
+        "ndim",
+        (
+            1,
+            2,
+            3,
+            4,
+            LEGATE_MAX_DIM,
+        ),
+    )
     @pytest.mark.parametrize("in_type", (int, float, complex))
     @pytest.mark.parametrize("deg", (False, True))
     def test_basic(self, ndim, in_type, deg):

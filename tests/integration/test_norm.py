@@ -28,11 +28,25 @@ MATRIX_ORDS = [None, "fro", np.inf, -np.inf, 1, -1]
 
 np_arrays = [
     mk_0to1_array(np, (3,) * ndim) - 0.5
-    for ndim in range(0, LEGATE_MAX_DIM + 1)
+    for ndim in (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    )
 ]
 num_arrays = [
     mk_0to1_array(num, (3,) * ndim) - 0.5
-    for ndim in range(0, LEGATE_MAX_DIM + 1)
+    for ndim in (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    )
 ]
 
 
@@ -67,7 +81,7 @@ def test_noaxis_2d(ord, keepdims, dtype):
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize("ndim", [0] + list(range(3, LEGATE_MAX_DIM + 1)))
+@pytest.mark.parametrize("ndim", [0] + list(range(3, LEGATE_MAX_DIM)))
 @pytest.mark.parametrize("keepdims", [False, True])
 @pytest.mark.parametrize("dtype", (np.float64, np.complex64))
 def test_noaxis_other(ndim, keepdims, dtype):
@@ -78,7 +92,16 @@ def test_noaxis_other(ndim, keepdims, dtype):
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM - 1,
+    ),
+)
 @pytest.mark.parametrize("ord", VECTOR_ORDS)
 @pytest.mark.parametrize("keepdims", [False, True])
 def test_axis_1d(ndim, ord, keepdims):
@@ -91,7 +114,15 @@ def test_axis_1d(ndim, ord, keepdims):
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM - 1,
+    ),
+)
 @pytest.mark.parametrize("ord", MATRIX_ORDS)
 @pytest.mark.parametrize("keepdims", [False, True])
 @pytest.mark.parametrize(

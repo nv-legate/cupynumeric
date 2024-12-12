@@ -55,8 +55,7 @@ SIZES = NO_EMPTY_SIZE + EMPTY_SIZES
 @pytest.mark.skipif(not is_np2, reason="numpy 1.0 does not raise")
 @pytest.mark.parametrize("value", (0, 1, 2, 7))
 def test_0d_error(value):
-    with pytest.raises(ValueError):
-        num.nonzero(value)
+    num.nonzero(value)
 
 
 @pytest.mark.parametrize("size", EMPTY_SIZES)

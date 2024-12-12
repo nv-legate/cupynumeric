@@ -23,7 +23,16 @@ import cupynumeric as num
 N = 10
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim(ndim):
     shape = (N,) * ndim
     np_arr = mk_seq_array(np, shape)

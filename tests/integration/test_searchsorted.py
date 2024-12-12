@@ -208,7 +208,17 @@ def test_standard_cases(volume, dtype, side):
     check_api(generate_random(volume, dtype), side=side)
 
 
-@pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("side", SIDES)
 def test_ndim(ndim, side):
     a = np.random.randint(-100, 100, size=100)

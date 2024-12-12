@@ -118,7 +118,16 @@ def test_type_convert():
     assert np.array_equal(x_num, x)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

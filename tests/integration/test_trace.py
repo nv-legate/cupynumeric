@@ -69,7 +69,15 @@ def test_4d():
     assert np.array_equal(res, res_num)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim(ndim):
     a_shape = tuple(np.random.randint(1, 9) for i in range(ndim))
     np_array = mk_seq_array(np, a_shape)

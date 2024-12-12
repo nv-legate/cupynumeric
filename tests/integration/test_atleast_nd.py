@@ -22,7 +22,17 @@ import cupynumeric as num
 
 DIM = 10
 
-SIZE_CASES = list((DIM,) * ndim for ndim in range(LEGATE_MAX_DIM + 1))
+SIZE_CASES = list(
+    (DIM,) * ndim
+    for ndim in (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    )
+)
 
 SIZE_CASES += [
     (0,),  # empty array

@@ -22,7 +22,13 @@ import cupynumeric as num
 
 
 def nonscalar_gen(lib):
-    for ndim in range(1, LEGATE_MAX_DIM + 1):
+    for ndim in (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ):
         yield mk_0to1_array(lib, ndim * (5,))
 
 

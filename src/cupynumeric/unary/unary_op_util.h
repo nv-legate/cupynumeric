@@ -998,7 +998,8 @@ struct UnaryOp<UnaryOpCode::ROUND, legate::Type::Code::FLOAT16> {
     if (decimals < 0) {
       return static_cast<__half>(rint(static_cast<float>(x) / factor) * factor);
     } else {
-      return static_cast<__half>(rint(static_cast<float>(x) * factor) / factor);
+      __half fh = static_cast<__half>(factor);
+      return static_cast<__half>(rint(static_cast<float>(x * fh)) / factor);
     }
   }
 

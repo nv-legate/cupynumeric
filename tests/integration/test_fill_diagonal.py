@@ -34,7 +34,15 @@ def test_wrap(wrap):
     assert np.array_equal(np_array, num_array)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("val_shape", ((0,), (3,), (6,), (2, 2), (2, 2, 6)))
 @pytest.mark.parametrize("wrap", WRAP, ids=str)
 def test_basic(ndim, val_shape, wrap):

@@ -27,7 +27,17 @@ def test_diag_indices_default_ndim(n):
     assert np.array_equal(a_np, a_num)
 
 
-@pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        0,
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_diag_indices_basic(ndim):
     a_np = np.diag_indices(10, ndim)
     a_num = num.diag_indices(10, ndim)
@@ -72,7 +82,15 @@ class TestDiagIndicesErrors:
 
 
 @pytest.mark.parametrize("size", [(5,), (0,)], ids=str)
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_diag_indices_from_basic(size, ndim):
     shape = size * ndim
     a = np.ones(shape, dtype=int)

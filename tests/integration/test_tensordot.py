@@ -29,8 +29,26 @@ def gen_axes(a_ndim, b_ndim):
         yield ([0, 1], [1, 0])
 
 
-@pytest.mark.parametrize("b_ndim", range(LEGATE_MAX_DIM + 1))
-@pytest.mark.parametrize("a_ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "b_ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
+@pytest.mark.parametrize(
+    "a_ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_tensordot(a_ndim, b_ndim):
     for axes in gen_axes(a_ndim, b_ndim):
         name = f"tensordot({a_ndim} x {b_ndim}, axes={axes})"

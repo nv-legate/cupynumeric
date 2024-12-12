@@ -120,7 +120,16 @@ def test_bool_condition():
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim_basic(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -134,7 +143,16 @@ def test_ndim_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim_axis(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -149,7 +167,16 @@ def test_ndim_axis(ndim):
         assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_ndim_out(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

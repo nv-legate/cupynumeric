@@ -38,7 +38,16 @@ def test_gradient_1d():
     assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("edge_order", [1, 2])
 def test_nd_arrays(ndim, edge_order):
     shape = (5,) * ndim
@@ -53,7 +62,16 @@ def test_nd_arrays(ndim, edge_order):
         assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 @pytest.mark.parametrize("varargs", [0.5, 1, 2, 0.3, 0])
 def test_scalar_varargs(ndim, varargs):
     shape = (5,) * ndim
@@ -66,7 +84,15 @@ def test_scalar_varargs(ndim, varargs):
     assert np.allclose(res_np, res_cn, equal_nan=True)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_array_1d_varargs(ndim):
     shape = (5,) * ndim
     size = prod(shape)
@@ -79,7 +105,15 @@ def test_array_1d_varargs(ndim):
     assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_list_of_axes(ndim):
     shape = (5,) * ndim
     size = prod(shape)

@@ -36,7 +36,16 @@ def test_logical_reductions(axis):
     assert num.array_equal(out_num, out_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        1,
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM - 1,
+    ),
+)
 @pytest.mark.parametrize(
     "axis",
     [

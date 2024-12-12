@@ -148,7 +148,15 @@ FLIP_FUNCS = ("flip", "fliplr", "flipud")
 
 
 @pytest.mark.parametrize("func_name", FLIP_FUNCS)
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize(
+    "ndim",
+    (
+        2,
+        3,
+        4,
+        LEGATE_MAX_DIM,
+    ),
+)
 def test_max_dims(func_name, ndim):
     func_np = getattr(np, func_name)
     func_num = getattr(num, func_name)
