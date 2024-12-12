@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Any, Callable, Sequence, TypeAlias
 import numpy as np
 from legate.core.utils import OrderedSet
 
+from cupynumeric._utils import is_np2_1
+
 from .._array.thunk import perform_unary_reduction
 from .._array.util import (
     add_boilerplate,
@@ -485,6 +487,14 @@ class unary_ufunc(ufunc):
             # of the computation.
             precision_fixed = True
             x = self._maybe_cast_input(x, dtype, casting)
+
+        if (
+            self._name in {"ceil", "floor", "trunc"}
+            and is_np2_1
+            and np.issubdtype(x.dtype, np.integer)
+        ):
+            result = x
+            return self._maybe_cast_output(out, result)
 
         # Resolve the dtype to use for the computation and cast the input
         # if necessary. If the dtype is already fixed by the caller,
