@@ -39,4 +39,6 @@ jobs:
       target-device: ${{ matrix.target-device }}
       upload-enabled: ${{ matrix.upload-enabled }}
       waive-gpu-tests: ${{ github.workflow == 'Build Release package' && matrix.platform == 'linux-aarch64' }}
+      refname: ${{ github.ref_name }}
+      default-branch: ${{ github.event.repository.default_branch }}
     secrets: inherit
