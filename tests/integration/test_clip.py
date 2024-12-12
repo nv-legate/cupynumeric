@@ -83,13 +83,11 @@ def test_bool() -> None:
         num.clip(True, a_min=1, a_max=1)
 
 
-def test_bool_None() -> None:
-    msg = r"One of max or min must be given"
-    with pytest.raises(ValueError, match=msg):
-        np.clip(True, a_min=None, a_max=None)
-    # See https://github.com/nv-legate/cunumeric.internal/issues/492
-    num.clip(True, a_min=None, a_max=None)
-    # cuNumeric returns True, it returns False if array is False
+@pytest.mark.parametrize("v", (True, False))
+def test_bool_None(v: bool) -> None:
+    # Different Numpy versions error variously with both bounds None
+    res =  num.clip(v, a_min=None, a_max=None)
+    assert np.array_equal(res, np.asarray(v))
 
 
 @pytest.mark.xfail
