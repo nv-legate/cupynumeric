@@ -20,8 +20,13 @@ from utils.comparisons import allclose as _allclose
 import cupynumeric as num
 
 
-def allclose(A, B):
-    if B.dtype == np.float32 or B.dtype == np.complex64:
+def allclose(A: np.ndarray, B: np.ndarray) -> bool:
+    if (
+        B.dtype == np.float32
+        or B.dtype == np.float64
+        or B.dtype == np.complex64
+        or B.dtype == np.complex128
+    ):
         l2 = (A - B) * np.conj(A - B)
         l2 = np.sqrt(np.sum(l2) / np.sum(A * np.conj(A)))
         return l2 < 1e-6
