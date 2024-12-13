@@ -16,8 +16,7 @@ from itertools import product
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
-from utils.utils import AxisError
+from utils.utils import TWO_MAX_DIM_RANGE, AxisError
 
 import cupynumeric as num
 
@@ -148,15 +147,7 @@ FLIP_FUNCS = ("flip", "fliplr", "flipud")
 
 
 @pytest.mark.parametrize("func_name", FLIP_FUNCS)
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_max_dims(func_name, ndim):
     func_np = getattr(np, func_name)
     func_num = getattr(num, func_name)

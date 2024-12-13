@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array, mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -118,16 +118,7 @@ def test_type_convert():
     assert np.array_equal(x_num, x)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

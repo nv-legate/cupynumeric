@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -86,7 +86,7 @@ def test_bool() -> None:
 @pytest.mark.parametrize("v", (True, False))
 def test_bool_None(v: bool) -> None:
     # Different Numpy versions error variously with both bounds None
-    res =  num.clip(v, a_min=None, a_max=None)
+    res = num.clip(v, a_min=None, a_max=None)
     assert np.array_equal(res, np.asarray(v))
 
 
@@ -169,16 +169,7 @@ def test_out_np_array():
     assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_basic(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -192,16 +183,7 @@ def test_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_out(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

@@ -15,11 +15,10 @@
 
 import numpy as np
 import pytest
-from packaging import version
 from utils.utils import AxisError
 
 import cupynumeric as num
-from cupynumeric._utils import is_np2
+from cupynumeric._utils import is_np2_1
 
 # cupynumeric.count_nonzero(a: ndarray,
 # axis: Optional[Union[int, tuple[int, ...]]] = None) → Union[int, ndarray]
@@ -53,15 +52,11 @@ NO_EMPTY_SIZE = [
 SIZES = NO_EMPTY_SIZE + EMPTY_SIZES
 
 
-@pytest.mark.skipif(not is_np2, reason="numpy 1.0 does not raise")
+@pytest.mark.skipif(not is_np2_1, reason="numpy 1.0 does not raise")
 @pytest.mark.parametrize("value", (0, 1, 2, 7))
 def test_0d_error(value):
-    numpy_version = np.__version__
-    # numpy v2.0 doesn't return an error, but the verstion
-    # before and after does
-    if version.parse(numpy_version) != version.parse("2.0"):
-        with pytest.raises(ValueError):
-            num.nonzero(value)
+    with pytest.raises(ValueError):
+        num.nonzero(value)
 
 
 @pytest.mark.parametrize("size", EMPTY_SIZES)

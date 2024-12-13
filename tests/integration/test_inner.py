@@ -14,36 +14,16 @@
 #
 
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 from cupynumeric._utils.linalg import inner_modes
 
 
-@pytest.mark.parametrize(
-    "b_ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
-@pytest.mark.parametrize(
-    "a_ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("b_ndim", MAX_DIM_RANGE)
+@pytest.mark.parametrize("a_ndim", MAX_DIM_RANGE)
 def test_inner(a_ndim, b_ndim):
     name = f"inner({a_ndim} x {b_ndim})"
     modes = inner_modes(a_ndim, b_ndim)

@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -110,16 +110,7 @@ def test_empty_array_and_indices():
     ((4,), (0,), pytest.param((2, 2), marks=pytest.mark.xfail)),
     ids=lambda shape_in: f"(shape_in={shape_in})",
 )
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_default_mode(ndim, shape_in):
     # for shape_in=(2, 2) and ndim=4,
     # In Numpy, pass
@@ -147,7 +138,7 @@ def test_ndim_default_mode(ndim, shape_in):
     ((8,), pytest.param((3, 4), marks=pytest.mark.xfail)),
     ids=lambda shape_in: f"(shape_in={shape_in})",
 )
-@pytest.mark.parametrize("ndim", (1, 2, 3, 4, LEGATE_MAX_DIM))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_mode(ndim, mode, shape_in):
     # for shape_in=(3, 4) and ndim=4,
     # In Numpy, pass

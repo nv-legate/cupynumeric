@@ -15,24 +15,13 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
-from utils.utils import check_module_function
+from utils.utils import MAX_DIM_RANGE, check_module_function
 
 import cupynumeric as num
 
 DIM = 10
 
-SIZE_CASES = list(
-    (DIM,) * ndim
-    for ndim in (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    )
-)
+SIZE_CASES = list((DIM,) * ndim for ndim in MAX_DIM_RANGE)
 
 SIZE_CASES += [
     (0,),  # empty array

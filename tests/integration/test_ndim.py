@@ -20,17 +20,7 @@ from legate.core import LEGATE_MAX_DIM
 import cupynumeric as num
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM))
 def test_ndarray(ndim):
     shape = (4,) * ndim
     a = num.ones(shape)

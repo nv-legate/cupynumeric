@@ -15,20 +15,14 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array, scalar_gen
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 
 
 def nonscalar_gen(lib):
-    for ndim in (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ):
+    for ndim in MAX_DIM_RANGE:
         yield mk_0to1_array(lib, ndim * (5,))
 
 

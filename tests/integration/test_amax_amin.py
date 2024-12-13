@@ -15,7 +15,7 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -24,17 +24,7 @@ FUNCS = ("amax", "amin")
 
 @pytest.mark.parametrize("initial", (None, -2, 0, 0.5, 2))
 @pytest.mark.parametrize("keepdims", [True, False])
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_basic(func_name, ndim, keepdims, initial):
     shape = (5,) * ndim
@@ -81,17 +71,7 @@ def test_src_dt(func_name, keepdims, src_dt):
 
 @pytest.mark.parametrize("initial", (None, -2, 0, 0.5, 2))
 @pytest.mark.parametrize("keepdims", [True, False])
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_axis(func_name, ndim, keepdims, initial):
     shape = (5,) * ndim
@@ -171,15 +151,7 @@ def test_out_dim1(func_name, keepdims):
 
 @pytest.mark.parametrize("initial", (None, -2, 0, 0.5, 2))
 @pytest.mark.parametrize("keepdims", [True, False])
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_out(func_name, ndim, keepdims, initial):
     shape = (5,) * ndim

@@ -135,13 +135,8 @@ def _check(*args, params: list, routine: str):
 def gen_shapes(dim):
     base = (dim,)
     result = [base]
-    for i in (
-        1,
-        2,
-        3,
-        LEGATE_MAX_DIM,
-    ):
-        base = base + (1,) if (i % 2 == 0 and i <= 4) else base + (dim,)
+    for i in range(1, min(4, LEGATE_MAX_DIM)):
+        base = base + (1,) if i % 2 == 0 else base + (dim,)
         result.append(base)
     return result
 

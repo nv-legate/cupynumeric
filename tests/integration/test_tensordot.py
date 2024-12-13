@@ -14,9 +14,9 @@
 #
 
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 from cupynumeric._utils.linalg import tensordot_modes
@@ -29,26 +29,8 @@ def gen_axes(a_ndim, b_ndim):
         yield ([0, 1], [1, 0])
 
 
-@pytest.mark.parametrize(
-    "b_ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
-@pytest.mark.parametrize(
-    "a_ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("b_ndim", MAX_DIM_RANGE)
+@pytest.mark.parametrize("a_ndim", MAX_DIM_RANGE)
 def test_tensordot(a_ndim, b_ndim):
     for axes in gen_axes(a_ndim, b_ndim):
         name = f"tensordot({a_ndim} x {b_ndim}, axes={axes})"

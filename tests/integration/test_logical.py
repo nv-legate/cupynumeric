@@ -15,7 +15,7 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -77,17 +77,7 @@ def test_axis_tuple(func, axes):
     assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("func", FUNCTIONS)
 def test_nd_inputs(ndim, func):
     shape = (3,) * ndim

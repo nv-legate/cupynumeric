@@ -14,7 +14,7 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -98,16 +98,7 @@ def test_logic():
         # cuPyNumeric: ValueError: cannot set WRITEBACKIFCOPY flag to True
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_set_write_true(ndim):
     shape = (3,) * ndim
     array_np = np.random.randint(1, 100, shape, dtype=int)
@@ -117,16 +108,7 @@ def test_set_write_true(ndim):
     assert array_np.flags["WRITEABLE"] == array_num.flags["WRITEABLE"]
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_set_write_false(ndim):
     shape = (3,) * ndim
     array_np = np.random.randint(1, 100, shape, dtype=int)
@@ -136,16 +118,7 @@ def test_set_write_false(ndim):
     assert array_np.flags["WRITEABLE"] == array_num.flags["WRITEABLE"]
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_set_align_true(ndim):
     shape = (3,) * ndim
     array_np = np.random.randint(1, 100, shape, dtype=int)
@@ -156,16 +129,7 @@ def test_set_align_true(ndim):
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_set_align_false(ndim):
     shape = (3,) * ndim
     array_np = np.random.randint(1, 100, shape, dtype=int)

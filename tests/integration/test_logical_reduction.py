@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -36,16 +36,7 @@ def test_logical_reductions(axis):
     assert num.array_equal(out_num, out_np)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM - 1,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
 @pytest.mark.parametrize(
     "axis",
     [

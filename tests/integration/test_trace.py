@@ -17,8 +17,8 @@ from itertools import permutations
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import TWO_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -69,15 +69,7 @@ def test_4d():
     assert np.array_equal(res, res_num)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_ndim(ndim):
     a_shape = tuple(np.random.randint(1, 9) for i in range(ndim))
     np_array = mk_seq_array(np, a_shape)

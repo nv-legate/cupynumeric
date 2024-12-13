@@ -14,6 +14,7 @@
 #
 
 import numpy as np
+from legate.core import LEGATE_MAX_DIM
 
 import cupynumeric as num
 from cupynumeric._utils import is_np2
@@ -103,3 +104,13 @@ def check_module_function(
     a = getattr(np, fn)(*args, **kwargs)
     b = getattr(num, fn)(*args, **kwargs)
     compare_array_and_print_results(a, b, print_msg, check_type=check_type)
+
+
+# MAX_DIM_RANGE is a list of array dimensions, that is used to test APIs
+# on different array dims. We reduce this list to a sub-set of possible
+# dimensions to reduce walltime for testing
+MAX_DIM_RANGE = list(range(min(4, LEGATE_MAX_DIM)))
+if LEGATE_MAX_DIM > MAX_DIM_RANGE[-1]:
+    MAX_DIM_RANGE.append(LEGATE_MAX_DIM)
+ONE_MAX_DIM_RANGE = MAX_DIM_RANGE[1:]
+TWO_MAX_DIM_RANGE = MAX_DIM_RANGE[2:]

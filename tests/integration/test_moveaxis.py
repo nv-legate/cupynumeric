@@ -15,9 +15,8 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array
-from utils.utils import AxisError
+from utils.utils import TWO_MAX_DIM_RANGE, AxisError
 
 import cupynumeric as num
 
@@ -31,15 +30,7 @@ AXES = (
 )
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 @pytest.mark.parametrize("axes", AXES)
 def test_moveaxis(ndim, axes):
     source, destination = axes

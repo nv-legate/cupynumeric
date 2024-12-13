@@ -14,9 +14,8 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
-from utils.utils import AxisError
+from utils.utils import ONE_MAX_DIM_RANGE, AxisError
 
 import cupynumeric as num
 
@@ -201,16 +200,7 @@ def test_array_axis_negative_equal():
     assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_nd_basic(ndim):
     a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
     np_array = mk_seq_array(np, a_shape)
@@ -221,16 +211,7 @@ def test_nd_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_nd_axis(ndim):
     for axis in range(0, ndim):
         a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
@@ -242,16 +223,7 @@ def test_nd_axis(ndim):
         assert np.array_equal(res_num2, res_np2)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_nd_repeats(ndim):
     a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
     np_array = mk_seq_array(np, a_shape)

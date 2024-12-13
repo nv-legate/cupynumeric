@@ -14,36 +14,16 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 from cupynumeric._utils.linalg import dot_modes
 
 
-@pytest.mark.parametrize(
-    "b_ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
-@pytest.mark.parametrize(
-    "a_ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("b_ndim", MAX_DIM_RANGE)
+@pytest.mark.parametrize("a_ndim", MAX_DIM_RANGE)
 def test_dot(a_ndim, b_ndim):
     name = f"dot({a_ndim} x {b_ndim})"
     modes = dot_modes(a_ndim, b_ndim)

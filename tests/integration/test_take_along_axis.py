@@ -15,24 +15,15 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import broadcasts_to_along_axis, mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
 N = 10
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (N,) * ndim
     np_arr = mk_seq_array(np, shape)

@@ -14,8 +14,8 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import generate_item
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -76,17 +76,7 @@ def test_empty_no_item():
     assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (4,) * ndim
     arr_num = num.random.randint(0, 3, size=shape)

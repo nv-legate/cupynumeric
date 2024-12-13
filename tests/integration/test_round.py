@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -40,16 +40,7 @@ def test_empty_array(decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-3, 3))
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_basic_float16(ndim, decimals):
     shape = (3,) * ndim
     np_arr = mk_0to1_array(np, shape, dtype=np.float16)
@@ -62,16 +53,7 @@ def test_basic_float16(ndim, decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("dtype", FLOAT)
 def test_basic_float(dtype, ndim, decimals):
     shape = (3,) * ndim
@@ -85,16 +67,7 @@ def test_basic_float(dtype, ndim, decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("dtype", FLOAT)
 def test_randomized_float(dtype, ndim, decimals):
     shape = (3,) * ndim
@@ -109,16 +82,7 @@ def test_randomized_float(dtype, ndim, decimals):
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("dtype", COMPLEX)
 def test_randomized_complex(dtype, ndim, decimals):
     shape = (1,) * ndim

@@ -16,7 +16,7 @@ from math import prod
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import ONE_MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
 import cupynumeric as cn
 
@@ -38,16 +38,7 @@ def test_gradient_1d():
     assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 @pytest.mark.parametrize("edge_order", [1, 2])
 def test_nd_arrays(ndim, edge_order):
     shape = (5,) * ndim
@@ -62,16 +53,7 @@ def test_nd_arrays(ndim, edge_order):
         assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 @pytest.mark.parametrize("varargs", [0.5, 1, 2, 0.3, 0])
 def test_scalar_varargs(ndim, varargs):
     shape = (5,) * ndim
@@ -84,15 +66,7 @@ def test_scalar_varargs(ndim, varargs):
     assert np.allclose(res_np, res_cn, equal_nan=True)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_array_1d_varargs(ndim):
     shape = (5,) * ndim
     size = prod(shape)
@@ -105,15 +79,7 @@ def test_array_1d_varargs(ndim):
     assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_list_of_axes(ndim):
     shape = (5,) * ndim
     size = prod(shape)

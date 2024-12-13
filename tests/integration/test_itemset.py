@@ -14,8 +14,8 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import generate_item
+from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 from cupynumeric._utils import is_np2
@@ -97,17 +97,7 @@ def test_tuple_out_of_index():
         # dimension 0 with index 3 for a store of shape Shape((3,))
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        0,
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (4,) * ndim
     arr_num = num.random.randint(0, 30, size=shape)

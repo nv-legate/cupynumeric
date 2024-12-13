@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
-from utils.utils import AxisError
+from utils.utils import ONE_MAX_DIM_RANGE, TWO_MAX_DIM_RANGE, AxisError
 
 import cupynumeric as num
 from cupynumeric._thunk.eager import diagonal_reference
@@ -87,16 +87,7 @@ def test_choose_2d():
     )
 
 
-@pytest.mark.parametrize(
-    "ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_choose_target_ndim(ndim):
     tgt_shape = (5,) * ndim
     # try various shapes that broadcast to the target shape
@@ -352,12 +343,7 @@ def test_select(size):
 
 
 def test_select_maxdim():
-    for ndim in (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ):
+    for ndim in TWO_MAX_DIM_RANGE:
         a_shape = tuple(np.random.randint(1, 9) for i in range(ndim))
         arr = mk_seq_array(np, a_shape)
         condlist_np = list()
@@ -419,12 +405,7 @@ def test_diagonal():
     assert np.array_equal(ad.diagonal(-1, 0, 2), num_ad.diagonal(-1, 0, 2))
 
     # test diagonal
-    for ndim in (
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ):
+    for ndim in TWO_MAX_DIM_RANGE:
         a_shape = tuple(np.random.randint(1, 9) for i in range(ndim))
         np_array = mk_seq_array(np, a_shape)
         num_array = mk_seq_array(num, a_shape)

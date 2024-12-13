@@ -15,7 +15,6 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.comparisons import allclose
 from utils.contractions import (
     check_default,
@@ -23,31 +22,14 @@ from utils.contractions import (
     check_shapes,
     check_types,
 )
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 from cupynumeric._utils.linalg import matmul_modes
 
 
-@pytest.mark.parametrize(
-    "a_ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
-@pytest.mark.parametrize(
-    "b_ndim",
-    (
-        1,
-        2,
-        3,
-        4,
-        LEGATE_MAX_DIM,
-    ),
-)
+@pytest.mark.parametrize("a_ndim", ONE_MAX_DIM_RANGE)
+@pytest.mark.parametrize("b_ndim", ONE_MAX_DIM_RANGE)
 def test_function(a_ndim, b_ndim):
     name = f"matmul({a_ndim} x {b_ndim})"
     modes = matmul_modes(a_ndim, b_ndim)
