@@ -40,6 +40,13 @@ def test_fftshift_axis():
     assert np.array_equal(a_num, a_np)
 
 
+def test_fftshift_axis_int() -> None:
+    freqs = np.fft.fftfreq(9, d=1.0 / 9).reshape(3, 3)
+    a_np = np.fft.fftshift(freqs, axes=1)
+    a_num = num.fft.fftshift(freqs, axes=1)
+    assert np.array_equal(a_num, a_np)
+
+
 def test_ifftshift_1d():
     freqs = np.fft.fftshift(np.fft.fftfreq(10, 0.1))
     a_np = np.fft.ifftshift(freqs)
@@ -61,6 +68,15 @@ def test_ifftshift_axis():
     a_np = np.fft.ifftshift(freqs, axes=(1,))
     a_num = num.fft.ifftshift(freqs, axes=(1,))
 
+    assert np.array_equal(a_num, a_np)
+
+
+def test_ifftshift_axis_int() -> None:
+    freqs = np.fft.fftshift(
+        np.fft.fftfreq(9, d=1.0 / 9).reshape(3, 3), axes=(1,)
+    )
+    a_np = np.fft.ifftshift(freqs, axes=1)
+    a_num = num.fft.ifftshift(freqs, axes=1)
     assert np.array_equal(a_num, a_np)
 
 
