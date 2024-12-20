@@ -21,12 +21,6 @@ using namespace legate::mapping;
 
 namespace cupynumeric {
 
-TaskTarget CuPyNumericMapper::task_target(const legate::mapping::Task& task,
-                                          const std::vector<TaskTarget>& options)
-{
-  return *options.begin();
-}
-
 Scalar CuPyNumericMapper::tunable_value(TunableID tunable_id)
 {
   LEGATE_ABORT("cuPyNumeric does not use any tunable values");
