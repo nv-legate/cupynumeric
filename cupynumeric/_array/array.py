@@ -313,6 +313,17 @@ class ndarray:
         """
         return self.__array__().data
 
+    def __buffer__(self, flags: int, /) -> memoryview:
+        """
+        Python buffer object pointing to the start of the array's data.
+
+        Notes
+        -----
+        This causes the entire (potentially distributed) array to be collected
+        into one memory.
+        """
+        return self.__array__().__buffer__(flags)  # type: ignore
+
     @property
     def dtype(self) -> np.dtype[Any]:
         """
