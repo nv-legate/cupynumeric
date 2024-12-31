@@ -14,34 +14,9 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.22.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
 cmake_path(SET CUPYNUMERIC_CMAKE_DIR NORMALIZE "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
-if(POLICY CMP0077)
-  cmake_policy(SET CMP0077 NEW)
-  set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-endif()
-
-if(POLICY CMP0096)
-  cmake_policy(SET CMP0096 NEW)
-  set(CMAKE_POLICY_DEFAULT_CMP0096 NEW)
-endif()
-
-if(POLICY CMP0135)
-  # make the timestamps of ExternalProject_ADD match the download time
-  # https://cmake.org/cmake/help/latest/policy/CMP0135.html
-  cmake_policy(SET CMP0135 NEW)
-  set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
-endif()
-
-if(POLICY CMP0132)
-  # Avoid an inconsistency, where cmake would only set the CC/CXX env vars on
-  # the first run, but not subsequent ones. This would come up when building
-  # TBLIS.
-  cmake_policy(SET CMP0132 NEW)
-  set(CMAKE_POLICY_DEFAULT_CMP0132 NEW)
-endif()
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "" FORCE)
 set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE STRING "" FORCE)
