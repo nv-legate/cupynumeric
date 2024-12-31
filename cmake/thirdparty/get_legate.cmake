@@ -114,10 +114,12 @@ function(find_or_configure_legate)
   endif()
 
   set(Legion_USE_CUDA ${Legion_USE_CUDA} PARENT_SCOPE)
+  set(Legion_CUDA_ARCH ${Legion_CUDA_ARCH} PARENT_SCOPE)
   set(Legion_USE_OpenMP ${Legion_USE_OpenMP} PARENT_SCOPE)
   set(Legion_BOUNDS_CHECKS ${Legion_BOUNDS_CHECKS} PARENT_SCOPE)
 
   message(VERBOSE "Legion_USE_CUDA=${Legion_USE_CUDA}")
+  message(VERBOSE "Legion_CUDA_ARCH=${Legion_CUDA_ARCH}")
   message(VERBOSE "Legion_USE_OpenMP=${Legion_USE_OpenMP}")
   message(VERBOSE "Legion_BOUNDS_CHECKS=${Legion_BOUNDS_CHECKS}")
 endfunction()

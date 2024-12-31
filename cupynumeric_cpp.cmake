@@ -62,28 +62,6 @@ option(Legion_USE_CUDA "Use CUDA" ON)
 option(Legion_USE_OpenMP "Use OpenMP" ${OpenMP_FOUND})
 option(Legion_BOUNDS_CHECKS "Build cuPyNumeric with bounds checks (expensive)" OFF)
 
-# If legate has CUDA support, then including it in a project will automatically call
-# enable_language(CUDA). However, this does not play nice with the rapids-cmake CUDA utils
-# which support a wider range of values for CMAKE_CUDA_ARCHITECTURES than cmake does. You
-# end up with the following error:
-#
-# CMAKE_CUDA_ARCHITECTURES:
-#
-#    RAPIDS
-#
-#  is not one of the following:
-#
-#    * a semicolon-separated list of integers, each optionally
-#      followed by '-real' or '-virtual'
-#    * a special value: all, all-major, native
-#
-set(cmake_cuda_arch_backup "${CMAKE_CUDA_ARCHITECTURES}")
-set(cmake_cuda_arch_cache_backup "$CACHE{CMAKE_CUDA_ARCHITECTURES}")
-if(("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "RAPIDS") OR ("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "NATIVE"))
-  unset(CMAKE_CUDA_ARCHITECTURES)
-  unset(CMAKE_CUDA_ARCHITECTURES CACHE)
-endif()
-
 ###
 # If we find legate already configured on the system, it will report
 # whether it was compiled with bounds checking (Legion_BOUNDS_CHECKS),
@@ -96,10 +74,11 @@ endif()
 ###
 include(cmake/thirdparty/get_legate.cmake)
 
-set(CMAKE_CUDA_ARCHITECTURES "${cmake_cuda_arch_cache_backup}" CACHE STRING "" FORCE)
-set(CMAKE_CUDA_ARCHITECTURES "${cmake_cuda_arch_backup}")
-unset(cmake_cuda_arch_backup)
-unset(cmake_cuda_arch_cache_backup)
+# Use of DEFINED is deliberate. CMAKE_CUDA_ARCHITECTURES may be OFF which we want to leave
+# in place. Legion_CUDA_ARCH is defined by Legate.
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES "${Legion_CUDA_ARCH}")
+endif()
 
 if(Legion_USE_CUDA)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/cuda_arch_helpers.cmake)
@@ -107,6 +86,7 @@ if(Legion_USE_CUDA)
   set_cuda_arch_from_names()
   # Needs to run before `enable_language(CUDA)`
   rapids_cuda_init_architectures(cupynumeric)
+  message(STATUS "CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
   enable_language(CUDA)
   # Since cupynumeric only enables CUDA optionally we need to manually include
   # the file that rapids_cuda_init_architectures relies on `project` calling
