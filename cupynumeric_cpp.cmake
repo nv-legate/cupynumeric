@@ -72,7 +72,7 @@ option(Legion_BOUNDS_CHECKS "Build cuPyNumeric with bounds checks (expensive)" O
 # make sense to build cuPyNumeric's CUDA bindings if legate wasn't built
 # with CUDA support).
 ###
-include(cmake/thirdparty/get_legate.cmake)
+include(thirdparty/get_legate)
 
 # Use of DEFINED is deliberate. CMAKE_CUDA_ARCHITECTURES may be OFF which we want to leave
 # in place. Legion_CUDA_ARCH is defined by Legate.
@@ -81,7 +81,7 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 endif()
 
 if(Legion_USE_CUDA)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/cuda_arch_helpers.cmake)
+  include(Modules/cuda_arch_helpers)
   # Needs to run before `rapids_cuda_init_architectures`
   set_cuda_arch_from_names()
   # Needs to run before `enable_language(CUDA)`
@@ -105,28 +105,28 @@ if(Legion_USE_CUDA)
     INSTALL_EXPORT_SET cupynumeric-exports
   )
 
-  include(cmake/thirdparty/get_nccl.cmake)
-  include(cmake/thirdparty/get_cutensor.cmake)
+  include(thirdparty/get_nccl)
+  include(thirdparty/get_cutensor)
 endif()
 
-include(cmake/thirdparty/get_openblas.cmake)
+include(thirdparty/get_openblas)
 
-include(cmake/thirdparty/get_tblis.cmake)
+include(thirdparty/get_tblis)
 
 ##############################################################################
 # - cuPyNumeric ----------------------------------------------------------------
 
-set(cupynumeric_SOURCES "")
-set(cupynumeric_CXX_DEFS "")
-set(cupynumeric_CUDA_DEFS "")
+add_library(cupynumeric)
+add_library(cupynumeric::cupynumeric ALIAS cupynumeric)
+
 set(cupynumeric_CXX_OPTIONS "")
 set(cupynumeric_CUDA_OPTIONS "")
 
-include(cmake/Modules/set_cpu_arch_flags.cmake)
+include(Modules/set_cpu_arch_flags)
 set_cpu_arch_flags(cupynumeric_CXX_OPTIONS)
 
 # Add `src/cupynumeric.mk` sources
-list(APPEND cupynumeric_SOURCES
+target_sources(cupynumeric PRIVATE
   src/cupynumeric/ternary/where.cc
   src/cupynumeric/scan/scan_global.cc
   src/cupynumeric/scan/scan_local.cc
@@ -193,7 +193,7 @@ list(APPEND cupynumeric_SOURCES
 )
 
 if(Legion_USE_OpenMP)
-  list(APPEND cupynumeric_SOURCES
+  target_sources(cupynumeric PRIVATE
     src/cupynumeric/ternary/where_omp.cc
     src/cupynumeric/scan/scan_global_omp.cc
     src/cupynumeric/scan/scan_local_omp.cc
@@ -245,7 +245,7 @@ if(Legion_USE_OpenMP)
 endif()
 
 if(Legion_USE_CUDA)
-  list(APPEND cupynumeric_SOURCES
+  target_sources(cupynumeric PRIVATE
     src/cupynumeric/ternary/where.cu
     src/cupynumeric/scan/scan_global.cu
     src/cupynumeric/scan/scan_local.cu
@@ -302,20 +302,20 @@ if(Legion_USE_CUDA)
 endif()
 
 # Add `src/cupynumeric/sort/sort.mk` sources
-list(APPEND cupynumeric_SOURCES
+target_sources(cupynumeric PRIVATE
   src/cupynumeric/sort/sort.cc
   src/cupynumeric/sort/searchsorted.cc
 )
 
 if(Legion_USE_OpenMP)
-  list(APPEND cupynumeric_SOURCES
+  target_sources(cupynumeric PRIVATE
     src/cupynumeric/sort/sort_omp.cc
     src/cupynumeric/sort/searchsorted_omp.cc
   )
 endif()
 
 if(Legion_USE_CUDA)
-  list(APPEND cupynumeric_SOURCES
+  target_sources(cupynumeric PRIVATE
     src/cupynumeric/sort/sort.cu
     src/cupynumeric/sort/searchsorted.cu
     src/cupynumeric/sort/cub_sort_bool.cu
@@ -349,23 +349,23 @@ endif()
 
 # Add `src/cupynumeric/random/random.mk` sources
 if(Legion_USE_CUDA)
-  list(APPEND cupynumeric_SOURCES
+  target_sources(cupynumeric PRIVATE
       src/cupynumeric/random/bitgenerator.cu
       src/cupynumeric/random/randutil/generator_device.cu
       src/cupynumeric/random/randutil/generator_device_straightforward.cu
       src/cupynumeric/random/randutil/generator_device_advanced.cu
-)
+  )
 endif()
 
 # add sources for cusolverMp
 if(Legion_USE_CUDA AND CUSOLVERMP_DIR)
-  list(APPEND cupynumeric_SOURCES
+  target_sources(cupynumeric PRIVATE
     src/cupynumeric/matrix/mp_potrf.cu
     src/cupynumeric/matrix/mp_solve.cu
   )
 endif()
 
-list(APPEND cupynumeric_SOURCES
+target_sources(cupynumeric PRIVATE
   # This must always be the last file!
   # It guarantees we do our registration callback
   # only after all task variants are recorded
@@ -373,13 +373,11 @@ list(APPEND cupynumeric_SOURCES
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  list(APPEND cupynumeric_CXX_DEFS DEBUG_CUPYNUMERIC)
-  list(APPEND cupynumeric_CUDA_DEFS DEBUG_CUPYNUMERIC)
+  target_compile_definitions(cupynumeric PUBLIC  "$<$<COMPILE_LANGUAGE:CXX,CUDA>:DEBUG_CUPYNUMERIC>")
 endif()
 
 if(Legion_BOUNDS_CHECKS)
-  list(APPEND cupynumeric_CXX_DEFS BOUNDS_CHECKS)
-  list(APPEND cupynumeric_CUDA_DEFS BOUNDS_CHECKS)
+  target_compile_definitions(cupynumeric PUBLIC "$<$<COMPILE_LANGUAGE:CXX,CUDA>:BOUNDS_CHECKS>")
 endif()
 
 list(APPEND cupynumeric_CUDA_OPTIONS -Xfatbin=-compress-all)
@@ -387,9 +385,6 @@ list(APPEND cupynumeric_CUDA_OPTIONS --expt-extended-lambda)
 list(APPEND cupynumeric_CUDA_OPTIONS --expt-relaxed-constexpr)
 list(APPEND cupynumeric_CXX_OPTIONS -Wno-deprecated-declarations)
 list(APPEND cupynumeric_CUDA_OPTIONS -Wno-deprecated-declarations)
-
-add_library(cupynumeric ${cupynumeric_SOURCES})
-add_library(cupynumeric::cupynumeric ALIAS cupynumeric)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(platform_rpath_origin "\$ORIGIN")
@@ -409,7 +404,7 @@ set_target_properties(cupynumeric
                       LIBRARY_OUTPUT_DIRECTORY            lib)
 
 target_link_libraries(cupynumeric
-   PUBLIC legate::legate
+  PUBLIC legate::legate
           $<TARGET_NAME_IF_EXISTS:NCCL::NCCL>
   PRIVATE BLAS::BLAS
           tblis::tblis
@@ -422,14 +417,14 @@ target_link_libraries(cupynumeric
           $<TARGET_NAME_IF_EXISTS:cutensor::cutensor>)
 
 if(NOT Legion_USE_CUDA AND cupynumeric_cuRAND_INCLUDE_DIR)
-  list(APPEND cupynumeric_CXX_DEFS CUPYNUMERIC_CURAND_FOR_CPU_BUILD)
+  target_compile_definitions(cupynumeric
+    PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:CUPYNUMERIC_CURAND_FOR_CPU_BUILD>")
   target_include_directories(cupynumeric PRIVATE ${cupynumeric_cuRAND_INCLUDE_DIR})
 endif()
 
 if(Legion_USE_CUDA AND CUSOLVERMP_DIR)
   message(VERBOSE "cupynumeric: CUSOLVERMP_DIR ${CUSOLVERMP_DIR}")
-  list(APPEND cupynumeric_CXX_DEFS CUPYNUMERIC_USE_CUSOLVERMP)
-  list(APPEND cupynumeric_CUDA_DEFS CUPYNUMERIC_USE_CUSOLVERMP)
+  target_compile_definitions(cupynumeric PUBLIC "$<$<COMPILE_LANGUAGE:CXX,CUDA>:CUPYNUMERIC_USE_CUSOLVERMP>")
   target_include_directories(cupynumeric PRIVATE ${CUSOLVERMP_DIR}/include)
   target_link_libraries(cupynumeric PRIVATE ${CUSOLVERMP_DIR}/lib/libcusolverMp.so)
 endif()
@@ -437,10 +432,6 @@ endif()
 target_compile_options(cupynumeric
   PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${cupynumeric_CXX_OPTIONS}>"
           "$<$<COMPILE_LANGUAGE:CUDA>:${cupynumeric_CUDA_OPTIONS}>")
-
-target_compile_definitions(cupynumeric
-  PUBLIC  "$<$<COMPILE_LANGUAGE:CXX>:${cupynumeric_CXX_DEFS}>"
-          "$<$<COMPILE_LANGUAGE:CUDA>:${cupynumeric_CUDA_DEFS}>")
 
 target_include_directories(cupynumeric
   PUBLIC
