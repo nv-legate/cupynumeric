@@ -27,8 +27,8 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON CACHE STRING "" FORCE)
 ##############################################################################
 # - Download and initialize RAPIDS CMake helpers -----------------------------
 
-set(rapids-cmake-version 24.04)
-set(rapids-cmake-sha "365322aca32fd6ecd7027f5d7ec7be50b7f3cc2a")
+set(rapids-cmake-version 24.12)
+set(rapids-cmake-sha "4cb2123dc08ef5d47ecdc9cc51c96bea7b5bb79c")
 if(NOT EXISTS ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
   file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-${rapids-cmake-version}/RAPIDS.cmake
        ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
