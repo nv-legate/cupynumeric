@@ -14,7 +14,6 @@
 #
 from __future__ import annotations
 
-import math
 import weakref
 from collections import Counter
 from collections.abc import Iterable
@@ -1092,64 +1091,134 @@ class DeferredArray(NumPyThunk):
         # performance issues, but we will revisit this decision later once
         # we have enough evidence that that's not the case.
 
+        in_dim = 0
+        out_dim = 0
+
         in_shape = self.shape
         out_shape = newshape
 
-        needs_copy = False
-        out_pos = 0
-        for in_elem in in_shape:
+        in_ndim = len(in_shape)
+        out_ndim = len(out_shape)
+
+        groups = []
+
+        while in_dim < in_ndim and out_dim < out_ndim:
+            prev_in_dim = in_dim
+            prev_out_dim = out_dim
+
+            in_prod = 1
             out_prod = 1
-            while out_prod < in_elem and out_pos < len(out_shape):
-                out_prod *= out_shape[out_pos]
-                out_pos += 1
-            if out_prod != in_elem:
-                needs_copy = True
-                break
+
+            while True:
+                if in_prod < out_prod:
+                    in_prod *= in_shape[in_dim]
+                    in_dim += 1
+                else:
+                    out_prod *= out_shape[out_dim]
+                    out_dim += 1
+                if in_prod == out_prod:
+                    if in_dim < in_ndim and in_shape[in_dim] == 1:
+                        in_dim += 1
+                    break
+
+            in_group = in_shape[prev_in_dim:in_dim]
+            out_group = out_shape[prev_out_dim:out_dim]
+            groups.append((in_group, out_group))
+
+        while in_dim < in_ndim:
+            assert in_shape[in_dim] == 1
+            groups.append(((1,), ()))
+            in_dim += 1
+
+        while out_dim < out_ndim:
+            assert out_shape[out_dim] == 1
+            groups.append(((), (1,)))
+            out_dim += 1
+
+        needs_linearization = any(len(src_g) > 1 for src_g, _ in groups)
+        needs_delinearization = any(len(tgt_g) > 1 for _, tgt_g in groups)
+        needs_copy = needs_linearization or needs_delinearization
 
         if needs_copy:
-            flat_size = math.prod(in_shape)
-            flat_array = runtime.create_empty_thunk(
-                (flat_size,), dtype=self.base.type, inputs=[self]
+            tmp_shape: NdShape = ()
+            for src_g, tgt_g in groups:
+                if len(src_g) > 1 and len(tgt_g) > 1:
+                    tmp_shape += (_prod(tgt_g),)
+                else:
+                    tmp_shape += tgt_g
+
+            result = runtime.create_empty_thunk(
+                tmp_shape, dtype=self.base.type, inputs=[self]
             )
-            in_shape_store = flat_array.base.delinearize(0, in_shape)
-            out_shape_store = flat_array.base.delinearize(0, out_shape)
-            in_shape_array = DeferredArray(in_shape_store)
-            in_shape_array.copy(self, deep=True)
-            result = DeferredArray(out_shape_store)
-            return result
 
-        src = self.base
+            src = self.base
+            tgt = result.base  # type: ignore
 
-        # Process each dimension from right to left
-        out_pos = len(out_shape) - 1
-        for src_dim, elem_in in zip(
-            range(len(in_shape) - 1, -1, -1), reversed(in_shape)
-        ):
-            if out_pos >= 0 and elem_in == out_shape[out_pos]:
-                # Case 1: Dimensions match exactly
-                out_pos -= 1
-                continue
+            src_dim = 0
+            tgt_dim = 0
+            for src_g, tgt_g in groups:
+                diff = 1
+                if src_g == tgt_g:
+                    assert len(src_g) == 1
+                elif len(src_g) == 0:
+                    assert tgt_g == (1,)
+                    src = src.promote(src_dim, 1)
+                elif len(tgt_g) == 0:
+                    assert src_g == (1,)
+                    tgt = tgt.promote(tgt_dim, 1)
+                elif len(src_g) == 1:
+                    src = src.delinearize(src_dim, tgt_g)
+                    diff = len(tgt_g)
+                else:
+                    tgt = tgt.delinearize(tgt_dim, src_g)
+                    diff = len(src_g)
 
-            if elem_in == 1:
-                # Case 2: Input dimension is 1 (projection)
-                src = src.project(src_dim, 0)
-                continue
+                src_dim += diff
+                tgt_dim += diff
 
-            # Case 3: Delinearize operation
-            new_sizes = []
-            out_prod = 1
-            while out_prod < elem_in and out_pos >= 0:
-                out_prod *= out_shape[out_pos]
-                new_sizes.append(out_shape[out_pos])
-                out_pos -= 1
+            assert src.shape == tgt.shape
 
-            src = src.delinearize(src_dim, tuple(reversed(new_sizes)))
+            src_array = DeferredArray(src)
+            tgt_array = DeferredArray(tgt)
+            tgt_array.copy(src_array, deep=True)
 
-        # Process remaining output dimensions by adding new dimensions (promotion)
-        for _ in range(out_pos + 1):
-            src = src.promote(0, 1)
+            if needs_delinearization and needs_linearization:
+                src = result.base  # type: ignore
+                src_dim = 0
+                for src_g, tgt_g in groups:
+                    if len(src_g) > 1 and len(tgt_g) > 1:
+                        src = src.delinearize(src_dim, tgt_g)
+                        src_dim += len(tgt_g)
 
-        result = DeferredArray(src)
+                assert src.shape == newshape
+                src_array = DeferredArray(src)
+                result = runtime.create_empty_thunk(
+                    newshape, dtype=self.base.type, inputs=[self]
+                )
+                result.copy(src_array, deep=True)
+
+        else:
+            src = self.base
+            src_dim = 0
+            for src_g, tgt_g in groups:
+                diff = 1
+                if src_g == tgt_g:
+                    assert len(src_g) == 1
+                elif len(src_g) == 0:
+                    assert tgt_g == (1,)
+                    src = src.promote(src_dim, 1)
+                elif len(tgt_g) == 0:
+                    assert src_g == (1,)
+                    src = src.project(src_dim, 0)
+                    diff = 0
+                else:
+                    # unreachable
+                    assert False
+
+                src_dim += diff
+
+            result = DeferredArray(src)
+
         return result
 
     def squeeze(self, axis: int | tuple[int, ...] | None) -> DeferredArray:
