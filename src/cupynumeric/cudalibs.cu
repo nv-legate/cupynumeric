@@ -264,6 +264,8 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params)
       }
       entry.lru_index = 0;
     }
+    auto stream = get_cached_stream();
+    CHECK_CUFFT(cufftSetStream(result->handle, stream));
   }
   return result;
 }
