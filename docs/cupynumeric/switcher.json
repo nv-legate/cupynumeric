@@ -1,6 +1,7 @@
 [
   {
     "name": "24.11",
+    "preferred": true,
     "version": "24.11",
     "url": "https://docs.nvidia.com/cupynumeric/24.11/"
   }

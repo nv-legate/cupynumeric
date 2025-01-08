@@ -72,6 +72,7 @@ html_theme_options = {
         "This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.",  # NOQA
         '<script type="text/javascript">if (typeof _satellite !== “undefined”){ _satellite.pageBottom();}</script>',  # NOQA
     ],
+    "show_version_warning_banner": True,
 }
 
 templates_path = ["_templates"]
