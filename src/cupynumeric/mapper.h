@@ -27,6 +27,8 @@ class CuPyNumericMapper final : public legate::mapping::Mapper {
     const legate::mapping::Task& task,
     const std::vector<legate::mapping::StoreTarget>& options) override;
   [[nodiscard]] legate::Scalar tunable_value(legate::TunableID tunable_id) override;
+  [[nodiscard]] std::optional<std::size_t> allocation_pool_size(
+    const legate::mapping::Task& task, legate::mapping::StoreTarget memory_kind) override;
 };
 
 }  // namespace cupynumeric

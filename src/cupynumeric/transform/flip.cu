@@ -59,7 +59,7 @@ struct FlipImplBody<VariantKind::GPU, CODE, DIM> {
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     auto num_axes       = axes.size();
-    auto gpu_axes       = create_buffer<int32_t>(num_axes, Memory::Kind::Z_COPY_MEM);
+    auto gpu_axes = create_buffer<int32_t>(num_axes, Memory::Kind::Z_COPY_MEM, sizeof(int32_t));
     for (uint32_t idx = 0; idx < num_axes; ++idx) {
       gpu_axes[idx] = axes[idx];
     }

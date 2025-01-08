@@ -15,6 +15,7 @@
  */
 
 #include "cupynumeric/mapper.h"
+#include "legate/utilities/assert.h"
 
 using namespace legate;
 using namespace legate::mapping;
@@ -29,7 +30,9 @@ Scalar CuPyNumericMapper::tunable_value(TunableID tunable_id)
 std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
   const mapping::Task& task, const std::vector<mapping::StoreTarget>& options)
 {
-  switch (static_cast<std::int64_t>(task.task_id())) {
+  const auto task_id = static_cast<CuPyNumericOpCode>(task.task_id());
+
+  switch (task_id) {
     case CUPYNUMERIC_CONVOLVE: {
       std::vector<StoreMapping> mappings;
       auto inputs = task.inputs();
@@ -216,7 +219,268 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       return {};
     }
   }
-  assert(false);
+  LEGATE_ABORT("Unsupported task id: " + std::to_string(task_id));
+  return {};
+}
+
+namespace {
+
+// Use an accessor type with the maximum number of dimensions for the size approximation
+using ACC_TYPE = legate::AccessorRO<std::int8_t, LEGATE_MAX_DIM>;
+
+[[nodiscard]] constexpr std::size_t aligned_size(std::size_t size, std::size_t alignment)
+{
+  return (size + alignment - 1) / alignment * alignment;
+}
+
+constexpr std::size_t DEFAULT_ALIGNMENT = 16;
+
+}  // namespace
+
+std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
+  const legate::mapping::Task& task, legate::mapping::StoreTarget memory_kind)
+{
+  const auto task_id = static_cast<CuPyNumericOpCode>(task.task_id());
+
+  switch (task_id) {
+    case CUPYNUMERIC_ADVANCED_INDEXING: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_ARGWHERE: {
+      auto&& input  = task.input(0);
+      auto in_count = input.domain().get_volume();
+      auto out_size = in_count * input.dim() * sizeof(std::int64_t);
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          return out_size;
+        }
+        case legate::mapping::StoreTarget::FBMEM: {
+          return out_size + in_count * sizeof(std::int64_t);
+        }
+        case legate::mapping::StoreTarget::ZCMEM: {
+          return 0;
+        }
+      }
+    }
+    case CUPYNUMERIC_BATCHED_CHOLESKY: [[fallthrough]];
+    case CUPYNUMERIC_POTRF: [[fallthrough]];
+    // FIXME(wonchanl): These tasks actually don't need unbound pools on CPUs. They are being used
+    // only to finish up the first implementation quickly
+    case CUPYNUMERIC_QR: [[fallthrough]];
+    case CUPYNUMERIC_SOLVE: [[fallthrough]];
+    case CUPYNUMERIC_SVD: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return aligned_size(sizeof(std::int32_t), DEFAULT_ALIGNMENT);
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_BINARY_RED: {
+      return memory_kind == legate::mapping::StoreTarget::FBMEM
+               ? aligned_size(sizeof(bool), DEFAULT_ALIGNMENT)
+               : 0;
+    }
+    case CUPYNUMERIC_CHOOSE: {
+      return memory_kind == legate::mapping::StoreTarget::ZCMEM
+               ? sizeof(ACC_TYPE) * task.num_inputs()
+               : 0;
+    }
+    case CUPYNUMERIC_CONTRACT: {
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          auto&& lhs = task.reduction(0);
+          if (lhs.type().code() != legate::Type::Code::FLOAT16) {
+            return 0;
+          }
+          constexpr auto compute_buffer_size = [](auto&& arr) {
+            return aligned_size(arr.domain().get_volume() * sizeof(float), DEFAULT_ALIGNMENT);
+          };
+          return compute_buffer_size(lhs) + compute_buffer_size(task.input(0)) +
+                 compute_buffer_size(task.input(1));
+        }
+        case legate::mapping::StoreTarget::FBMEM: {
+          return std::nullopt;
+        }
+        case legate::mapping::StoreTarget::ZCMEM: {
+          return 0;
+        }
+      }
+    }
+    case CUPYNUMERIC_CONVOLVE: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_DOT: {
+      return memory_kind == legate::mapping::StoreTarget::FBMEM
+               ? aligned_size(task.reduction(0).type().size(), DEFAULT_ALIGNMENT)
+               : 0;
+    }
+    case CUPYNUMERIC_FFT: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_FLIP: {
+      return memory_kind == legate::mapping::StoreTarget::ZCMEM
+               ? sizeof(std::int32_t) * task.scalar(0).values<std::int32_t>().size()
+               : 0;
+    }
+    case CUPYNUMERIC_HISTOGRAM: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_MATMUL: [[fallthrough]];
+    case CUPYNUMERIC_MATVECMUL: {
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          const auto rhs1_idx = task.num_inputs() - 2;
+          const auto rhs2_idx = task.num_inputs() - 1;
+          auto&& rhs1         = task.input(rhs1_idx);
+          if (rhs1.type().code() != legate::Type::Code::FLOAT16) {
+            return 0;
+          }
+          constexpr auto compute_buffer_size = [](auto&& arr) {
+            return aligned_size(arr.domain().get_volume() * sizeof(float), DEFAULT_ALIGNMENT);
+          };
+          return compute_buffer_size(rhs1) + compute_buffer_size(task.input(rhs2_idx));
+        }
+        // The GPU implementation needs no temporary allocations
+        case legate::mapping::StoreTarget::FBMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::ZCMEM: {
+          LEGATE_ABORT("GPU tasks shouldn't reach here");
+          return 0;
+        }
+      }
+    }
+    case CUPYNUMERIC_NONZERO: {
+      auto&& input      = task.input(0);
+      auto&& output     = task.output(0);
+      auto in_count     = input.domain().get_volume();
+      auto max_out_size = in_count * output.type().size() * input.dim();
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          return max_out_size;
+        }
+        case legate::mapping::StoreTarget::FBMEM: {
+          // The GPU task creates a buffer to keep offsets
+          return max_out_size + in_count * sizeof(std::int64_t) +
+                 aligned_size(sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+        }
+        case legate::mapping::StoreTarget::ZCMEM: {
+          // The doubling here shouldn't be necessary, but the memory fragmentation seems to be
+          // causing allocation failures even though there's enough space.
+          return input.dim() * sizeof(std::int64_t*) * 2;
+        }
+      }
+    }
+    case CUPYNUMERIC_REPEAT: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        if (const auto scalar_repeats = task.scalar(1).value<bool>(); scalar_repeats) {
+          return 0;
+        }
+        const auto axis      = task.scalar(0).value<std::uint32_t>();
+        const auto in_domain = task.input(0).domain();
+        const auto lo        = in_domain.lo();
+        const auto hi        = in_domain.hi();
+        return aligned_size((hi[axis] - lo[axis] + 1) * sizeof(std::int64_t), DEFAULT_ALIGNMENT);
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_SCALAR_UNARY_RED: {
+      return memory_kind == legate::mapping::StoreTarget::FBMEM
+               ? aligned_size(task.reduction(0).type().size(), DEFAULT_ALIGNMENT)
+               : 0;
+    }
+    case CUPYNUMERIC_SCAN_LOCAL: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      const auto output = task.output(0);
+      const auto domain = output.domain();
+      const auto ndim   = domain.dim;
+      auto tmp_volume   = std::size_t{1};
+      for (std::int32_t dim = 0; dim < ndim; ++dim) {
+        tmp_volume *=
+          std::max<>(legate::coord_t{0}, domain.rect_data[dim + ndim] - domain.rect_data[dim] + 1);
+      }
+      return aligned_size(tmp_volume * output.type().size(), output.type().alignment());
+    }
+    case CUPYNUMERIC_SELECT: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return aligned_size(sizeof(ACC_TYPE) * task.num_inputs(), DEFAULT_ALIGNMENT);
+      }
+      return 0;
+    }
+    case CUPYNUMERIC_SORT: {
+      // There can be up to seven buffers on the zero-copy memory holding pointers and sizes
+      auto compute_zc_alloc_size = [&]() -> std::optional<std::size_t> {
+        return task.is_single_task() ? 0
+                                     : 7 * task.get_launch_domain().get_volume() * sizeof(void*);
+      };
+      return memory_kind == legate::mapping::StoreTarget::ZCMEM ? compute_zc_alloc_size()
+                                                                : std::nullopt;
+    }
+    case CUPYNUMERIC_UNIQUE: {
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          auto&& input = task.input(0);
+          return input.domain().get_volume() * input.type().size();
+        }
+        case legate::mapping::StoreTarget::FBMEM: {
+          return std::nullopt;
+        }
+        case legate::mapping::StoreTarget::ZCMEM: {
+          return task.get_launch_domain().get_volume() * sizeof(std::size_t);
+        }
+      }
+    }
+    case CUPYNUMERIC_UNIQUE_REDUCE: {
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          auto inputs       = task.inputs();
+          auto elem_type    = inputs.front().type();
+          auto total_volume = std::size_t{0};
+
+          for (auto&& input : inputs) {
+            total_volume += input.domain().get_volume();
+          }
+          return aligned_size(total_volume * elem_type.size(), elem_type.alignment());
+        }
+        // The GPU implementation needs no temporary allocations
+        case legate::mapping::StoreTarget::FBMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::ZCMEM: {
+          LEGATE_ABORT("GPU tasks shouldn't reach here");
+          return 0;
+        }
+      }
+    }
+    case CUPYNUMERIC_WRAP: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      return aligned_size(sizeof(bool), DEFAULT_ALIGNMENT);
+    }
+    case CUPYNUMERIC_ZIP: {
+      using ACC = legate::AccessorRO<std::int8_t, LEGATE_MAX_DIM>;
+      return memory_kind == legate::mapping::StoreTarget::ZCMEM
+               ? (task.num_inputs() * sizeof(ACC_TYPE) + 15)
+               : 0;
+    }
+  }
+  LEGATE_ABORT("Unsupported task id: " + std::to_string(task_id));
   return {};
 }
 

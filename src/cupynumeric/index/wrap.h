@@ -34,6 +34,8 @@ class WrapTask : public CuPyNumericTask<WrapTask> {
  public:
   static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_WRAP};
 
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+
  public:
   static void cpu_variant(legate::TaskContext context);
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)

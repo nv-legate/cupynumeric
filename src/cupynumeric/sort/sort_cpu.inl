@@ -34,6 +34,17 @@
 
 namespace cupynumeric {
 
+namespace {
+
+template <typename T>
+legate::Buffer<T> create_non_empty_buffer(size_t size)
+{
+  return legate::create_buffer<T>(
+    std::max(size, size_t{1}), legate::Memory::Kind::NO_MEMKIND, alignof(T));
+}
+
+}  // namespace
+
 using namespace legate;
 
 // sorts inptr in-place, if argptr not nullptr it returns sort indices
@@ -96,7 +107,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
 
   {
     // compute diff for each segment
-    auto segment_diff = create_buffer<int64_t>(num_segments_l);
+    auto segment_diff = create_non_empty_buffer<int64_t>(num_segments_l);
     {
       if (num_segments_l > 1) {
         auto* p_segments = merge_buffer.segments.ptr(0);
@@ -130,7 +141,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
 #endif
 
     // allocate target
-    auto segment_diff_buffers = create_buffer<int64_t>(num_segments_l * num_sort_ranks);
+    auto segment_diff_buffers = create_non_empty_buffer<int64_t>(num_segments_l * num_sort_ranks);
 
     {
       // using alltoallv to mimic allgather on subset
@@ -163,7 +174,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
     }
 
     // copy to transpose structure [segments][ranks]  (not in-place for now)
-    auto segment_diff_2d = create_buffer<int64_t>(num_segments_l * num_sort_ranks);
+    auto segment_diff_2d = create_non_empty_buffer<int64_t>(num_segments_l * num_sort_ranks);
     {
       int pos = 0;
       for (size_t segment = 0; segment < num_segments_l; ++segment) {
@@ -199,11 +210,11 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
           edge case --> send more than whole line should not happen due to sample choice!
     */
     // 2 (signed) arrays - left/right for every segment
-    auto send_left  = create_buffer<int64_t>(num_segments_l);
-    auto send_right = create_buffer<int64_t>(num_segments_l);
+    auto send_left  = create_non_empty_buffer<int64_t>(num_segments_l);
+    auto send_right = create_non_empty_buffer<int64_t>(num_segments_l);
 
     // compute data to send....
-    auto segment_diff_2d_scan = create_buffer<int64_t>(num_segments_l * num_sort_ranks);
+    auto segment_diff_2d_scan = create_non_empty_buffer<int64_t>(num_segments_l * num_sort_ranks);
 
     auto* segment_diff_2d_ptr      = segment_diff_2d.ptr(0);
     auto* segment_diff_2d_scan_ptr = segment_diff_2d_scan.ptr(0);
@@ -249,11 +260,11 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
     recv_leftright_data.size = recv_left_size + recv_right_size;
 
     if (argsort) {
-      send_leftright_data.indices = create_buffer<int64_t>(send_leftright_data.size);
-      recv_leftright_data.indices = create_buffer<int64_t>(recv_leftright_data.size);
+      send_leftright_data.indices = create_non_empty_buffer<int64_t>(send_leftright_data.size);
+      recv_leftright_data.indices = create_non_empty_buffer<int64_t>(recv_leftright_data.size);
     } else {
-      send_leftright_data.values = create_buffer<VAL>(send_leftright_data.size);
-      recv_leftright_data.values = create_buffer<VAL>(recv_leftright_data.size);
+      send_leftright_data.values = create_non_empty_buffer<VAL>(send_leftright_data.size);
+      recv_leftright_data.values = create_non_empty_buffer<VAL>(recv_leftright_data.size);
     }
 
     // copy into send buffer
@@ -523,8 +534,8 @@ void sample_sort_nd(
   size_t num_samples_l             = num_samples_per_segment_l * num_segments_l;
   size_t num_samples_per_segment_g = num_samples_per_segment_l * num_sort_ranks;
   size_t num_samples_g             = num_samples_per_segment_g * num_segments_l;
-  auto samples_l                   = create_buffer<SegmentSample<VAL>>(num_samples_l);
-  auto samples_g                   = create_buffer<SegmentSample<VAL>>(num_samples_g);
+  auto samples_l                   = create_non_empty_buffer<SegmentSample<VAL>>(num_samples_l);
+  auto samples_g                   = create_non_empty_buffer<SegmentSample<VAL>>(num_samples_g);
   auto* p_samples                  = samples_l.ptr(0);
   auto* local_values               = local_sorted.values.ptr(0);
 
@@ -619,10 +630,10 @@ void sample_sort_nd(
 
   // segment_blocks[r][segment]->global position in data for segment and r
   // perform blocksize wide scan on size_send[r][block*blocksize] within warp
-  auto segment_blocks = create_buffer<int32_t>(num_sort_ranks * num_segments_l);
+  auto segment_blocks = create_non_empty_buffer<int32_t>(num_sort_ranks * num_segments_l);
 
   // initialize sizes to send [r][segment]
-  auto size_send   = create_buffer<int32_t>(num_sort_ranks * (num_segments_l + 1));
+  auto size_send   = create_non_empty_buffer<int32_t>(num_sort_ranks * (num_segments_l + 1));
   auto p_size_send = size_send.ptr(0);
   std::fill(p_size_send, p_size_send + num_sort_ranks * (num_segments_l + 1), 0);
 
@@ -685,7 +696,7 @@ void sample_sort_nd(
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
   // all2all exchange send/receive sizes  [r][segment]
-  auto size_recv = create_buffer<int32_t>(num_sort_ranks * (num_segments_l + 1));
+  auto size_recv = create_non_empty_buffer<int32_t>(num_sort_ranks * (num_segments_l + 1));
 
   {
     // workaround - using alltoallv
@@ -714,11 +725,13 @@ void sample_sort_nd(
   }
 
   // copy values into send buffer
-  auto val_send_buffer = create_buffer<VAL>(volume);
-  auto idc_send_buffer = create_buffer<int64_t>(argsort ? volume : 0);
+  auto val_send_buffer = create_non_empty_buffer<VAL>(volume);
+  auto idc_send_buffer = create_non_empty_buffer<int64_t>(argsort ? volume : 0);
   auto* local_indices  = local_sorted.indices.ptr(0);
 
-  auto positions = create_buffer<int32_t>(num_sort_ranks);
+  // This line is particularly problematic, as the following line makes an out-of-bounds access when
+  // teh buffer is empty
+  auto positions = create_non_empty_buffer<int32_t>(num_sort_ranks);
   positions[0]   = 0;
   for (size_t sort_rank = 1; sort_rank < num_sort_ranks; ++sort_rank) {
     positions[sort_rank] =
@@ -759,7 +772,7 @@ void sample_sort_nd(
       total_receive += size_recv[sort_rank * (num_segments_l + 1) + num_segments_l];
     }
 
-    merge_buffer.segments = create_buffer<size_t>(num_segments_l > 1 ? total_receive : 0);
+    merge_buffer.segments = create_non_empty_buffer<size_t>(num_segments_l > 1 ? total_receive : 0);
     if (num_segments_l > 1) {
       auto* p_segments = merge_buffer.segments.ptr(0);
       // initialize segment information
@@ -774,8 +787,8 @@ void sample_sort_nd(
       assert(start_pos == total_receive);
     }
 
-    merge_buffer.values  = create_buffer<VAL>(total_receive);
-    merge_buffer.indices = create_buffer<int64_t>(argsort ? total_receive : 0);
+    merge_buffer.values  = create_non_empty_buffer<VAL>(total_receive);
+    merge_buffer.indices = create_non_empty_buffer<int64_t>(argsort ? total_receive : 0);
     merge_buffer.size    = total_receive;
   }
 
@@ -944,13 +957,14 @@ struct SortImplBodyCpu {
     VAL* values_ptr      = nullptr;
     if (argsort) {
       // make a buffer for input
-      auto input_copy     = create_buffer<VAL>(volume);
+      auto input_copy = create_buffer<VAL>(volume, legate::Memory::Kind::NO_MEMKIND, alignof(VAL));
       local_sorted.values = input_copy;
       values_ptr          = input_copy.ptr(0);
 
       // initialize indices
       if (need_distributed_sort) {
-        auto indices_buffer  = create_buffer<int64_t>(volume);
+        auto indices_buffer =
+          create_buffer<int64_t>(volume, legate::Memory::Kind::NO_MEMKIND, alignof(int64_t));
         indices_ptr          = indices_buffer.ptr(0);
         local_sorted.indices = indices_buffer;
         local_sorted.size    = volume;
@@ -975,11 +989,13 @@ struct SortImplBodyCpu {
     } else {
       // initialize output
       if (need_distributed_sort) {
-        auto input_copy      = create_buffer<VAL>(volume);
-        values_ptr           = input_copy.ptr(0);
-        local_sorted.values  = input_copy;
-        local_sorted.indices = create_buffer<int64_t>(0);
-        local_sorted.size    = volume;
+        auto input_copy =
+          create_buffer<VAL>(volume, legate::Memory::Kind::NO_MEMKIND, alignof(VAL));
+        values_ptr          = input_copy.ptr(0);
+        local_sorted.values = input_copy;
+        local_sorted.indices =
+          create_buffer<int64_t>(0, legate::Memory::Kind::NO_MEMKIND, alignof(int64_t));
+        local_sorted.size = volume;
       } else {
         AccessorWO<VAL, DIM> output = output_array.write_accessor<VAL, DIM>(rect);
         assert(rect.empty() || output.accessor.is_dense_row_major(rect));

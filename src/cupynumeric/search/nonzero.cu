@@ -74,8 +74,9 @@ struct NonzeroImplBody<VariantKind::GPU, CODE, DIM> {
   {
     auto stream = get_cached_stream();
 
-    auto offsets = create_buffer<int64_t>(volume, legate::Memory::Kind::GPU_FB_MEM);
-    auto size    = compute_offsets(in, pitches, rect, volume, offsets, stream);
+    auto offsets =
+      create_buffer<std::int64_t>(volume, legate::Memory::Kind::GPU_FB_MEM, sizeof(std::int64_t));
+    auto size = compute_offsets(in, pitches, rect, volume, offsets, stream);
 
     std::vector<Buffer<int64_t>> results;
     for (auto& output : outputs) {

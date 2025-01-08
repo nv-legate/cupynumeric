@@ -59,7 +59,7 @@ static Piece<VAL> tree_reduce(legate::PhysicalStore& output,
 {
   size_t remaining = num_ranks;
   size_t radix     = 2;
-  auto all_sizes   = create_buffer<size_t>(num_ranks, Memory::Z_COPY_MEM);
+  auto all_sizes = create_buffer<std::size_t>(num_ranks, Memory::Z_COPY_MEM, alignof(std::size_t));
 
   while (remaining > 1) {
     // TODO: This could be point-to-point, as we don't need all the sizes,

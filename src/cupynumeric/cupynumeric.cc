@@ -59,9 +59,13 @@ void registration_callback()
   config.max_tasks         = CUPYNUMERIC_MAX_TASKS;
   config.max_reduction_ops = CUPYNUMERIC_MAX_REDOPS;
 
-  auto runtime = legate::Runtime::get_runtime();
-  auto library = runtime->create_library(
-    cupynumeric_library_name, config, std::make_unique<CuPyNumericMapper>());
+  auto runtime           = legate::Runtime::get_runtime();
+  constexpr auto options = legate::VariantOptions{}.with_has_allocations(false);
+  auto library           = runtime->create_library(
+    cupynumeric_library_name,
+    config,
+    std::make_unique<CuPyNumericMapper>(),
+    {{LEGATE_CPU_VARIANT, options}, {LEGATE_GPU_VARIANT, options}, {LEGATE_OMP_VARIANT, options}});
 
   CuPyNumericRegistrar::get_registrar().register_all_tasks(library);
   CuPyNumericRuntime::initialize(runtime, library);

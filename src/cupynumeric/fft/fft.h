@@ -34,6 +34,8 @@ class FFTTask : public CuPyNumericTask<FFTTask> {
  public:
   static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_FFT};
 
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+
  public:
 #if LEGATE_DEFINED(LEGATE_USE_CUDA)
   static void gpu_variant(legate::TaskContext context);

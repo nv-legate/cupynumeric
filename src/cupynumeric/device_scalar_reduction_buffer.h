@@ -27,8 +27,8 @@ class DeviceScalarReductionBuffer {
   using VAL = typename REDOP::RHS;
 
  public:
-  DeviceScalarReductionBuffer(cudaStream_t stream)
-    : buffer_(legate::create_buffer<VAL>(1, legate::Memory::Kind::GPU_FB_MEM))
+  DeviceScalarReductionBuffer(cudaStream_t stream, std::size_t alignment = 16)
+    : buffer_(legate::create_buffer<VAL>(1, legate::Memory::Kind::GPU_FB_MEM, alignment))
   {
     VAL identity{REDOP::identity};
     ptr_ = buffer_.ptr(0);

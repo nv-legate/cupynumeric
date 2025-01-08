@@ -24,6 +24,8 @@ class PotrfTask : public CuPyNumericTask<PotrfTask> {
  public:
   static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_POTRF};
 
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+
  public:
   static void cpu_variant(legate::TaskContext context);
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)

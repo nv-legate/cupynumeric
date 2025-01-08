@@ -25,6 +25,10 @@ class QrTask : public CuPyNumericTask<QrTask> {
   static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_QR};
   static const char* ERROR_MESSAGE;
 
+  static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+  static constexpr auto OMP_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+
  public:
   static void cpu_variant(legate::TaskContext context);
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)

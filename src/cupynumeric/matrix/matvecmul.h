@@ -30,6 +30,10 @@ class MatVecMulTask : public CuPyNumericTask<MatVecMulTask> {
  public:
   static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_MATVECMUL};
 
+  // Only the CPU implementation needs temporary allocations due to lack of float16 support
+  static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+  static constexpr auto OMP_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+
  public:
   static void cpu_variant(legate::TaskContext context);
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)

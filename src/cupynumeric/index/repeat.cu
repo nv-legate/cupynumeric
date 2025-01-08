@@ -110,7 +110,10 @@ struct RepeatImplBody<VariantKind::GPU, CODE, DIM> {
     auto out      = out_array.write_accessor<VAL, DIM>(out_rect);
     Pitches<DIM - 1> pitches{};
 
-    auto out_volume   = pitches.flatten(out_rect);
+    const auto out_volume = pitches.flatten(out_rect);
+    if (out_volume == 0) {
+      return;
+    }
     const auto blocks = (out_volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
     auto stream = get_cached_stream();
