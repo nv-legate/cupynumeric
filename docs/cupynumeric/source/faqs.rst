@@ -22,7 +22,7 @@ array programming library widely used in scientific computing. cuPyNumeric scale
 idiomatic NumPy programs to multiple GPUs and CPUs and seamlessly interoperates
 with other Legate libraries.
 
-Check out this `blog post <https://developer.nvidia.com/blog/accelerating-python-applications-with-cupynumeric-and-legate/>`_
+Check out this `blog post <https://developer.nvidia.com/blog/effortlessly-scale-numpy-from-laptops-to-supercomputers-with-nvidia-cupynumeric/>`_
 to learn more about cuPyNumeric.
 
 When to use python vs legate?
