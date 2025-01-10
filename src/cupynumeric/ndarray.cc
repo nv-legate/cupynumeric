@@ -756,6 +756,8 @@ void NDArray::convolve(NDArray input, NDArray filter)
   task.add_input(input.store_, p_halo);
   auto p_output = task.add_output(store_);
   task.add_scalar_arg(legate::Scalar(shape()));
+  task.add_scalar_arg(
+    legate::Scalar(static_cast<int32_t>(CuPyNumericConvolveMethod::CUPYNUMERIC_CONVOLVE_AUTO)));
 
   auto offsets = (filter.store_.extents() + 1) / 2;
 
