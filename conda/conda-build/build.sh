@@ -40,7 +40,7 @@ echo "Build starting on $(date)"
 CUDAFLAGS="-isystem ${PREFIX}/include -L${PREFIX}/lib"
 export CUDAFLAGS
 
-cmake -S . -B build ${CMAKE_ARGS} -DCMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT --trace-expand
+cmake -S . -B build ${CMAKE_ARGS} -DCMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT
 cmake --build build -j$CPU_COUNT --verbose
 cmake --install build
 
