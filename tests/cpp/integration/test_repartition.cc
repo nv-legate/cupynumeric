@@ -77,6 +77,11 @@ class RepartitionLayoutMapper : public legate::mapping::Mapper {
   {
     return legate::Scalar{};
   }
+  std::optional<std::size_t> allocation_pool_size(
+    const legate::mapping::Task& /*task*/, legate::mapping::StoreTarget /*memory_kind*/) override
+  {
+    return std::nullopt;
+  }
 };
 
 int get_rank_row_major(legate::Domain domain, legate::DomainPoint index_point)
