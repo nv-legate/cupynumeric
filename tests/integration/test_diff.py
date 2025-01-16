@@ -37,6 +37,8 @@ import cupynumeric as num
         ((5,), 6, 0, None, None),
         ((5, 5), 5, 1, None, None),
         ((5, 5), 6, 1, None, None),
+        ((5, 5), 6, 1, np.array(2), None),
+        ((5, 5), 6, 1, None, np.array(2)),
     ],
 )
 def test_diff(args):
@@ -54,10 +56,30 @@ def test_diff(args):
     assert allclose(res_np, res_cn)
 
 
-def test_diff_nzero():
+def test_diff_nzero() -> None:
     a = num.ones(100)
     ad = num.diff(a, n=0)
     assert a is ad
+
+
+def test_negative_time() -> None:
+    arr_np = np.random.random((5, 5))
+    arr_num = num.array(arr_np)
+    msg = r"order must be non-negative but got -1"
+    with pytest.raises(ValueError, match=msg):
+        num.diff(arr_num, n=-1)
+    with pytest.raises(ValueError, match=msg):
+        np.diff(arr_np, n=-1)
+
+
+def test_scalar() -> None:
+    arr_np = np.array(2)
+    arr_num = num.array(2)
+    msg = "diff requires input that is at least one dimensional"
+    with pytest.raises(ValueError, match=msg):
+        np.diff(arr_np)
+    with pytest.raises(ValueError, match=msg):
+        num.diff(arr_num)
 
 
 if __name__ == "__main__":
