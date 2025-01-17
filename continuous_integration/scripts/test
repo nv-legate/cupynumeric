@@ -22,7 +22,7 @@ setup_test_env() {
 
 setup_docs_env() {
     mamba install -y pandoc doxygen
-    pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme
+    pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme cffi
 }
 
 setup_mypy_env() {
@@ -30,7 +30,7 @@ setup_mypy_env() {
 }
 
 setup_unit_env() {
-    mamba install -y pytest pytest-mock mock
+    mamba install -y pytest pytest-mock mock cffi
 }
 
 test_cupynumeric() {

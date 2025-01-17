@@ -42,3 +42,13 @@ jobs:
       refname: ${{ github.ref_name }}
       default-branch: ${{ github.event.repository.default_branch }}
     secrets: inherit
+
+  tests-pass:
+    if: always()
+    needs:
+      - build-and-test
+    runs-on: linux-amd64-cpu4
+    steps:
+      - name: Check job results
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
