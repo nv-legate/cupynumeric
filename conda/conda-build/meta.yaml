@@ -130,6 +130,7 @@ requirements:
 {% endif %}
 
   run:
+    - cffi
     - numpy {{ numpy_version }}
     - opt_einsum >=3.3
     - scipy
