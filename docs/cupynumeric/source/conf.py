@@ -21,6 +21,8 @@ SWITCHER_PROD = "https://docs.nvidia.com/cupynumeric/switcher.json"
 SWITCHER_DEV = "http://localhost:8000/switcher.json"
 JSON_URL = SWITCHER_DEV if getenv("SWITCHER_DEV") == "1" else SWITCHER_PROD
 
+ANNOTATE = getenv("LEGATE_ANNOTATION_DOCS") == "1"
+
 # -- Project information -----------------------------------------------------
 
 project = "NVIDIA cuPyNumeric"
@@ -98,4 +100,6 @@ pygments_style = "sphinx"
 
 
 def setup(app):
+    if ANNOTATE:
+        app.add_js_file("https://hypothes.is/embed.js", kind="hypothesis")
     app.add_css_file("params.css")
