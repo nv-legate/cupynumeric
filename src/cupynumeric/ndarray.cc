@@ -562,7 +562,8 @@ uint64_t ceildiv(uint64_t a, uint64_t b) { return (a + b - 1) / b; }
 
 void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs2_store)
 {
-  auto runtime = CuPyNumericRuntime::get_runtime();
+  auto runtime        = CuPyNumericRuntime::get_runtime();
+  bool is_single_proc = legate::Runtime::get_runtime()->get_machine().count() == 1;
 
   fill(get_reduction_identity(UnaryRedCode::SUM, type()));
 
@@ -573,7 +574,8 @@ void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs
   auto k = rhs1_store.shape()[1];
   // compute tilesize for lhs and batch_size for k
   // TODO make generic
-  std::vector<std::uint64_t> initial_tile_shape = {512, 512};
+  std::vector<std::uint64_t> initial_tile_shape = {is_single_proc ? m : 512,
+                                                   is_single_proc ? n : 512};
 
   legate::tuple<std::uint64_t> color_shape = {ceildiv(m, initial_tile_shape[0]),
                                               ceildiv(n, initial_tile_shape[1])};
@@ -588,7 +590,8 @@ void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs
     uint64_t batch_size            = ceildiv(k, num_batches);
     return batch_size;
   };
-  std::uint64_t k_batch_size = get_batchsize(tile_shape, k);
+
+  std::uint64_t k_batch_size = is_single_proc ? k : get_batchsize(tile_shape, k);
 
   std::vector<std::uint64_t> tile_shape_rhs1 = {tile_shape[0], k_batch_size};
   std::vector<std::uint64_t> tile_shape_rhs2 = {k_batch_size, tile_shape[1]};
