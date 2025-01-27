@@ -1615,6 +1615,10 @@ class DeferredArray(NumPyThunk):
                 def choose_batchsize(
                     tilesize: tuple[int, int], k: int, itemsize: int
                 ) -> int:
+                    # don't batch in case we only have 1 proc
+                    if runtime.num_procs == 1:
+                        return k
+
                     # default corresponds to 128MB (to store A and B tile)
                     from ..settings import settings
 
