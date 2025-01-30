@@ -19,7 +19,7 @@
 #include "cupynumeric/matrix/batched_cholesky_template.inl"
 
 #include <cblas.h>
-#include <legate/type/type_info.h>
+#include <legate/type/types.h>
 #include <lapack.h>
 
 namespace cupynumeric {
