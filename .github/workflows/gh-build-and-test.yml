@@ -106,7 +106,7 @@ jobs:
       python-version: ${{ inputs.python-version }}
       repos-Root: "cupynumeric"
       target-device: ${{ inputs.target-device }}
-      upload-action: "upload-package-ALL"
+      upload-action: "upload-package-Anaconda"
       upload-enabled: ${{ inputs.upload-enabled }}
       refname: ${{ inputs.refname }}
       default-branch: ${{ inputs.default-branch }}
@@ -203,7 +203,7 @@ jobs:
   updateTestStatus:
     needs: test
     name: Update Test status on Server
-    if: ${{ (github.repository_owner == 'nv-legate') && contains(github.workflow, 'Nightly') && (inputs.upload-enabled == true) }}
+    if: ${{ false }}
     uses:
       nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.23
     with:
