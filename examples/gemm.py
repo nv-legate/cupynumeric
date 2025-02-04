@@ -21,8 +21,8 @@ from benchmark import parse_args, run_benchmark
 
 
 def initialize(M, N, K, ft):
-    A = np.random.rand(N, N).astype(ft)
-    B = np.random.rand(N, N).astype(ft)
+    A = np.random.uniform(size=(N, N), dtype=ft)
+    B = np.random.uniform(size=(N, N), dtype=ft)
     C = np.zeros((N, N), dtype=ft)
     return A, B, C
 
