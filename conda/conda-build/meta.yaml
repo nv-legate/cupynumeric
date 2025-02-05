@@ -136,6 +136,7 @@ requirements:
     - scipy
     - openblas =* =*openmp*
 {% if gpu_enabled_bool %}
+    - cupy
     - libnvjitlink
     - libcusparse
     - cutensor >=2.0 =*_*

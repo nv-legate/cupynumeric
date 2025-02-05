@@ -15,12 +15,16 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from legate.core import PhysicalArray, StoreTarget
 import legate.core.types as ty
 import numpy as np
 
 from ..types import NdShape
+
+if TYPE_CHECKING:
+    from legate.core import PhysicalStore
 
 SUPPORTED_DTYPES = {
     np.dtype(bool): ty.bool_,
@@ -111,3 +115,30 @@ def min_identity(
         return True
     else:
         raise ValueError(f"Unsupported dtype: {ty}")
+
+def local_task_array(obj: PhysicalArray | PhysicalStore) -> Any:
+    """
+    Generate an appropriate local-memory ndarray object, that is backed by the
+    portion of a Legate array or store that was passed to a task.
+
+    Parameters
+    ----------
+    obj : PhysicalArray | PhysicalStore
+        A Legate physical array or store to adapt.
+
+    Returns
+    -------
+    arr : cupy.ndarray or np.ndarray
+        If the array or store is located on GPU, then this function will return
+        a CuPy array. Otherwise, a NumPy array is returned.
+
+    """
+    store = obj.data() if isinstance(obj, PhysicalArray) else obj
+
+    if store.target in {StoreTarget.FBMEM, StoreTarget.ZCMEM}:
+        # cupy is only a dependency for GPU packages -- but we should
+        # only hit this import in case the store is located on a GPU
+        import cupy  # type: ignore [import-untyped,import-not-found]
+        return cupy.asarray(store)
+    else:
+        return np.asarray(store)
