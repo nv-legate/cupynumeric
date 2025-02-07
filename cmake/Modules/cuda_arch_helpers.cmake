@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,6 +44,9 @@ function(set_cuda_arch_from_names)
   if(CMAKE_CUDA_ARCHITECTURES MATCHES "ampere")
     list(APPEND cuda_archs 80)
   endif()
+  if(CMAKE_CUDA_ARCHITECTURES MATCHES "ada")
+    list(APPEND cuda_archs 89)
+  endif()
   if(CMAKE_CUDA_ARCHITECTURES MATCHES "hopper")
     list(APPEND cuda_archs 90)
   endif()
@@ -65,7 +68,7 @@ function(set_cuda_arch_from_names)
 endfunction()
 
 function(add_cuda_architecture_defines defs)
-  message(VERBOSE "legate.core: CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+  message(VERBOSE "legate: CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
 
   set(_defs ${${defs}})
 
@@ -86,6 +89,7 @@ function(add_cuda_architecture_defines defs)
   add_def_if_arch_enabled("70" "VOLTA_ARCH")
   add_def_if_arch_enabled("75" "TURING_ARCH")
   add_def_if_arch_enabled("80" "AMPERE_ARCH")
+  add_def_if_arch_enabled("89" "ADA_ARCH")
   add_def_if_arch_enabled("90" "HOPPER_ARCH")
 
   set(${defs} ${_defs} PARENT_SCOPE)

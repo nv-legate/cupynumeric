@@ -27,11 +27,11 @@ legion
 gasnet*
 legion_defines.h
 realm_defines.h
-cunumeric/install_info.py
+cupynumeric/install_info.py
 /build/*
-/docs/cunumeric/build
-/docs/cunumeric/source/api/generated
-/docs/cunumeric/source/comparison/comparison_table.rst.inc
+/docs/cupynumeric/build
+/docs/cupynumeric/source/api/generated
+/docs/cupynumeric/source/comparison/comparison_table.rst.inc
 *.egg-info
 .cache
 .vscode

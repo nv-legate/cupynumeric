@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 x = mk_seq_array(np, (3, 4, 5))
 x_num = mk_seq_array(num, (3, 4, 5))
@@ -110,11 +110,11 @@ def test_empty_array_and_indices():
     ((4,), (0,), pytest.param((2, 2), marks=pytest.mark.xfail)),
     ids=lambda shape_in: f"(shape_in={shape_in})",
 )
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_default_mode(ndim, shape_in):
     # for shape_in=(2, 2) and ndim=4,
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError:
+    # In cuPyNumeric, it raises ValueError:
     # Point cannot exceed 4 dimensions set from LEGATE_MAX_DIM
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -138,11 +138,11 @@ def test_ndim_default_mode(ndim, shape_in):
     ((8,), pytest.param((3, 4), marks=pytest.mark.xfail)),
     ids=lambda shape_in: f"(shape_in={shape_in})",
 )
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_mode(ndim, mode, shape_in):
     # for shape_in=(3, 4) and ndim=4,
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError:
+    # In cuPyNumeric, it raises ValueError:
     # Point cannot exceed 4 dimensions set from LEGATE_MAX_DIM
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -260,7 +260,7 @@ class TestTakeErrors:
         # In Numpy,
         # for np.float32, it raises TypeError
         # for np.int64 and np.int32, it pass
-        # In cuNumeric,
+        # In cuPyNumeric,
         # for np.float32, it raises ValueError
         # for np.int32, it raises ValueError
         # for np.int64, it pass

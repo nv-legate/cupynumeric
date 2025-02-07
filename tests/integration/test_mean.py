@@ -1,4 +1,4 @@
-# Copyright 2021-2023 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 7
 
@@ -103,7 +103,7 @@ def test_where_broadcast(size):
 @pytest.mark.parametrize("axis", ((-3, -1), (-1, 0), (-2, 2), (0, 2)))
 def test_axis_tuple(axis):
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     size = (3, 4, 7)
     arr_np = np.random.randint(-5, 5, size=size)
     arr_num = num.array(arr_np)

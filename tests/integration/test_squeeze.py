@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
 
 import numpy as np
 import pytest
+from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 5
 SIZES = [
@@ -54,36 +55,28 @@ def test_none_array():
         num.squeeze(None)
 
 
-def test_num_invalid_axis():
+def test_invalid_axis() -> None:
     size = (1, 2, 1)
-    a = num.random.randint(low=-10, high=10, size=size)
+    a_np = np.random.randint(low=-10, high=10, size=size)
     msg = r"one"
     with pytest.raises(ValueError, match=msg):
-        num.squeeze(a, axis=1)
+        np.squeeze(a_np, axis=1)
 
-
-def test_array_invalid_axis():
-    size = (1, 2, 1)
-    a = num.random.randint(low=-10, high=10, size=size)
-    msg = r"one"
+    a_num = num.array(a_np)
     with pytest.raises(ValueError, match=msg):
-        a.squeeze(axis=1)
+        num.squeeze(a_num, axis=1)
 
 
-def test_num_axis_out_bound():
+def test_axis_out_bound() -> None:
     size = (1, 2, 1)
-    a = num.random.randint(low=-10, high=10, size=size)
-    msg = r"bounds"
-    with pytest.raises(np.AxisError, match=msg):
-        num.squeeze(a, axis=3)
+    a_np = np.random.randint(low=-10, high=10, size=size)
+    msg = r"axis 3 is out of bounds for array of dimension 3"
+    with pytest.raises(AxisError, match=msg):
+        np.squeeze(a_np, axis=3)
 
-
-def test_array_axis_out_bound():
-    size = (1, 2, 1)
-    a = num.random.randint(-10, 10, size=size)
-    msg = r"bounds"
-    with pytest.raises(np.AxisError, match=msg):
-        a.squeeze(axis=3)
+    a_num = num.array(a_np)
+    with pytest.raises(ValueError, match=msg):
+        num.squeeze(a_num, axis=3)
 
 
 @pytest.mark.parametrize("axes", (-1, -3))

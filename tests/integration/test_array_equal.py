@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_equal_values_with_different_dtype(dtype1, dtype2):
 def test_equal_nan_basic(arr, equal_nan):
     # If equal_nan is True,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     res_np = np.array_equal(arr, arr, equal_nan=equal_nan)
     res_num = num.array_equal(arr, arr, equal_nan=equal_nan)
     assert res_np == res_num
@@ -98,7 +98,7 @@ def test_equal_nan_basic(arr, equal_nan):
 def test_equal_nan_complex_values(equal_nan):
     # If equal_nan is True,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     a = np.array([1, 1 + 1j])
     b = a.copy()
     a.real = np.nan

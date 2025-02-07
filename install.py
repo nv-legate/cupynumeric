@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import annotations
 
 import argparse
 import multiprocessing
@@ -22,6 +23,7 @@ import platform
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 # Flush output on newlines
 sys.stdout.reconfigure(line_buffering=True)
@@ -53,9 +55,11 @@ class BooleanFlag(argparse.Action):
 
         option_strings = flatten(
             [
-                [opt, "--no-" + opt[2:], "--no" + opt[2:]]
-                if opt.startswith("--")
-                else [opt]
+                (
+                    [opt, "--no-" + opt[2:], "--no" + opt[2:]]
+                    if opt.startswith("--")
+                    else [opt]
+                )
                 for opt in option_strings
             ]
         )
@@ -104,13 +108,15 @@ def find_cmake_val(pattern, filepath):
 
 
 def was_previously_built_with_different_build_isolation(
-    isolated, cunumeric_build_dir
+    isolated, cupynumeric_build_dir
 ):
     if (
-        cunumeric_build_dir is not None
-        and os.path.exists(cunumeric_build_dir)
+        cupynumeric_build_dir is not None
+        and os.path.exists(cupynumeric_build_dir)
         and os.path.exists(
-            cmake_cache := os.path.join(cunumeric_build_dir, "CMakeCache.txt")
+            cmake_cache := os.path.join(
+                cupynumeric_build_dir, "CMakeCache.txt"
+            )
         )
     ):
         try:
@@ -123,9 +129,50 @@ def was_previously_built_with_different_build_isolation(
     return False
 
 
-def install_cunumeric(
+def find_legate_cmake_dir() -> Path:
+    r"""Try to determine the location of legate cmake files.
+
+    Returns
+    -------
+    Path
+        The directory containing the legate cmake files.
+
+    Raises
+    ------
+    RuntimeError
+        If legate cmake directory could not be found.
+    """
+    try:
+        import legate.install_info as lg_install_info
+    except (ImportError, ModuleNotFoundError) as e:
+        raise RuntimeError(
+            "Cannot determine Legate install directory. Please make sure "
+            "Legate is installed in the current Python environment."
+        ) from e
+
+    path = Path(lg_install_info.libpath).resolve()
+    if (path / "cmake" / "legate").exists():
+        # If this exists, then we were installed normally into a python or
+        # conda env.
+        return path
+
+    # Possibly installed in an editable installation, in which case legate
+    # config.cmake and friends will live in the root binary directory.
+    root_path = path.root
+    assert isinstance(root_path, str)
+    while not any(p.name == "legate-config.cmake" for p in path.iterdir()):
+        path = path.parent
+        if str(path) == root_path:
+            raise RuntimeError(
+                "Could not determine directory containing legate CMake files"
+            )
+    return path
+
+
+def install_cupynumeric(
     arch,
     build_isolation,
+    with_tests,
     check_bounds,
     clean_first,
     cmake_exe,
@@ -134,6 +181,7 @@ def install_cunumeric(
     cuda_dir,
     cuda,
     curand_dir,
+    cusolvermp_dir,
     cutensor_dir,
     debug_release,
     debug,
@@ -152,7 +200,6 @@ def install_cunumeric(
     spy,
     tblis_dir,
     thread_count,
-    thrust_dir,
     unknown,
     verbose,
 ):
@@ -170,6 +217,7 @@ def install_cunumeric(
         print("Options are:")
         print("arch: ", arch)
         print("build_isolation: ", build_isolation)
+        print("with_tests: ", with_tests)
         print("check_bounds: ", check_bounds)
         print("clean_first: ", clean_first)
         print("cmake_exe: ", cmake_exe)
@@ -178,6 +226,7 @@ def install_cunumeric(
         print("cuda_dir: ", cuda_dir)
         print("cuda: ", cuda)
         print("curand_dir: ", curand_dir)
+        print("cusolvermp_dir: ", cusolvermp_dir)
         print("cutensor_dir: ", cutensor_dir)
         print("debug_release: ", debug_release)
         print("debug: ", debug)
@@ -196,7 +245,6 @@ def install_cunumeric(
         print("spy: ", spy)
         print("tblis_dir: ", tblis_dir)
         print("thread_count: ", thread_count)
-        print("thrust_dir: ", thrust_dir)
         print("unknown: ", unknown)
         print("verbose: ", verbose)
 
@@ -205,7 +253,7 @@ def install_cunumeric(
     dirname = os.path.dirname
     realpath = os.path.realpath
 
-    cunumeric_dir = dirname(realpath(__file__))
+    cupynumeric_dir = dirname(realpath(__file__))
 
     if thread_count is None:
         thread_count = multiprocessing.cpu_count()
@@ -214,7 +262,7 @@ def install_cunumeric(
         if path is None or (path := str(path)) == "":
             return None
         if not os.path.isabs(path):
-            path = join(cunumeric_dir, path)
+            path = join(cupynumeric_dir, path)
         if not exists(path := realpath(path)):
             print(f"Error: path does not exist: {path}")
             sys.exit(1)
@@ -223,47 +271,39 @@ def install_cunumeric(
     cuda_dir = validate_path(cuda_dir)
     nccl_dir = validate_path(nccl_dir)
     tblis_dir = validate_path(tblis_dir)
-    thrust_dir = validate_path(thrust_dir)
     curand_dir = validate_path(curand_dir)
     gasnet_dir = validate_path(gasnet_dir)
+    cusolvermp_dir = validate_path(cusolvermp_dir)
     cutensor_dir = validate_path(cutensor_dir)
     openblas_dir = validate_path(openblas_dir)
 
-    try:
-        import legate.install_info as lg_install_info
-    except ImportError:
-        raise RuntimeError(
-            "Cannot determine Legate install directory. Please make sure "
-            "legate.core is installed in the current Python environment."
-        )
-
-    legate_dir = dirname(lg_install_info.libpath)
+    legate_dir = find_legate_cmake_dir()
 
     if verbose:
         print("cuda_dir: ", cuda_dir)
         print("nccl_dir: ", nccl_dir)
         print("tblis_dir: ", tblis_dir)
         print("legate_dir: ", legate_dir)
-        print("thrust_dir: ", thrust_dir)
         print("curand_dir: ", curand_dir)
         print("gasnet_dir: ", gasnet_dir)
+        print("cusolvermp_dir: ", cusolvermp_dir)
         print("cutensor_dir: ", cutensor_dir)
         print("openblas_dir: ", openblas_dir)
 
-    skbuild_dir = join(cunumeric_dir, "_skbuild")
-    cunumeric_build_dir = scikit_build_cmake_build_dir(skbuild_dir)
+    skbuild_dir = join(cupynumeric_dir, "_skbuild")
+    cupynumeric_build_dir = scikit_build_cmake_build_dir(skbuild_dir)
 
     if was_previously_built_with_different_build_isolation(
-        build_isolation and not editable, cunumeric_build_dir
+        build_isolation and not editable, cupynumeric_build_dir
     ):
         print("Performing a clean build to accommodate build isolation.")
         clean_first = True
 
     cmd_env = dict(os.environ.items())
 
-    # Explicitly uninstall cunumeric if doing a clean/isolated build.
+    # Explicitly uninstall cupynumeric if doing a clean/isolated build.
     #
-    # A prior installation may have built and installed cunumeric C++
+    # A prior installation may have built and installed cupynumeric C++
     # dependencies (like BLAS or tblis).
     #
     # CMake will find and use them for the current build, which would normally
@@ -275,23 +315,23 @@ def install_cunumeric(
     # these dependencies, triggering CMake to build and install them again.
     if clean_first or (build_isolation and not editable):
         execute_command(
-            [sys.executable, "-m", "pip", "uninstall", "-y", "cunumeric"],
+            [sys.executable, "-m", "pip", "uninstall", "-y", "cupynumeric"],
             verbose,
             ignore_errors=True,
-            cwd=cunumeric_dir,
+            cwd=cupynumeric_dir,
             env=cmd_env,
         )
 
     if clean_first:
         shutil.rmtree(skbuild_dir, ignore_errors=True)
-        shutil.rmtree(join(cunumeric_dir, "dist"), ignore_errors=True)
-        shutil.rmtree(join(cunumeric_dir, "build"), ignore_errors=True)
+        shutil.rmtree(join(cupynumeric_dir, "dist"), ignore_errors=True)
+        shutil.rmtree(join(cupynumeric_dir, "build"), ignore_errors=True)
         shutil.rmtree(
-            join(cunumeric_dir, "cunumeric.egg-info"),
+            join(cupynumeric_dir, "cupynumeric.egg-info"),
             ignore_errors=True,
         )
 
-    # Configure and build cuNumeric via setup.py
+    # Configure and build cuPyNumeric via setup.py
     pip_install_cmd = [sys.executable, "-m", "pip", "install"]
 
     install_dir = None
@@ -338,8 +378,8 @@ def install_cunumeric(
 
     cmake_flags += f"""\
 -DCMAKE_BUILD_TYPE={(
-    "Debug" if debug else "RelWithDebInfo" if debug_release else "Release"
-)}
+        "Debug" if debug else "RelWithDebInfo" if debug_release else "Release"
+    )}
 -DBUILD_SHARED_LIBS=ON
 -DCMAKE_CUDA_ARCHITECTURES={str(arch)}
 -DLegion_MAX_DIM={str(maxdim)}
@@ -351,6 +391,7 @@ def install_cunumeric(
 -DLegion_USE_LLVM={("ON" if llvm else "OFF")}
 -DLegion_NETWORKS={";".join(networks)}
 -DLegion_USE_HDF5={("ON" if hdf else "OFF")}
+-Dcupynumeric_BUILD_TESTS={("ON" if with_tests else "OFF")}
 """.splitlines()
 
     if march:
@@ -365,17 +406,17 @@ def install_cunumeric(
         cmake_flags += ["-DGASNet_CONDUIT=%s" % conduit]
     if tblis_dir:
         cmake_flags += ["-Dtblis_ROOT=%s" % tblis_dir]
-    if thrust_dir:
-        cmake_flags += ["-DThrust_ROOT=%s" % thrust_dir]
     if openblas_dir:
         cmake_flags += ["-DBLAS_DIR=%s" % openblas_dir]
+    if cusolvermp_dir:
+        cmake_flags += ["-DCUSOLVERMP_DIR=%s" % cusolvermp_dir]
     if cutensor_dir:
         cmake_flags += ["-Dcutensor_DIR=%s" % cutensor_dir]
     # A custom path to cuRAND is ignored when CUDA support is available
     if cuda and curand_dir is not None:
-        cmake_flags += ["-Dcunumeric_cuRAND_INCLUDE_DIR=%s" % curand_dir]
+        cmake_flags += ["-Dcupynumeric_cuRAND_INCLUDE_DIR=%s" % curand_dir]
 
-    cmake_flags += ["-Dlegate_core_ROOT=%s" % legate_dir]
+    cmake_flags += ["-Dlegate_ROOT=%s" % str(legate_dir)]
     cmake_flags += ["-DCMAKE_BUILD_PARALLEL_LEVEL=%s" % thread_count]
 
     cmake_flags += extra_flags
@@ -394,18 +435,18 @@ def install_cunumeric(
         }
     )
 
-    execute_command(pip_install_cmd, verbose, cwd=cunumeric_dir, env=cmd_env)
+    execute_command(pip_install_cmd, verbose, cwd=cupynumeric_dir, env=cmd_env)
 
 
 def driver():
-    parser = argparse.ArgumentParser(description="Install cuNumeric.")
+    parser = argparse.ArgumentParser(description="Install cuPyNumeric.")
     parser.add_argument(
         "--debug",
         dest="debug",
         action="store_true",
         required=False,
         default=os.environ.get("DEBUG", "0") == "1",
-        help="Build cuNumeric with no optimizations.",
+        help="Build cuPyNumeric with no optimizations.",
     )
     parser.add_argument(
         "--debug-release",
@@ -413,8 +454,16 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("DEBUG_RELEASE", "0") == "1",
-        help="Build cuNumeric with optimizations, but include debugging "
+        help="Build cuPyNumeric with optimizations, but include debugging "
         "symbols.",
+    )
+    parser.add_argument(
+        "--with-tests",
+        dest="with_tests",
+        action="store_true",
+        required=False,
+        default=False,
+        help="Build cuPyNumeric tests.",
     )
     parser.add_argument(
         "--check-bounds",
@@ -422,21 +471,21 @@ def driver():
         action="store_true",
         required=False,
         default=False,
-        help="Build cuNumeric with bounds checks.",
+        help="Build cuPyNumeric with bounds checks.",
     )
     parser.add_argument(
         "--max-dim",
         dest="maxdim",
         type=int,
         default=int(os.environ.get("LEGION_MAX_DIM", 4)),
-        help="Maximum number of dimensions that cuNumeric will support",
+        help="Maximum number of dimensions that cuPyNumeric will support",
     )
     parser.add_argument(
         "--max-fields",
         dest="maxfields",
         type=int,
         default=int(os.environ.get("LEGION_MAX_FIELDS", 256)),
-        help="Maximum number of fields that cuNumeric will support",
+        help="Maximum number of fields that cuPyNumeric will support",
     )
     parser.add_argument(
         "--network",
@@ -463,7 +512,7 @@ def driver():
         default=os.environ.get("OPENBLAS_PATH"),
         help="Path to OpenBLAS installation directory. Note that providing a "
         "user-defined BLAS library may lead to dynamic library conflicts with "
-        "BLAS loaded by Python's Numpy. When using cuNumeric's BLAS, this "
+        "BLAS loaded by Python's Numpy. When using cuPyNumeric's BLAS, this "
         "issue is prevented by a custom library name.",
     )
     parser.add_argument(
@@ -481,7 +530,17 @@ def driver():
         required=False,
         default=os.environ.get("CURAND_PATH"),
         help="Path to cuRAND installation directory. This flag is ignored "
-        "if Legate Core was built with CUDA support.",
+        "if Legate was built with CUDA support.",
+    )
+    # TODO(jfaibussowit) maybe split to --with-cusolvermp [bool]
+    # and a --with-cusolvermp-dir [dir]
+    parser.add_argument(
+        "--with-cusolvermp",
+        dest="cusolvermp_dir",
+        metavar="DIR",
+        required=False,
+        default=os.environ.get("CUSOLVERMP_PATH"),
+        help="Path to cuSolverMp installation directory.",
     )
     parser.add_argument(
         "--with-cutensor",
@@ -490,14 +549,6 @@ def driver():
         required=False,
         default=os.environ.get("CUTENSOR_PATH"),
         help="Path to cuTensor installation directory.",
-    )
-    parser.add_argument(
-        "--with-thrust",
-        dest="thrust_dir",
-        metavar="DIR",
-        required=False,
-        default=os.environ.get("THRUST_PATH"),
-        help="Path to Thrust installation directory.",
     )
     parser.add_argument(
         "--with-nccl",
@@ -530,7 +581,7 @@ def driver():
         "--cuda",
         action=BooleanFlag,
         default=os.environ.get("USE_CUDA", "0") == "1",
-        help="Build cuNumeric with CUDA support.",
+        help="Build cuPyNumeric with CUDA support.",
     )
     parser.add_argument(
         "--with-cuda",
@@ -545,14 +596,14 @@ def driver():
         dest="arch",
         action="store",
         required=False,
-        default="NATIVE",
+        default="all-major",
         help="Specify the target GPU architecture.",
     )
     parser.add_argument(
         "--openmp",
         action=BooleanFlag,
         default=os.environ.get("USE_OPENMP", "0") == "1",
-        help="Build cuNumeric with OpenMP support.",
+        help="Build cuPyNumeric with OpenMP support.",
     )
     parser.add_argument(
         "--march",
@@ -567,7 +618,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("USE_LLVM", "0") == "1",
-        help="Build cuNumeric with LLVM support.",
+        help="Build cuPyNumeric with LLVM support.",
     )
     parser.add_argument(
         "--hdf5",
@@ -576,7 +627,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("USE_HDF", "0") == "1",
-        help="Build cuNumeric with HDF support.",
+        help="Build cuPyNumeric with HDF support.",
     )
     parser.add_argument(
         "--spy",
@@ -584,7 +635,7 @@ def driver():
         action="store_true",
         required=False,
         default=os.environ.get("USE_SPY", "0") == "1",
-        help="Build cuNumeric with detailed Legion Spy enabled.",
+        help="Build cuPyNumeric with detailed Legion Spy enabled.",
     )
     parser.add_argument(
         "--conduit",
@@ -596,7 +647,7 @@ def driver():
         # See https://github.com/nv-legate/legate.core/issues/294.
         choices=["ibv", "ucx", "aries", "mpi"],
         default=os.environ.get("CONDUIT"),
-        help="Build cuNumeric with specified GASNet conduit.",
+        help="Build cuPyNumeric with specified GASNet conduit.",
     )
     parser.add_argument(
         "--clean",
@@ -652,7 +703,7 @@ def driver():
     )
     args, unknown = parser.parse_known_args()
 
-    install_cunumeric(unknown=unknown, **vars(args))
+    install_cupynumeric(unknown=unknown, **vars(args))
 
 
 if __name__ == "__main__":

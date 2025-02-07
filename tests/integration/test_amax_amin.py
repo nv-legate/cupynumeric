@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 FUNCS = ("amax", "amin")
 
 
 @pytest.mark.parametrize("initial", (None, -2, 0, 0.5, 2))
 @pytest.mark.parametrize("keepdims", [True, False])
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_basic(func_name, ndim, keepdims, initial):
     shape = (5,) * ndim
@@ -54,7 +54,7 @@ def test_basic(func_name, ndim, keepdims, initial):
 def test_src_dt(func_name, keepdims, src_dt):
     # For src_dt=np.complex128,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     ndim = 3
     shape = (5,) * ndim
     in_np = np.random.randint(-5, 5, size=shape).astype(src_dt)
@@ -71,7 +71,7 @@ def test_src_dt(func_name, keepdims, src_dt):
 
 @pytest.mark.parametrize("initial", (None, -2, 0, 0.5, 2))
 @pytest.mark.parametrize("keepdims", [True, False])
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_axis(func_name, ndim, keepdims, initial):
     shape = (5,) * ndim
@@ -97,7 +97,7 @@ def test_axis(func_name, ndim, keepdims, initial):
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_axis_tuple(func_name, keepdims, axes):
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     shape = (3, 4, 5)
     in_np = np.random.randint(-5, 5, size=shape)
     in_num = num.array(in_np)
@@ -151,7 +151,7 @@ def test_out_dim1(func_name, keepdims):
 
 @pytest.mark.parametrize("initial", (None, -2, 0, 0.5, 2))
 @pytest.mark.parametrize("keepdims", [True, False])
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_out(func_name, ndim, keepdims, initial):
     shape = (5,) * ndim
@@ -189,7 +189,7 @@ def test_out(func_name, ndim, keepdims, initial):
 def test_out_with_dtype(func_name, keepdims, out_dt):
     # For out_dt=np.complex128
     # In Numpy, it pass
-    # In cuNumeric, it raises KeyError
+    # In cuPyNumeric, it raises KeyError
     ndim = 3
     shape = (5,) * ndim
     in_np = np.random.randint(-5, 5, size=shape)
@@ -216,7 +216,7 @@ def test_out_with_dtype(func_name, keepdims, out_dt):
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_where(func_name):
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     shape = (3, 4, 5)
     in_np = np.random.randint(-5, 5, size=shape)
     in_num = num.array(in_np)

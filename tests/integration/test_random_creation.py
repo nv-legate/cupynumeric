@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
 #
 
 import os
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 import pytest
 from utils.random import assert_distribution
 
-import cunumeric as num
+import cupynumeric as num
 
 LEGATE_TEST = os.environ.get("LEGATE_TEST", None) == "1"
-EAGER_TEST = os.environ.get("CUNUMERIC_FORCE_THUNK", None) == "eager"
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 def test_randn():
@@ -41,15 +41,15 @@ def test_randn():
 
 def reseed_and_gen_random(
     func: str, seed: Any, *args: Any, **kwargs: Any
-) -> Tuple[Any, Any]:
-    """Reseeed singleton rng and generate random in NumPy and cuNumeric."""
+) -> tuple[Any, Any]:
+    """Reseeed singleton rng and generate random in NumPy and cuPyNumeric."""
     return gen_random_from_both(func, *args, **kwargs)
 
 
 def gen_random_from_both(
     func: str, *args: Any, **kwargs: Any
-) -> Tuple[Any, Any]:
-    """Call the same random function from both NumPy and cuNumeric."""
+) -> tuple[Any, Any]:
+    """Call the same random function from both NumPy and cuPyNumeric."""
     return (
         getattr(np.random, func)(*args, **kwargs),
         getattr(num.random, func)(*args, **kwargs),
@@ -63,30 +63,21 @@ def gen_random_from_both(
             12345,
             marks=pytest.mark.xfail(
                 not EAGER_TEST,
-                reason="cuNumeric does not respect the singleton generator",
+                reason="cuPyNumeric does not respect the singleton generator",
             ),
-            # https://github.com/nv-legate/cunumeric/issues/601
+            # https://github.com/nv-legate/cupynumeric/issues/601
             # NumPy: generates the same array after initializing with the seed.
-            # cuNumeric: keeps generating different arrays.
+            # cuPyNumeric: keeps generating different arrays.
             # seed is respected in Eager mode.
         ),
-        pytest.param(
-            None,
-            marks=pytest.mark.xfail(
-                not num.runtime.has_curand,
-                reason="legacy RNG fallback treats seed(None) as seed(0)",
-            ),
-            # https://github.com/nv-legate/cunumeric/issues/1018
-            # NumPy: seed(None) is equivalent to seed(<get_system_random>())
-            # cuNumeric non-cuRAND fallback: seed(None) equivalent to seed(0)
-        ),
+        pytest.param(None),
         pytest.param(
             (4, 6, 8),
             marks=pytest.mark.xfail(
-                reason="cuNumeric does not take tuple as seed"
+                reason="cuPyNumeric does not take tuple as seed"
             ),
             # NumPy: pass
-            # cuNumeric: from runtime.set_next_random_epoch(int(init)):
+            # cuPyNumeric: from runtime.set_next_random_epoch(int(init)):
             # TypeError: int() argument must be a string, a bytes-like object
             # or a real number, not 'tuple'
         ),
@@ -104,7 +95,7 @@ def test_singleton_seed(seed):
 
 @pytest.mark.xfail(
     EAGER_TEST,
-    reason="cuNumeric does not respect seed in Eager mode",
+    reason="cuPyNumeric does not respect seed in Eager mode",
 )
 @pytest.mark.parametrize(
     "seed",
@@ -113,9 +104,9 @@ def test_singleton_seed(seed):
         pytest.param(
             (0, 4, 5),
             marks=pytest.mark.xfail(
-                reason="cuNumeric fails to generate random"
+                reason="cuPyNumeric fails to generate random"
                 # NumPy: pass
-                # cuNumeric: struct.error: required argument is not an integer
+                # cuPyNumeric: struct.error:required argument is not an integer
             ),
         ),
     ],
@@ -130,11 +121,7 @@ def test_default_rng_seed(seed):
 
 @pytest.mark.xfail(
     EAGER_TEST,
-    reason="cuNumeric does not respect seed in Eager mode",
-)
-@pytest.mark.xfail(
-    not num.runtime.has_curand,
-    reason="XORWOW not available without cuRAND",
+    reason="cuPyNumeric does not respect seed in Eager mode",
 )
 def test_default_rng_bitgenerator():
     seed = 12345
@@ -148,8 +135,9 @@ def test_default_rng_bitgenerator():
 
 @pytest.mark.xfail(
     EAGER_TEST,
-    reason="cuNumeric does not respect seed in Eager mode",
+    reason="cuPyNumeric does not respect seed in Eager mode",
 )
+@pytest.mark.xfail(reason="cupynumeric.internal#135")
 def test_default_rng_generator():
     steps = 3
     seed = 12345
@@ -183,8 +171,7 @@ SMALL_RNG_SIZES = [5, 1024, (1, 2)]
 LARGE_RNG_SIZES = [10000, (20, 50, 4)]
 ALL_RNG_SIZES = SMALL_RNG_SIZES + LARGE_RNG_SIZES + [None]
 INT_DTYPES = [np.int64, np.int32, np.int16]
-UINT_DTYPES = [np.uint64, np.uint16, np.uint0]
-FLOAT_DTYPES = [np.float16, np.float128, np.float64]
+UINT_DTYPES = [np.uint64, np.uint16, np.uintp]
 
 
 @pytest.mark.parametrize("size", ALL_RNG_SIZES, ids=str)
@@ -228,13 +215,13 @@ def test_random_integers_high_limit():
     assert np.max(arr_num) <= limit
 
 
-@pytest.mark.xfail(reason="cuNumeric raises NotImplementedError")
+@pytest.mark.xfail(reason="cuPyNumeric raises NotImplementedError")
 @pytest.mark.parametrize(
     "low, high", [(3000.45, 15000), (123, 456.7), (12.3, 45.6)], ids=str
 )
 def test_randint_float_range(low, high):
     # NumPy returns integer scalar
-    # cuNumeric raises one of the following
+    # cuPyNumeric raises one of the following
     # NotImplementedError: 'low' must be an integer
     # NotImplementedError: 'high' must be an integer or None
     arr_np, arr_num = gen_random_from_both(
@@ -246,14 +233,14 @@ def test_randint_float_range(low, high):
 
 
 @pytest.mark.xfail(
-    not num.runtime.has_curand or not EAGER_TEST,
-    reason="cuNumeric raises NotImplementedError",
+    not EAGER_TEST,
+    reason="cuPyNumeric raises NotImplementedError",
 )
 @pytest.mark.parametrize("size", ALL_RNG_SIZES, ids=str)
 @pytest.mark.parametrize("low, high", [(1000, 65535), (0, 1024)], ids=str)
 @pytest.mark.parametrize("dtype", UINT_DTYPES, ids=str)
 def test_randint_uint(low, high, dtype, size):
-    # NotImplementedError: cunumeric.random.randint must be given an integer
+    # NotImplementedError: cupynumeric.random.randint must be given an integer
     # dtype
     # NotImplementedError: type for random.integers has to be int64 or int32
     # or int16
@@ -290,8 +277,8 @@ def test_randint_distribution(low, high, size, dtype):
 
 
 @pytest.mark.xfail(
-    not num.runtime.has_curand or not EAGER_TEST,
-    reason="cuNumeric raises NotImplementedError",
+    not EAGER_TEST,
+    reason="cuPyNumeric raises NotImplementedError",
 )
 @pytest.mark.parametrize("size", (1024, 1025))
 def test_randint_bool(size):
@@ -300,13 +287,6 @@ def test_randint_bool(size):
     assert_distribution(
         arr_num, np.mean(arr_np), np.std(arr_np), mean_tol=0.05
     )
-    # NumPy pass
-    # cuNumeric not num.runtime.has_curand:
-    # NotImplementedError: cunumeric.random.randint must be given an integer
-    # dtype
-    # cuNumeric LEGATE_TEST=1 or size > 1024:
-    # NotImplementedError: type for random.integers has to be int64 or int32
-    # or int16
 
 
 @pytest.mark.parametrize("low, high", LOW_HIGH, ids=str)
@@ -328,7 +308,7 @@ def test_random_sample_basic_stats(size):
 
 
 @pytest.mark.xfail(
-    reason="NumPy returns scalar, cuNumeric returns 1-dim array"
+    reason="NumPy returns scalar, cuPyNumeric returns 1-dim array"
 )
 def test_random_sample_size_none():
     arr_np, arr_num = gen_random_from_both("random_sample", size=None)
@@ -375,7 +355,7 @@ class TestRandomErrors:
         ],
         ids=lambda x: f" {str(getattr(x, 'expected_exception', x))} ",
     )
-    @pytest.mark.xfail(reason="NumPy raises exceptions, cuNumeric pass")
+    @pytest.mark.xfail(reason="NumPy raises exceptions, cuPyNumeric pass")
     def test_invalid_seed(self, seed, expected_exc):
         self.assert_exc_from_both("seed", expected_exc, seed)
         # -100: NumPy raises ValueError: Seed must be between 0 and 2**32 - 1
@@ -383,7 +363,7 @@ class TestRandomErrors:
         # dtype('float64') to dtype('int64') according to the rule 'safe'
         # "abc": TypeError: Cannot cast scalar from dtype('<U3') to
         # dtype('int64') according to the rule 'safe'
-        # cuNumeric accepts both -100 and 12.0, raises ValueError on "abc"
+        # cuPyNumeric accepts both -100 and 12.0, raises ValueError on "abc"
         # ValueError: invalid literal for int() with base 10: 'abc'
 
     @pytest.mark.parametrize(
@@ -431,10 +411,10 @@ class TestRandomErrors:
     def test_randint_invalid_size(self, size, expected_exc):
         self.assert_exc_from_both("randint", expected_exc, 10000, size=size)
 
-    @pytest.mark.xfail(reason="cuNumeric does not check the bound")
+    @pytest.mark.xfail(reason="cuPyNumeric does not check the bound")
     def test_randint_int16_bound(self):
         # NumPy: ValueError: high is out of bounds for int16
-        # cuNumeric: array([13642], dtype=int16)
+        # cuPyNumeric: array([13642], dtype=int16)
         expected_exc = ValueError
         self.assert_exc_from_both(
             "randint", expected_exc, 34567, dtype=np.int16
@@ -450,29 +430,29 @@ class TestRandomErrors:
             pytest.param(
                 str,
                 marks=pytest.mark.xfail(
-                    reason="NumPy raise TypeError, cuNumeric pass"
+                    reason="NumPy raise TypeError, cuPyNumeric pass"
                 ),
             ),
             # NumPy: TypeError: Unsupported dtype dtype('<U') for randint
-            # cuNumeric: array(['4'], dtype='<U1')
+            # cuPyNumeric: array(['4'], dtype='<U1')
             pytest.param(
                 np.float16,
                 marks=pytest.mark.xfail(
-                    reason="NumPy: TypeError, cuNumeric: NotImplementedError"
+                    reason="NumPy: TypeError, cuPyNumeric: NotImplementedError"
                 ),
             ),
             # NumPy: TypeError: Unsupported dtype dtype('float16') for randint
-            # cuNumeric with LEGATE_TEST=1: NotImplementedError: type for
+            # cuPyNumeric with LEGATE_TEST=1: NotImplementedError: type for
             # random.integers has to be int64 or int32 or int16
             # without LEGATE_TEST=1: array([2336.], dtype=float16)
             pytest.param(
                 None,
                 marks=pytest.mark.xfail(
-                    reason="NumPy default to float, cuNumeric pass"
+                    reason="NumPy default to float, cuPyNumeric pass"
                 ),
             ),
             # NumPy: TypeError: Unsupported dtype dtype('float64') for randint
-            # cuNumeric: array([401.])
+            # cuPyNumeric: array([401.])
         ],
         ids=str,
     )
@@ -480,7 +460,7 @@ class TestRandomErrors:
         expected_exc = TypeError
         self.assert_exc_from_both("randint", expected_exc, 10000, dtype=dtype)
 
-    @pytest.mark.xfail(reason="cuNumeric pass or raise NotImplementedError")
+    @pytest.mark.xfail(reason="cuPyNumeric pass or raise NotImplementedError")
     @pytest.mark.parametrize("size", (1024, 1025))
     def test_randint_bool(self, size):
         expected_exc = ValueError
@@ -488,10 +468,10 @@ class TestRandomErrors:
             "randint", expected_exc, 10000, size=size, dtype=bool
         )
         # NumPy: ValueError: high is out of bounds for bool
-        # cuNumeric size > 1024 or LEGATE_TEST=1:
+        # cuPyNumeric size > 1024 or LEGATE_TEST=1:
         # NotImplementedError: type for random.integers has to be int64 or
         # int32 or int16
-        # cuNumeric size <= 1024 and LEGATE_TEST=0: returns array of booleans
+        # cuPyNumeric size <= 1024 and LEGATE_TEST=0: returns array of booleans
 
     @pytest.mark.parametrize(
         "size, expected_exc",

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 """
 This is a batched LSTM forward and backward pass
 """
-import cunumeric as np
+import cupynumeric as np
 
 
 class LSTM:

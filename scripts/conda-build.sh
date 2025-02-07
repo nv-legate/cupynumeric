@@ -1,22 +1,21 @@
 #! /usr/bin/env bash
 
-# mamba create -n cunumeric_build python=$PYTHON_VERSION boa git
+# mamba create -n cupynumeric_build python=$PYTHON_VERSION boa git
 
 cd $(dirname "$(realpath "$0")")/..
 
-mkdir -p /tmp/conda-build/cunumeric
-rm -rf /tmp/conda-build/cunumeric/*
+mkdir -p /tmp/conda-build/cupynumeric
+rm -rf /tmp/conda-build/cupynumeric/*
 
-PYTHON_VERSION="${PYTHON_VERSION:-3.9}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.10}"
 
 CUDA="$(nvcc --version | head -n4 | tail -n1 | cut -d' ' -f5 | cut -d',' -f1).*" \
 conda mambabuild \
     --numpy 1.22 \
-    --python $PYTHON_VERSION \
     --override-channels \
-    -c conda-forge -c nvidia \
+    -c conda-forge -c https://github.com/nv-legate/ucx-package/raw/main \
     -c file:///tmp/conda-build/legate_core \
-    --croot /tmp/conda-build/cunumeric \
+    --croot /tmp/conda-build/cupynumeric \
     --no-test \
     --no-verify \
     --no-build-id \

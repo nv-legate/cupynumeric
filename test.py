@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,29 +18,46 @@ from __future__ import annotations
 
 import sys
 
-from legate.tester import PER_FILE_ARGS, SKIPPED_EXAMPLES
+from legate.tester import CustomTest, FeatureType
 from legate.tester.config import Config
+from legate.tester.project import Project
 from legate.tester.test_plan import TestPlan
 from legate.tester.test_system import TestSystem
+from legate.util.types import EnvDict
 
-SKIPPED_EXAMPLES.update(
-    {
-        "examples/ingest.py",
-        "examples/kmeans_sort.py",
-        "examples/lstm_full.py",
-        "examples/wgrad.py",
-    }
-)
 
-PER_FILE_ARGS.update(
-    {
-        "examples/lstm_full.py": ["--file", "resources/lstm_input.txt"],
-    }
-)
+class CPNProject(Project):
+    def custom_files(self) -> list[CustomTest]:
+        return [
+            CustomTest("examples/quantiles.py"),
+            CustomTest("examples/sort.py"),
+            CustomTest("tests/integration/test_argsort.py"),
+            CustomTest("tests/integration/test_msort.py"),
+            CustomTest("tests/integration/test_nanpercentiles.py"),
+            CustomTest("tests/integration/test_nanquantiles.py"),
+            CustomTest("tests/integration/test_partition.py"),
+            CustomTest("tests/integration/test_percentiles.py"),
+            CustomTest("tests/integration/test_quantiles.py"),
+            CustomTest("tests/integration/test_sort_complex.py"),
+            CustomTest("tests/integration/test_sort.py"),
+            CustomTest("tests/integration/test_unique.py"),
+        ]
+
+    def stage_env(self, feature: FeatureType) -> EnvDict:
+        match feature:
+            case "eager":
+                return {
+                    "CUPYNUMERIC_FORCE_THUNK": "eager",
+                    "CUPYNUMERIC_MIN_CPU_CHUNK": "2000000000",
+                    "CUPYNUMERIC_MIN_OMP_CHUNK": "2000000000",
+                    "CUPYNUMERIC_MIN_GPU_CHUNK": "2000000000",
+                }
+            case _:
+                return {}
 
 
 if __name__ == "__main__":
-    config = Config(sys.argv)
+    config = Config(sys.argv, project=CPNProject())
 
     system = TestSystem(dry_run=config.dry_run)
 

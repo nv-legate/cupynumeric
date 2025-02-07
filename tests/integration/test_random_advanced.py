@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,19 +18,16 @@ import numpy as np
 import pytest
 from utils.random import ModuleGenerator, assert_distribution
 
-import cunumeric as num
+import cupynumeric as num
 
 LEGATE_TEST = os.environ.get("LEGATE_TEST", None) == "1"
-if not num.runtime.has_curand:
-    pytestmark = pytest.mark.skip()
-    BITGENERATOR_ARGS = []
-else:
-    BITGENERATOR_ARGS = [
-        ModuleGenerator,
-        num.random.XORWOW,
-        num.random.MRG32k3a,
-        num.random.PHILOX4_32_10,
-    ]
+
+BITGENERATOR_ARGS = [
+    ModuleGenerator,
+    num.random.XORWOW,
+    num.random.MRG32k3a,
+    num.random.PHILOX4_32_10,
+]
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
@@ -124,7 +121,7 @@ def test_geometric(t):
             (1.2, 3.1415),
             marks=pytest.mark.xfail,
             # NumPy returns 1-dim array
-            # cuNumeric raises TypeError: float() argument must be a string
+            # cuPyNumeric raises TypeError: float() argument must be a string
             # or a real number, not 'tuple'
         ),
     ),
@@ -222,13 +219,13 @@ def test_random_size_none(func, args):
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
     a_np = getattr(gen_np, func)(*args, size=None)
     a_num = getattr(gen_num, func)(*args, size=None)
-    # cuNumeric returns singleton array
+    # cuPyNumeric returns singleton array
     # NumPy returns scalar
     assert np.ndim(a_np) == np.ndim(a_num)
 
 
 class TestRandomErrors:
-    # cuNumeric zipf hangs on the invalid args when LEGATE_TEST=1
+    # cuPyNumeric zipf hangs on the invalid args when LEGATE_TEST=1
     @pytest.mark.skipif(LEGATE_TEST, reason="Test hang when LEGATE_TEST=1")
     @pytest.mark.parametrize(
         "dist, expected_exc",

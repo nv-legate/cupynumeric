@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,18 +17,14 @@ import numpy as np
 import pytest
 from utils.random import ModuleGenerator, assert_distribution
 
-import cunumeric as num
+import cupynumeric as num
 
-if not num.runtime.has_curand:
-    pytestmark = pytest.mark.skip()
-    BITGENERATOR_ARGS = []
-else:
-    BITGENERATOR_ARGS = [
-        ModuleGenerator,
-        num.random.XORWOW,
-        num.random.MRG32k3a,
-        num.random.PHILOX4_32_10,
-    ]
+BITGENERATOR_ARGS = [
+    ModuleGenerator,
+    num.random.XORWOW,
+    num.random.MRG32k3a,
+    num.random.PHILOX4_32_10,
+]
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
@@ -144,7 +140,7 @@ def test_gamma_size_none(func):
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
     a_np = getattr(gen_np, func)(3.1415, 1.414, size=None)
     a_num = getattr(gen_num, func)(3.1415, 1.414, size=None)
-    # cuNumeric returns singleton array
+    # cuPyNumeric returns singleton array
     # NumPy returns scalar
     assert np.ndim(a_np) == np.ndim(a_num)
 

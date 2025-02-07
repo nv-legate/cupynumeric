@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,14 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import (
+    MAX_DIM_RANGE,
+    ONE_MAX_DIM_RANGE,
+    TWO_MAX_DIM_RANGE,
+    AxisError,
+)
 
-import cunumeric as num
+import cupynumeric as num
 
 ARG_FUNCS = ("argmax", "argmin")
 
@@ -57,7 +62,7 @@ class TestArgReduceErrors:
         func = getattr(num, func_name)
 
         msg = r"out of bounds"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             func(in_num, axis=ndim + 1)
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
@@ -68,7 +73,7 @@ class TestArgReduceErrors:
         func = getattr(num, func_name)
 
         msg = r"out of bounds"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             func(in_num, axis=-(ndim + 1))
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
@@ -103,7 +108,7 @@ class TestArgMaxAndArgMin:
     """
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_argmax_and_argmin_basic(self, func_name, ndim, keepdims):
         shape = (5,) * ndim
@@ -119,7 +124,7 @@ class TestArgMaxAndArgMin:
         )
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_argmax_and_argmin_axis(self, func_name, ndim, keepdims):
         shape = (5,) * ndim
@@ -174,7 +179,7 @@ class TestArgMaxAndArgMin:
         assert np.array_equal(res_np, res_num)
 
     @pytest.mark.parametrize("func_name", ARG_FUNCS)
-    @pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
     @pytest.mark.parametrize("keepdims", [True, False])
     def test_argmax_and_argmin_out(self, func_name, ndim, keepdims):
         shape = (5,) * ndim

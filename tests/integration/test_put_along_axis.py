@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import (
     broadcasts_to,
     broadcasts_to_along_axis,
     mk_seq_array,
 )
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def equivalent_shapes_gen(shape):
@@ -50,7 +50,7 @@ def test_axis_None():
 N = 10
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (N,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -127,7 +127,7 @@ def test_empty_indice():
         pytest.param(
             np.array((0,)),
             marks=pytest.mark.xfail(
-                reason="NumPy: IndexError, cuNumeric: return None"
+                reason="NumPy: IndexError, cuPyNumeric: return None"
             ),
         ),
     ],

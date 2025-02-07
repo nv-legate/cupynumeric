@@ -1,11 +1,16 @@
 {
   "packages" : {
-    "legate_core" : {
-      "version": "24.01.00",
-      "git_url" : "https://github.com/nv-legate/legate.core.git",
+    "legate" : {
+      "repo": "legate.internal",
+      "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ inputs.python-version }}-${{ inputs.target-device }}-release-with_tests-${{ inputs.network }}-<<git_tag>>",
+      "org": "nv-legate",
+      "artifact_workflow": "ci-gh.yml",
+      "nightly_workflow": "ci-gh-nightly-release.yml",
+      "version": "25.01.00",
+      "git_url" : "git@github.com:nv-legate/legate.internal.git",
       "git_shallow": false,
       "always_download": false,
-      "git_tag" : "b84e86e9e3518d7102cdf531b5b733dc09c0e8d9"
+      "git_tag" : "c9748050eed8f6087fc2ecb86ff7eb2b5f3edb45"
     }
   }
 }

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,15 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import generate_item
+from utils.utils import MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
+from cupynumeric._utils import is_np2
+
+# itemset was removed in numpy 2.0, skip the entire module
+if is_np2:
+    pytestmark = pytest.mark.skip
 
 
 @pytest.mark.xfail
@@ -33,7 +38,7 @@ def test_no_itemset():
         # at least one argument
     with pytest.raises(expected_exc):
         arr_np.itemset()
-        # cuNumeric raises KeyError: 'itemset() requires
+        # cuPyNumeric raises KeyError: 'itemset() requires
         # at least one argument'
 
 
@@ -50,7 +55,7 @@ def test_invalid_itemset():
         # to a Python scalar
     with pytest.raises(expected_exc):
         arr_num.itemset(8)
-        # cuNumeric raises KeyError: 'invalid key'
+        # cuPyNumeric raises KeyError: 'invalid key'
 
 
 @pytest.mark.xfail
@@ -64,7 +69,7 @@ def test_out_of_index():
         # Numpy raises IndexError: index 10 is out of bounds for size 9
     with pytest.raises(expected_exc):
         arr_num.itemset(10, 4)
-        # cuNumeric set the value of index 1 as 4
+        # cuPyNumeric set the value of index 1 as 4
         # Original array:
         # [[193 212 238]
         #  [ 97 103 225]
@@ -88,11 +93,11 @@ def test_tuple_out_of_index():
         # for axis 1 with size 3
     with pytest.raises(expected_exc):
         arr_num.itemset((2, 2), 4)
-        # cuNumeric raises ValueError: Out-of-bounds projection on
+        # cuPyNumeric raises ValueError: Out-of-bounds projection on
         # dimension 0 with index 3 for a store of shape Shape((3,))
 
 
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (4,) * ndim
     arr_num = num.random.randint(0, 30, size=shape)

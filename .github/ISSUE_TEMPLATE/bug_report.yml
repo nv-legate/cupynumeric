@@ -8,7 +8,7 @@ body:
       value: "# Bug report"
   - type: markdown
     attributes:
-      value: Thank you for reporting a bug and helping us improve Cunumeric!
+      value: Thank you for reporting a bug and helping us improve cuPyNumeric!
   - type: markdown
     attributes:
       value: >
@@ -25,19 +25,19 @@ body:
       description: >-
         Run `legate-issue` and paste the output here.
       placeholder: |
-        Python      :  3.10.11 | packaged by conda-forge | (main, May 10 2023, 18:58:44) [GCC 11.3.0]
-        Platform    :  Linux-5.14.0-1042-oem-x86_64-with-glibc2.31
-        Legion      :  v23.11.00.dev-16-g2499f878
-        Legate      :  23.11.00.dev+17.gb7b50313
-        Cunumeric   :  (ImportError: cannot import name 'LogicalArray' from 'legate.core')
-        Numpy       :  1.24.4
-        Scipy       :  1.10.1
-        Numba       :  (not installed)
-        CTK package : cuda-version-11.8-h70ddcb2_2 (conda-forge)
-        GPU Driver  : 515.65.01
-        GPU Devices :
-          GPU 0: Quadro RTX 8000
-          GPU 1: Quadro RTX 8000
+        Python      :  3.12.4 | packaged by conda-forge | (main, Jun 17 2024, 10:23:07) [GCC 12.3.0]
+        Platform    :  Linux-6.8.0-40-generic-x86_64-with-glibc2.35
+        Legion      :  (failed to detect)
+        Legate      :  24.05.00+255.g2656afbd
+        cuPynumeric :  24.05.00+132.gc4741d57
+        Numpy       :  1.26.4
+        Scipy       :  1.13.1
+        Numba       :  (failed to detect)
+        CTK package :  cuda-version-12.0-hffde075_3 (conda-forge)
+        GPU driver  :  535.183.06
+        GPU devices :
+          GPU 0: NVIDIA RTX A5000
+          GPU 1: NVIDIA RTX A5000
     validations:
       required: true
   - type: input
@@ -76,10 +76,9 @@ body:
     attributes:
       label: Example code or instructions
       description: >
-        Please provide detailed instructions to reproduce the issue. Ideally this includes a 
+        Please provide detailed instructions to reproduce the issue. Ideally this includes a
         [Complete, minimal, self-contained example code](https://stackoverflow.com/help/minimal-reproducible-example)
-        given here or as a link to code in another repository. 
-      render: Python
+        given here or as a link to code in another repository.
     validations:
       required: true
   - type: markdown

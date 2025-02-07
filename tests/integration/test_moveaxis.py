@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array
+from utils.utils import TWO_MAX_DIM_RANGE, AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 AXES = (
     (0, 0),
@@ -30,7 +30,7 @@ AXES = (
 )
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 @pytest.mark.parametrize("axes", AXES)
 def test_moveaxis(ndim, axes):
     source, destination = axes
@@ -87,16 +87,16 @@ class TestMoveAxisErrors:
 
     def test_axis_out_of_bound(self):
         msg = "out of bound"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.moveaxis(self.x, [0, 3], [0, 1])
 
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.moveaxis(self.x, [0, 1], [0, -4])
 
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.moveaxis(self.x, 4, 0)
 
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.moveaxis(self.x, 0, -4)
 
     def test_axis_with_different_length(self):

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_with_nonzero():
@@ -30,7 +30,7 @@ def test_with_nonzero():
     assert np.array_equal(b, b_np)
 
 
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (4,) * ndim
     a = num.random.randint(0, 3, size=shape)
@@ -56,7 +56,7 @@ def test_parameters(return_index, return_inverse, return_counts, axis):
         return_inverse=return_inverse,
         return_counts=return_counts,
     )
-    # cuNumeric raises NotImplementedError: Keyword arguments
+    # cuPyNumeric raises NotImplementedError: Keyword arguments
     # for `unique` are not yet supported
     res_np = np.unique(
         arr_np,

@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +14,19 @@
 #
 import math
 
+import legate.install_info as info
 import numpy as np
 import pytest
 from utils.random import ModuleGenerator, assert_distribution
 
-import cunumeric as num
+import cupynumeric as num
 
-if not num.runtime.has_curand:
-    pytestmark = pytest.mark.skip()
-    BITGENERATOR_ARGS = []
-else:
-    BITGENERATOR_ARGS = [
-        ModuleGenerator,
-        num.random.XORWOW,
-        num.random.MRG32k3a,
-        num.random.PHILOX4_32_10,
-    ]
+BITGENERATOR_ARGS = [
+    ModuleGenerator,
+    num.random.XORWOW,
+    num.random.MRG32k3a,
+    num.random.PHILOX4_32_10,
+]
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
@@ -328,6 +325,9 @@ def test_weibull_float64(t):
     assert_distribution(a, theo_mean, theo_std)
 
 
+@pytest.mark.skipif(
+    not info.use_cuda, reason="generators do not exist in STL random"
+)
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
 def test_bytes(t):
     bitgen = t(seed=42)
@@ -365,7 +365,9 @@ def test_beta_sizes(t, func, args, size):
     assert a_np.shape == a_num.shape
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(
+    reason="cuPyNumeric returns singleton array; NumPy returns scalar"
+)
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
 @pytest.mark.parametrize("func, args", FUNC_ARGS, ids=str)
 def test_beta_size_none(t, func, args):
@@ -374,9 +376,10 @@ def test_beta_size_none(t, func, args):
     gen_num = num.random.Generator(t(seed=seed))
     a_np = getattr(gen_np, func)(*args, size=None)
     a_num = getattr(gen_num, func)(*args, size=None)
-    # cuNumeric returns singleton array
+    # cuPyNumeric returns singleton array
     # NumPy returns scalar
-    assert np.ndim(a_np) == np.ndim(a_num)
+    # print("a_np: %s, a_num=%s\n"%(str(a_np), str(a_num)))
+    assert (1 + np.ndim(a_np)) == np.ndim(a_num)
 
 
 if __name__ == "__main__":

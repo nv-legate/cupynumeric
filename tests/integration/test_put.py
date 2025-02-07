@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 INDICES_VALUES = (
     (0, 10),
@@ -137,7 +137,7 @@ def test_indices_array_and_shape_array(shape, indices_values_shape):
     assert np.array_equal(np_arr, num_arr)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_default_mode(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -154,10 +154,10 @@ def test_ndim_default_mode(ndim):
     assert np.array_equal(np_arr, num_arr)
 
 
-INDICES = ([1, 2, 3.2, 100], [[2, 2], [3, 100]], [1], [100])
+INDICES = ([1, 2, 3.2, 100], [[2, 1], [3, 100]], [1], [100])
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 @pytest.mark.parametrize("mode", ("wrap", "clip"))
 @pytest.mark.parametrize(
     "indices", INDICES, ids=lambda indices: f"(indices={indices})"

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 
 from functools import lru_cache
 from itertools import permutations, product
-from typing import List, Optional, Set, Tuple
 
 import numpy as np
 import pytest
@@ -23,7 +22,7 @@ from legate.core.utils import OrderedSet
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array, permutes_to
 
-import cunumeric as num
+import cupynumeric as num
 
 # Limits for exhaustive expression generation routines
 MAX_MODES = 3
@@ -44,7 +43,7 @@ def gen_operand(
     used_modes: int,
     dim_lim: int,
     mode_lim: int,
-    op: Optional[List[int]] = None,
+    op: list[int] | None = None,
 ):
     if op is None:
         op = []
@@ -77,8 +76,8 @@ def gen_operand(
 # Exhaustively generate all (normalized) expressions within some limits. These
 # limits are set low by default, to keep the unit test running time low.
 def gen_expr(
-    opers: Optional[List[List[int]]] = None,
-    cache: Optional[Set[Tuple[Tuple[int]]]] = None,
+    opers: list[list[int]] | None = None,
+    cache: set[tuple[tuple[int]]] | None = None,
 ):
     if opers is None:
         opers = []
@@ -295,7 +294,7 @@ def test_expr_opposite():
         # sum subscripts string, subscripts must be letters
     with pytest.raises(expected_exc):
         num.einsum("ik,kj=>ij", a, b)
-        # cuNumeric raises ValueError: Subscripts can only contain one '->'
+        # cuPyNumeric raises ValueError: Subscripts can only contain one '->'
 
 
 @pytest.mark.xfail
@@ -308,6 +307,17 @@ def test_order(order):
     # cuNmeric raises TypeError: einsum() got an unexpected keyword
     # argument 'order'
     assert allclose(np_res, num_res)
+
+
+def test_negative() -> None:
+    a = np.random.rand(256, 256)
+    b = np.random.rand(256, 256)
+    msg = r"invalid subscript"
+    with pytest.raises(ValueError, match=msg):
+        np.einsum("ik,1j->ij", a, b)
+    msg = r"Non-alphabetic mode labels"
+    with pytest.raises(NotImplementedError, match=msg):
+        num.einsum("ik,1j->ij", a, b)
 
 
 if __name__ == "__main__":

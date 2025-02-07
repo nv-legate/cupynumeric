@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import generate_item
+from utils.utils import MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.xfail
@@ -32,7 +32,7 @@ def test_no_item():
         # Numpy raises KeyError: 'invalid key'
     with pytest.raises(expected_exc):
         arr_num.item()
-        # cuNumeric raises ValueError: can only convert an array
+        # cuPyNumeric raises ValueError: can only convert an array
         # of size 1 to a Python scalar
 
 
@@ -47,7 +47,7 @@ def test_out_of_bound():
         # Numpy raises IndexError: index 10 is out of bounds for size 9
     with pytest.raises(expected_exc):
         arr_num.item(10)
-        # cuNumeric returns some value
+        # cuPyNumeric returns some value
 
 
 @pytest.mark.xfail
@@ -62,7 +62,7 @@ def test_out_of_index():
         # for axis 1 with size 3
     with pytest.raises(expected_exc):
         arr_num.item(2, 4)
-        # cuNumeric raises ValueError: Out-of-bounds projection on dimension 0
+        # cuPyNumeric: ValueError: Out-of-bounds projection on dimension 0
         # with index 4 for a store of shape Shape((3,))
 
 
@@ -76,7 +76,7 @@ def test_empty_no_item():
     assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (4,) * ndim
     arr_num = num.random.randint(0, 3, size=shape)

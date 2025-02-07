@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array, mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_scalar():
@@ -118,7 +118,7 @@ def test_type_convert():
     assert np.array_equal(x_num, x)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -178,7 +178,7 @@ def test_ndim(ndim):
 def test_a_values_different_shapes(shape_val):
     # for (2, 3, 4),
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError
+    # In cuPyNumeric, it raises ValueError
     shape_arr = (3, 4)
     np_arr = mk_seq_array(np, shape_arr)
     num_arr = mk_seq_array(num, shape_arr)
@@ -226,7 +226,7 @@ class TestPutmaskErrors:
     def test_a_values_different_dtype(self, dtype_val):
         # for both cases,
         # In Numpy, it raises TypeError
-        # In cuNumeric, it pass
+        # In cuPyNumeric, it pass
         expected_exc = TypeError
         shape = (3, 4)
         dtype_arr = int

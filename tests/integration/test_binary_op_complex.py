@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 xn = np.array([1 + 4j, 2 + 5j, 3 + 6j], np.complex64)
 yn = np.array([4 + 7j, 5 + 8j, 6 + 9j], np.complex64)

@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
-from utils.utils import check_module_function
+from utils.utils import MAX_DIM_RANGE, check_module_function
 
-import cunumeric as num
+import cupynumeric as num
 
 DIM = 10
 
-SIZE_CASES = list((DIM,) * ndim for ndim in range(LEGATE_MAX_DIM + 1))
+SIZE_CASES = list((DIM,) * ndim for ndim in MAX_DIM_RANGE)
 
 SIZE_CASES += [
     (0,),  # empty array
@@ -34,7 +33,7 @@ SIZE_CASES += [
 @pytest.mark.parametrize("size", SIZE_CASES, ids=str)
 def test_atleast_1d(size):
     a = [np.arange(np.prod(size)).reshape(size)]
-    print_msg = f"np & cunumeric.atleast_1d(size={size})"
+    print_msg = f"np & cupynumeric.atleast_1d(size={size})"
     check_module_function("atleast_1d", a, {}, print_msg)
 
 
@@ -46,7 +45,7 @@ def test_atleast_1d_scalar():
 @pytest.mark.parametrize("size", SIZE_CASES, ids=str)
 def test_atleast_2d(size):
     a = [np.arange(np.prod(size)).reshape(size)]
-    print_msg = f"np & cunumeric.atleast_2d(size={size})"
+    print_msg = f"np & cupynumeric.atleast_2d(size={size})"
     check_module_function("atleast_2d", a, {}, print_msg)
 
 
@@ -58,7 +57,7 @@ def test_atleast_2d_scalar():
 @pytest.mark.parametrize("size", SIZE_CASES, ids=str)
 def test_atleast_3d(size):
     a = [np.arange(np.prod(size)).reshape(size)]
-    print_msg = f"np & cunumeric.atleast_3d(size={size})"
+    print_msg = f"np & cupynumeric.atleast_3d(size={size})"
     check_module_function("atleast_3d", a, {}, print_msg)
 
 
@@ -73,7 +72,7 @@ def test_atleast_nd(dim):
     a = list(np.arange(np.prod(size)).reshape(size) for size in SIZE_CASES)
     scalar = 10.0
     a.append(scalar)
-    print_msg = f"np & cunumeric.atleast_{dim}d(size={SIZE_CASES})"
+    print_msg = f"np & cupynumeric.atleast_{dim}d(size={SIZE_CASES})"
     check_module_function(f"atleast_{dim}d", a, {}, print_msg)
 
 

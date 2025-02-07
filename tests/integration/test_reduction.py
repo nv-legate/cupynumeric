@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
 import numpy as np
 import pytest
 from utils.comparisons import allclose
+from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>,
 # initial=<no value>, where=<no value>)
@@ -56,11 +57,12 @@ NO_EMPTY_SIZE = [
     (DIM, DIM, DIM),
 ]
 
-ARR = ([], [[]], [[], []], np.inf, np.Inf, -10.3, 0, 200, 5 + 8j)
+ARR = ([], [[]], [[], []], np.inf, -10.3, 0, 200, 5 + 8j)
 
 DTYPE = ["l", "L", "f", "d"]
+BOOL_INT_DTYPE = ["h", "i", "H", "I", "?", "b", "B"]
 COMPLEX_TYPE = ["F", "D"]
-NEGATIVE_DTYPE = ["h", "i", "H", "I", "e", "?", "b", "B"]
+NEGATIVE_DTYPE = ["e"]
 
 
 def to_dtype(s):
@@ -86,13 +88,13 @@ class TestSumNegative(object):
         out_np = np.sum(arr_np)  # Numpy return sum of all datas
         out_num = num.sum(
             arr_num
-        )  # cuNumeric return an array with different data
+        )  # cuPyNumeric return an array with different data
         assert allclose(out_np, out_num)
 
     def test_axis_out_bound(self):
         arr = [-1, 0, 1, 2, 10]
         msg = r"bounds"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.sum(arr, axis=2)
 
     @pytest.mark.xfail
@@ -102,7 +104,7 @@ class TestSumNegative(object):
         arr_np = np.random.random(size) * 10
         arr_num = num.array(arr_np)
         out_np = np.sum(arr_np, axis=axis)
-        # cuNumeric raises NotImplementedError:
+        # cuPyNumeric raises NotImplementedError:
         # 'Need support for reducing multiple dimensions'
         # Numpy get results
         out_num = num.sum(arr_num, axis=axis)
@@ -138,7 +140,7 @@ class TestSumNegative(object):
     def test_initial_list(self):
         arr = [[1, 2], [3, 4]]
         initial_value = [2, 3]
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, TypeError)):
             num.sum(arr, initial=initial_value)
 
     @pytest.mark.xfail
@@ -188,6 +190,19 @@ class TestSumPositive(object):
         arr_num = num.array(arr_np)
         out_np = np.sum(arr_np)
         out_num = num.sum(arr_num)
+        assert allclose(out_np, out_num)
+
+    @pytest.mark.parametrize("dtype", BOOL_INT_DTYPE, ids=to_dtype)
+    @pytest.mark.parametrize("op", ["sum", "prod", "max"])
+    def test_bool_int_dtype(self, dtype, op):
+        size = (5, 5, 5)
+        arr = np.random.randint(10, size=size)
+        if dtype == bool:
+            arr %= 2
+        arr_np = np.array(arr, dtype=dtype)
+        arr_num = num.array(arr_np)
+        out_np = getattr(np, op)(arr_np)
+        out_num = getattr(num, op)(arr_num)
         assert allclose(out_np, out_num)
 
     @pytest.mark.parametrize("dtype", COMPLEX_TYPE, ids=to_dtype)
@@ -281,7 +296,7 @@ class TestSumPositive(object):
         for axis in range(-ndim + 1, ndim, 1):
             out_np = np.sum(arr_np, axis=axis, keepdims=keepdims)
             out_num = num.sum(arr_num, axis=axis, keepdims=keepdims)
-            # in cunumeric/deferred/unary_reduction:
+            # in cupynumeric/deferred/unary_reduction:
             # if lhs_array.size == 1:
             #     > assert axes is None or len(axes) == rhs_array.ndim - (
             #         0 if keepdims else lhs_array.ndim

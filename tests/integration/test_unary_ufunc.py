@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,19 @@ import argparse
 
 import numpy as np
 import pytest
+from packaging.version import Version
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
+
+complex_data = [
+    1 + 1j,
+    -1 - 1j,
+    5 + 1j,
+    1 + 0.5j,
+    2.0 + 1.4j,
+    -1 + 2j,
+]
 
 
 def deterministic_op_test(func):
@@ -47,14 +57,14 @@ def check_result(op, in_np, out_np, out_num, **isclose_kwargs):
         and out_np.dtype == out_num.dtype
     )
     if not result:
-        print(f"cunumeric.{op} failed the test")
+        print(f"cupynumeric.{op} failed the test")
         print("Input:")
         print(in_np)
         print(f"dtype: {in_np.dtype}")
         print("NumPy output:")
         print(out_np)
         print(f"dtype: {out_np.dtype}")
-        print("cuNumeric output:")
+        print("cuPyNumeric output:")
         print(out_num)
         print(f"dtype: {out_num.dtype}")
     return result
@@ -90,7 +100,7 @@ def check_op(op, in_np, out_dtype="d", **check_kwargs):
 
         assert check_result(op, in_np, out_np, out_num, **check_kwargs)
 
-        # Ask cuNumeric to produce outputs to NumPy ndarrays
+        # Ask cuPyNumeric to produce outputs to NumPy ndarrays
         out_num = np.ones(out_np.shape, dtype=out_dtype)
         op_num(in_num, out_num)
 
@@ -118,12 +128,15 @@ def check_op_input(
     astype=None,
     out_dtype="d",
     replace_zero=None,
+    complex_type=False,
     **check_kwargs,
 ):
     if randint:
         assert a_min is not None
         assert a_max is not None
         in_np = np.random.randint(a_min, a_max, size=shape)
+    elif complex_type:
+        in_np = np.array(complex_data)
     else:
         in_np = np.random.randn(*shape)
         if offset is not None:
@@ -158,6 +171,20 @@ def check_math_ops(op, **kwargs):
     check_op_input(op, astype="B", **kwargs)
     check_op_input(op, randint=True, a_min=1, a_max=10, **kwargs)
     check_op_input(op, shape=(1,), **kwargs)
+    no_complex_test_list = (
+        "fabs",
+        "logical_not",
+    )
+    numpy_version = Version(np.__version__)
+    # sign has an incorrect implementation for complex
+    # numbers in numpy <2.0
+    if numpy_version < Version("2.0"):
+        no_complex_test_list += ("sign",)
+
+    if op not in no_complex_test_list:
+        check_op_input(
+            op, complex_type=True, out_dtype=np.complex128, **kwargs
+        )
 
 
 # Math operations
@@ -224,6 +251,9 @@ def test_log_ops(op):
     check_op_input(op, randint=True, a_min=3, a_max=10)
     check_op_input(op, shape=(1,), a_min=0.1, offset=3)
 
+    # check with complex data type
+    check_op_input(op, complex_type=True, out_dtype=np.complex128)
+
 
 even_root_ops = ("sqrt",)
 
@@ -239,6 +269,8 @@ def test_even_root_ops(op):
     check_op_input(op, astype="F", out_dtype="D")
     check_op_input(op, randint=True, a_min=3, a_max=10)
     check_op_input(op, shape=(1,), a_min=0.1, offset=3)
+    # check with complex data type
+    check_op_input(op, complex_type=True, out_dtype=np.complex128)
 
 
 odd_root_ops = ("cbrt",)
@@ -276,6 +308,12 @@ def test_trig_ops(op):
     check_op(op, np.random.uniform(low=-1, high=1, size=(4, 5)))
     check_op(op, np.random.uniform(low=-1, high=1, size=(4, 5)).astype("e"))
     check_op(op, np.array(np.random.uniform(low=-1, high=1)))
+    # check with complex data type
+    if op not in (
+        "deg2rad",
+        "rad2deg",
+    ):
+        check_op_input(op, complex_type=True, out_dtype=np.complex128)
 
 
 arc_hyp_trig_ops = (
@@ -290,6 +328,8 @@ def test_arc_hyp_trig_ops(op):
     check_op(op, np.random.uniform(low=1, high=5, size=(4, 5)))
     check_op(op, np.random.uniform(low=1, high=5, size=(4, 5)).astype("e"))
     check_op(op, np.array(np.random.uniform(low=1, high=5)))
+    # check with complex data type
+    check_op_input(op, complex_type=True, out_dtype=np.complex128)
 
 
 bit_ops = ("invert", "~")
@@ -344,6 +384,8 @@ def test_nan_ops(op):
     check_op(op, np.array([-np.inf, 0.0, 1.0, np.inf, np.nan], dtype="F"))
     check_op(op, np.array([-np.inf, 0.0, 1.0, np.inf, np.nan], dtype="e"))
     check_op(op, np.array(np.inf))
+    # check with complex data type
+    check_op_input(op, complex_type=True, out_dtype=np.complex128)
 
 
 def parse_inputs(in_str, dtype_str):

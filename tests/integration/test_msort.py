@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
+from cupynumeric._utils import is_np2
 
-# cunumeric.msort(a: ndarray) → ndarray
+# cupynumeric.msort(a: ndarray) → ndarray
 
 DIM = 5
 SIZES = [
@@ -42,12 +43,13 @@ SIZES = [
 ]
 
 
+@pytest.mark.skipif(is_np2, reason="numpy 2.0")
 class TestmSort(object):
     @pytest.mark.xfail
     def test_arr_none(self):
         res_np = np.msort(
             None
-        )  # numpy.AxisError: axis 0 is out of bounds for array of dimension 0
+        )  # AxisError: axis 0 is out of bounds for array of dimension 0
         res_num = num.msort(
             None
         )  # AttributeError: 'NoneType' object has no attribute 'shape'

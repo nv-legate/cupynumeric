@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ from itertools import permutations
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import TWO_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_2d():
@@ -69,7 +69,7 @@ def test_4d():
     assert np.array_equal(res, res_num)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_ndim(ndim):
     a_shape = tuple(np.random.randint(1, 9) for i in range(ndim))
     np_array = mk_seq_array(np, a_shape)
@@ -101,7 +101,7 @@ def test_ndim(ndim):
 def test_offset(offset):
     # For -3, -2, 3
     # In Numpy, pass and return 0
-    # In cuNumeric, it raises ValueError:
+    # In cuPyNumeric, it raises ValueError:
     # 'offset' for diag or diagonal must be in range
     a = np.arange(24).reshape((2, 3, 4))
     a_num = num.array(a)
@@ -119,7 +119,7 @@ def test_offset(offset):
 def test_negative_axes(axes):
     # For all 3 cases,
     # In Numpy, pass
-    # In cuNumeric, it raises ValueError:
+    # In cuPyNumeric, it raises ValueError:
     # axes must be the same size as ndim for transpose
     axis1, axis2 = axes
     a = np.arange(24).reshape((2, 3, 4))
@@ -158,7 +158,7 @@ class TestTraceErrors:
     def test_axes_none(self, axes):
         # For (None, None)
         # In Numpy, it raises TypeError
-        # In cuNumeric, it pass
+        # In cuPyNumeric, it pass
         expected_exc = TypeError
         axis1, axis2 = axes
         with pytest.raises(expected_exc):

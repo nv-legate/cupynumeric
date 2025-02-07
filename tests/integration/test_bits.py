@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 class TestPackbits(object):
     def test_none_arr(self):
         # Numpy raises "TypeError:
         # Expected an input array of integer or boolean data type"
-        # For cuNumeric raises:
+        # For cuPyNumeric raises:
         #  > if a.dtype.kind not in ("u", "i", "b"):
         #  E AttributeError: 'NoneType' object has no attribute 'dtype'
         with pytest.raises(AttributeError):
@@ -50,7 +50,7 @@ class TestPackbits(object):
         in_num = num.random.randint(low=0, high=2, size=shape, dtype="i")
         # when bitorder is 1 or True, Numpy raises
         # "TypeError: pack() argument 3 must be str".
-        # while cuNumeric raises valueError.
+        # while cuPyNumeric raises valueError.
         with pytest.raises(ValueError):
             num.packbits(in_num, bitorder=bitorder)
 
@@ -64,7 +64,7 @@ class TestPackbits(object):
         out_num = num.packbits(in_num, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("dtype", ("B", "i", "?"))
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_common(self, ndim, dtype, bitorder):
@@ -76,7 +76,7 @@ class TestPackbits(object):
         out_num = num.packbits(in_num, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("dtype", ("B", "i", "?"))
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_axis(self, ndim, dtype, bitorder):
@@ -94,7 +94,7 @@ class TestUnpackbits(object):
     def test_none_arr(self):
         # Numpy raises "TypeError:
         # TypeError: Expected an input array of unsigned byte data type
-        # For cuNumeric raises:
+        # For cuPyNumeric raises:
         # > if a.dtype != "B":
         # E AttributeError: 'NoneType' object has no attribute 'dtype'
         with pytest.raises(AttributeError):
@@ -121,7 +121,7 @@ class TestUnpackbits(object):
         in_num = num.array(in_np)
         # when bitorder is 1 or True, Numpy raises
         # "TypeError: unpack() argument 4 must be str".
-        # while cuNumeric raises valueError.
+        # while cuPyNumeric raises valueError.
         with pytest.raises(ValueError):
             num.unpackbits(in_num, bitorder=bitorder)
 
@@ -145,7 +145,7 @@ class TestUnpackbits(object):
         out_num = num.unpackbits(in_num, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_common(self, ndim, bitorder):
         shape = (5,) * ndim
@@ -157,7 +157,7 @@ class TestUnpackbits(object):
         assert np.array_equal(out_np, out_num)
 
     @pytest.mark.parametrize("count", (-9, 4, -1, 0, 4, 8, 9))
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_count(self, ndim, count, bitorder):
         shape = (5,) * ndim
@@ -168,7 +168,7 @@ class TestUnpackbits(object):
         out_num = num.unpackbits(in_num, count=count, bitorder=bitorder)
         assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     def test_axis(self, ndim, bitorder):
         shape = (5,) * ndim
@@ -180,7 +180,7 @@ class TestUnpackbits(object):
             out_num = num.unpackbits(in_num, axis=axis, bitorder=bitorder)
             assert np.array_equal(out_np, out_num)
 
-    @pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+    @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     @pytest.mark.parametrize("bitorder", ("little", "big"))
     @pytest.mark.parametrize("count", (-2, 0, 2, 5))
     def test_axis_count(self, ndim, bitorder, count):
@@ -198,7 +198,7 @@ class TestUnpackbits(object):
             assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 @pytest.mark.parametrize("bitorder", ("little", "big"))
 @pytest.mark.parametrize("dtype", ("B", "i", "?"))
 def test_pack_unpack(ndim, bitorder, dtype):

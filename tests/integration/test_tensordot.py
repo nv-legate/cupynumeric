@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
 #
 
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE
 
-import cunumeric as num
-from cunumeric.utils import tensordot_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import tensordot_modes
 
 
 def gen_axes(a_ndim, b_ndim):
@@ -29,8 +29,8 @@ def gen_axes(a_ndim, b_ndim):
         yield ([0, 1], [1, 0])
 
 
-@pytest.mark.parametrize("b_ndim", range(LEGATE_MAX_DIM + 1))
-@pytest.mark.parametrize("a_ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("b_ndim", MAX_DIM_RANGE)
+@pytest.mark.parametrize("a_ndim", MAX_DIM_RANGE)
 def test_tensordot(a_ndim, b_ndim):
     for axes in gen_axes(a_ndim, b_ndim):
         name = f"tensordot({a_ndim} x {b_ndim}, axes={axes})"
@@ -71,7 +71,7 @@ class TestTensorDotErrors:
     )
     def test_axis_invalid_index(self, axis):
         # In Numpy, for both cases, it raises IndexError
-        # In cuNumeric, for both cases, it raises ValueError
+        # In cuPyNumeric, for both cases, it raises ValueError
         with pytest.raises(IndexError):
             num.tensordot(self.A, self.B, axis)
 

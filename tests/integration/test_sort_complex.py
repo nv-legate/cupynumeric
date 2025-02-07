@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.sort_complex(a: ndarray) → ndarray
+# cupynumeric.sort_complex(a: ndarray) → ndarray
 
 DIM = 5
 SIZES = [
@@ -48,7 +48,7 @@ class TestSortComplex(object):
     def test_arr_none(self):
         res_np = np.sort_complex(
             None
-        )  # numpy.AxisError: axis 0 is out of bounds for array of dimension 0
+        )  # AxisError: axis 0 is out of bounds for array of dimension 0
         res_num = num.sort_complex(
             None
         )  # AttributeError: 'NoneType' object has no attribute 'shape'

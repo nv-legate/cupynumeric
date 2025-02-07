@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.contractions import check_default
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE
 
-import cunumeric as num
-from cunumeric.utils import dot_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import dot_modes
 
 
-@pytest.mark.parametrize("b_ndim", range(LEGATE_MAX_DIM + 1))
-@pytest.mark.parametrize("a_ndim", range(LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("b_ndim", MAX_DIM_RANGE)
+@pytest.mark.parametrize("a_ndim", MAX_DIM_RANGE)
 def test_dot(a_ndim, b_ndim):
     name = f"dot({a_ndim} x {b_ndim})"
     modes = dot_modes(a_ndim, b_ndim)
@@ -64,7 +64,7 @@ class TestDotErrors:
     )
     def test_out_invalid_dtype(self, dtype):
         # In Numpy, for np.float32 and np.int64, it raises ValueError
-        # In cuNumeric,
+        # In cuPyNumeric,
         # for np.float32, it pass
         # for np.int64, it raises TypeError: Unsupported type: int64
         out = num.zeros((5, 2), dtype=dtype)

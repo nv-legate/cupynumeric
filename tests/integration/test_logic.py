@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ from itertools import combinations_with_replacement
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 SCALARS_INF = (np.inf, -np.inf, np.nan, 0)
 ARRAYS_INF = ([np.inf, -np.inf, np.nan, 0],)
@@ -126,7 +126,7 @@ def test_isscalar_array():
 
     # NumPy's scalar reduction returns a Python scalar
     assert num.isscalar(np.sum(in_np)) is True
-    # but cuNumeric's scalar reduction returns a 0-D array that behaves like
+    # but cuPyNumeric's scalar reduction returns a 0-D array that behaves like
     # a deferred scalar
     assert num.isscalar(num.sum(in_np)) is False
 
@@ -141,16 +141,11 @@ SCALAR_PAIRS = (
 )
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(
     ("a", "b"),
     SCALAR_PAIRS,
 )
 def test_isclose_scalars(a, b):
-    # for all cases,
-    # In Numpy, it pass
-    # In cuNumeric, it raises IndexError: too many indices for array:
-    # array is 0-dimensional, but 1 were indexed
     out_np = np.isclose(a, b)
     out_num = num.isclose(a, b)
     assert np.array_equal(out_np, out_num)
@@ -243,7 +238,7 @@ def test_isclose_arrays_rtol_atol(rtol, atol):
 def test_isclose_euqal_nan(equal_nan):
     # If equal_nan is True,
     # In Numpy, it pass
-    # In cuNumeric, it raises NotImplementedError
+    # In cuPyNumeric, it raises NotImplementedError
     values = [np.inf, -np.inf, np.nan, 0.0, -0.0]
     pairs = tuple(combinations_with_replacement(values, 2))
     in1_np = np.array([x for x, _ in pairs])

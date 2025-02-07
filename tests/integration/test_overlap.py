@@ -15,10 +15,11 @@
 
 import numpy as np
 import pytest
+from numpy.lib import NumpyVersion
 from utils.comparisons import allclose
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def setitem(lib, a, slice_lhs, slice_rhs):
@@ -73,6 +74,17 @@ def test_partial(partial, shape, operation):
     operation(num, a_num, slice_lhs, slice_rhs)
 
     assert allclose(a_np, a_num)
+
+
+@pytest.mark.skipif(
+    NumpyVersion(np.__version__) < "2.1.0", reason="old np broken"
+)
+def test_advanced_indexing_setitem():
+    arr = num.array([0, 1, 2])
+    idx = num.array([2, 1, 0])
+    arr[idx] = arr
+
+    assert np.array_equal(arr, [2, 1, 0])
 
 
 if __name__ == "__main__":

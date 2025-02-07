@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@ from itertools import product
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import TWO_MAX_DIM_RANGE, AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 a = num.random.random((10, 10, 10))
 AXES_1d = [-2, 0, 1, 2]
@@ -48,13 +48,13 @@ class TestFlipErrors:
     def test_axis_outofbound(self):
         axis = 12
         msg = r"out of bounds"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.flip(a, axis=axis)
 
     def test_axis_outofbound_negative(self):
         axis = -12
         msg = r"out of bounds"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.flip(a, axis=axis)
 
     def test_repeated_axis(self):
@@ -66,7 +66,7 @@ class TestFlipErrors:
     def test_axis_outofbound_tuple(self):
         axis = (1, 5)
         msg = r"out of bounds"
-        with pytest.raises(np.AxisError, match=msg):
+        with pytest.raises(AxisError, match=msg):
             num.flip(a, axis=axis)
 
 
@@ -147,7 +147,7 @@ FLIP_FUNCS = ("flip", "fliplr", "flipud")
 
 
 @pytest.mark.parametrize("func_name", FLIP_FUNCS)
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_max_dims(func_name, ndim):
     func_np = getattr(np, func_name)
     func_num = getattr(num, func_name)

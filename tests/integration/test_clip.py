@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 class TestClipErrors:
@@ -28,7 +28,7 @@ class TestClipErrors:
         with pytest.raises(expected_exc):
             np.clip(None, a_min=0, a_max=0)
         with pytest.raises(expected_exc):
-            # cunumeric raises
+            # cupynumeric raises
             # AttributeError: 'NoneType' object has no attribute 'clip'
             num.clip(None, a_min=0, a_max=0)
 
@@ -41,7 +41,7 @@ class TestClipErrors:
             # ValueError: One of max or min must be given
             np.clip(array, a_min=None, a_max=None)
         with pytest.raises(expected_exc):
-            # cunumeric raises:
+            # cupynumeric raises:
             # TypeError: int() argument must be a string,
             # a bytes-like object or a real number, not 'NoneType'
             num.clip(array, a_min=None, a_max=None)
@@ -74,6 +74,22 @@ def test_empty_array():
     assert np.array_equal(res_np, res_num)
 
 
+def test_bool() -> None:
+    np.clip(True, a_min=1, a_max=1)
+    # Numpy returns 1
+    # See https://github.com/nv-legate/cunumeric.internal/issues/491
+    msg = r"Expected bytes or NumPy ndarray, but got <class 'int'>"
+    with pytest.raises(ValueError, match=msg):
+        num.clip(True, a_min=1, a_max=1)
+
+
+@pytest.mark.parametrize("v", (True, False))
+def test_bool_None(v: bool) -> None:
+    # Different Numpy versions error variously with both bounds None
+    res = num.clip(v, a_min=None, a_max=None)
+    assert np.array_equal(res, np.asarray(v))
+
+
 @pytest.mark.xfail
 def test_amin_amax():
     array = np.arange(0, 10)
@@ -95,7 +111,7 @@ def test_amin_value(amin):
     # res_np is not match res_num
     # in Numpy, when one of a_min of a_max is float,
     # all data are marked as float,
-    # while in cunumeric, all datas are int.
+    # while in cupynumeric, all datas are int.
     # for example, amin = 5
     # array = array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     # res_np = array([5., 5., 5., 5., 5., 5., 6., 7., 8., 8.5])
@@ -111,7 +127,7 @@ def test_amin_complex():
     #  res_np = array([5. +5.j, 5. +5.j, 5. +5.j, 5. +5.j, 5. +5.j,
     #  5. +5.j, 6. +0.j, 7. +0.j, 8. +0.j, 8.5+0.j])
     res_num = num.clip(array, a_min=amin, a_max=8.5)
-    # cunumeric raises:
+    # cupynumeric raises:
     # TypeError: int() argument must be a string, a bytes-like object
     # or a real number, not 'complex'
     assert np.array_equal(res_np, res_num)
@@ -153,7 +169,7 @@ def test_out_np_array():
     assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_basic(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -167,7 +183,7 @@ def test_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_out(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

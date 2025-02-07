@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ def check_scan(OP, A, B, ax):
     else:
         print("FAIL!")
         print(f"INPUT    : {A}")
-        print(f"CUNUMERIC: {B}")
+        print(f"CUPYNUMERIC: {B}")
         print(f"NUMPY    : {C}")
         assert False
 

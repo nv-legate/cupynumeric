@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.comparisons import allclose
 
-import cunumeric as num
+import cupynumeric as num
 
 SHAPES = [
     (10, 20),
@@ -125,6 +125,11 @@ def test_floating(shape):
     ldexp_num = num.ldexp(out1_num, out2_num)
 
     assert allclose(ldexp_np, ldexp_num)
+
+    ldexp_np = np.ldexp(1.0, np.array([1, 2], dtype=np.int8))
+    ldexp_num = num.ldexp(1.0, num.array([1, 2], dtype=np.int8))
+
+    assert ldexp_np.dtype == ldexp_num.dtype == np.float64
 
 
 @pytest.mark.parametrize("fun", ("modf", "frexp"))

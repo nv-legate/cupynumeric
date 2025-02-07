@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,15 @@
 #
 
 import numpy as np
+from legate.core import LEGATE_MAX_DIM
 
-import cunumeric as num
+import cupynumeric as num
+from cupynumeric._utils import is_np2
+
+if is_np2:
+    from numpy.exceptions import AxisError  # noqa: F401
+else:
+    from numpy import AxisError  # noqa: F401
 
 
 def compare_array(a, b, check_type=True):
@@ -44,8 +51,8 @@ def compare_array_and_print_results(a, b, print_msg, check_type=True):
         assert is_equal, (
             f"Failed, {print_msg}\n"
             f"numpy result: {err_arr[0]}\n"
-            f"cunumeric_result: {err_arr[1]}\n"
-            f"cunumeric and numpy shows"
+            f"cupynumeric_result: {err_arr[1]}\n"
+            f"cupynumeric and numpy shows"
             f" different result\n"
         )
         print(f"Passed, {print_msg}")
@@ -55,13 +62,13 @@ def compare_array_and_print_results(a, b, print_msg, check_type=True):
         assert is_equal, (
             f"Failed, {print_msg}\n"
             f"numpy result: {err_arr[0]}, {a.shape}\n"
-            f"cunumeric_result: {err_arr[1]}, {b.shape}\n"
-            f"cunumeric and numpy shows"
+            f"cupynumeric_result: {err_arr[1]}, {b.shape}\n"
+            f"cupynumeric and numpy shows"
             f" different result\n"
         )
         print(
             f"Passed, {print_msg}, np: ({a.shape}, {a.dtype})"
-            f", cunumeric: ({b.shape}, {b.dtype})"
+            f", cupynumeric: ({b.shape}, {b.dtype})"
         )
 
 
@@ -97,3 +104,13 @@ def check_module_function(
     a = getattr(np, fn)(*args, **kwargs)
     b = getattr(num, fn)(*args, **kwargs)
     compare_array_and_print_results(a, b, print_msg, check_type=check_type)
+
+
+# MAX_DIM_RANGE is a list of array dimensions, that is used to test APIs
+# on different array dims. We reduce this list to a sub-set of possible
+# dimensions to reduce walltime for testing
+MAX_DIM_RANGE = list(range(min(4, LEGATE_MAX_DIM)))
+if LEGATE_MAX_DIM > MAX_DIM_RANGE[-1]:
+    MAX_DIM_RANGE.append(LEGATE_MAX_DIM)
+ONE_MAX_DIM_RANGE = MAX_DIM_RANGE[1:]
+TWO_MAX_DIM_RANGE = MAX_DIM_RANGE[2:]

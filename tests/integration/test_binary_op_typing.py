@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def value_type(obj):
@@ -65,8 +65,8 @@ def generate_array_array_cases():
 
             for lhs_value, rhs_value in product(SCALAR_VALUES, SCALAR_VALUES):
                 try:
-                    lhs_np = np.array(lhs_value, dtype=lhs_type)
-                    rhs_np = np.array(rhs_value, dtype=rhs_type)
+                    lhs_np = np.array(lhs_value).astype(lhs_type)
+                    rhs_np = np.array(rhs_value).astype(rhs_type)
                     lhs_num = num.array(lhs_np)
                     rhs_num = num.array(rhs_np)
                     yield (lhs_np, rhs_np, lhs_num, rhs_num)
@@ -87,15 +87,15 @@ def generate_array_array_cases():
 # the code somewhat compatible with NumPy for cases where Python scalars
 # are passed.
 #
-# If anyone can do a better job than me and finally make cuNumeric
+# If anyone can do a better job than me and finally make cuPyNumeric
 # implement the same typing rules, please put these tests back.
 def generate_array_scalar_cases():
     for idx, lhs_type in enumerate(TYPES):
         for rhs_type in TYPES[idx:]:
             for array, scalar in product(ARRAY_VALUES, SCALAR_VALUES):
                 try:
-                    lhs_np = np.array(array, dtype=lhs_type)
-                    rhs_np = np.array(scalar, dtype=rhs_type)
+                    lhs_np = np.array(array).astype(lhs_type)
+                    rhs_np = np.array(scalar).astype(rhs_type)
                     lhs_num = num.array(lhs_np)
                     rhs_num = num.array(rhs_np)
                     yield (lhs_np, rhs_np, lhs_num, rhs_num)
@@ -103,8 +103,8 @@ def generate_array_scalar_cases():
                     pass
 
                 try:
-                    lhs_np = np.array(scalar, dtype=lhs_type)
-                    rhs_np = np.array(array, dtype=rhs_type)
+                    lhs_np = np.array(scalar).astype(lhs_type)
+                    rhs_np = np.array(array).astype(rhs_type)
                     lhs_num = num.array(lhs_np)
                     rhs_num = num.array(rhs_np)
                     yield (lhs_np, rhs_np, lhs_num, rhs_num)
@@ -118,14 +118,20 @@ def generate_array_scalar_cases():
 def test_array_array(lhs_np, rhs_np, lhs_num, rhs_num):
     print(f"{value_type(lhs_np)} x {value_type(rhs_np)}")
 
-    out_np = np.add(lhs_np, rhs_np)
-    out_num = num.add(lhs_num, rhs_num)
+    try:
+        out_np = np.add(lhs_np, rhs_np)
+    except Exception as e:
+        with pytest.raises(type(e)):
+            num.add(lhs_num, rhs_num)
+        return
 
-    assert out_np.dtype == out_num.dtype
+    out_num = num.add(lhs_num, rhs_num)
 
     print(f"LHS {lhs_np}")
     print(f"RHS {rhs_np}")
-    print(f"NumPy type: {out_np.dtype}, cuNumeric type: {out_num.dtype}")
+    print(f"NumPy type: {out_np.dtype}, cuPyNumeric type: {out_num.dtype}")
+
+    assert out_np.dtype == out_num.dtype
 
 
 @pytest.mark.parametrize(
@@ -137,11 +143,11 @@ def test_array_scalar(lhs_np, rhs_np, lhs_num, rhs_num):
     out_np = np.add(lhs_np, rhs_np)
     out_num = num.add(lhs_num, rhs_num)
 
-    assert out_np.dtype == out_num.dtype
-
     print(f"LHS {lhs_np}")
     print(f"RHS {rhs_np}")
-    print(f"NumPy type: {out_np.dtype}, cuNumeric type: {out_num.dtype}")
+    print(f"NumPy type: {out_np.dtype}, cuPyNumeric type: {out_num.dtype}")
+
+    assert out_np.dtype == out_num.dtype
 
 
 if __name__ == "__main__":

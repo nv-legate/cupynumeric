@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from utils.generators import mk_seq_array
 
-import cunumeric as num
+import cupynumeric as num
 
 a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 

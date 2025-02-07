@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import TWO_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
-# cunumeric.fill_diagonal(a: ndarray, val: ndarray, wrap: bool = False) → None
 WRAP = [True, False]
 
 
@@ -35,7 +34,7 @@ def test_wrap(wrap):
     assert np.array_equal(np_array, num_array)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 @pytest.mark.parametrize("val_shape", ((0,), (3,), (6,), (2, 2), (2, 2, 6)))
 @pytest.mark.parametrize("wrap", WRAP, ids=str)
 def test_basic(ndim, val_shape, wrap):
@@ -121,7 +120,7 @@ class TestFillDiagonalErrors:
         # a bytes-like object or a real number, not 'NoneType'
         with pytest.raises(expected_exc):
             num.fill_diagonal(num_array, val)
-        # cuNumeric raises AttributeError:
+        # cuPyNumeric raises AttributeError:
         # 'NoneType' object has no attribute 'size'
 
 

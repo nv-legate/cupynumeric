@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,25 +15,19 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array
+from utils.utils import MAX_DIM_RANGE, ONE_MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 VECTOR_ORDS = [None, np.inf, -np.inf, 0, 1, -1, 2, -2]
 
 # TODO: Add "nuc", 2, -2 once they are implemented
 MATRIX_ORDS = [None, "fro", np.inf, -np.inf, 1, -1]
 
-np_arrays = [
-    mk_0to1_array(np, (3,) * ndim) - 0.5
-    for ndim in range(0, LEGATE_MAX_DIM + 1)
-]
-num_arrays = [
-    mk_0to1_array(num, (3,) * ndim) - 0.5
-    for ndim in range(0, LEGATE_MAX_DIM + 1)
-]
+np_arrays = [mk_0to1_array(np, (3,) * ndim) - 0.5 for ndim in MAX_DIM_RANGE]
+num_arrays = [mk_0to1_array(num, (3,) * ndim) - 0.5 for ndim in MAX_DIM_RANGE]
 
 
 @pytest.mark.parametrize("ord", VECTOR_ORDS)
@@ -44,7 +38,7 @@ num_arrays = [
 def test_noaxis_1d(ord, keepdims, dtype):
     # for ord=0, dtype is np.complex64
     # Numpy output array is float32
-    # cuNumeric output array is complex64
+    # cuPyNumeric output array is complex64
     np_res = np.linalg.norm(
         np_arrays[1].astype(dtype), ord=ord, keepdims=keepdims
     )
@@ -67,7 +61,7 @@ def test_noaxis_2d(ord, keepdims, dtype):
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize("ndim", [0] + list(range(3, LEGATE_MAX_DIM + 1)))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE[:-1])
 @pytest.mark.parametrize("keepdims", [False, True])
 @pytest.mark.parametrize("dtype", (np.float64, np.complex64))
 def test_noaxis_other(ndim, keepdims, dtype):
@@ -78,7 +72,7 @@ def test_noaxis_other(ndim, keepdims, dtype):
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
 @pytest.mark.parametrize("ord", VECTOR_ORDS)
 @pytest.mark.parametrize("keepdims", [False, True])
 def test_axis_1d(ndim, ord, keepdims):
@@ -91,7 +85,7 @@ def test_axis_1d(ndim, ord, keepdims):
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE[:-1])
 @pytest.mark.parametrize("ord", MATRIX_ORDS)
 @pytest.mark.parametrize("keepdims", [False, True])
 @pytest.mark.parametrize(
@@ -101,7 +95,7 @@ def test_axis_1d(ndim, ord, keepdims):
 )
 def test_axis_2d(ndim, ord, keepdims, axis):
     # For all cases when axis is (1, 0) and ord is None or fro,
-    # output values of cuNumeric and Numpy are different and not close enough
+    # output values of cuPyNumeric and Numpy are different and not close enough
     np_res = np.linalg.norm(
         np_arrays[ndim], ord=ord, axis=axis, keepdims=keepdims
     )
@@ -113,7 +107,7 @@ def test_axis_2d(ndim, ord, keepdims, axis):
 
 class TestNormErrors:
     def test_axis_invalid_type(self):
-        # In cuNumeric, raises error in normalize_axis_tuple
+        # In cuPyNumeric, raises error in normalize_axis_tuple
         expected_exc = TypeError
         x_np = np.array([1, 2, 3])
         x_num = num.array([1, 2, 3])
@@ -131,7 +125,7 @@ class TestNormErrors:
         ids=lambda axis: f"(axis={axis})",
     )
     def test_axis_invalid_value(self, axis):
-        # for (1, 1), In cuNumeric, raises error in normalize_axis_tuple
+        # for (1, 1), In cuPyNumeric, raises error in normalize_axis_tuple
         expected_exc = ValueError
         ndim = 2
 

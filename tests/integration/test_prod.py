@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 import numpy as np
 import pytest
 from utils.comparisons import allclose
+from utils.utils import AxisError
 
-import cunumeric as num
+import cupynumeric as num
+from cupynumeric._utils import is_np2
 
 # numpy.prod(a, axis=None, dtype=None, out=None, keepdims=<no value>,
 # initial=<no value>, where=<no value>)
@@ -74,7 +76,7 @@ NO_EMPTY_SIZE = [
     (DIM, DIM, DIM),
 ]
 
-ARR = ([], [[]], [[], []], np.inf, np.Inf, -10.3, 0, 200, 5 + 8j)
+ARR = ([], [[]], [[], []], np.inf, -10.3, 0, 200, 5 + 8j)
 
 DTYPE = ("l", "L", "f", "e", "d")
 INTEGER_DTYPE = ("h", "i", "H", "I", "?", "b", "B")
@@ -94,7 +96,7 @@ class TestProdNegative(object):
         assert allclose(np.prod(arr), num.prod(arr))
 
     def test_axis_out_bound(self):
-        expected_exc = np.AxisError
+        expected_exc = AxisError
         arr = [-1, 0, 1, 2, 10]
         with pytest.raises(expected_exc):
             np.prod(arr, axis=2)
@@ -122,19 +124,12 @@ class TestProdNegative(object):
         out_num = num.prod(arr_num, axis=2, keepdims=True)
         assert allclose(out_np, out_num)
 
-    @pytest.mark.parametrize(
-        "initial",
-        ([2, 3], pytest.param([3], marks=pytest.mark.xfail)),
-        ids=str,
-    )
+    @pytest.mark.parametrize("initial", ([2, 3], [3]), ids=str)
     def test_initial_list(self, initial):
-        expected_exc = ValueError
+        expected_exc = TypeError if is_np2 else ValueError
         arr = [[1, 2], [3, 4]]
-        # Numpy raises ValueError:
-        # Input object to FillWithScalar is not a scalar
         with pytest.raises(expected_exc):
             np.prod(arr, initial=initial)
-        # when LEGATE_TEST=1, cuNumeric casts list to scalar and proceeds
         with pytest.raises(expected_exc):
             num.prod(arr, initial=initial)
 
@@ -187,7 +182,7 @@ class TestProdPositive(object):
         out_num = num.prod(arr_num)
         assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail(reason="numpy and cunumeric return different dtypes")
+    @pytest.mark.xfail(reason="numpy and cupynumeric return different dtypes")
     @pytest.mark.parametrize("dtype", INTEGER_DTYPE, ids=to_dtype)
     def test_dtype_integer_precision(self, dtype):
         arr_np = np.arange(0, 5).astype(dtype)
@@ -197,7 +192,7 @@ class TestProdPositive(object):
         assert allclose(out_num, arr_num.prod())
         # When input precision is less than default platform integer
         # NumPy returns the product with dtype of platform integer
-        # cuNumeric returns the product with dtype of the input array
+        # cuPyNumeric returns the product with dtype of the input array
         assert allclose(out_np, out_num)
 
     @pytest.mark.parametrize(
@@ -216,13 +211,13 @@ class TestProdPositive(object):
         arr_np = np.array(arr, dtype=dtype)
         arr_num = num.array(arr, dtype=dtype)
         out_np = np.prod(arr_np)
-        # cunumeric always returns [1+0.j] when LEGATE_TEST=1
+        # cupynumeric always returns [1+0.j] when LEGATE_TEST=1
         out_num = num.prod(arr_num)
-        # When running tests with CUNUMERIC_TEST=1 and dtype is complex256,
+        # When running tests with CUPYNUMERIC_TEST=1 and dtype is complex256,
         # allclose hits assertion error:
-        # File "/legate/cunumeric/cunumeric/eager.py", line 293,
+        # File "/legate/cupynumeric/cupynumeric/eager.py", line 293,
         # in to_deferred_array
-        #   assert self.runtime.is_supported_type(self.array.dtype)
+        #   assert self.runtime.is_supported_dtype(self.array.dtype)
         #   AssertionError
         assert allclose(out_np, out_num)
 
@@ -235,7 +230,9 @@ class TestProdPositive(object):
         out_np = np.prod(arr_np, axis=axis)
         assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail(reason="cunumeric raises exceptions when LEGATE_TEST=1")
+    @pytest.mark.xfail(
+        reason="cupynumeric raises exceptions when LEGATE_TEST=1"
+    )
     @pytest.mark.parametrize(
         "axis", ((-1, 1), (0, 1), (1, 2), (0, 2)), ids=str
     )
@@ -244,7 +241,7 @@ class TestProdPositive(object):
         arr_np = np.random.random(size) * 10
         arr_num = num.array(arr_np)
         out_np = np.prod(arr_np, axis=axis)
-        # when LEGATE_TEST = 1 cuNumeric raises two types of exceptions
+        # when LEGATE_TEST = 1 cuPyNumeric raises two types of exceptions
         # (-1, 1): ValueError: Invalid promotion on dimension 2 for a 1-D store
         # others:
         # NotImplementedError: Need support for reducing multiple dimensions
@@ -322,7 +319,7 @@ class TestProdPositive(object):
         for axis in range(-ndim + 1, ndim, 1):
             out_np = np.prod(arr_np, axis=axis, keepdims=True)
             out_num = num.prod(arr_num, axis=axis, keepdims=True)
-            # in cunumeric/deferred/unary_reduction:
+            # in cupynumeric/deferred/unary_reduction:
             # if lhs_array.size == 1:
             #     > assert axes is None or len(axes) == rhs_array.ndim - (
             #         0 if keepdims else lhs_array.ndim

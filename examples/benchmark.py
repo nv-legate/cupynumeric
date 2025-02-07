@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 
 import math
 from functools import reduce
-
-from typing_extensions import Protocol
+from typing import Protocol
 
 
 class Timer(Protocol):
@@ -33,20 +32,20 @@ class Timer(Protocol):
         ...
 
 
-class CuNumericTimer(Timer):
+class CuPyNumericTimer(Timer):
     def __init__(self):
-        self._start_future = None
+        self._start_time = None
 
     def start(self):
         from legate.timing import time
 
-        self._start_future = time()
+        self._start_time = time("us")
 
     def stop(self):
         from legate.timing import time
 
-        end_future = time()
-        return (end_future - self._start_future) / 1000.0
+        end_future = time("us")
+        return (end_future - self._start_time) / 1000.0
 
 
 class CuPyTimer(Timer):
@@ -113,9 +112,9 @@ def parse_args(parser):
     )
     args, _ = parser.parse_known_args()
     if args.package == "legate":
-        import cunumeric as np
+        import cupynumeric as np
 
-        timer = CuNumericTimer()
+        timer = CuPyNumericTimer()
     elif args.package == "cupy":
         import cupy as np
 

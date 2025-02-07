@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.xfail
 def test_none_array():
     res_np = np.compress([0], None)  # numpy return []
-    # cuNumeric raises:
+    # cuPyNumeric raises:
     # AttributeError: 'NoneType' object has no attribute 'compress'
     res_num = num.compress([0], None)
     assert np.array_equal(res_np, res_num)
@@ -33,7 +33,7 @@ def test_none_array():
 @pytest.mark.xfail
 def test_empty_array():
     res_np = np.compress([0], [])  # numpy return []
-    # cuNumeric raises: ValueError:
+    # cuPyNumeric raises: ValueError:
     # Shape mismatch: condition contains entries that are out of bounds
     res_num = num.compress([0], [])
     assert np.array_equal(res_np, res_num)
@@ -79,14 +79,14 @@ def test_dtype_out1():
     # for Numpy, it will raise TypeError:
     # "Cannot cast array data from dtype('float64') to dtype('int64')
     # according to the rule 'safe'".
-    # cuNumeric passed.
+    # cuPyNumeric passed.
     np.compress([True, True, True, True], a, out=out_np)
     num.compress([True, True, True, True], b, out=out_num)
     assert np.array_equal(out_np, out_num)
 
 
 def test_dtype_out2():
-    # both Numpy and cuNumeric turn float into int
+    # both Numpy and cuPyNumeric turn float into int
     a = np.random.random((4,)) * 10
     b = num.array(a)
     out_np = np.random.randint(1, 10, (4,))
@@ -104,7 +104,7 @@ def test_out_parameter():
     out_num = np.random.randint(1, 5, (4,))
     np.compress([True, True, True, True], a, 0, out_np)
     num.compress([True, True, True, True], b, 0, out_num)
-    # for cuNumeric, the last parameter 'out',
+    # for cuPyNumeric, the last parameter 'out',
     # it should be written as 'out=out_num'
     # otherwise it raises error
     assert np.array_equal(out_num, out_np)
@@ -120,7 +120,7 @@ def test_bool_condition():
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_basic(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -134,7 +134,7 @@ def test_ndim_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_axis(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)
@@ -149,7 +149,7 @@ def test_ndim_axis(ndim):
         assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_ndim_out(ndim):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

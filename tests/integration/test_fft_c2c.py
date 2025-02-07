@@ -1,4 +1,4 @@
-# Copyright 2021 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,21 @@
 # limitations under the License.
 #
 
-import warnings
-
 import numpy as np
 import pytest
 from utils.comparisons import allclose as _allclose
 from utils.generators import mk_0to1_array
 
-import cunumeric as num
+import cupynumeric as num
 
 
-def allclose(A, B):
-    if B.dtype == np.float32 or B.dtype == np.complex64:
+def allclose(A: np.ndarray, B: np.ndarray) -> bool:
+    if (
+        B.dtype == np.float32
+        or B.dtype == np.float64
+        or B.dtype == np.complex64
+        or B.dtype == np.complex128
+    ):
         l2 = (A - B) * np.conj(A - B)
         l2 = np.sqrt(np.sum(l2) / np.sum(A * np.conj(A)))
         return l2 < 1e-6
@@ -55,12 +58,11 @@ def check_1d_c2c(N, dtype=np.float64):
         assert allclose(out, out_num)
 
     # Odd types
-    warnings.filterwarnings(action="ignore", category=np.ComplexWarning)
-    out = np.fft.rfft(Z)
-    out_num = num.fft.rfft(Z_num)
+    out = np.fft.rfft(Z.real)
+    out_num = num.fft.rfft(Z_num.real)
     assert allclose(out, out_num)
-    out = np.fft.ihfft(Z)
-    out_num = num.fft.ihfft(Z_num)
+    out = np.fft.ihfft(Z.real)
+    out_num = num.fft.ihfft(Z_num.real)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -106,11 +108,11 @@ def check_2d_c2c(N, dtype=np.float64):
         assert allclose(out, out_num)
 
     # Odd types
-    out = np.fft.rfft2(Z)
-    out_num = num.fft.rfft2(Z_num)
+    out = np.fft.rfft2(Z.real)
+    out_num = num.fft.rfft2(Z_num.real)
     assert allclose(out, out_num)
-    out = np.fft.ihfft(Z)
-    out_num = num.fft.ihfft(Z_num)
+    out = np.fft.ihfft(Z.real)
+    out_num = num.fft.ihfft(Z_num.real)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -155,11 +157,11 @@ def check_3d_c2c(N, dtype=np.float64):
         assert allclose(out, out_num)
 
     # Odd types
-    out = np.fft.rfftn(Z)
-    out_num = num.fft.rfftn(Z_num)
+    out = np.fft.rfftn(Z.real)
+    out_num = num.fft.rfftn(Z_num.real)
     assert allclose(out, out_num)
-    out = np.fft.ihfft(Z)
-    out_num = num.fft.ihfft(Z_num)
+    out = np.fft.ihfft(Z.real)
+    out_num = num.fft.ihfft(Z_num.real)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -214,8 +216,8 @@ def check_4d_c2c(N, dtype=np.float64):
 
     # Odd types
     assert allclose(out, out_num)
-    out = np.fft.ihfft(Z)
-    out_num = num.fft.ihfft(Z_num)
+    out = np.fft.ihfft(Z.real)
+    out_num = num.fft.ihfft(Z_num.real)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -250,7 +252,7 @@ def test_4d():
         pytest.param(np.uint64, marks=pytest.mark.xfail),
         pytest.param(np.float16, marks=pytest.mark.xfail),
         # NumPy accepts the dtypes
-        # cuNumeric raises
+        # cuPyNumeric raises
         # TypeError: FFT input not supported (missing a conversion?)
     ),
     ids=str,

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 import numpy as np
 
-import cunumeric as num
+import cupynumeric as num
 
 
 class ModuleGenerator:
@@ -26,11 +26,11 @@ class ModuleGenerator:
         self.bit_generator = num.random.XORWOW(seed)
 
     def random_raw(self, shape):
-        gen = num.random.generator.get_static_generator()
+        gen = num.random._generator.get_static_generator()
         return gen.bit_generator.random_raw(shape)
 
     def integers(self, low, high, size, dtype, endpoint):
-        return num.random.generator.get_static_generator().integers(
+        return num.random._generator.get_static_generator().integers(
             low, high, size, dtype, endpoint
         )
 

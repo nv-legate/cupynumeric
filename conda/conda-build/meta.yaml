@@ -1,4 +1,4 @@
-{% set name = "cunumeric" %}
+{% set name = "cupynumeric" %}
 {% if gpu_enabled == "true" %}
   {% set gpu_enabled_bool = true %}
 {% elif gpu_enabled == "false" %}
@@ -7,10 +7,18 @@
   {# We need to have a default value for the initial pass over the recipe #}
   {% set gpu_enabled_bool = false %}
 {% endif %}
+{% if upload_build == "true" %}
+  {% set upload_build_bool = true %}
+{% elif upload_build == "false" %}
+  {% set upload_build_bool = false %}
+{% else %}
+  {# We need to have a default value for the initial pass over the recipe #}
+  {% set upload_build_bool = false %}
+{% endif %}
 ## The placeholder version is strictly for making two-pass conda build process.
 ## It should not be used for any other purpose, and this is not a default version.
 {% set placeholder_version = '0.0.0.dev' %}
-{% set default_cuda_version = '12.0' %}
+{% set default_cuda_version = '12.2.2' %}
 {% set cuda_version='.'.join(environ.get('CUDA', default_cuda_version).split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0]|int %}
 {% set py_version=environ.get('CONDA_PY', '') %}
@@ -21,7 +29,7 @@
 {% endif %}
 {% if package_version is defined %}
     {% set version = package_version %}
-    {% set core_version = version %}
+    {% set legate_version = version %}
 ## The tag must be in one of the two formats (where N is a digit):
 ## vNN.NN.NN
 ## vNN.NN.NN.dev
@@ -29,10 +37,10 @@
 ## Note: default values are only given to make conda build work. They should not be necessary in principle.
 {% elif 'dev' in environ.get('GIT_DESCRIBE_TAG', placeholder_version) %}
     {% set version = (environ.get('GIT_DESCRIBE_TAG', placeholder_version) ~ environ.get('GIT_DESCRIBE_NUMBER', '')).lstrip('v') %}
-    {% set core_version = (version.rsplit('.',1)[0] ~ ".dev" ~ "|>=" ~ version.rsplit('.',1)[0]) %}
+    {% set legate_version = (version.rsplit('.',1)[0] ~ ".dev" ~ "|>=" ~ version.rsplit('.',1)[0]) %}
 {% else %}
     {% set version = environ.get('GIT_DESCRIBE_TAG', placeholder_version).lstrip('v') %}
-    {% set core_version = version %}
+    {% set legate_version = version %}
 {% endif %}
 
 package:
@@ -53,20 +61,18 @@ build:
   number: {{ build_number }}
   missing_dso_whitelist:
     -  '*libcuda.so*'
+{% if gpu_enabled_bool %}
+{% set cpu_gpu_tag='_gpu' %}
+{% else %}
+{% set cpu_gpu_tag='_cpu' %}
+{% endif %}
+{% set upload_tag='' if upload_build_bool else '_with_tests' %}
 {% if use_local_path is not defined %}
 # use git hash
-{% if not gpu_enabled_bool %}
-  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}_cpu"
-{% else %}
-  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}"
-{% endif %}
+  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}{{ cpu_gpu_tag }}{{ upload_tag }}"
 {% else %}
 # do not use git hash
-{% if not gpu_enabled_bool %}
-  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ PKG_BUILDNUM }}_cpu"
-{% else %}
-  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ PKG_BUILDNUM }}"
-{% endif %}
+  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ PKG_BUILDNUM }}{{ cpu_gpu_tag }}{{ upload_tag }}"
 {% endif %}
   script_env:
     - SCCACHE_BUCKET
@@ -76,21 +82,20 @@ build:
     - SCCACHE_S3_KEY_PREFIX
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
-    - CMAKE_C_COMPILER_LAUNCHER
-    - CMAKE_CXX_COMPILER_LAUNCHER
-    - CMAKE_CUDA_COMPILER_LAUNCHER
 {% if not gpu_enabled_bool %}
     - CPU_ONLY=1
+  # The CPU-only packages having more track_features than the GPU builds helps
+  # the solver to prefer the GPU builds when both are viable candidates.
+  # ref: https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#track-features
   track_features:
     - cpu_only
-{% else %}
-# prevent nccl from pulling in cudatoolkit
-  ignore_run_exports:
-    - cudatoolkit
-  ignore_run_exports_from:
-    - cuda-nvcc
-    - legate-core
 {% endif %}
+
+ignore_run_exports_from:
+  # scikit-build should really be a part of the build env, but then it installs its own Python.  Conda build stacks
+  # the build environment on the host environment, and the build python takes over causing paths havoc.  So, we put
+  # scikit-build into the host env, but we ignore any exports it may bring.
+  - scikit-build
 
 requirements:
   build:
@@ -99,73 +104,61 @@ requirements:
     - cmake {{ cmake_version }}
     - {{ compiler('c') }} =11.2
     - {{ compiler('cxx') }} =11.2
-  host:
     # the nvcc requirement is necessary because it contains crt/host_config.h used by cuda runtime. This is a packaging bug that has been reported.
-    - cuda-nvcc ={{ cuda_version }}
-    # libcurand is used both in CPU and GPU builds
-    - libcurand-dev
+    - cuda-nvcc
     # cudart needed for CPU and GPU builds because of curand
-    - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-dev
+    - cuda-version ={{ cuda_version }}
+    - libcurand-dev
+
+  host:
     - python
     - scikit-build
     - openblas =* =*openmp*
-{% if not gpu_enabled_bool %}
-    - legate-core ={{ core_version }} =*_cpu
-{% else %}
-    - legate-core ={{ core_version }}
-    - cuda-nvcc ={{ cuda_version }}
-    - cuda-cccl ={{ cuda_version }}
-    - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
-    - cuda-driver-dev ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-nvtx ={{ cuda_version }}
-    # - libcutensor-dev >=1.3
-    - cutensor >=1.3,<2.0 =*_*
+{% if gpu_enabled_bool %}
+    - legate >={{ legate_version }} =*_gpu*
+    - cuda-cccl
+    - cutensor >=2.0 =*_*
     - libcublas-dev
     - libcusolver-dev
     - libcufft-dev
-    - nccl
+    - libcurand-dev
+    - libcufile-dev
+    - cuda-version ={{ cuda_version }}
+{% else %}
+    - legate >={{ legate_version }} =*_cpu*
 {% endif %}
 
   run:
+    - cffi
     - numpy {{ numpy_version }}
-    - libopenblas =* =*openmp*
-{% if not gpu_enabled_bool %}
-    - legate-core ={{ core_version }} =*_cpu
-{% else %}
-    - legate-core ={{ core_version }}
-    - cuda-cudart >={{ cuda_version }},<{{ cuda_major+1 }}
-    - cuda-version >={{ cuda_version }},<{{ cuda_major+1 }}
-    - cutensor >=1.3 =*_*
-    - libcublas
-    - libcusolver >=11.4.1.48-0
-    - libcufft
-    - libnvjitlink
-    - libcusparse
-{% endif %}
     - opt_einsum >=3.3
     - scipy
-    - typing_extensions
-
-  run_constrained:
-    - __glibc >=2.17  # [linux]
-    - python != 3.9.7
+    - openblas =* =*openmp*
 {% if gpu_enabled_bool %}
+    - libnvjitlink
+    - libcusparse
+    - cutensor >=2.0 =*_*
+    # Pin to all minor versions of CUDA newer than the one built against, within the same major version.
+    # cuda-version constrains the CUDA runtime version and ensures a compatible driver is available
+    - {{ pin_compatible('cuda-version', min_pin='x.x', max_pin='x') }}
     - __cuda >={{ cuda_version }}
 {% endif %}
 
+  run_constrained:
+    - __glibc >=2.17  # [linux]
+
 about:
-  home: https://github.com/nv-legate/cunumeric
+  home: https://github.com/nv-legate/cupynumeric
   license: Apache-2.0
   license_file: LICENSE
   summary: 'Drop-in Replacment for NumPy'
   description: |
-    cuNumeric is a Legate library that aims to provide
+    cuPyNumeric is a Legate library that aims to provide
     a distributed and accelerated drop-in replacement
     for the NumPy API on top of the Legion runtime.
-  doc_url: https://github.com/nv-legate/cunumeric
-  dev_url: https://github.com/nv-legate/cunumeric
+  doc_url: https://github.com/nv-legate/cupynumeric
+  dev_url: https://github.com/nv-legate/cupynumeric
 
 extra:
   recipe-maintainers:

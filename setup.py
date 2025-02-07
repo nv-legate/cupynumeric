@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ from skbuild import setup
 import versioneer
 
 setup(
-    name="cunumeric",
+    name="cupynumeric",
     version=versioneer.get_version(),
     description="An Aspiring Drop-In Replacement for NumPy at Scale",
-    url="https://github.com/nv-legate/cunumeric",
+    url="https://github.com/nv-legate/cupynumeric",
     author="NVIDIA Corporation",
     license="Apache 2.0",
     classifiers=[
@@ -33,17 +33,17 @@ setup(
         "Topic :: Scientific/Engineering",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     packages=find_packages(
         where=".",
-        include=["cunumeric*"],
+        include=["cupynumeric*"],
     ),
-    package_data={"cunumeric": ["_sphinxext/_templates/*.rst"]},
+    package_data={"cupynumeric": ["_sphinxext/_templates/*.rst"]},
     include_package_data=True,
     cmdclass=versioneer.get_cmdclass(),
-    install_requires=["numpy>=1.22"],
+    install_requires=["cffi", "numpy>=1.22,<2", "opt_einsum>=3.3"],
     zip_safe=False,
 )

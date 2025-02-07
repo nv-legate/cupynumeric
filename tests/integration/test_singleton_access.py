@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_0to1_array, scalar_gen
+from utils.utils import MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def nonscalar_gen(lib):
-    for ndim in range(1, LEGATE_MAX_DIM + 1):
+    for ndim in MAX_DIM_RANGE:
         yield mk_0to1_array(lib, ndim * (5,))
 
 
@@ -55,7 +55,7 @@ def array_gen(lib):
     # get "multiple" items from scalar array
     for arr in scalar_gen(lib, 42):
         yield arr[arr.ndim * (slice(None),)]  # arr[:,:]
-        # TODO: fix cunumeric#34
+        # TODO: fix cupynumeric#34
         # yield arr[arr.ndim * (slice(1, None),)] # arr[1:,1:]
     # set single item on non-scalar array
     for arr in nonscalar_gen(lib):
@@ -64,19 +64,11 @@ def array_gen(lib):
         yield arr
     for arr in nonscalar_gen(lib):
         idx_tuple = arr.ndim * (2,)
-        flat_idx = 0
-        for i, x in enumerate(idx_tuple):
-            flat_idx *= arr.shape[i]
-            flat_idx += x
-        arr.itemset(flat_idx, -1)
+        arr[idx_tuple] = lib.full((1,), -1)
         yield arr
     for arr in nonscalar_gen(lib):
         idx_tuple = arr.ndim * (2,)
-        arr.itemset(idx_tuple, -1)
-        yield arr
-    for arr in nonscalar_gen(lib):
-        idx_tuple = arr.ndim * (2,)
-        arr.itemset(*idx_tuple, -1)
+        arr[idx_tuple] = lib.full((1, 1), -1)
         yield arr
     # set single item on scalar array
     for arr in scalar_gen(lib, 42):
@@ -84,24 +76,18 @@ def array_gen(lib):
         arr[idx_tuple] = -1
         yield arr
     for arr in scalar_gen(lib, 42):
-        arr.itemset(-1)
-        yield arr
-    for arr in scalar_gen(lib, 42):
-        arr.itemset(0, -1)
+        idx_tuple = arr.ndim * (0,)
+        arr[idx_tuple] = lib.full((1,), -1)
         yield arr
     for arr in scalar_gen(lib, 42):
         idx_tuple = arr.ndim * (0,)
-        arr.itemset(idx_tuple, -1)
-        yield arr
-    for arr in scalar_gen(lib, 42):
-        idx_tuple = arr.ndim * (0,)
-        arr.itemset(*idx_tuple, -1)
+        arr[idx_tuple] = lib.full((1, 1), -1)
         yield arr
     # set "multiple" items on scalar array
     for arr in scalar_gen(lib, 42):
         arr[arr.ndim * (slice(None),)] = -1  # arr[:,:] = -1
         yield arr
-    # TODO: fix cunumeric#34
+    # TODO: fix cupynumeric#34
     # for arr in scalar_gen(lib, 42):
     #     arr[arr.ndim * (slice(1, None),)] = -1 # arr[1:,1:] = -1
     #     yield arr

@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,21 +15,22 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.comparisons import allclose
 from utils.contractions import (
     check_default,
     check_permutations,
     check_shapes,
     check_types,
 )
+from utils.utils import ONE_MAX_DIM_RANGE
 
-import cunumeric as num
-from cunumeric.utils import matmul_modes
+import cupynumeric as num
+from cupynumeric._utils.linalg import matmul_modes
 
 
-@pytest.mark.parametrize("a_ndim", range(1, LEGATE_MAX_DIM + 1))
-@pytest.mark.parametrize("b_ndim", range(1, LEGATE_MAX_DIM + 1))
-def test(a_ndim, b_ndim):
+@pytest.mark.parametrize("a_ndim", ONE_MAX_DIM_RANGE)
+@pytest.mark.parametrize("b_ndim", ONE_MAX_DIM_RANGE)
+def test_function(a_ndim, b_ndim):
     name = f"matmul({a_ndim} x {b_ndim})"
     modes = matmul_modes(a_ndim, b_ndim)
 
@@ -41,6 +42,86 @@ def test(a_ndim, b_ndim):
     check_shapes(name, modes, operation)
     if a_ndim <= 2 and b_ndim <= 2:
         check_types(name, modes, operation)
+
+
+@pytest.mark.parametrize(
+    "a_shape",
+    (
+        (3, 4, 5),
+        (4, 5),
+        (5,),
+    ),
+)
+@pytest.mark.parametrize(
+    "b_shape",
+    (
+        (3, 5, 6),
+        (5, 6),
+        (5,),
+    ),
+)
+def test_operator(a_shape, b_shape):
+    np_a = np.random.random(a_shape)
+    np_b = np.random.random(b_shape)
+    num_a = num.array(np_a)
+    num_b = num.array(np_b)
+    assert allclose(np_a @ np_b, num_a @ num_b)
+
+
+@pytest.mark.parametrize(
+    "a_shape",
+    (
+        (3, 4, 5),
+        (4, 5),
+        (5,),
+    ),
+)
+@pytest.mark.parametrize(
+    "b_shape",
+    (
+        (3, 5, 5),
+        (5, 5),
+    ),
+)
+def test_inplace_operator(a_shape, b_shape):
+    if len(a_shape) < len(b_shape):
+        return
+    np_a = np.random.random(a_shape)
+    np_b = np.random.random(b_shape)
+    num_a = num.array(np_a)
+    num_b = num.array(np_b)
+    np_a @= np_b
+    num_a @= num_b
+    assert allclose(np_a, num_a)
+
+
+@pytest.mark.parametrize(
+    "mnk",
+    (
+        (134, 5, 45),
+        (134, 66, 7),
+        (26, 154, 45),
+        (46, 154, 5),
+        (13, 5, 45),
+        (4, 15, 45),
+        (1, 5, 45),
+        (34, 5, 1),
+        (1, 5, 45),
+        (1, 1, 5),
+        (1, 5, 1),
+        (1, 1, 1),
+        (5, 1, 1),
+    ),
+)
+def test_2d_matmul(mnk):
+    assert len(mnk) == 3
+    a_shape = (mnk[0], mnk[2])
+    b_shape = (mnk[2], mnk[1])
+    np_a = np.random.random(a_shape)
+    np_b = np.random.random(b_shape)
+    num_a = num.array(np_a)
+    num_b = num.array(np_b)
+    assert allclose(np_a @ np_b, num_a @ num_b)
 
 
 class TestMatmulErrors:
@@ -82,7 +163,7 @@ class TestMatmulErrors:
     def test_invalid_shape_with_vector(self, shapesAB):
         # For ((4, 1), (3,)), ((3,), (1, 4)), ((3,), (1,)),
         # In Numpy, raise ValueError
-        # In cuNumeric, broadcast 1 to 3 and pass
+        # In cuPyNumeric, broadcast 1 to 3 and pass
         expected_exc = ValueError
         shapeA, shapeB = shapesAB
         A_np = np.ones(shapeA)
@@ -140,7 +221,7 @@ class TestMatmulErrors:
     @pytest.mark.xfail
     def test_out_invalid_shape_DIVERGENCE(self):
         # In Numpy, PASS
-        # In cuNumeric, raise ValueError
+        # In cuPyNumeric, raise ValueError
         A = num.ones((3, 2, 4))
         B = num.ones((3, 4, 3))
         shape = (3, 3, 2, 3)
@@ -198,7 +279,7 @@ class TestMatmulErrors:
         # In Numpy, raise ValueError
         with pytest.raises(expected_exc):
             np.matmul(A_np, B_np, casting=casting)
-        # cuNumeric does not check casting when A and B are of the same dtype
+        # cuPyNumeric does not check casting when A and B are of the same dtype
         with pytest.raises(expected_exc):
             num.matmul(A_num, B_num, casting=casting)
 

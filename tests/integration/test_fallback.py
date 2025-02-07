@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import cunumeric as num
+import cupynumeric as num
 
 
 def test_array_equal():
@@ -28,8 +28,15 @@ def test_ufunc():
     in_num = num.array([0, 1, 2, 3])
     in_np = in_num.__array__()
 
-    out_num = np.logical_and.reduce(in_num)
-    out_np = np.logical_and.reduce(in_np)
+    # This test uses logical_and.accumulate because it is currently
+    # unimplemented, and we want to verify a behaviour of unimplemented ufunc
+    # methods. If logical_and.accumulate becomes implemented in the future,
+    # this assertion will start to fail, and a new (unimplemented) ufunc method
+    # should be found to replace it
+    assert not num.logical_and.accumulate._cupynumeric_metadata.implemented
+
+    out_num = num.logical_and.accumulate(in_num)
+    out_np = np.logical_and.accumulate(in_np)
     assert np.array_equal(out_num, out_np)
 
 

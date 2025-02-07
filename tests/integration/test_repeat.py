@@ -1,4 +1,4 @@
-# Copyright 2021-2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
 #
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
+from utils.utils import ONE_MAX_DIM_RANGE, AxisError
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.parametrize(
@@ -48,7 +48,7 @@ def test_array_empty_repeats_invalid_negative(repeats):
         # together with shape (0,) (2,)
     with pytest.raises(expected_exc):
         num.repeat([], repeats)
-        # while cunumeric is pass with the result []
+        # while cupynumeric is pass with the result []
 
 
 @pytest.mark.xfail
@@ -157,7 +157,7 @@ def test_array_1d_repeats_fatal_error(arr, repeats):
         # numpy raises "ValueError: negative dimensions are not allowed"
     with pytest.raises(expected_exc):
         num.repeat(anum, repeats)
-        # cuNumeric got "Fatal Python error: Aborted"
+        # cuPyNumeric got "Fatal Python error: Aborted"
 
 
 @pytest.mark.parametrize("arr", (None, [], 3, [1, 2, 3], [[1, 3], [2, 4]]))
@@ -186,7 +186,7 @@ def test_axis_string(arr, repeats, axis):
 
 def test_array_axis_out_bound():
     anp = np.array([1, 2, 3, 4, 5])
-    expected_exc = np.AxisError
+    expected_exc = AxisError
     with pytest.raises(expected_exc):
         np.repeat(anp, 4, 2)
     with pytest.raises(expected_exc):
@@ -200,7 +200,7 @@ def test_array_axis_negative_equal():
     assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_nd_basic(ndim):
     a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
     np_array = mk_seq_array(np, a_shape)
@@ -211,7 +211,7 @@ def test_nd_basic(ndim):
     assert np.array_equal(res_num, res_np)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_nd_axis(ndim):
     for axis in range(0, ndim):
         a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
@@ -223,7 +223,7 @@ def test_nd_axis(ndim):
         assert np.array_equal(res_num2, res_np2)
 
 
-@pytest.mark.parametrize("ndim", range(1, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
 def test_nd_repeats(ndim):
     a_shape = tuple(np.random.randint(1, 9) for _ in range(ndim))
     np_array = mk_seq_array(np, a_shape)

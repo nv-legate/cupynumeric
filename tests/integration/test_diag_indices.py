@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
+from utils.utils import MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
-import cunumeric as num
+import cupynumeric as num
 
 
 @pytest.mark.parametrize("n", [10, -10.5, -1])
@@ -27,7 +27,7 @@ def test_diag_indices_default_ndim(n):
     assert np.array_equal(a_np, a_num)
 
 
-@pytest.mark.parametrize("ndim", range(0, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", MAX_DIM_RANGE)
 def test_diag_indices_basic(ndim):
     a_np = np.diag_indices(10, ndim)
     a_num = num.diag_indices(10, ndim)
@@ -72,7 +72,7 @@ class TestDiagIndicesErrors:
 
 
 @pytest.mark.parametrize("size", [(5,), (0,)], ids=str)
-@pytest.mark.parametrize("ndim", range(2, LEGATE_MAX_DIM + 1))
+@pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
 def test_diag_indices_from_basic(size, ndim):
     shape = size * ndim
     a = np.ones(shape, dtype=int)
