@@ -200,7 +200,6 @@ void test_msort(std::array<T, SIZE>& in_array,
     } else {
       assign_values_to_array<T, DIM>(A1, in_array.data(), in_array.size());
     }
-    print_array<T, DIM>(A1);
   }
 
   auto B1 = cupynumeric::msort(A1);

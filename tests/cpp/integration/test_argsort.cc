@@ -244,7 +244,6 @@ void argsort_basic_axis_impl(
     auto test_shape = test_shapes[i];
     int32_t dim     = test_shape.size();
     for (int32_t axis = -dim + 1; axis < dim; ++axis) {
-      std::cout << "Axis is: " << axis << std::endl;
       auto expect_val = expect_result[i][axis];
       if (dim == 1) {
         test_argsort<T, SIZE, 1>(

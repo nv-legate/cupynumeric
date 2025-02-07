@@ -127,7 +127,7 @@ void check_array_near(NDArray a,
 
   auto acc = a.get_read_accessor<T, 1>();
   for (size_t i = 0; i < values.size(); ++i) {
-    EXPECT_NEAR(acc[i], values[i], abs_error) << err_msg(i);
+    ASSERT_NEAR(acc[i], values[i], abs_error) << err_msg(i);
   }
 }
 

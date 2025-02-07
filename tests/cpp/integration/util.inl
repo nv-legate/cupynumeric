@@ -98,34 +98,35 @@ std::string to_string(legate::AccessorRO<T, DIM> acc,
 }
 
 template <typename T, int32_t DIM>
-std::string check_array_eq(legate::AccessorRO<T, DIM> acc,
-                           T* values_ptr,
-                           const std::vector<uint64_t>& shape,
-                           legate::Rect<DIM> rect)
+void check_array_eq(legate::AccessorRO<T, DIM> acc,
+                    T* values_ptr,
+                    const std::vector<uint64_t>& shape,
+                    legate::Rect<DIM> rect)
 {
-  std::stringstream ss;
-
   auto index = 0;
-  auto size  = shape.size();
-  ss << "size: " << size << "\n";
   for (legate::PointInRectIterator<DIM> itr(rect, false); itr.valid(); ++itr) {
-    auto q = *itr;
-    ss << std::left << std::setprecision(3);
-    ss << std::setw(13) << "Array value: " << std::setw(10);
-    print_value(ss, acc[q]) << ", ";
-    ss << std::setw(16) << "Expected value: " << std::setw(10);
-    print_value(ss, acc[q]) << ", ";
-    if (size > 0) {
-      ss << std::setw(8) << "index: [";
-      for (uint32_t i = 0; i < size - 1; ++i) {
-        ss << q[i] << ",";
+    auto q      = *itr;
+    auto value  = acc[q];
+    auto expect = values_ptr[index++];
+    if (value != expect) {
+      std::stringstream ss;
+      auto size = shape.size();
+      ss << "size: " << size << "\n";
+      ss << std::left << std::setprecision(3);
+      ss << std::setw(13) << "Array value: " << std::setw(10);
+      print_value(ss, value) << ", ";
+      ss << std::setw(16) << "Expected value: " << std::setw(10);
+      print_value(ss, expect) << ", ";
+      if (size > 0) {
+        ss << std::setw(8) << "index: [";
+        for (uint32_t i = 0; i < size - 1; ++i) {
+          ss << q[i] << ",";
+        }
+        ss << q[size - 1] << "]\n";
       }
-      ss << q[size - 1] << "]\n";
+      FAIL() << ss.str();
     }
-    EXPECT_EQ(acc[q], values_ptr[index++]);
   }
-
-  return ss.str();
 }
 
 template <typename T, int32_t DIM>
@@ -145,10 +146,7 @@ struct check_array_eq_fn {
                   const std::vector<uint64_t>& shape,
                   legate::Rect<DIM> rect)
   {
-    auto string_result = check_array_eq<T, DIM>(acc, values_ptr, shape, rect);
-    if (rect.volume() <= 256) {
-      std::cerr << string_result << std::endl;
-    }
+    check_array_eq<T, DIM>(acc, values_ptr, shape, rect);
   }
 };
 

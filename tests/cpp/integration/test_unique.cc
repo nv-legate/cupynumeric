@@ -49,8 +49,6 @@ TEST(Unique, test_basic)
     auto x     = mk_array(x_in);
     auto x_out = unique(x);
     check_array(x_out, x_gt);
-    debug_array(x);
-    debug_array(x_out);
   }
 }
 
@@ -88,8 +86,6 @@ TEST(Unique, test_ndim)
     auto x     = mk_array(x_in, shape);
     auto x_out = unique(x);
     check_array(x_out, x_gt);
-    debug_array(x, false);
-    debug_array(x_out);
   }
 }
 

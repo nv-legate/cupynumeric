@@ -95,7 +95,6 @@ TEST(Convolve, test_int)
     auto v   = mk_array(v_in, shape_v);
     auto out = convolve(a, v);
     check_array(out, out_gt, shape_a);
-    debug_array(out, false);
   }
 }
 
@@ -106,7 +105,6 @@ TEST(Convolve, test_double)
     auto v   = mk_array(as_type_vector<double>(v_in), shape_v);
     auto out = convolve(a, v);
     check_array(out, as_type_vector<double>(out_gt), shape_a);
-    debug_array(out, false);
   }
 }
 
@@ -125,7 +123,6 @@ TEST(Convolve, test_ndim)
     if (ndim <= 3) {
       auto out = convolve(a, v);
       check_array(out, a_in, shape);
-      debug_array(out, false);
     } else {
       EXPECT_ANY_THROW(convolve(a, v));
     }
