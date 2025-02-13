@@ -14,6 +14,7 @@
 #
 
 from itertools import chain, combinations, permutations
+from typing import Iterator  
 
 import numpy as np
 import pytest
@@ -684,6 +685,28 @@ def test_ix_(seqs):
     an = np.ix_([0, 1], [2, 4, 5])
     assert all(isinstance(elt, num.ndarray) for elt in a)
     assert all(np.array_equal(*elts) for elts in zip(a, an))
+
+
+def test_ix_bool() -> None:
+    a = num.ix_([0, 1], [True])
+    an = np.ix_([0, 1], [True])
+    assert all(isinstance(elt, num.ndarray) for elt in a)
+    assert all(np.array_equal(*elts) for elts in zip(a, an))
+
+
+def test_ix_empty() -> None:
+    a = num.ix_([0, 1], [])
+    an = np.ix_([0, 1], [])
+    assert all(isinstance(elt, num.ndarray) for elt in a)
+    assert all(np.array_equal(*elts) for elts in zip(a, an))
+
+
+def test_ix_2d() -> None:
+    msg = r"Cross index must be 1 dimensional"
+    with pytest.raises(ValueError, match=msg):
+        num.ix_([0, 1], [[1, 2], [2, 3]])
+    with pytest.raises(ValueError, match=msg):
+        np.ix_([0, 1], [[1, 2], [2, 3]])
 
 
 if __name__ == "__main__":
