@@ -114,28 +114,42 @@ uint32_t CuPyNumericRuntime::get_next_random_epoch() { return next_epoch_++; }
 
 namespace {
 
+std::uint32_t parse_value(const char* value_char)
+{
+  auto value_sv = std::string_view{value_char};
+
+  std::uint32_t result{};
+  if (auto&& [_, ec] = std::from_chars(value_sv.begin(), value_sv.end(), result);
+      ec != std::errc{}) {
+    throw std::runtime_error{std::make_error_code(ec).message()};
+  }
+
+  return result;
+}
+
+}  // namespace
+
+bool is_in_test_mode()
+{
+  static const auto value = [] {
+    const auto* is_in_test_mode = std::getenv("LEGATE_TEST");
+    return is_in_test_mode && static_cast<bool>(parse_value(is_in_test_mode));
+  }();
+
+  return value;
+}
+
+namespace {
+
 std::uint32_t extract_env(const char* env_name,
                           std::uint32_t default_value,
                           std::uint32_t test_value)
 {
-  auto parse_value = [](const char* value_char) {
-    auto value_sv = std::string_view{value_char};
-
-    std::uint32_t result{};
-    if (auto&& [_, ec] = std::from_chars(value_sv.begin(), value_sv.end(), result);
-        ec != std::errc{}) {
-      throw std::runtime_error{std::make_error_code(ec).message()};
-    }
-
-    return result;
-  };
-
   if (const auto* env_value = std::getenv(env_name); env_value) {
     return parse_value(env_value);
   }
 
-  if (const auto* is_in_test_mode = std::getenv("LEGATE_TEST");
-      is_in_test_mode && parse_value(is_in_test_mode)) {
+  if (is_in_test_mode()) {
     return test_value;
   }
 

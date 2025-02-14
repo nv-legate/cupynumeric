@@ -191,6 +191,15 @@ NDArray& NDArray::operator*=(const NDArray& other)
   return *this;
 }
 
+NDArray NDArray::operator/(const NDArray& other) const { return divide(*this, other); }
+
+NDArray NDArray::operator/(const legate::Scalar& other) const
+{
+  auto runtime = CuPyNumericRuntime::get_runtime();
+  auto scalar  = runtime->create_scalar_store(other);
+  return operator/(NDArray(std::move(scalar)));
+}
+
 NDArray NDArray::operator[](std::initializer_list<slice> slices) const
 {
   if (slices.size() > static_cast<size_t>(dim())) {
@@ -202,7 +211,7 @@ NDArray NDArray::operator[](std::initializer_list<slice> slices) const
   uint32_t dim = 0;
   auto sliced  = store_;
   for (const auto& sl : slices) {
-    sliced = sliced.slice(0, sl);
+    sliced = sliced.slice(dim, sl);
     ++dim;
   }
 
@@ -448,6 +457,8 @@ void NDArray::trilu(NDArray rhs, int32_t k, bool lower)
   runtime->submit(std::move(task));
 }
 
+void NDArray::dot(NDArray rhs1, NDArray rhs2) { dot_MM(rhs1.get_store(), rhs2.get_store()); }
+
 void NDArray::binary_op(int32_t op_code, NDArray rhs1, NDArray rhs2)
 {
   if (rhs1.type() != rhs2.type()) {
@@ -560,10 +571,11 @@ void NDArray::unary_reduction(int32_t op_code_, NDArray input)
 
 uint64_t ceildiv(uint64_t a, uint64_t b) { return (a + b - 1) / b; }
 
-void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs2_store)
+void NDArray::dot_MM(const legate::LogicalStore& rhs1_store, const legate::LogicalStore& rhs2_store)
 {
-  auto runtime        = CuPyNumericRuntime::get_runtime();
-  bool is_single_proc = legate::Runtime::get_runtime()->get_machine().count() == 1;
+  auto runtime         = CuPyNumericRuntime::get_runtime();
+  const auto num_procs = legate::Runtime::get_runtime()->get_machine().count();
+  bool is_single_proc  = num_procs == 1;
 
   fill(get_reduction_identity(UnaryRedCode::SUM, type()));
 
@@ -572,14 +584,23 @@ void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs
   auto m = rhs1_store.shape()[0];
   auto n = rhs2_store.shape()[1];
   auto k = rhs1_store.shape()[1];
-  // compute tilesize for lhs and batch_size for k
-  // TODO make generic
-  std::vector<std::uint64_t> initial_tile_shape = {is_single_proc ? m : 512,
-                                                   is_single_proc ? n : 512};
 
-  legate::tuple<std::uint64_t> color_shape = {ceildiv(m, initial_tile_shape[0]),
-                                              ceildiv(n, initial_tile_shape[1])};
-  std::vector<std::uint64_t> tile_shape = {ceildiv(m, color_shape[0]), ceildiv(n, color_shape[1])};
+  static constexpr std::size_t MIN_MATRIX_SIZE = 1 << 20;
+
+  auto get_color_shape =
+    [&](const std::vector<std::uint64_t>& shape) -> std::vector<std::uint64_t> {
+    if (!is_in_test_mode() && shape[0] * shape[1] <= MIN_MATRIX_SIZE) {
+      return {1, 1};
+    }
+    auto color_shape = std::vector<std::uint64_t>{num_procs, 1};
+
+    while ((shape[0] / color_shape[0] < 2 * shape[1] / color_shape[1]) && color_shape[0] % 2 == 0) {
+      color_shape[0] /= 2;
+      color_shape[1] *= 2;
+    }
+
+    return color_shape;
+  };
 
   auto get_batchsize = [&](const std::vector<std::uint64_t>& tilesize, std::uint64_t k) {
     uint64_t typesize = legate::type_dispatch(type().code(), get_typesize_fn{});
@@ -590,6 +611,12 @@ void NDArray::dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs
     uint64_t batch_size            = ceildiv(k, num_batches);
     return batch_size;
   };
+
+  auto initial_color_shape = get_color_shape({m, n});
+  auto tile_shape          = std::vector<std::uint64_t>{ceildiv(m, initial_color_shape[0]),
+                                                        ceildiv(n, initial_color_shape[1])};
+  auto color_shape =
+    legate::tuple<std::uint64_t>{ceildiv(m, tile_shape[0]), ceildiv(n, tile_shape[1])};
 
   std::uint64_t k_batch_size = is_single_proc ? k : get_batchsize(tile_shape, k);
 

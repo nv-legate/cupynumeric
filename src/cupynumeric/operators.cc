@@ -82,6 +82,11 @@ NDArray multiply(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
   return binary_op(BinaryOpCode::MULTIPLY, std::move(rhs1), std::move(rhs2), std::move(out));
 }
 
+NDArray divide(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
+{
+  return binary_op(BinaryOpCode::DIVIDE, std::move(rhs1), std::move(rhs2), std::move(out));
+}
+
 NDArray negative(NDArray input) { return unary_op(UnaryOpCode::NEGATIVE, std::move(input)); }
 
 NDArray random(std::vector<uint64_t> shape)

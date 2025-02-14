@@ -70,4 +70,6 @@ class CuPyNumericRuntime {
   std::unordered_map<legate::Type::Code, legate::Type> argred_types_;
 };
 
+[[nodiscard]] bool is_in_test_mode();
+
 }  // namespace cupynumeric

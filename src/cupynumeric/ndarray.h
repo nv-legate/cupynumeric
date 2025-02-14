@@ -57,6 +57,8 @@ class NDArray {
   NDArray& operator+=(const NDArray& other);
   NDArray operator*(const NDArray& other) const;
   NDArray operator*(const legate::Scalar& other) const;
+  NDArray operator/(const NDArray& other) const;
+  NDArray operator/(const legate::Scalar& other) const;
   NDArray& operator*=(const NDArray& other);
   NDArray operator[](std::initializer_list<slice> slices) const;
   operator bool() const;
@@ -75,6 +77,7 @@ class NDArray {
   void unary_reduction(int32_t op_code, NDArray input);
   void eye(int32_t k);
   void trilu(NDArray rhs, int32_t k, bool lower);
+  void dot(NDArray rhs1, NDArray rhs2);
   void arange(Scalar start, Scalar stop, Scalar step);
   std::vector<NDArray> nonzero();
   NDArray unique();
@@ -168,7 +171,7 @@ class NDArray {
                       std::optional<NDArray> out              = std::nullopt);
   void _fill(legate::LogicalStore const& value);
 
-  void dot_MM(legate::LogicalStore& rhs1_store, legate::LogicalStore& rhs2_store);
+  void dot_MM(const legate::LogicalStore& rhs1_store, const legate::LogicalStore& rhs2_store);
   void _verify_mode_extent(const std::map<char, int>& mode2extent,
                            const std::vector<char>& modes,
                            const std::vector<size_t>& shape) const;

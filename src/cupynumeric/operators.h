@@ -37,6 +37,8 @@ NDArray add(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullop
 
 NDArray multiply(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
 
+NDArray divide(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
+
 NDArray dot(NDArray a, NDArray b);
 
 NDArray negative(NDArray input);
