@@ -53,13 +53,13 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.23
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.26
     with:
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: "cmake/versions.json"
-      legate-gh-ci-tag: "v1.23"
+      legate-gh-ci-tag: "v1.26"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -73,13 +73,13 @@ jobs:
     needs: setup-build
     name: "Check if legate.internal nightly exists for SHA specified in versions.json (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-check-if-nightly-exists-for-all-dependencies.yml@v1.23
+      nv-legate/legate-gh-ci/.github/workflows/gh-check-if-nightly-exists-for-all-dependencies.yml@v1.26
     with:
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: "cmake/versions.json"
-      legate-gh-ci-tag: "v1.23"
+      legate-gh-ci-tag: "v1.26"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -93,12 +93,12 @@ jobs:
     if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
     name: Upload package to Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.23
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.26
     with:
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.23"
+      legate-gh-ci-tag: "v1.26"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -183,13 +183,13 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.23
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.26
     with:
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "v1.23"
+      legate-gh-ci-tag: "v1.26"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -205,12 +205,12 @@ jobs:
     name: Update Test status on Server
     if: ${{ false }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.23
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.26
     with:
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.23"
+      legate-gh-ci-tag: "v1.26"
       name: UpdateTestStatus
       network: "ucx"
       pkgSubString: "cupynumeric-"
