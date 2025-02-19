@@ -1,12 +1,16 @@
 {% set name = "cupynumeric" %}
 {% if gpu_enabled == "true" %}
   {% set gpu_enabled_bool = true %}
+  {% set cpu_gpu_tag='_gpu' %}
 {% elif gpu_enabled == "false" %}
   {% set gpu_enabled_bool = false %}
+  {% set cpu_gpu_tag='_cpu' %}
 {% else %}
   {# We need to have a default value for the initial pass over the recipe #}
   {% set gpu_enabled_bool = false %}
+  {% set cpu_gpu_tag='_cpu' %}
 {% endif %}
+
 {% if upload_build == "true" %}
   {% set upload_build_bool = true %}
 {% elif upload_build == "false" %}
@@ -37,11 +41,13 @@
 ## Note: default values are only given to make conda build work. They should not be necessary in principle.
 {% elif 'dev' in environ.get('GIT_DESCRIBE_TAG', placeholder_version) %}
     {% set version = (environ.get('GIT_DESCRIBE_TAG', placeholder_version) ~ environ.get('GIT_DESCRIBE_NUMBER', '')).lstrip('v') %}
-    {% set legate_version = (version.rsplit('.',1)[0] ~ ".dev" ~ "|>=" ~ version.rsplit('.',1)[0]) %}
+    {% set legate_version_default = (version.rsplit('.',1)[0] ~ ".dev" ~ "|>=" ~ version.rsplit('.',1)[0]) %}
+    {% set legate_version = os.environ.get("LEGATE_VERSION", legate_version_default) %}
 {% else %}
     {% set version = environ.get('GIT_DESCRIBE_TAG', placeholder_version).lstrip('v') %}
-    {% set legate_version = version %}
+    {% set legate_version = os.environ.get("LEGATE_VERSION", version) %}
 {% endif %}
+{% set legate_buildstr = "_".join(["cuda" ~ cuda_major, "py" ~ py_version, os.environ.get("LEGATE_BUILDSTR", ""), cpu_gpu_tag.strip('_') ]) %}
 
 package:
   name: {{ name|lower }}
@@ -61,11 +67,6 @@ build:
   number: {{ build_number }}
   missing_dso_whitelist:
     -  '*libcuda.so*'
-{% if gpu_enabled_bool %}
-{% set cpu_gpu_tag='_gpu' %}
-{% else %}
-{% set cpu_gpu_tag='_cpu' %}
-{% endif %}
 {% set upload_tag='' if upload_build_bool else '_with_tests' %}
 {% if use_local_path is not defined %}
 # use git hash
@@ -115,8 +116,8 @@ requirements:
     - python
     - scikit-build
     - openblas =* =*openmp*
+    - legate ={{ legate_version }}={{ legate_buildstr }}
 {% if gpu_enabled_bool %}
-    - legate >={{ legate_version }} =*_gpu*
     - cuda-cccl
     - cutensor >=2.0 =*_*
     - libcublas-dev
@@ -125,8 +126,6 @@ requirements:
     - libcurand-dev
     - libcufile-dev
     - cuda-version ={{ cuda_version }}
-{% else %}
-    - legate >={{ legate_version }} =*_cpu*
 {% endif %}
 
   run:
@@ -135,6 +134,7 @@ requirements:
     - opt_einsum >=3.3
     - scipy
     - openblas =* =*openmp*
+    - legate ={{ legate_version }}={{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cupy
     - libnvjitlink

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -x
+
+generate_legate_version() {
+    legate_json_version="$(jq -r '.packages.legate.version' ${REPO_DIR}/cmake/versions.json)";
+    legate_SHA="$(jq -r '.packages.legate.git_tag' ${REPO_DIR}/cmake/versions.json)";
+    legate_hash="g${legate_SHA:0:8}"
+    export LEGATE_VERSION="${legate_json_version}*"
+    export LEGATE_BUILDSTR="*${legate_hash}*"
+    echo "LEGATE_VERSION=${LEGATE_VERSION} : LEGATE_BUILDSTR=${LEGATE_BUILDSTR}"
+}
+
+verify_legate_version() {
+    mamba search legate=${LEGATE_VERSION} --channel https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} 
+    if [ $? -ne 0 ]; then
+        echo "Error: conda search failed for legate." >&2; exit 1
+    fi
+}
+
+setup_conda_channel() {
+    if ! command -v jq &> /dev/null; then
+        echo "Installing jq"
+        apt-get update -q
+        apt-get -q install -y jq
+    fi
+    legate_conda_label="$(jq -r '.packages.legate.anaconda_label' ${REPO_DIR}/cmake/versions.json)";
+    export CONDA_CHANNEL="legate"
+    export CONDA_LABEL="${legate_conda_label}"
+    echo "CONDA_CHANNEL=${CONDA_CHANNEL} : CONDA_LABEL=${CONDA_LABEL}"
+}

@@ -5,13 +5,15 @@ set -x
 setup_env() {
     set -xeuo pipefail
 
+    . conda-dnld-utils
+    setup_conda_channel;
     export DEBIAN_FRONTEND=non-interactive
 
     # Run package updates and install packages
     apt-get update
     apt-get install -y numactl make
 
-    mamba create -yn legate -c "${ARTIFACTS_DIR}/conda-build/legate" -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c conda-forge legate cupynumeric
+    mamba create -yn legate -c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c conda-forge legate cupynumeric
 }
 
 setup_test_env() {

@@ -8,15 +8,11 @@ build_release_product() {
 
     mkdir -p /tmp/env_yaml /tmp/conda-build /tmp/out
 
-    cp -r "${ARTIFACTS_DIR}/conda-build/legate" /tmp/conda-build/
-
     local conda_build_args=();
-    conda_build_args+=(--override-channels);
-
     # The channel sequence below needs to be preserved
+    conda_build_args+=(-c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL});
     conda_build_args+=(-c conda-forge);
     conda_build_args+=(--override-channels);
-    conda_build_args+=(-c file:///tmp/conda-build/legate);
     conda_build_args+=(--croot /tmp/conda-build/cupynumeric);
     conda_build_args+=(--numpy 1.22);
     conda_build_args+=(--no-test);
@@ -93,12 +89,15 @@ build_project() {
 
     init_build_env "$@";
 
+    . conda-dnld-utils;
+    setup_conda_channel;
+    generate_legate_version
+
     case "$BUILD_TYPE" in
         ci) build_ci_product;;
         release) build_release_product;;
         *) return 1;;
     esac
 }
-
 
 (build_project "$@");
