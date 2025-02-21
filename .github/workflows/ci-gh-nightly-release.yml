@@ -30,7 +30,7 @@ jobs:
     uses:
       ./.github/workflows/gh-build-and-test.yml
     with:
-      build-type: release
+      build-type: nightly
       platform: ${{ matrix.platform }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}

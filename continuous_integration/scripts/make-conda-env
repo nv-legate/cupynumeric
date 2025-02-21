@@ -4,29 +4,6 @@ set -x
 
 . conda-utils
 
-make_ci_env() {
-    set -xeuo pipefail
-    yaml_file=$(find "${ARTIFACTS_DIR}" -name "environment*.yaml" | head -n 1)
-
-    sed -i '$ d' ${yaml_file}
-    echo "  - legate" >> "${yaml_file}"
-    sed -i "/channels:/!b;:a;n;/^- /ba;i\- ${ARTIFACTS_DIR}/conda-build/legate" ${yaml_file}
-    [ "${USE_CUDA}" = "ON" ] &&
-        echo "  - libcublas-dev" >> "${yaml_file}" &&
-        echo "  - libcufft-dev" >> "${yaml_file}" &&
-        echo "  - libcurand-dev" >> "${yaml_file}" &&
-        echo "  - libcusolver-dev" >> "${yaml_file}";
-
-    echo "YAML file..."
-    cat "${yaml_file}"
-
-    mkdir -p /tmp/out;
-
-    cp "${yaml_file}" /tmp/out
-
-    mamba env create -n legate -f "$yaml_file"
-}
-
 make_release_env() {
     mamba create -q -y -n "${CONDA_ENV}" -c conda-forge boa
 }
@@ -35,8 +12,8 @@ make_conda_env() {
     set -xeuo pipefail
 
     case "$1" in
-        ci) make_ci_env;;
-        release) make_release_env;;
+        ci) make_release_env;;
+        nightly) make_release_env;;
         *) return 1;;
     esac
 

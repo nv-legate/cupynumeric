@@ -48,42 +48,6 @@ copy_release_artifacts() {
     ls -lahR $ARTIFACTS_DIR
 }
 
-copy_ci_artifacts() {
-    set -xeuo pipefail;
-    echo Copying CI artifacts
-
-    mkdir -p "$ARTIFACTS_DIR"
-
-    cp -r /tmp/out          "$ARTIFACTS_DIR"
-    cp -r /tmp/conda-build  "$ARTIFACTS_DIR"
-}
-
-build_ci_product() {
-    set -xeuo pipefail;
-
-    printf "\n\n\n\n********* BUILDING CUPYNUMERIC CPP *********\n"
-    build-cupynumeric-cpp;
-
-    printf "\n\n\n\n********* BUILDING CUPYNUMERIC WHEEL *********\n"
-    build-cupynumeric-wheel;
-
-    printf "\n\n\n\n********* BUILDING CUPYNUMERIC CONDA *********\n"
-    build-cupynumeric-conda;
-
-    copy_ci_artifacts;
-}
-
-build_cupynumeric_fake() {
-    set -xeuo pipefail;
-
-    mkdir -p /tmp/out /tmp/conda-build/legate /tmp/conda-build/cupynumeric
-    touch /tmp/out/legate-23.11.00-dummy.tar.bz2
-    touch /tmp/conda-build/legate/dummy.txt
-    touch /tmp/conda-build/cupynumeric/dummy.txt
-
-    copy_ci_artifacts
-}
-
 build_project() {
     . setup-utils;
 
@@ -94,8 +58,8 @@ build_project() {
     generate_legate_version
 
     case "$BUILD_TYPE" in
-        ci) build_ci_product;;
-        release) build_release_product;;
+        ci) build_release_product;;
+        nightly) build_release_product;;
         *) return 1;;
     esac
 }
