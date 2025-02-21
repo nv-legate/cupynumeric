@@ -58,7 +58,7 @@ jobs:
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      dependencies-file: "cmake/versions.json"
+      dependencies-file: ""
       legate-gh-ci-tag: "v1.26"
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -67,25 +67,6 @@ jobs:
       target-device: ${{ inputs.target-device }}
       upload-enabled: ${{ inputs.upload-enabled }}
       use-container: ${{ inputs.platform == 'linux' || inputs.platform == 'linux-aarch64' }}
-    secrets: inherit
-
-  nightly-exists:
-    needs: setup-build
-    name: "Check if legate.internal nightly exists for SHA specified in versions.json (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }})"
-    uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-check-if-nightly-exists-for-all-dependencies.yml@v1.26
-    with:
-      build-mode: ""
-      build-type: ${{ inputs.build-type }}
-      client-repo: ${{ github.event.repository.name }}
-      dependencies-file: "cmake/versions.json"
-      legate-gh-ci-tag: "v1.26"
-      network: "ucx"
-      platform: ${{ inputs.platform }}
-      python-version: ${{ inputs.python-version }}
-      runs-on: linux-amd64-cpu4
-      target-device: ${{ inputs.target-device }}
-      upload-enabled: ${{ inputs.upload-enabled }}
     secrets: inherit
 
   upload:
