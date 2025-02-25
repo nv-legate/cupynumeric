@@ -41,6 +41,8 @@ def check_1d_c2r(N, dtype=np.float64):
     all_kwargs = (
         {},
         {"norm": "forward"},
+        {"norm": "ortho"},
+        {"norm": "backward"},
         {"n": N // 2},
         {"n": N // 2 + 1},
         {"n": N * 2},
@@ -52,6 +54,11 @@ def check_1d_c2r(N, dtype=np.float64):
         out = np.fft.irfft(Z, **kwargs)
         out_num = num.fft.irfft(Z_num, **kwargs)
         assert allclose(out, out_num)
+
+        out = np.fft.hfft(Z, **kwargs)
+        out_num = num.fft.hfft(Z_num, **kwargs)
+        assert allclose(out, out_num)
+        assert allclose(Z, Z_num)
 
     # Odd types
     out = np.fft.rfft(Z.real)
@@ -73,6 +80,8 @@ def check_2d_c2r(N, dtype=np.float64):
     all_kwargs = (
         {},
         {"norm": "forward"},
+        {"norm": "ortho"},
+        {"norm": "backward"},
         {"s": (N[0] // 2, N[1] - 2)},
         {"s": (N[0] + 1, N[0] + 2)},
         {"s": (N[0] // 2 + 1, N[0] + 2)},
@@ -215,6 +224,32 @@ def test_4d():
     check_4d_c2r(N=(6, 12, 10, 8))
     check_4d_c2r(N=(6, 12, 10, 8), dtype=np.float32)
 
+
+def test_1d_int() -> None:
+    Z = np.random.randint(1, 10, size=8)
+    Z_num = num.array(Z)
+    msg = r"Data type for FFT not supported"
+    with pytest.raises(TypeError, match=msg):
+        num.fft.rfft(Z_num)
+    msg = r"Data type for FFT not supported"
+    with pytest.raises(TypeError, match=msg):
+        num.fft.irfft(Z_num)
+    msg = r"Data type for FFT not supported"
+    with pytest.raises(TypeError, match=msg):
+        num.fft.ihfft(Z_num)
+
+
+def test_norm_invalid() -> None:
+    Z = (
+        np.random.rand(8).astype(np.float64)
+        + np.random.rand(8).astype(np.float64) * 1j
+    )
+    Z_num = num.array(Z)
+    msg = r"Invalid norm value"
+    with pytest.raises(ValueError, match=msg):
+        np.fft.rfft(Z, norm="other")
+    with pytest.raises(ValueError, match=msg):
+        num.fft.rfft(Z_num, norm="other")
 
 if __name__ == "__main__":
     import sys

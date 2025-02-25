@@ -823,7 +823,10 @@ class FFTNormalization(IntEnum):
         elif in_string == "backward" or in_string is None:
             return FFTNormalization.INVERSE
         else:
-            return None
+            raise ValueError(
+                f'Invalid norm value {in_string}; should be "backward",'
+                '"ortho" or "forward".'
+            )
 
     @staticmethod
     def reverse(in_string: str | None) -> str:
