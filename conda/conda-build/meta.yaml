@@ -134,7 +134,6 @@ requirements:
     - opt_einsum >=3.3
     - scipy
     - openblas =* =*openmp*
-    - legate ={{ legate_version }}={{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cupy
     - libnvjitlink

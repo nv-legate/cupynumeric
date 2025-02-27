@@ -35,7 +35,7 @@ jobs:
     with:
       build-type: ci
       platform: ${{ matrix.platform }}
-      python-version: "3.10"
+      python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
       upload-enabled: ${{ matrix.upload-enabled }}
       waive-gpu-tests: ${{ github.workflow == 'Build Release package' && matrix.platform == 'linux-aarch64' }}
