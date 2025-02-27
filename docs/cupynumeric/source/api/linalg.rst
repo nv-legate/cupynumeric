@@ -49,3 +49,12 @@ Solving equations and inverting matrices
    :toctree: generated/
 
    linalg.solve
+
+
+Matrix Functions
+----------------
+
+.. autosummary::
+   :toctree: generated/
+
+   linalg.expm

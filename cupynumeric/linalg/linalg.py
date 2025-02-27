@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, Any
 
 import numpy as np
 
@@ -35,6 +35,8 @@ from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module import dot, empty_like, eye, matmul, ndarray
 from .._ufunc.math import add, sqrt as _sqrt
 from ._exception import LinAlgError
+from .._module.creation_shape import zeros, zeros_like
+from legate.core import get_machine, TaskTarget
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -833,3 +835,325 @@ def _thunk_svd(a: ndarray, full_matrices: bool) -> tuple[ndarray, ...]:
 
     a._thunk.svd(out_u._thunk, out_s._thunk, out_vh._thunk)
     return out_u, out_s, out_vh
+
+
+# helper function to construct rational Pade
+# numerator / denominator for expm(A):
+#
+def make_uv(A: ndarray,
+            b: Any,
+            m: int) -> tuple[ndarray, ndarray]:
+    # 1 + floor(m/2):
+    #
+    k = 1 + m // 2
+    n = A.shape[0]
+
+    U = zeros((n, n), dtype=A.dtype)
+    V = zeros((n, n), dtype=A.dtype)
+
+    # U := A * ∑_{j=0, k} b_{2j+1} * A^{2j};
+    # V := ∑_{j=0, k} b_{2j} * A^{2j};
+    #
+    A2 = matmul(A, A)
+    A2k = eye(n, dtype=A.dtype)
+    for j in range(k):
+        U = U + b[2*j+1] * A2k
+        V = V + b[2*j] * A2k
+        A2k = matmul(A2k, A2)
+
+    U = matmul(A, U)
+
+    return (U, V)
+
+
+class ExpmConstants:
+    """
+    Aggregates all the necessary expm(A) constants.
+    """
+    # Pade `b` coefficient generators
+    # for both numerator `p(x)` and
+    # denominator `q(x)` coefficients
+    #
+    # dictionary key := `m`, degree of
+    # both `p(x)` and `q(x)` for
+    # diagonal Pade implementation;
+    #
+    b_coeff = {
+        3: np.array([120, 60, 12, 1], dtype = np.float64),
+        5: np.array([30240, 15120, 3360, 420, 30, 1], dtype = np.float64),
+        7: np.array([17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1],
+                    dtype = np.float64),
+        9: np.array(
+            [17643225600, 8821612800, 2075673600, 302702400, 30270240,
+            2162160, 110880, 3960, 90, 1], dtype = np.float64
+        ),
+        13: np.array(
+            [64764752532480000, 32382376266240000, 7771770303897600,
+             1187353796428800, 129060195264000, 10559470521600,
+             670442572800, 33522128640, 1323241920, 40840800,
+             960960, 16380, 182, 1], dtype = np.float64
+        ),
+    }
+
+    # Pade error control: absolute error tolerance
+    # parameter `theta`, also degree `m` dependent:
+    #
+    theta = {
+        3: 1.5e-2,
+        5: 2.5e-1,
+        7: 9.5e-1,
+        9: 2.1,
+        13:5.4,
+    }
+
+    # Taylor-18 coefficients
+    #
+    a01 = 0
+    a11 = -0.10036558103014462001
+    a21 = -0.00802924648241156960
+    a31 = -0.00089213849804572995
+
+    b01 = 0
+    b11 = 0.39784974949964507614
+    b21 = 1.36783778460411719922
+    b31 = 0.49828962252538267755
+    b61 = -0.00063789819459472330
+    b02 = -10.9676396052962062593
+    b12 = 1.68015813878906197182
+    b22 = 0.05717798464788655127
+    b32 = -0.00698210122488052084
+    b62 = 0.00003349750170860705
+    b03 = -0.09043168323908105619
+    b13 = -0.06764045190713819075
+    b23 = 0.06759613017704596460
+    b33 = 0.02955525704293155274
+    b63 = -0.00001391802575160607
+    b04 = 0
+    b14 = 0
+    b24 = -0.09233646193671185927
+    b34 = -0.01693649390020817171
+    b64 = -0.00001400867981820361
+
+    # Taylor-18 error control (squaring and scalling decision):
+    #
+    theta_m = 1.09
+
+
+def expm_impl(a: ndarray, output: ndarray) -> tuple[int, int]:
+    """ 
+    Implements Pade rational aproximant of 
+    Algorithm 10.20, p.246-247 in
+    "Functions of Matrices - Theory and Computation",
+    Nicholas J. Higham, SIAM 2008.
+    """
+
+    n = a.shape[0]
+    lst_keys = list(ExpmConstants.theta.keys())
+
+    # maximum polynomial degree for [p(x)/q(x)]:
+    max_deg = lst_keys[-1]
+
+    # L1 norm of matrix input:
+    l1_norm_a = norm(a, 1)
+
+    # loop decides which Pade degree, `m`, to
+    # use, starting with the lowest degree
+    # up to the one before last degree;
+    #
+    # if neither satisfies the theta tolerance
+    # then exit the loop and proceed by using
+    # m=max_deg degree + scaling (to achieve
+    # desired tolerance);
+    #
+    requires_scaling = True
+    s = 0
+    a_scaled = a
+
+    for m in lst_keys[0:-1]:
+        tol_m = ExpmConstants.theta[m]
+        b_arr = ExpmConstants.b_coeff[m]
+        if l1_norm_a <= tol_m:
+            requires_scaling = False
+            break
+
+    # at this point scaling + squaring with [max_deg/max_deg]
+    # Pade rational approximation is done;
+    #
+    # using [max_deg/max_deg] Pade with scaling A/(2^s)
+    # until || A / (2^s) ||_1 <= tol_13;
+    # i.e., s = ceil(log_2(|| A / (2^s) ||_1)):
+    #
+    if requires_scaling:
+        m = max_deg
+        tol_m = ExpmConstants.theta[m]
+        b_arr = ExpmConstants.b_coeff[m]
+
+        s = np.maximum(1, int(np.ceil(np.log2(l1_norm_a / tol_m))))
+        #
+        # scale `a` by sfactor = 1.0/2^s = 2^(-s):
+        #
+        sfactor = np.power(2.0, s)
+        #
+        # A' <- A / sfactor
+        #
+        a_scaled = a / sfactor
+
+    # evaluate U, V matrices, via Eq. 10.33 of [1]
+    # k = 1 + floor(m/2):
+    # U := A * ∑_{j=0, k} b_{2j+1} * A^{2j};
+    # V := ∑_{j=0, k} b_{2j} * A^{2j};
+    #
+    (U, V) = make_uv(a_scaled, b_arr, m)
+    A = V - U
+    B = V + U
+
+    # independently solve for each column:
+    # TODO: can more parallelism be harvested here?
+    #       at the very least avoid oversolving by
+    #       doing LU / QR factorization once, followed
+    #       by `n` backward-forward substitutions;
+    #
+    output[:] = solve(A, B)
+
+    # if scaling by 1/2^s was done then
+    # squaring s times is necessary:
+    #
+    if requires_scaling:
+        for j in range(s):
+            output[:] = matmul(output, output)
+
+    return (m, s)
+
+
+def expm_expl(a: ndarray, output: ndarray) -> tuple[int, int]:
+    """ 
+    Implements Taylor expansion, algorithm T_18 
+    in "Computing the Matrix Exponential with an
+    Optimized Taylor Polynomial Approximation",
+    Philipp Bader et. al.,
+    which minimizes the number of matrix products
+    for given number of terms in the expansion.
+    """
+
+    tol_m = ExpmConstants.theta_m # may vary w/ degree, m, in future impls.
+
+    # L1 norm of matrix input:
+    l1_norm_a = norm(a, 1)
+
+    requires_scaling = (l1_norm_a > tol_m)
+
+    s = 0
+    A = a
+    m = 18
+
+    if requires_scaling:
+        s = np.maximum(1, int(np.ceil(np.log2(l1_norm_a / tol_m))))
+        #
+        # scale `a` by sfactor = 1.0/2^s = 2^(-s):
+        #
+        sfactor = np.power(2.0, s)
+        #
+        # A' <- A / sfactor
+        #
+        A = a / sfactor
+
+    I = eye(A.shape[0], dtype=A.dtype)
+    A2 = matmul(A, A)
+    A3 = matmul(A2, A)
+    A6 = matmul(A3, A3)
+    B1 = ExpmConstants.a11*A + ExpmConstants.a21*A2 + ExpmConstants.a31*A3
+    B2 = ExpmConstants.b11*A + ExpmConstants.b21*A2 + ExpmConstants.b31*A3 \
+        + ExpmConstants.b61*A6
+    B3 = ExpmConstants.b02*I + ExpmConstants.b12*A + ExpmConstants.b22*A2 \
+        + ExpmConstants.b32*A3 + ExpmConstants.b62*A6
+    B4 = ExpmConstants.b03*I + ExpmConstants.b13*A + ExpmConstants.b23*A2 \
+        + ExpmConstants.b33*A3 + ExpmConstants.b63*A6
+    B5 = ExpmConstants.b24*A2 + ExpmConstants.b34*A3 + ExpmConstants.b64*A6
+
+    A9 = B4 + matmul(B1, B5)
+    B39 = B3 + A9
+
+    output[:] = B2 + matmul(B39, A9)
+
+    # if scaling by 1/2^s was done then
+    # squaring s times is necessary:
+    #
+    if requires_scaling:
+        for j in range(s):
+            output[:] = matmul(output, output)
+
+    return (m, s)    
+
+
+@add_boilerplate("a")
+def expm(a: ndarray, method: str = "pade") -> ndarray:
+    """
+    Matrix exponential. 
+
+    Returns exp(A) for each (M x M) slice into a multi-dimensional
+    array, assumed to be of shape (..., M, M);
+
+    By default Pade (implicit) implementation is used. 
+    However, explicit Taylor(deg = 18) implementation can be used,
+    by supplying additional flag `use_explicit = True`.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Input matrix or multi-dimensional array of shape (..., M, M).
+
+    method : String method selector to use explicit ('taylor')
+        or implicit ('pade'); default = 'pade'.
+
+    Returns
+    -------
+    exp(A): matrix exponential of input, or a matrix exponential 
+        for each slice in the input.
+
+    Notes
+    -----
+    Implicit Pade implementation is more stable but more computationally intensive than
+    explicit Taylor, which is less stable when matrix norm is big enough.
+    Also, Taylor can be slightly more performant for matrices of small
+    enough norms, but more memory consuming.
+
+    See Also
+    --------
+    scipy.linalg.expm
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+
+    if a.ndim < 2 or a.shape[-1] != a.shape[-2] or a.size <= 1:
+        raise ValueError(f"Invalid input shape for expm: {a.shape}")
+
+    output = zeros_like(a)
+
+    m_info = get_machine()
+    num_PEs = m_info.count()
+
+    # run implicit (Pade) method by default:
+    #
+    if method == "pade":
+        expm_func = expm_impl 
+    elif method == "taylor":
+        expm_func = expm_expl
+    else:
+        raise ValueError(f"Method {method} not supported.")
+
+    if num_PEs < 2:
+        for idx in np.ndindex(a.shape[:-2]):
+            mdeg, s = expm_func(a[idx], output[idx])
+    else:
+        for idx in np.ndindex(a.shape[:-2]):
+            flat_index = np.ravel_multi_index(idx, a.shape[:-2])
+
+            # assign work to multiple GPUs in round-robin way:
+            #
+            findx = int(flat_index)
+            with m_info[findx % num_PEs]:
+                mdeg, s = expm_func(a[idx], output[idx])
+
+    return output
