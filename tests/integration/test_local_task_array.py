@@ -15,12 +15,12 @@
 
 import numpy as np
 import pytest
-
 from legate.core import StoreTarget, get_legate_runtime, types as ty
 
 import cupynumeric as num
 
-runtime =  get_legate_runtime()
+runtime = get_legate_runtime()
+
 
 def test_local_task_array_with_array() -> None:
     array = runtime.create_array(ty.int64, shape=(10,)).get_physical_array()
@@ -29,6 +29,7 @@ def test_local_task_array_with_array() -> None:
     assert result.dtype == np.int64
     on_cpu = array.data().target not in {StoreTarget.FBMEM, StoreTarget.ZCMEM}
     assert isinstance(result, np.ndarray) == on_cpu
+
 
 def test_local_task_array_with_store() -> None:
     store = runtime.create_store(ty.int64, shape=(20,)).get_physical_store()

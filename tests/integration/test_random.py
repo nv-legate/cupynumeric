@@ -207,7 +207,7 @@ class TestRandomSeed:
         # See https://github.com/nv-legate/cunumeric.internal/issues/199
         # cuNumeric passed with float value
 
-        
+
 def test_RandomState() -> None:
     rdm_num = num.random.RandomState(10)
     L1 = rdm_num.randn(3, 3)
@@ -215,7 +215,7 @@ def test_RandomState() -> None:
     L2 = rdm_np.randn(3, 3)
     assert np.array_equal(L1, L2)
 
-    
+
 if __name__ == "__main__":
     import sys
 

@@ -14,7 +14,6 @@
 #
 
 from itertools import chain, combinations, permutations
-from typing import Iterator  
 
 import numpy as np
 import pytest

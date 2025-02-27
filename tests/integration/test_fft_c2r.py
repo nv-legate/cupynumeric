@@ -251,6 +251,7 @@ def test_norm_invalid() -> None:
     with pytest.raises(ValueError, match=msg):
         num.fft.rfft(Z_num, norm="other")
 
+
 if __name__ == "__main__":
     import sys
 

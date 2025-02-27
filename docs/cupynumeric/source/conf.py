@@ -15,7 +15,7 @@
 
 from os import getenv
 
-from cupynumeric import __version__
+import cupynumeric
 
 SWITCHER_PROD = "https://docs.nvidia.com/cupynumeric/switcher.json"
 SWITCHER_DEV = "http://localhost:8000/switcher.json"
@@ -23,13 +23,28 @@ JSON_URL = SWITCHER_DEV if getenv("SWITCHER_DEV") == "1" else SWITCHER_PROD
 
 ANNOTATE = getenv("LEGATE_ANNOTATION_DOCS") == "1"
 
+# This is the "YY.MM" version string that we want users to see
+BASE_VERSION = ".".join(cupynumeric.__version__.split(".", 2)[:2])
+
+# make sure BASE VERSION is formatted as expected
+_yy, _mm = BASE_VERSION.split(".")
+assert _yy.isdigit()
+assert _mm.isdigit()
+
 # -- Project information -----------------------------------------------------
 
 project = "NVIDIA cuPyNumeric"
-if "dev" in __version__:
-    project += f" ({__version__})"
 copyright = "2024, NVIDIA"
 author = "NVIDIA Corporation"
+
+if "dev" in cupynumeric.__version__ or "rc" in cupynumeric.__version__:
+    # for dev/rc versions just use the entire version with everything, and
+    # add it to the page title as well, for easy recognition
+    version = release = cupynumeric.__version__
+    project += f" ({cupynumeric.__version__})"
+else:
+    # otherwise, we actually only want the YY.MM to be visible for releases
+    version = release = BASE_VERSION
 
 # -- General configuration ---------------------------------------------------
 
@@ -68,7 +83,7 @@ html_theme_options = {
     "switcher": {
         "json_url": JSON_URL,
         "navbar_start": ["navbar-logo", "version-switcher"],
-        "version_match": ".".join(__version__.split(".", 2)[:2]),
+        "version_match": BASE_VERSION,
     },
     "extra_footer": [
         "This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.",  # NOQA

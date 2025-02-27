@@ -17,9 +17,9 @@ from __future__ import annotations
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
-from legate.core import PhysicalArray, StoreTarget
 import legate.core.types as ty
 import numpy as np
+from legate.core import PhysicalArray, StoreTarget
 
 from ..types import NdShape
 
@@ -116,6 +116,7 @@ def min_identity(
     else:
         raise ValueError(f"Unsupported dtype: {ty}")
 
+
 def local_task_array(obj: PhysicalArray | PhysicalStore) -> Any:
     """
     Generate an appropriate local-memory ndarray object, that is backed by the
@@ -139,6 +140,7 @@ def local_task_array(obj: PhysicalArray | PhysicalStore) -> Any:
         # cupy is only a dependency for GPU packages -- but we should
         # only hit this import in case the store is located on a GPU
         import cupy  # type: ignore [import-untyped,import-not-found]
+
         return cupy.asarray(store)
     else:
         return np.asarray(store)

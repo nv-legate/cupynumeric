@@ -6,8 +6,13 @@
     },
     {
         "name": "25.01",
-        "preferred": true,
         "version": "25.01",
         "url": "https://docs.nvidia.com/cupynumeric/25.01/"
-    }
+    },
+    {
+      "name": "25.03",
+      "version": "25.03",
+      "preferred": true,
+      "url": "https://docs.nvidia.com/cupynumeric/25.03/"
+  }
 ]

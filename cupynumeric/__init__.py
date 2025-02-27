@@ -40,6 +40,17 @@ del maybe_convert_to_np_ndarray
 del clone_module
 del _np
 
-from . import _version
 
-__version__ = _version.get_versions()["version"]  # type: ignore [no-untyped-call]
+def _fixup_version() -> str:
+    import os
+
+    if (v := os.environ.get("CUPYNUMERIC_USE_VERSION")) is not None:
+        return v
+
+    from . import _version
+
+    return _version.get_versions()["version"]  # type: ignore [no-untyped-call]
+
+
+__version__ = _fixup_version()
+del _fixup_version
