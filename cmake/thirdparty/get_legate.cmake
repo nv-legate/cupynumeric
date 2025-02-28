@@ -86,9 +86,10 @@ function(find_or_configure_legate)
   # so the `Legion_USE_*` variables are visible
   # Use QUIET find by default.
   set(_find_mode QUIET)
-  # If legate_DIR/legate_ROOT are defined as something other than empty or NOTFOUND
-  # use a REQUIRED find so that the build does not silently download legate.
-  if(legate_DIR OR legate_ROOT)
+  # If legate_DIR/legate_ROOT or CUPYNUMERIC_BUILD_PIP_WHEELS are defined as
+  # something other than empty or NOTFOUND use a REQUIRED find so that the
+  # build does not silently download legate.
+  if(legate_DIR OR legate_ROOT OR CUPYNUMERIC_BUILD_PIP_WHEELS)
     set(_find_mode REQUIRED)
   endif()
   rapids_find_package(legate ${version} EXACT CONFIG ${_find_mode} ${FIND_PKG_ARGS})

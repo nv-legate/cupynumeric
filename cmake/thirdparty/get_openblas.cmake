@@ -50,6 +50,12 @@ function(find_or_configure_OpenBLAS)
   set(CMAKE_POLICY_DEFAULT_CMP0048 OLD)
   set(CMAKE_POLICY_DEFAULT_CMP0054 NEW)
 
+  # Force a base CPU type for the openblas build.
+  set(_target HASWELL)
+  if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+	  set(_target ARMV8)
+  endif()
+    
   rapids_cpm_find(BLAS ${FIND_PKG_ARGS}
       CPM_ARGS
         ${BLAS_cpm_git_args}
@@ -62,6 +68,7 @@ function(find_or_configure_OpenBLAS)
                 "BUILD_WITHOUT_CBLAS OFF"
                 "BUILD_WITHOUT_LAPACK OFF"
                 "INTERFACE64 ${INTERFACE64}"
+                "TARGET ${_target}"
                 "USE_OPENMP ${Legion_USE_OpenMP}")
 
   set(CMAKE_POLICY_DEFAULT_CMP0048 ${CMP0048_orig})
@@ -116,7 +123,7 @@ endfunction()
 
 if(NOT DEFINED cupynumeric_OPENBLAS_VERSION)
   # Before v0.3.18, OpenBLAS's throws CMake errors when configuring
-  set(cupynumeric_OPENBLAS_VERSION "0.3.20")
+  set(cupynumeric_OPENBLAS_VERSION "0.3.29")
 endif()
 
 if(NOT DEFINED cupynumeric_OPENBLAS_BRANCH)

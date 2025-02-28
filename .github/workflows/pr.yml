@@ -1,0 +1,35 @@
+name: pr
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+      - "branch-*"
+      - "main"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  wheels-build:
+    secrets: inherit
+    uses: ./.github/workflows/wheels-build.yml
+    with:
+      build-type: pull-request
+      # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1893
+      # Remove this once we have uploads to PyPi.
+      legate-sha: c53cdb270394ce11576c4fd34149a2497f70d301
+  wheels-test:
+    needs: wheels-build
+    secrets: inherit
+    uses: ./.github/workflows/wheels-test.yml
+    with:
+      build-type: pull-request
+      # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1893
+      # Remove this once we have uploads to PyPi.
+      legate-sha: c53cdb270394ce11576c4fd34149a2497f70d301

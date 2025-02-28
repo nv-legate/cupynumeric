@@ -1,0 +1,155 @@
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        required: true
+        type: string
+      legate-sha:
+        type: string
+        required: true
+      branch:
+        type: string
+      sha:
+        type: string
+      repo:
+        type: string
+      node_type:
+        type: string
+        default: "cpu16"
+      cuda_ver:
+        type: string
+        default: "12.5.1"
+      linux_ver:
+        type: string
+        default: "rockylinux8"
+      script:
+        type: string
+        default: "continuous_integration/scripts/build_wheel_linux.bash"
+      matrix_filter:
+        type: string
+        default: "."
+
+defaults:
+  run:
+    shell: bash -eou pipefail {0}
+
+permissions:
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+jobs:
+  compute-matrix:
+    runs-on: linux-amd64-cpu4
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Compute Build Matrix
+        id: compute-matrix
+        run: |
+          set -eo pipefail
+
+          # please keep the matrices sorted in ascending order by the following:
+          #
+          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER]
+          #
+          export MATRIX="
+          # amd64
+          - { ARCH: 'amd64', PY_VER: '3.10', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          - { ARCH: 'amd64', PY_VER: '3.11', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          - { ARCH: 'amd64', PY_VER: '3.12', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          # arm64
+          - { ARCH: 'arm64', PY_VER: '3.10', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          - { ARCH: 'arm64', PY_VER: '3.11', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          - { ARCH: 'arm64', PY_VER: '3.12', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          "
+
+          MATRIX="$(
+            yq -n -o json 'env(MATRIX)' | \
+            jq -c '${{ inputs.matrix_filter }} | if (. | length) > 0 then {include: .} else "Error: Empty matrix\n" | halt_error(1) end'
+          )"
+
+          echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
+  build:
+    name:  ${{ matrix.ARCH }}, py${{ matrix.PY_VER }}, ${{ matrix.TARGET_DEV }}, ${{ matrix.BUILD_MODE }}
+    needs: compute-matrix
+    timeout-minutes: 480
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
+    container:
+      image: rapidsai/ci-wheel:cuda${{ inputs.cuda_ver }}-${{ inputs.linux_ver }}-py${{ matrix.PY_VER }}
+      env:
+        BUILD_MODE: ${{ matrix.BUILD_MODE }}
+    steps:
+      - name: Get the SHA
+        id: get-sha
+        run: |
+          sha=$(echo ${{github.sha}} | head -c 10)
+          echo "sha=$sha" >> $GITHUB_OUTPUT
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - name: Check it worked...
+        run: echo "${{steps.get-sha.outputs.sha}}"
+      - if: github.repository_owner == 'nv-legate'
+        name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-2
+          role-duration-seconds: 28800 # 8 hours
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-nv-legate
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+      - name: Add default paths to the env
+        run: |
+          echo $(pwd)/continuous_integration/scripts/tools >> "${GITHUB_PATH}"
+      - name: Get the legate wheel
+        id: cache
+        env:
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
+        uses: dawidd6/action-download-artifact@v8
+        with:
+          github_token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+          repo: nv-legate/legate.internal
+          workflow: pr.yml
+          commit: ${{ inputs.legate-sha }}
+          name: "legate-wheel-${{ env.BUILD_NAME }}"
+          check_artifacts: true
+          path: wheel
+      - name: Wheel build
+        run: ${{ inputs.script }}
+        env:
+          STEP_NAME: "C++ build"
+          GH_TOKEN: ${{ github.token }}
+      - name: Wheel upload
+        env:
+          BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cupynumeric-wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}
+          path: final-dist/*.whl
+      - name: Cache the wheel
+        env:
+          BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
+        uses: actions/cache@v4
+        with:
+          path: final-dist/*.whl
+          key: wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}

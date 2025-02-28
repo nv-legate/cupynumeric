@@ -35,12 +35,17 @@ def get_libpath():
             return libdir
         return None
 
-    return (
-        find_libcupynumeric(join(cn_path, "build", "lib")) or
-        find_libcupynumeric(join(dirname(dirname(dirname(cn_path))), "lib")) or
-        find_libcupynumeric(join(dirname(dirname(sys.executable)), "lib")) or
-        ""
-    )
+    for libdir in ("lib", "lib64"):
+        if ret := find_libcupynumeric(join(cn_path, "build", libdir)):
+            return ret
+        if ret := find_libcupynumeric(join(cn_path, "cupynumeric", libdir)):
+            return ret
+        if ret := find_libcupynumeric(join(dirname(dirname(dirname(cn_path))), libdir)):
+            return ret
+        if ret := find_libcupynumeric(join(dirname(dirname(sys.executable)), libdir)):
+            return ret
+
+    return ""
 
 
 libpath: str = get_libpath()
