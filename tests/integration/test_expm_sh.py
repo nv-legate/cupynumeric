@@ -41,6 +41,8 @@ def make_skew_hermitian(n: int,
                         max_v: float = 100.0) -> np.ndarray:
     num_off_d = int(n*(n-1)/2)
 
+    np.random.seed(1729)
+
     r_array = np.array([ np.random.uniform(min_v, max_v)
                          for k in range(num_off_d)], dtype=np.dtype('float64'))
 
