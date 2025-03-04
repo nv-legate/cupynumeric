@@ -18,7 +18,7 @@ build-backend = "scikit_build_core.build"
 python-requires = ">=3.10"
 
 [project]
-name = "cupynumeric"
+name = "nvidia-cupynumeric"
 authors = [{name = "NVIDIA Corporation"}]
 license = {text = "Proprietary"}
 description = "cupynumeric - drop in replacement for numpy"
@@ -36,7 +36,7 @@ dependencies = [
     "numpy!=2.1.0",
     "cffi",
     "opt_einsum",
-    "legate",
+    "legate==25.3.*,>=0.0.0a0",
     "cutensor-cu12",
 ]
 dynamic = ["version"]
