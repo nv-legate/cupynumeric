@@ -19,7 +19,15 @@ set(CUPYNUMERIC_BUILD_PIP_WHEELS ON)
 
 add_subdirectory(../../../.. cupynumeric-all)
 
-set(rpaths "$ORIGIN/../../cutensor/lib" "$ORIGIN/../../legate/lib64")
+set(rpaths
+  "$ORIGIN/../../legate/lib64"
+  "$ORIGIN/../../cutensor/lib"
+  "$ORIGIN/../../nvidia/cublas/lib"
+  "$ORIGIN/../../nvidia/cufft/lib"
+  "$ORIGIN/../../nvidia/cusolver/lib"
+  "$ORIGIN/../../nvidia/cusparse/lib"
+  "$ORIGIN/../../nvidia/nvjitlink/lib"
+)
 set_property(
   TARGET cupynumeric
   PROPERTY INSTALL_RPATH ${rpaths}
