@@ -708,6 +708,14 @@ class NumPyThunk(ABC):
         ...
 
     @abstractmethod
+    def eig(self, ew: Any, ev: Any) -> None:
+        ...
+
+    @abstractmethod
+    def eigvals(self, ew: Any) -> None:
+        ...
+
+    @abstractmethod
     def qr(self, q: Any, r: Any) -> None:
         ...
 

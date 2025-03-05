@@ -103,6 +103,13 @@ class Runtime(object):
         # Maps value types to struct types used in argmin/argmax
         self._cached_argred_types: dict[ty.Type, ty.Type] = dict()
 
+    def cusolver_has_geev(self) -> bool:
+        if not hasattr(self, "cusolver_has_geev_"):
+            self.cusolver_has_geev_ = (
+                cupynumeric_lib.shared_object.cupynumeric_cusolver_has_geev()
+            )
+        return self.cusolver_has_geev_
+
     @property
     def num_procs(self) -> int:
         return len(legate_runtime.machine)

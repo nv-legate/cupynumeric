@@ -58,6 +58,7 @@ struct CUDALibraries {
   std::unique_ptr<cudaDeviceProp> device_prop_{};
   cublasContext* cublas_;
   cusolverDnContext* cusolver_;
+
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
   cusolverMpHandle* cusolvermp_;
 #endif

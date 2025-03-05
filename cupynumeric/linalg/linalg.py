@@ -92,6 +92,108 @@ def cholesky(a: ndarray) -> ndarray:
 
 
 @add_boilerplate("a")
+def eig(a: ndarray) -> tuple[ndarray, ...]:
+    """
+    Compute the eigenvalues and right eigenvectors of a square array.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Matrices for which the eigenvalues and right eigenvectors will be
+        computed, at least dimension 2.
+
+    Returns
+    -------
+    eigenvalues : (…, M) array_like
+        The eigenvalues, each repeated according to its multiplicity.
+    eigenvectors : (…, M, M) array
+        The normalized (unit “length”) eigenvectors, such that the column
+        eigenvectors[:,i] is the eigenvector corresponding to the eigenvalue
+        eigenvalues[i].
+
+    Raises
+    ------
+    LinAlgError
+        If the eigenvalue computation does not converge.
+
+    Notes
+    -----
+    Unlike NumPy, cuPyNumeric always returns complex-dtype results, even if the
+    imaginary part is zero.
+
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    numpy.linalg.eig
+
+    Availability
+    --------
+    Multiple GPU, Multiple CPU
+    """
+    shape = a.shape
+    if len(shape) < 2:
+        raise LinAlgError(
+            f"{len(shape)}-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+    if shape[-2] != shape[-1]:
+        raise LinAlgError("Last 2 dimensions of the array must be square")
+    if np.dtype("e") == a.dtype:
+        raise TypeError("array type float16 is unsupported in linalg")
+    return _thunk_eig(a)
+
+
+@add_boilerplate("a")
+def eigvals(a: ndarray) -> ndarray:
+    """
+    Compute the eigenvalues of a square array.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Matrices for which the eigenvalues will be computed, at least
+        dimension 2.
+
+    Returns
+    -------
+    w : (…, M) array_like
+        The eigenvalues, each repeated according to its multiplicity.
+
+    Raises
+    ------
+    LinAlgError
+        If the eigenvalue computation does not converge.
+
+    Notes
+    -----
+    Unlike NumPy, cuPyNumeric always returns complex-dtype results, even if the
+    imaginary part is zero.
+
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    numpy.linalg.eigvals
+
+    Availability
+    --------
+    Multiple GPU, Multiple CPU
+    """
+    shape = a.shape
+    if len(shape) < 2:
+        raise LinAlgError(
+            f"{len(shape)}-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+    if shape[-2] != shape[-1]:
+        raise LinAlgError("Last 2 dimensions of the array must be square")
+    if np.dtype("e") == a.dtype:
+        raise TypeError("array type float16 is unsupported in linalg")
+    return _thunk_eigvals(a)
+
+
+@add_boilerplate("a")
 def qr(a: ndarray) -> tuple[ndarray, ...]:
     """
     Compute the qr factorization of a matrix.
@@ -248,8 +350,7 @@ def svd(a: ndarray, full_matrices: bool = True) -> tuple[ndarray, ...]:
 
     Notes
     -----
-    Currently does not support the parameters 'full_matrices', 'compute_uv',
-    and 'hermitian'.
+    Currently does not support the parameters 'compute_uv' and 'hermitian'.
 
     See Also
     --------
@@ -748,6 +849,60 @@ def _thunk_cholesky(a: ndarray) -> ndarray:
     )
     output._thunk.cholesky(input._thunk)
     return output
+
+
+def _thunk_eig(a: ndarray) -> tuple[ndarray, ...]:
+    if a.dtype.kind not in ("f", "c"):
+        a = a.astype("float64")
+
+    if a.dtype == np.float32:
+        complex_dtype = np.dtype(np.complex64)
+    elif a.dtype == np.float64:
+        complex_dtype = np.dtype(np.complex128)  # type: ignore
+    elif a.dtype.kind in ("c"):
+        complex_dtype = a.dtype
+    else:
+        raise TypeError("Eig input not supported (missing a conversion?)")
+
+    out_ew = ndarray(
+        shape=a.shape[:-1],
+        dtype=complex_dtype,
+        inputs=(a,),
+    )
+
+    out_ev = ndarray(
+        shape=a.shape,
+        dtype=complex_dtype,
+        inputs=(a,),
+    )
+
+    if a.shape[-1] > 0:
+        a._thunk.eig(out_ew._thunk, out_ev._thunk)
+    return out_ew, out_ev
+
+
+def _thunk_eigvals(a: ndarray) -> ndarray:
+    if a.dtype.kind not in ("f", "c"):
+        a = a.astype("float64")
+
+    if a.dtype == np.float32:
+        complex_dtype = np.dtype(np.complex64)
+    elif a.dtype == np.float64:
+        complex_dtype = np.dtype(np.complex128)  # type: ignore
+    elif a.dtype.kind in ("c"):
+        complex_dtype = a.dtype
+    else:
+        raise TypeError("Eigvals input not supported (missing a conversion?)")
+
+    out_ew = ndarray(
+        shape=a.shape[:-1],
+        dtype=complex_dtype,
+        inputs=(a,),
+    )
+
+    if a.shape[-1] > 0:
+        a._thunk.eigvals(out_ew._thunk)
+    return out_ew
 
 
 def _thunk_qr(a: ndarray) -> tuple[ndarray, ...]:

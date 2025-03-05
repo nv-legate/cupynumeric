@@ -120,6 +120,42 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       }
       return mappings;
     }
+    case CUPYNUMERIC_GEEV: {
+      std::vector<StoreMapping> mappings;
+      auto input_a   = task.input(0);
+      auto output_ew = task.output(0);
+
+      auto dimensions = input_a.dim();
+
+      // last 2 (matrix) dimensions col-major
+      // batch dimensions 0, ..., dim-3 row-major
+      std::vector<int32_t> dim_order;
+      dim_order.push_back(dimensions - 2);
+      dim_order.push_back(dimensions - 1);
+      for (int32_t i = dimensions - 3; i >= 0; i--) {
+        dim_order.push_back(i);
+      }
+
+      mappings.push_back(
+        StoreMapping::default_mapping(input_a.data(), options.front(), true /*exact*/));
+      mappings.back().policy().ordering.set_custom_order(dim_order);
+
+      // eigenvalue computation is optional
+      if (task.outputs().size() > 1) {
+        auto output_ev = task.output(1);
+        mappings.push_back(
+          StoreMapping::default_mapping(output_ev.data(), options.front(), true /*exact*/));
+        mappings.back().policy().ordering.set_custom_order(dim_order);
+      }
+
+      // remove last dimension for eigenvalues
+      dim_order.erase(std::next(dim_order.begin()));
+      mappings.push_back(
+        StoreMapping::default_mapping(output_ew.data(), options.front(), true /*exact*/));
+      mappings.back().policy().ordering.set_custom_order(dim_order);
+
+      return mappings;
+    }
     // CHANGE: If this code is changed, make sure all layouts are
     // consistent with those assumed in batched_cholesky.cu, etc
     case CUPYNUMERIC_BATCHED_CHOLESKY: {
@@ -267,6 +303,7 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       }
     }
     case CUPYNUMERIC_BATCHED_CHOLESKY: [[fallthrough]];
+    case CUPYNUMERIC_GEEV: [[fallthrough]];
     case CUPYNUMERIC_POTRF: [[fallthrough]];
     // FIXME(wonchanl): These tasks actually don't need unbound pools on CPUs. They are being used
     // only to finish up the first implementation quickly

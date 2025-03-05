@@ -29,6 +29,8 @@ Decompositions
    :toctree: generated/
 
    linalg.cholesky
+   linalg.eig
+   linalg.eigvals
    linalg.qr
    linalg.svd
 

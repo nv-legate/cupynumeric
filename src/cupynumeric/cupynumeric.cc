@@ -83,4 +83,8 @@ bool cupynumeric_has_cusolvermp()
 {
   return LEGATE_DEFINED(LEGATE_USE_CUDA) && LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP);
 }
+
+#if !LEGATE_DEFINED(LEGATE_USE_CUDA)
+bool cupynumeric_cusolver_has_geev() { return false; }
+#endif
 }

@@ -311,6 +311,69 @@ struct cufftPlanParams {
   std::string to_string() const;
 };
 
+typedef cusolverStatus_t (*cusolverDnXgeev_bufferSize_handle)(cusolverDnHandle_t handle,
+                                                              cusolverDnParams_t params,
+                                                              cusolverEigMode_t jobvl,
+                                                              cusolverEigMode_t jobvr,
+                                                              int64_t n,
+                                                              cudaDataType dataTypeA,
+                                                              const void* A,
+                                                              int64_t lda,
+                                                              cudaDataType dataTypeW,
+                                                              const void* W,
+                                                              cudaDataType dataTypeVL,
+                                                              const void* VL,
+                                                              int64_t ldvl,
+                                                              cudaDataType dataTypeVR,
+                                                              const void* VR,
+                                                              int64_t ldvr,
+                                                              cudaDataType computeType,
+                                                              size_t* workspaceInBytesOnDevice,
+                                                              size_t* workspaceInBytesOnHost);
+
+typedef cusolverStatus_t (*cusolverDnXgeev_handle)(cusolverDnHandle_t handle,
+                                                   cusolverDnParams_t params,
+                                                   cusolverEigMode_t jobvl,
+                                                   cusolverEigMode_t jobvr,
+                                                   int64_t n,
+                                                   cudaDataType dataTypeA,
+                                                   void* A,
+                                                   int64_t lda,
+                                                   cudaDataType dataTypeW,
+                                                   void* W,
+                                                   cudaDataType dataTypeVL,
+                                                   void* VL,
+                                                   int64_t ldvl,
+                                                   cudaDataType dataTypeVR,
+                                                   void* VR,
+                                                   int64_t ldvr,
+                                                   cudaDataType computeType,
+                                                   void* bufferOnDevice,
+                                                   size_t workspaceInBytesOnDevice,
+                                                   void* bufferOnHost,
+                                                   size_t workspaceInBytesOnHost,
+                                                   int* info);
+
+struct CuSolverExtraSymbols {
+ private:
+  void* cusolver_lib;
+
+ public:
+  // geev support (since 12.6)
+  cusolverDnXgeev_bufferSize_handle cusolver_geev_bufferSize;
+  cusolverDnXgeev_handle cusolver_geev;
+  bool has_geev;
+
+  CuSolverExtraSymbols();
+  ~CuSolverExtraSymbols();
+
+  // Prevent copying and overwriting
+  CuSolverExtraSymbols(const CuSolverExtraSymbols& rhs)            = delete;
+  CuSolverExtraSymbols& operator=(const CuSolverExtraSymbols& rhs) = delete;
+
+  void finalize();
+};
+
 // Defined in cudalibs.cu
 
 // Return a cached stream for the current GPU
@@ -319,6 +382,7 @@ int get_device_ordinal();
 const cudaDeviceProp& get_device_properties();
 cublasHandle_t get_cublas();
 cusolverDnHandle_t get_cusolver();
+CuSolverExtraSymbols* get_cusolver_extra_symbols();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
 cusolverMpHandle_t get_cusolvermp();
 #endif

@@ -72,6 +72,7 @@ def test_CuPyNumericOpCode() -> None:
         "FFT",
         "FILL",
         "FLIP",
+        "GEEV",
         "GEMM",
         "HISTOGRAM",
         "LOAD_CUDALIBS",

@@ -1689,6 +1689,37 @@ class EagerArray(NumPyThunk):
 
             self.array[:] = result
 
+    def eig(self, ew: Any, ev: Any) -> None:
+        self.check_eager_args(ew, ev)
+        if self.deferred is not None and (
+            runtime.num_gpus == 0 or runtime.cusolver_has_geev()
+        ):
+            self.deferred.eig(ew, ev)
+        else:
+            try:
+                result_ew, result_ev = np.linalg.eig(self.array)
+            except np.linalg.LinAlgError as e:
+                from ..linalg import LinAlgError
+
+                raise LinAlgError(e) from e
+            ew.array[:] = result_ew
+            ev.array[:] = result_ev
+
+    def eigvals(self, ew: Any) -> None:
+        self.check_eager_args(ew)
+        if self.deferred is not None and (
+            runtime.num_gpus == 0 or runtime.cusolver_has_geev()
+        ):
+            self.deferred.eigvals(ew)
+        else:
+            try:
+                result_ew = np.linalg.eigvals(self.array)
+            except np.linalg.LinAlgError as e:
+                from ..linalg import LinAlgError
+
+                raise LinAlgError(e) from e
+            ew.array[:] = result_ew
+
     def qr(self, q: Any, r: Any) -> None:
         self.check_eager_args(q, r)
         if self.deferred is not None:

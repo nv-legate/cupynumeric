@@ -69,6 +69,7 @@ from ..config import (
     UnaryRedCode,
 )
 from ..linalg._cholesky import cholesky_deferred
+from ..linalg._eigen import eig_deferred
 from ..linalg._qr import qr_deferred
 from ..linalg._solve import solve_deferred
 from ..linalg._svd import svd_deferred
@@ -3464,6 +3465,22 @@ class DeferredArray(NumPyThunk):
     @auto_convert("src")
     def cholesky(self, src: Any) -> None:
         cholesky_deferred(self, src)
+
+    @auto_convert("ew", "ev")
+    def eig(self, ew: Any, ev: Any) -> None:
+        if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
+            lhs = runtime.to_eager_array(self)
+            lhs.eig(runtime.to_eager_array(ew), runtime.to_eager_array(ev))
+        else:
+            eig_deferred(self, ew, ev)
+
+    @auto_convert("ew")
+    def eigvals(self, ew: Any) -> None:
+        if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
+            lhs = runtime.to_eager_array(self)
+            lhs.eigvals(runtime.to_eager_array(ew))
+        else:
+            eig_deferred(self, ew)
 
     @auto_convert("q", "r")
     def qr(self, q: Any, r: Any) -> None:

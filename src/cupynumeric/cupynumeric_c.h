@@ -41,6 +41,7 @@ enum CuPyNumericOpCode {
   CUPYNUMERIC_FFT,
   CUPYNUMERIC_FILL,
   CUPYNUMERIC_FLIP,
+  CUPYNUMERIC_GEEV,
   CUPYNUMERIC_GEMM,
   CUPYNUMERIC_HISTOGRAM,
   CUPYNUMERIC_LOAD_CUDALIBS,
@@ -341,6 +342,8 @@ typedef struct ReductionOpIds {
 
 void cupynumeric_perform_registration();
 bool cupynumeric_has_cusolvermp();
+
+bool cupynumeric_cusolver_has_geev();
 
 unsigned cupynumeric_max_eager_volume();
 

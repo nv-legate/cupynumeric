@@ -19,6 +19,7 @@
 
 #include "cudalibs.h"
 
+#include <dlfcn.h>
 #include <stdio.h>
 
 using namespace legate;
@@ -270,6 +271,39 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params)
   return result;
 }
 
+CuSolverExtraSymbols::CuSolverExtraSymbols()
+{
+  cusolver_lib = dlopen("libcusolver.so", RTLD_LAZY | RTLD_DEEPBIND);
+  void* fn1    = dlsym(cusolver_lib, "cusolverDnXgeev_bufferSize");
+  if (fn1 == nullptr) {
+    dlerror();
+  } else {
+    cusolver_geev_bufferSize = (cusolverDnXgeev_bufferSize_handle)fn1;
+    has_geev                 = true;
+  }
+
+  void* fn2 = dlsym(cusolver_lib, "cusolverDnXgeev");
+  if (fn2 == nullptr) {
+    has_geev                 = false;
+    cusolver_geev_bufferSize = nullptr;
+    dlerror();
+  } else {
+    cusolver_geev = (cusolverDnXgeev_handle)fn2;
+  }
+}
+
+void CuSolverExtraSymbols::finalize()
+{
+  cusolver_geev            = nullptr;
+  cusolver_geev_bufferSize = nullptr;
+  has_geev                 = false;
+  if (cusolver_lib != nullptr) {
+    dlclose(cusolver_lib);
+  }
+}
+
+CuSolverExtraSymbols::~CuSolverExtraSymbols() { finalize(); }
+
 CUDALibraries::CUDALibraries()
   : finalized_(false),
     cublas_(nullptr),
@@ -294,6 +328,7 @@ void CUDALibraries::finalize()
   if (cusolver_ != nullptr) {
     finalize_cusolver();
   }
+
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
   if (cusolvermp_ != nullptr) {
     finalize_cusolvermp();
@@ -445,6 +480,18 @@ cusolverDnContext* get_cusolver()
   return lib.get_cusolver();
 }
 
+static CuSolverExtraSymbols& static_cusolver_extra_symbols()
+{
+  static CuSolverExtraSymbols cusolver_extra_symbols;
+  return cusolver_extra_symbols;
+}
+
+CuSolverExtraSymbols* get_cusolver_extra_symbols()
+{
+  auto& symbols = static_cusolver_extra_symbols();
+  return &symbols;
+}
+
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
 cusolverMpHandle* get_cusolvermp()
 {
@@ -493,6 +540,7 @@ class LoadCUDALibsTask : public CuPyNumericTask<LoadCUDALibsTask> {
     auto& lib       = get_cuda_libraries(proc);
     lib.get_cublas();
     lib.get_cusolver();
+    auto* extra = get_cusolver_extra_symbols();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
     lib.get_cusolvermp();
 #endif
@@ -510,6 +558,8 @@ class UnloadCUDALibsTask : public CuPyNumericTask<UnloadCUDALibsTask> {
     const auto proc = legate::Processor::get_executing_processor();
     auto& lib       = get_cuda_libraries(proc);
     lib.finalize();
+    auto* extra = get_cusolver_extra_symbols();
+    extra->finalize();
     destroy_bitgenerator(proc);
   }
 };
@@ -521,3 +571,8 @@ static void __attribute__((constructor)) register_tasks(void)
 }
 
 }  // namespace cupynumeric
+
+extern "C" {
+
+bool cupynumeric_cusolver_has_geev() { return cupynumeric::get_cusolver_extra_symbols()->has_geev; }
+}

@@ -155,6 +155,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/matrix/batched_cholesky.cc
   src/cupynumeric/matrix/contract.cc
   src/cupynumeric/matrix/diag.cc
+  src/cupynumeric/matrix/geev.cc
   src/cupynumeric/matrix/gemm.cc
   src/cupynumeric/matrix/matmul.cc
   src/cupynumeric/matrix/matvecmul.cc
@@ -219,6 +220,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/matrix/batched_cholesky_omp.cc
     src/cupynumeric/matrix/contract_omp.cc
     src/cupynumeric/matrix/diag_omp.cc
+    src/cupynumeric/matrix/geev_omp.cc
     src/cupynumeric/matrix/gemm_omp.cc
     src/cupynumeric/matrix/matmul_omp.cc
     src/cupynumeric/matrix/matvecmul_omp.cc
@@ -273,6 +275,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/matrix/batched_cholesky.cu
     src/cupynumeric/matrix/contract.cu
     src/cupynumeric/matrix/diag.cu
+    src/cupynumeric/matrix/geev.cu
     src/cupynumeric/matrix/gemm.cu
     src/cupynumeric/matrix/matmul.cu
     src/cupynumeric/matrix/matvecmul.cu

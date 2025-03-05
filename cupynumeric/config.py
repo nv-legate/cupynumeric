@@ -166,6 +166,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_FFT_Z2Z: int
     CUPYNUMERIC_FILL: int
     CUPYNUMERIC_FLIP: int
+    CUPYNUMERIC_GEEV: int
     CUPYNUMERIC_GEMM: int
     CUPYNUMERIC_HISTOGRAM: int
     CUPYNUMERIC_LOAD_CUDALIBS: int
@@ -288,6 +289,10 @@ class _CupynumericSharedLib:
         ...
 
     @abstractmethod
+    def cupynumeric_cusolver_has_geev(self) -> bool:
+        ...
+
+    @abstractmethod
     def cupynumeric_max_eager_volume(self) -> int:
         ...
 
@@ -384,6 +389,7 @@ class CuPyNumericOpCode(IntEnum):
     FFT = _cupynumeric.CUPYNUMERIC_FFT
     FILL = _cupynumeric.CUPYNUMERIC_FILL
     FLIP = _cupynumeric.CUPYNUMERIC_FLIP
+    GEEV = _cupynumeric.CUPYNUMERIC_GEEV
     GEMM = _cupynumeric.CUPYNUMERIC_GEMM
     HISTOGRAM = _cupynumeric.CUPYNUMERIC_HISTOGRAM
     LOAD_CUDALIBS = _cupynumeric.CUPYNUMERIC_LOAD_CUDALIBS
