@@ -34,6 +34,8 @@ build_release_product() {
 
     # https://github.com/nv-legate/cupynumeric.internal/pull/351#issuecomment-2286922486
     export CONDA_OVERRIDE_CUDA="${CUDA_VERSION}"
+    # Use the new .conda format.
+    conda config --set conda_build.pkg_format 2
     conda mambabuild "${conda_build_args[@]}" "${REPO_DIR}/conda/conda-build";
 
     copy_release_artifacts
