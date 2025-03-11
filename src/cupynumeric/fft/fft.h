@@ -32,7 +32,7 @@ struct FFTArgs {
 
 class FFTTask : public CuPyNumericTask<FFTTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_FFT};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_FFT}};
 
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 

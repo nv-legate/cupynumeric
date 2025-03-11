@@ -22,7 +22,8 @@ namespace cupynumeric {
 
 class MpSolveTask : public CuPyNumericTask<MpSolveTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_MP_SOLVE};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_MP_SOLVE}};
 
  public:
 #if LEGATE_DEFINED(LEGATE_USE_CUDA)

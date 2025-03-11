@@ -20,13 +20,13 @@
 using namespace cupynumeric;
 namespace {
 
-typedef std::vector<std::tuple<std::vector<size_t>, std::vector<int32_t>>> VEC_SHAPE_AXES;
+typedef std::vector<std::tuple<std::vector<uint64_t>, std::vector<int32_t>>> VEC_SHAPE_AXES;
 
-std::vector<size_t> squeeze_result(
-  const std::vector<size_t>& shape,
+std::vector<uint64_t> squeeze_result(
+  const std::vector<uint64_t>& shape,
   std::optional<std::reference_wrapper<std::vector<int32_t> const>> axes = std::nullopt)
 {
-  std::vector<size_t> result;
+  std::vector<uint64_t> result;
   if (!axes.has_value()) {
     for (int i = 0; i < shape.size(); i++) {
       if (shape[i] != 1) {
@@ -54,7 +54,7 @@ std::vector<size_t> squeeze_result(
 }
 
 void test_squeeze(
-  const std::vector<size_t>& shape,
+  const std::vector<uint64_t>& shape,
   std::optional<std::reference_wrapper<std::vector<int32_t> const>> axes = std::nullopt)
 {
   auto vec_a        = mk_seq_vector<int32_t>(shape);
@@ -64,8 +64,8 @@ void test_squeeze(
   check_array<int32_t>(x, vec_a, result_shape);
 }
 
-static constexpr int32_t DIM           = 5;
-std::vector<std::vector<size_t>> SIZES = {
+static constexpr int32_t DIM             = 5;
+std::vector<std::vector<uint64_t>> SIZES = {
   {},
   {
     0,
@@ -170,7 +170,7 @@ TEST(Squeeze, AxesNegative)
 
 TEST(Squeeze, InvalidAxesNotEqualToOne)
 {
-  std::vector<size_t> shape                  = {1, 2, 1};
+  std::vector<uint64_t> shape                = {1, 2, 1};
   std::vector<std::vector<int32_t>> vec_axes = {{
                                                   1,
                                                 },
@@ -184,7 +184,7 @@ TEST(Squeeze, InvalidAxesNotEqualToOne)
 
 TEST(Squeeze, InvalidAxesOutOfBound)
 {
-  std::vector<size_t> shape                  = {1, 2, 1};
+  std::vector<uint64_t> shape                = {1, 2, 1};
   std::vector<std::vector<int32_t>> vec_axes = {{
                                                   3,
                                                 },
@@ -200,7 +200,7 @@ TEST(Squeeze, InvalidAxesOutOfBound)
 
 TEST(Squeeze, InvalidAxesDuplicate)
 {
-  std::vector<size_t> shape                  = {1, 2, 1};
+  std::vector<uint64_t> shape                = {1, 2, 1};
   std::vector<std::vector<int32_t>> vec_axes = {{0, -3}, {-1, 0, 2}};
   auto vec_a                                 = mk_seq_vector<int32_t>(shape);
   auto arr_a                                 = mk_array<int32_t>(vec_a, shape);

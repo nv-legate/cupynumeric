@@ -31,7 +31,8 @@ struct RepeatArgs {
 
 class RepeatTask : public CuPyNumericTask<RepeatTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_REPEAT};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_REPEAT}};
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

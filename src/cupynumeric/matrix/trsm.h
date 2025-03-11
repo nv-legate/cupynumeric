@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class TrsmTask : public CuPyNumericTask<TrsmTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_TRSM};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_TRSM}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

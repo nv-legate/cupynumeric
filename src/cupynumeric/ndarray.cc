@@ -1882,7 +1882,7 @@ NDArray NDArray::_maybe_convert(const legate::Type& type) const
 
 void NDArray::_verify_mode_extent(const std::map<char, int>& mode2extent,
                                   const std::vector<char>& modes,
-                                  const std::vector<size_t>& shape) const
+                                  const std::vector<std::uint64_t>& shape) const
 {
   for (int32_t i = 0; i < modes.size(); i++) {
     assert(mode2extent.at(modes[i]) == shape[i]);

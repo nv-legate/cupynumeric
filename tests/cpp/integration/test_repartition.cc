@@ -35,8 +35,8 @@ enum TaskIDs {
 template <bool I_ROW_MAJOR, bool O_ROW_MAJOR>
 struct CheckRepartitionTask
   : public legate::LegateTask<CheckRepartitionTask<I_ROW_MAJOR, O_ROW_MAJOR>> {
-  static constexpr auto TASK_ID =
-    legate::LocalTaskID{CHECK_REPARTITION_TASK + I_ROW_MAJOR * 2 + O_ROW_MAJOR};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CHECK_REPARTITION_TASK + I_ROW_MAJOR * 2 + O_ROW_MAJOR}};
 
   static void gpu_variant(legate::TaskContext context);
 };

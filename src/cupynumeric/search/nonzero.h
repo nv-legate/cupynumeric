@@ -27,7 +27,8 @@ struct NonzeroArgs {
 
 class NonzeroTask : public CuPyNumericTask<NonzeroTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_NONZERO};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_NONZERO}};
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

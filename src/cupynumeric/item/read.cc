@@ -33,7 +33,10 @@ struct ReadImplBody<VariantKind::CPU, VAL> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { ReadTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  ReadTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

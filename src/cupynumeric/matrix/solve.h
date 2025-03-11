@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class SolveTask : public CuPyNumericTask<SolveTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_SOLVE};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_SOLVE}};
   static const char* ERROR_MESSAGE;
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

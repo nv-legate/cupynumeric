@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class SyrkTask : public CuPyNumericTask<SyrkTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_SYRK};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_SYRK}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

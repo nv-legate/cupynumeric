@@ -31,7 +31,8 @@ struct BinaryOpArgs {
 
 class BinaryOpTask : public CuPyNumericTask<BinaryOpTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_BINARY_OP};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_BINARY_OP}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class GemmTask : public CuPyNumericTask<GemmTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_GEMM};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_GEMM}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

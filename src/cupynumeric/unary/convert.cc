@@ -57,7 +57,10 @@ struct ConvertImplBody<VariantKind::CPU, NAN_OP, DST_TYPE, SRC_TYPE, DIM> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { ConvertTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  ConvertTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

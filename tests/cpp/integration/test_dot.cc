@@ -22,12 +22,12 @@
 #include "cupynumeric.h"
 #include "common_utils.h"
 
-std::vector<size_t> calc_c_shape_scalar(const std::vector<size_t>& a_shape,
-                                        const std::vector<size_t>& b_shape)
+std::vector<uint64_t> calc_c_shape_scalar(const std::vector<uint64_t>& a_shape,
+                                          const std::vector<uint64_t>& b_shape)
 {
   assert(a_shape.size() == 0 || b_shape.size() == 0);
 
-  std::vector<size_t> c_shape;
+  std::vector<uint64_t> c_shape;
   if (a_shape.size() == 0 && b_shape.size() == 0) {
     c_shape = {};
   } else {
@@ -38,10 +38,10 @@ std::vector<size_t> calc_c_shape_scalar(const std::vector<size_t>& a_shape,
 
 template <typename T>
 std::vector<T> calc_result_scalar(const std::vector<T>& vec_a,
-                                  const std::vector<size_t>& a_shape,
+                                  const std::vector<uint64_t>& a_shape,
                                   const std::vector<T>& vec_b,
-                                  const std::vector<size_t>& b_shape,
-                                  const std::vector<size_t>& c_shape)
+                                  const std::vector<uint64_t>& b_shape,
+                                  const std::vector<uint64_t>& c_shape)
 {
   if (a_shape.size() == 0) {
     assert(vec_a.size() == 1);
@@ -64,11 +64,11 @@ std::vector<T> calc_result_scalar(const std::vector<T>& vec_a,
   return vec_c;
 }
 
-std::vector<size_t> calc_c_shape_b_is_vector(const std::vector<size_t>& a_shape,
-                                             const std::vector<size_t>& b_shape)
+std::vector<uint64_t> calc_c_shape_b_is_vector(const std::vector<uint64_t>& a_shape,
+                                               const std::vector<uint64_t>& b_shape)
 {
   assert(a_shape[a_shape.size() - 1] == b_shape[b_shape.size() - 1]);
-  std::vector<size_t> c_shape;
+  std::vector<uint64_t> c_shape;
   int a_size_in_c = 1;
   for (int i = 0; i < a_shape.size() - 1; i++) {
     c_shape.push_back(a_shape[i]);
@@ -79,10 +79,10 @@ std::vector<size_t> calc_c_shape_b_is_vector(const std::vector<size_t>& a_shape,
 
 template <typename T>
 std::vector<T> calc_result_b_is_vector(const std::vector<T>& vec_a,
-                                       const std::vector<size_t>& a_shape,
+                                       const std::vector<uint64_t>& a_shape,
                                        const std::vector<T>& vec_b,
-                                       const std::vector<size_t>& b_shape,
-                                       const std::vector<size_t>& c_shape)
+                                       const std::vector<uint64_t>& b_shape,
+                                       const std::vector<uint64_t>& c_shape)
 {
   int a_size_in_c = 1;
   for (int i = 0; i < a_shape.size() - 1; i++) {
@@ -103,10 +103,10 @@ std::vector<T> calc_result_b_is_vector(const std::vector<T>& vec_a,
   return vec_c;
 }
 
-std::vector<size_t> calc_c_shape_contract(const std::vector<size_t>& a_shape,
-                                          const std::vector<size_t>& b_shape)
+std::vector<uint64_t> calc_c_shape_contract(const std::vector<uint64_t>& a_shape,
+                                            const std::vector<uint64_t>& b_shape)
 {
-  std::vector<size_t> c_shape = {};
+  std::vector<uint64_t> c_shape = {};
   for (int i = 0; i < a_shape.size() - 1; i++) {
     c_shape.push_back(a_shape[i]);
   }
@@ -119,10 +119,10 @@ std::vector<size_t> calc_c_shape_contract(const std::vector<size_t>& a_shape,
 
 template <typename T>
 std::vector<T> calc_result_contract(const std::vector<T>& vec_a,
-                                    const std::vector<size_t>& a_shape,
+                                    const std::vector<uint64_t>& a_shape,
                                     const std::vector<T>& vec_b,
-                                    const std::vector<size_t>& b_shape,
-                                    const std::vector<size_t>& c_shape)
+                                    const std::vector<uint64_t>& b_shape,
+                                    const std::vector<uint64_t>& c_shape)
 {
   int a_size_in_c = 1, b_size_in_c = 1;
   for (int i = 0; i < a_shape.size() - 1; i++) {
@@ -165,9 +165,9 @@ void verify_dot_output(cupynumeric::NDArray A, cupynumeric::NDArray B, cupynumer
   auto vec_a = cupynumeric::to_vector<T>(A);
   auto vec_b = cupynumeric::to_vector<T>(B);
   std::vector<T> vec_c;
-  auto a_shape                    = A.shape();
-  auto b_shape                    = B.shape();
-  std::vector<size_t> vec_c_shape = {};
+  auto a_shape                      = A.shape();
+  auto b_shape                      = B.shape();
+  std::vector<uint64_t> vec_c_shape = {};
 
   if (A.dim() == 0 || B.dim() == 0) {
     vec_c_shape = calc_c_shape_scalar(a_shape, b_shape);
@@ -188,7 +188,7 @@ void verify_dot_output(cupynumeric::NDArray A, cupynumeric::NDArray B, cupynumer
 }
 
 template <typename T>
-void test_contract_full(std::vector<size_t> a_shape, std::vector<size_t> b_shape)
+void test_contract_full(std::vector<uint64_t> a_shape, std::vector<uint64_t> b_shape)
 {
   auto leg_type = legate::primitive_type(legate::type_code_of_v<T>);
   if (leg_type == legate::float64()) {
@@ -209,7 +209,7 @@ void test_contract_full(std::vector<size_t> a_shape, std::vector<size_t> b_shape
 }
 
 template <typename T>
-void test_contract_standard(std::vector<size_t> a_shape, std::vector<size_t> b_shape)
+void test_contract_standard(std::vector<uint64_t> a_shape, std::vector<uint64_t> b_shape)
 {
   auto A =
     a_shape.size() == 0
@@ -221,8 +221,8 @@ void test_contract_standard(std::vector<size_t> a_shape, std::vector<size_t> b_s
       : cupynumeric::random(b_shape).as_type(legate::primitive_type(legate::type_code_of_v<T>));
   auto C = cupynumeric::dot(A, B);
 
-  auto leg_type                   = legate::primitive_type(legate::type_code_of_v<T>);
-  std::vector<size_t> vec_c_shape = {};
+  auto leg_type                     = legate::primitive_type(legate::type_code_of_v<T>);
+  std::vector<uint64_t> vec_c_shape = {};
   if (A.dim() == 0 || B.dim() == 0) {
     vec_c_shape = calc_c_shape_scalar(a_shape, b_shape);
   } else if (B.dim() == 1 && A.dim() >= 1) {

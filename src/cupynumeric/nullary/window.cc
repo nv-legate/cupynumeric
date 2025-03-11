@@ -48,7 +48,10 @@ struct WindowImplBody<VariantKind::CPU, OP_CODE> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { WindowTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  WindowTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

@@ -66,7 +66,10 @@ struct WrapImplBody<VariantKind::CPU, DIM> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { WrapTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  WrapTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

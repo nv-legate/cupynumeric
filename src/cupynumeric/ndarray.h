@@ -174,7 +174,7 @@ class NDArray {
   void dot_MM(const legate::LogicalStore& rhs1_store, const legate::LogicalStore& rhs2_store);
   void _verify_mode_extent(const std::map<char, int>& mode2extent,
                            const std::vector<char>& modes,
-                           const std::vector<size_t>& shape) const;
+                           const std::vector<std::uint64_t>& shape) const;
   legate::LogicalStore _alphabetical_transpose(legate::LogicalStore store,
                                                const std::vector<char>& modes) const;
 

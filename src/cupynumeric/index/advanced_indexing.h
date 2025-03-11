@@ -30,7 +30,8 @@ struct AdvancedIndexingArgs {
 
 class AdvancedIndexingTask : public CuPyNumericTask<AdvancedIndexingTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_ADVANCED_INDEXING};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_ADVANCED_INDEXING}};
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

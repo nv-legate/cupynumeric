@@ -55,11 +55,19 @@ function(find_or_configure_OpenBLAS)
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
 	  set(_target ARMV8)
   endif()
-    
+
+  # BLAS emits a bunch of warnings, -w is the "silence all warnings" flag for clang and
+  # GCC
+  if(MSVC)
+    message(FATAL_ERROR "Don't know how to silence warnings with MSVC")
+  endif()
+  set(c_flags "${CMAKE_C_FLAGS} -w")
+  set(f_flags "${CMAKE_Fortran_FLAGS} -w")
   rapids_cpm_find(BLAS ${FIND_PKG_ARGS}
       CPM_ARGS
         ${BLAS_cpm_git_args}
         EXCLUDE_FROM_ALL ${PKG_EXCLUDE_FROM_ALL}
+        SYSTEM TRUE
         OPTIONS "USE_CUDA 0"
                 "C_LAPACK ON"
                 "USE_THREAD ON"
@@ -69,7 +77,9 @@ function(find_or_configure_OpenBLAS)
                 "BUILD_WITHOUT_LAPACK OFF"
                 "INTERFACE64 ${INTERFACE64}"
                 "TARGET ${_target}"
-                "USE_OPENMP ${Legion_USE_OpenMP}")
+                "USE_OPENMP ${Legion_USE_OpenMP}"
+                "CMAKE_C_FLAGS ${c_flags}"
+                "CMAKE_Fortran_FLAGS ${f_flags}")
 
   set(CMAKE_POLICY_DEFAULT_CMP0048 ${CMP0048_orig})
   set(CMAKE_POLICY_DEFAULT_CMP0054 ${CMP0054_orig})
@@ -96,7 +106,7 @@ function(find_or_configure_OpenBLAS)
                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
                # contains cblas.h and f77blas.h
                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
-               )
+             )
 
     string(JOIN "\n" code_string
       "if(NOT TARGET BLAS::BLAS)"

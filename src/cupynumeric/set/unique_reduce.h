@@ -22,7 +22,8 @@ namespace cupynumeric {
 
 class UniqueReduceTask : public CuPyNumericTask<UniqueReduceTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_UNIQUE_REDUCE};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_UNIQUE_REDUCE}};
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
   static constexpr auto OMP_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

@@ -62,9 +62,9 @@ TEST(Unique, test_scalar)
 }
 
 template <typename T>
-std::vector<T> mk_random_vector(std::vector<size_t> shape, std::function<T()> gen)
+std::vector<T> mk_random_vector(std::vector<uint64_t> shape, std::function<T()> gen)
 {
-  size_t size = std::accumulate(shape.begin(), shape.end(), size_t(1), std::multiplies<size_t>());
+  size_t size = std::accumulate(shape.begin(), shape.end(), size_t(1), std::multiplies<uint64_t>());
   std::vector<T> v(size);
   std::generate(v.begin(), v.end(), gen);
   return v;
@@ -75,7 +75,7 @@ static int randint(int low, int high) { return rand() % (high - low) + low; }
 TEST(Unique, test_ndim)
 {
   srand(111);
-  std::vector<size_t> shape;
+  std::vector<uint64_t> shape;
   size_t size = 1;
   for (int32_t ndim = 1; ndim <= LEGATE_MAX_DIM; ++ndim) {
     shape.emplace_back(4);

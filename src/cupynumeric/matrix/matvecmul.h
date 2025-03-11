@@ -28,7 +28,8 @@ struct MatVecMulArgs {
 
 class MatVecMulTask : public CuPyNumericTask<MatVecMulTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_MATVECMUL};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_MATVECMUL}};
 
   // Only the CPU implementation needs temporary allocations due to lack of float16 support
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

@@ -27,7 +27,7 @@ struct EyeArgs {
 
 class EyeTask : public CuPyNumericTask<EyeTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_EYE};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_EYE}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

@@ -45,7 +45,7 @@ TEST_F(Reshape_TestSquare, test_shape)
 {
   for (auto shape : SQUARE_CASES) {
     auto a = arange<int32_t>(100).reshape({10, 10});
-    check_array(reshape(a, shape), a_gt, as_type_vector<size_t>(shape));
+    check_array(reshape(a, shape), a_gt, as_type_vector<uint64_t>(shape));
   }
   {
     auto a = arange<int32_t>(100).reshape({10, 10});
@@ -61,7 +61,7 @@ TEST_F(Reshape_TestSquare, test_shape_mode)
       if (order == "F") {
         EXPECT_THROW(reshape(a, shape, order), std::invalid_argument);
       } else {
-        check_array(reshape(a, shape, order), a_gt, as_type_vector<size_t>(shape));
+        check_array(reshape(a, shape, order), a_gt, as_type_vector<uint64_t>(shape));
       }
     }
     {
@@ -115,7 +115,7 @@ TEST_F(Reshape_TestRect, test_shape)
 {
   for (auto shape : RECT_CASES) {
     auto a = mk_array(a_gt, {5, 4, 10});
-    check_array(reshape(a, shape), a_gt, as_type_vector<size_t>(shape));
+    check_array(reshape(a, shape), a_gt, as_type_vector<uint64_t>(shape));
   }
   {
     auto a = mk_array(a_gt, {5, 4, 10});
@@ -131,7 +131,7 @@ TEST_F(Reshape_TestRect, test_shape_mode)
       if (order == "F") {
         EXPECT_THROW(reshape(a, shape, order), std::invalid_argument);
       } else {
-        check_array(reshape(a, shape, order), a_gt, as_type_vector<size_t>(shape));
+        check_array(reshape(a, shape, order), a_gt, as_type_vector<uint64_t>(shape));
       }
     }
     {
@@ -166,13 +166,13 @@ TEST(Reshape, test_reshape_empty_array)
   };
   auto a = mk_array<int32_t>({}, {0, 1});
   for (auto shape : shape_list) {
-    check_array<int32_t>(reshape(a, shape), {}, as_type_vector<size_t>(shape));
+    check_array<int32_t>(reshape(a, shape), {}, as_type_vector<uint64_t>(shape));
   }
 }
 
 TEST(Reshape, test_reshape_same_shape)
 {
-  std::vector<size_t> shape{1, 2, 3};
+  std::vector<uint64_t> shape{1, 2, 3};
   auto a_gt  = mk_seq_vector<int32_t>(shape);
   auto a     = mk_array<int32_t>(a_gt, shape);
   auto a_out = reshape(a, as_type_vector<int64_t>(shape));

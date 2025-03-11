@@ -29,7 +29,7 @@ struct DiagArgs {
 
 class DiagTask : public CuPyNumericTask<DiagTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_DIAG};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_DIAG}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

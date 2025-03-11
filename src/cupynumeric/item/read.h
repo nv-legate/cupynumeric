@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class ReadTask : public CuPyNumericTask<ReadTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_READ};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_READ}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

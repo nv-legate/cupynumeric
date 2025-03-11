@@ -27,7 +27,8 @@ struct TransposeArgs {
 
 class TransposeTask : public CuPyNumericTask<TransposeTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_TRANSPOSE_COPY_2D};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_TRANSPOSE_COPY_2D}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

@@ -79,7 +79,10 @@ struct DiagImplBody<VariantKind::CPU, CODE, 2, false> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { DiagTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  DiagTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

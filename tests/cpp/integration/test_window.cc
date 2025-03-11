@@ -24,14 +24,14 @@ namespace {
 struct windows_case {
   int64_t input;
   std::vector<double> expected_values;
-  std::vector<size_t> expected_shape;
+  std::vector<uint64_t> expected_shape;
 };
 
 struct kaiser_case {
   int64_t input;
   double beta_input;
   std::vector<double> expected_values;
-  std::vector<size_t> expected_shape;
+  std::vector<uint64_t> expected_shape;
 };
 
 class NormalInput : public ::testing::Test, public ::testing::WithParamInterface<windows_case> {};

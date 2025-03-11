@@ -28,7 +28,7 @@ struct FlipArgs {
 
 class FlipTask : public CuPyNumericTask<FlipTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_FLIP};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_FLIP}};
 
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 

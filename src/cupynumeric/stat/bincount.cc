@@ -58,7 +58,10 @@ struct BincountImplBody<VariantKind::CPU, CODE> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { BincountTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  BincountTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

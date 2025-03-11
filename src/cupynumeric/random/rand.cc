@@ -48,7 +48,10 @@ struct RandImplBody<VariantKind::CPU, RNG, VAL, DIM> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { RandTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  RandTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

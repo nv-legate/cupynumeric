@@ -31,7 +31,8 @@ struct SearchSortedArgs {
 
 class SearchSortedTask : public CuPyNumericTask<SearchSortedTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_SEARCHSORTED};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_SEARCHSORTED}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

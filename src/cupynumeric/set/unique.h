@@ -22,7 +22,8 @@ namespace cupynumeric {
 
 class UniqueTask : public CuPyNumericTask<UniqueTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_UNIQUE};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_UNIQUE}};
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
   static constexpr auto GPU_VARIANT_OPTIONS =

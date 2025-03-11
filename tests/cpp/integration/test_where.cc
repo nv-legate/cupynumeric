@@ -28,21 +28,21 @@ using namespace cupynumeric;
 template <typename T>
 void test_where_basic(std::vector<T> in_a,
                       std::vector<std::vector<int64_t>>& exp_vec,
-                      std::vector<size_t> in_shape)
+                      std::vector<uint64_t> in_shape)
 {
   auto A = mk_array<T>(in_a, in_shape);
   auto B = where(A);
   assert(exp_vec.size() == B.size());
   for (size_t i = 0; i < B.size(); i++) {
-    auto exp_arr                  = exp_vec[i];
-    std::vector<size_t> exp_shape = {exp_arr.size()};
+    auto exp_arr                    = exp_vec[i];
+    std::vector<uint64_t> exp_shape = {exp_arr.size()};
     check_array<int64_t>(B[i], exp_arr, exp_shape);
   }
 }
 
 template <typename T>
 void test_where_full(
-  NDArray A, NDArray X, NDArray Y, std::vector<T> exp_arr, std::vector<size_t> exp_shape)
+  NDArray A, NDArray X, NDArray Y, std::vector<T> exp_arr, std::vector<uint64_t> exp_shape)
 {
   auto B = where(A, X, Y);
   check_array<T>(B, exp_arr, exp_shape);
@@ -51,7 +51,7 @@ void test_where_full(
 TEST(Where, Basic)
 {
   std::vector<int32_t> in_a = {-1, 54, 4, 4, 0, 45, 5, 58, 0, 9, 0, 4, 0, 0, 0, 5, 0, 1};
-  std::vector<std::vector<size_t>> test_shapes = {{18}, {6, 3}, {3, 2, 3}};
+  std::vector<std::vector<uint64_t>> test_shapes = {{18}, {6, 3}, {3, 2, 3}};
 
   std::vector<int64_t> exp_vec1_1            = {0, 1, 2, 3, 5, 6, 7, 9, 11, 15, 17};
   std::vector<std::vector<int64_t>> exp_vec1 = {exp_vec1_1};
@@ -71,9 +71,9 @@ TEST(Where, Basic)
 
 TEST(Where, Condition)
 {
-  std::vector<size_t> shape = {2, 2};
-  auto X                    = mk_array<int32_t>({1, 2, 3, 4}, shape);
-  auto Y                    = mk_array<int32_t>({9, 8, 7, 6}, shape);
+  std::vector<uint64_t> shape = {2, 2};
+  auto X                      = mk_array<int32_t>({1, 2, 3, 4}, shape);
+  auto Y                      = mk_array<int32_t>({9, 8, 7, 6}, shape);
 
   auto A1 = mk_array<bool>({true, false, true, true}, shape);
   test_where_full<int32_t>(A1, X, Y, {1, 8, 3, 4}, shape);
@@ -93,16 +93,16 @@ TEST(Where, Condition)
 
 TEST(Where, Type)
 {
-  std::vector<size_t> shape = {2, 2};
-  auto A                    = mk_array<bool>({true, false, true, true}, shape);
-  auto X_BOOL               = mk_array<bool>({true, false, true, false}, shape);
-  auto X_INT                = mk_array<int32_t>({1, 2, 3, 4}, shape);
-  auto X_FLOAT              = mk_array<float>({1, 2, 3, 4}, shape);
-  auto X_COMPLEX128         = mk_array<complex<double>>({1, 2, 3, 4}, shape);
-  auto Y_BOOL               = mk_array<bool>({false, true, true, false}, shape);
-  auto Y_INT                = mk_array<int32_t>({9, 8, 7, 6}, shape);
-  auto Y_FLOAT              = mk_array<float>({9, 8, 7, 6}, shape);
-  auto Y_COMPLEX128         = mk_array<complex<double>>({9, 8, 7, 6}, shape);
+  std::vector<uint64_t> shape = {2, 2};
+  auto A                      = mk_array<bool>({true, false, true, true}, shape);
+  auto X_BOOL                 = mk_array<bool>({true, false, true, false}, shape);
+  auto X_INT                  = mk_array<int32_t>({1, 2, 3, 4}, shape);
+  auto X_FLOAT                = mk_array<float>({1, 2, 3, 4}, shape);
+  auto X_COMPLEX128           = mk_array<complex<double>>({1, 2, 3, 4}, shape);
+  auto Y_BOOL                 = mk_array<bool>({false, true, true, false}, shape);
+  auto Y_INT                  = mk_array<int32_t>({9, 8, 7, 6}, shape);
+  auto Y_FLOAT                = mk_array<float>({9, 8, 7, 6}, shape);
+  auto Y_COMPLEX128           = mk_array<complex<double>>({9, 8, 7, 6}, shape);
 
   test_where_full<bool>(A, X_BOOL, Y_BOOL, {true, true, true, false}, shape);
 

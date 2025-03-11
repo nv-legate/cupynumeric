@@ -79,10 +79,10 @@ struct SearchSortedImplBody<VariantKind::CPU, CODE, DIM> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void)
-{
+const auto reg_ = []() -> char {
   SearchSortedTask::register_variants();
-}
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

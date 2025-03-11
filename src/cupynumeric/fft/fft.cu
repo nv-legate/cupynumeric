@@ -377,7 +377,10 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { FFTTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  FFTTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class PotrfTask : public CuPyNumericTask<PotrfTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_POTRF};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_POTRF}};
 
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 

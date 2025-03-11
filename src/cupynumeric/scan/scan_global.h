@@ -30,7 +30,8 @@ struct ScanGlobalArgs {
 
 class ScanGlobalTask : public CuPyNumericTask<ScanGlobalTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_SCAN_GLOBAL};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_SCAN_GLOBAL}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

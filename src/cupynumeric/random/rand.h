@@ -31,7 +31,7 @@ struct RandArgs {
 
 class RandTask : public CuPyNumericTask<RandTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_RAND};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_RAND}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

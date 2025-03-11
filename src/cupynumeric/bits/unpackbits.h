@@ -60,7 +60,8 @@ struct Unpack<Bitorder::LITTLE> {
 
 class UnpackbitsTask : public CuPyNumericTask<UnpackbitsTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_UNPACKBITS};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_UNPACKBITS}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

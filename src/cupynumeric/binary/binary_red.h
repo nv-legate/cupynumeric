@@ -31,7 +31,8 @@ struct BinaryRedArgs {
 
 class BinaryRedTask : public CuPyNumericTask<BinaryRedTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_BINARY_RED};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_BINARY_RED}};
 
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 

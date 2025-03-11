@@ -34,7 +34,10 @@ using namespace legate;
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { GeevTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  GeevTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

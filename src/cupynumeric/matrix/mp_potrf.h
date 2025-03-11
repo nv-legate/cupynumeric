@@ -22,7 +22,8 @@ namespace cupynumeric {
 
 class MpPotrfTask : public CuPyNumericTask<MpPotrfTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_MP_POTRF};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_MP_POTRF}};
 
  public:
 #if LEGATE_DEFINED(LEGATE_USE_CUDA)

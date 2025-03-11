@@ -531,7 +531,8 @@ int get_device_ordinal()
 
 class LoadCUDALibsTask : public CuPyNumericTask<LoadCUDALibsTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_LOAD_CUDALIBS};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_LOAD_CUDALIBS}};
 
  public:
   static void gpu_variant(legate::TaskContext context)
@@ -550,7 +551,8 @@ class LoadCUDALibsTask : public CuPyNumericTask<LoadCUDALibsTask> {
 
 class UnloadCUDALibsTask : public CuPyNumericTask<UnloadCUDALibsTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_UNLOAD_CUDALIBS};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_UNLOAD_CUDALIBS}};
 
  public:
   static void gpu_variant(legate::TaskContext context)
@@ -564,11 +566,11 @@ class UnloadCUDALibsTask : public CuPyNumericTask<UnloadCUDALibsTask> {
   }
 };
 
-static void __attribute__((constructor)) register_tasks(void)
-{
+const auto reg_ = []() -> char {
   LoadCUDALibsTask::register_variants();
   UnloadCUDALibsTask::register_variants();
-}
+  return 0;
+}();
 
 }  // namespace cupynumeric
 

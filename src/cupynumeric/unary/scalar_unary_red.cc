@@ -26,10 +26,10 @@ namespace cupynumeric {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void)
-{
+const auto reg_ = []() -> char {
   ScalarUnaryRedTask::register_variants();
-}
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

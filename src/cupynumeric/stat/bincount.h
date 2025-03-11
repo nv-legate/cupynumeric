@@ -29,7 +29,8 @@ struct BincountArgs {
 
 class BincountTask : public CuPyNumericTask<BincountTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_BINCOUNT};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_BINCOUNT}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

@@ -85,7 +85,10 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { SyrkTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  SyrkTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

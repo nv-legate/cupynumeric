@@ -37,7 +37,8 @@ struct MultiOutUnaryOpArgs {
 
 class UnaryOpTask : public CuPyNumericTask<UnaryOpTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_UNARY_OP};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_UNARY_OP}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

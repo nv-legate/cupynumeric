@@ -62,7 +62,10 @@ struct TriluImplBody<VariantKind::CPU, CODE, DIM, LOWER> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { TriluTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  TriluTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

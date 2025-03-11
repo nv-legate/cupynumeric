@@ -22,7 +22,8 @@ namespace cupynumeric {
 
 class WindowTask : public CuPyNumericTask<WindowTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_WINDOW};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_WINDOW}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

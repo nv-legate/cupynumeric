@@ -74,7 +74,7 @@ NDArray mk_array(std::vector<T> const& values, std::vector<uint64_t> shape = {})
 }
 
 template <typename T>
-void check_and_wrap(NDArray& a, const std::vector<T>& values, std::vector<size_t>& shape)
+void check_and_wrap(NDArray& a, const std::vector<T>& values, std::vector<uint64_t>& shape)
 {
   if (shape.empty() && values.size() > 1) {
     shape.push_back(values.size());
@@ -89,7 +89,7 @@ void check_and_wrap(NDArray& a, const std::vector<T>& values, std::vector<size_t
 }
 
 template <typename T>
-void check_array(NDArray a, const std::vector<T>& values, std::vector<size_t> shape = {})
+void check_array(NDArray a, const std::vector<T>& values, std::vector<uint64_t> shape = {})
 {
   check_and_wrap<T>(a, values, shape);
   if (a.size() == 0) {
@@ -111,8 +111,8 @@ void check_array(NDArray a, const std::vector<T>& values, std::vector<size_t> sh
 template <typename T>
 void check_array_near(NDArray a,
                       const std::vector<T>& values,
-                      std::vector<size_t> shape = {},
-                      double abs_error          = 1.e-8)
+                      std::vector<uint64_t> shape = {},
+                      double abs_error            = 1.e-8)
 {
   check_and_wrap<T>(a, values, shape);
   if (a.size() == 0) {
@@ -177,7 +177,7 @@ void debug_vector(const std::vector<T>& vec)
 template <typename T>
 std::vector<T> mk_seq_vector(std::vector<uint64_t> shape, T a = 1, T b = 0)
 {
-  size_t size = std::accumulate(shape.begin(), shape.end(), size_t(1), std::multiplies<size_t>());
+  size_t size = std::accumulate(shape.begin(), shape.end(), size_t(1), std::multiplies<>());
   std::vector<T> v(size);
   std::generate(v.begin(), v.end(), [a, x = b]() mutable { return x += a; });
   return v;

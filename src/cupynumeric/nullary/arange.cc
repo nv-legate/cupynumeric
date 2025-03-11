@@ -41,7 +41,10 @@ struct ArangeImplBody<VariantKind::CPU, VAL> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { ArangeTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  ArangeTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

@@ -27,7 +27,7 @@ struct FillArgs {
 
 class FillTask : public CuPyNumericTask<FillTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_FILL};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_FILL}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

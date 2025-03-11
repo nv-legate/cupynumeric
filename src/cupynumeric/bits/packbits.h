@@ -103,7 +103,8 @@ struct Pack<Bitorder::LITTLE, false /*ALIGNED*/> {
 
 class PackbitsTask : public CuPyNumericTask<PackbitsTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_PACKBITS};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_PACKBITS}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

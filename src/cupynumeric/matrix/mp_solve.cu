@@ -241,7 +241,10 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { MpSolveTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  MpSolveTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

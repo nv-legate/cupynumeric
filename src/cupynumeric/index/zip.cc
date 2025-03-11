@@ -89,7 +89,10 @@ struct ZipImplBody<VariantKind::CPU, DIM, N> {
 
 namespace  // unnamed
 {
-static void __attribute__((constructor)) register_tasks(void) { ZipTask::register_variants(); }
+static const auto cupynumeric_reg_task_ = []() -> char {
+  ZipTask::register_variants();
+  return 0;
+}();
 }  // namespace
 
 }  // namespace cupynumeric

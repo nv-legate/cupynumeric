@@ -22,7 +22,7 @@ namespace cupynumeric {
 
 class WriteTask : public CuPyNumericTask<WriteTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_WRITE};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_WRITE}};
 
  public:
   static void cpu_variant(legate::TaskContext context);

@@ -623,7 +623,7 @@ NDArray dot(NDArray a, NDArray b)
     mode2extent[mode] = extent;
   }
 
-  std::vector<size_t> c_shape;
+  std::vector<std::uint64_t> c_shape;
   for (auto mode : c_modes) {
     auto search = mode2extent.find(mode);
     if (search != mode2extent.end()) {

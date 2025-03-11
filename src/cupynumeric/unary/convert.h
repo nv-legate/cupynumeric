@@ -29,7 +29,8 @@ struct ConvertArgs {
 
 class ConvertTask : public CuPyNumericTask<ConvertTask> {
  public:
-  static constexpr auto TASK_ID = legate::LocalTaskID{CUPYNUMERIC_CONVERT};
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_CONVERT}};
 
  public:
   static void cpu_variant(legate::TaskContext context);
