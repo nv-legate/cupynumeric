@@ -6,11 +6,11 @@
       "org": "nv-legate",
       "artifact_workflow": "ci-gh.yml",
       "nightly_workflow": "ci-gh-nightly-release.yml",
-      "version": "25.03.00",
+      "version": "25.05.00",
       "git_url" : "git@github.com:nv-legate/legate.internal.git",
       "git_shallow": false,
       "always_download": false,
-      "git_tag" : "6fd728b90e25cddbc450e8dbc63f4bcf077a0fb0",
+      "git_tag" : "37d52d7c7d0a6fa8c27224115334c97daf6f7cb7",
       "anaconda_label": "experimental"
     }
   }
