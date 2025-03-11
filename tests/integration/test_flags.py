@@ -113,6 +113,17 @@ class Test_writeable:
         with pytest.raises(ValueError, match="not writeable"):
             arr[0, 0] = 12
 
+    def test_flags(self) -> None:
+        arr = num.zeros(shape=DIM_CASE)
+        np_arr = np.zeros(shape=DIM_CASE)
+        arr.flags.writeable = True
+        np_arr.flags.writeable = True
+        assert arr.flags.writeable == np_arr.flags.writeable
+
+        arr.flags.aligned = True
+        np_arr.flags.aligned = True
+        assert arr.flags.aligned == np_arr.flags.aligned
+
     def test_cannot_make_nonwriteable_writeable(self):
         arr = num.zeros(shape=DIM_CASE)
         arr.flags["W"] = False
