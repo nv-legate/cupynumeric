@@ -1,0 +1,6 @@
+﻿cupynumeric.partition
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: partition

@@ -1,0 +1,6 @@
+﻿cupynumeric.random.triangular
+=============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: triangular

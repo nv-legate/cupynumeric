@@ -1,0 +1,6 @@
+﻿cupynumeric.gcd
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: gcd

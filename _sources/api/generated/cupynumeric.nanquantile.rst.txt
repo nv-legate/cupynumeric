@@ -1,0 +1,6 @@
+﻿cupynumeric.nanquantile
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanquantile

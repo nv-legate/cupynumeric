@@ -1,0 +1,6 @@
+﻿cupynumeric.diag
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: diag

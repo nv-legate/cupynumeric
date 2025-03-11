@@ -1,0 +1,6 @@
+﻿cupynumeric.maximum
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: maximum

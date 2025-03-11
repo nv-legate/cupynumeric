@@ -1,0 +1,6 @@
+﻿cupynumeric.arange
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: arange

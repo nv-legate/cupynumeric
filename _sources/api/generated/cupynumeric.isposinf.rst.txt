@@ -1,0 +1,6 @@
+﻿cupynumeric.isposinf
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isposinf

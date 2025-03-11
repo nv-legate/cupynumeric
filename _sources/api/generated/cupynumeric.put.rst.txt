@@ -1,0 +1,6 @@
+﻿cupynumeric.put
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: put

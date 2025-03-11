@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.conjugate
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.conjugate

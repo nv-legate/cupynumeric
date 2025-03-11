@@ -1,0 +1,6 @@
+﻿cupynumeric.transpose
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: transpose

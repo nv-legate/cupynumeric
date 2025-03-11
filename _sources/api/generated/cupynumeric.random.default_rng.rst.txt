@@ -1,0 +1,6 @@
+﻿cupynumeric.random.default\_rng
+===============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: default_rng

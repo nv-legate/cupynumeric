@@ -1,0 +1,6 @@
+﻿cupynumeric.squeeze
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: squeeze

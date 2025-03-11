@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_reduce\_\_
+==================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__reduce__

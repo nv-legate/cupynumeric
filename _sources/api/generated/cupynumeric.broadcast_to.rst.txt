@@ -1,0 +1,6 @@
+﻿cupynumeric.broadcast\_to
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: broadcast_to

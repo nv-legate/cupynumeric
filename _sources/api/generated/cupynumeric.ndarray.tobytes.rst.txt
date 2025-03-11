@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.tobytes
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.tobytes

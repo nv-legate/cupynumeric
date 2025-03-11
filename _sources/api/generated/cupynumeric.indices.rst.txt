@@ -1,0 +1,6 @@
+﻿cupynumeric.indices
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: indices

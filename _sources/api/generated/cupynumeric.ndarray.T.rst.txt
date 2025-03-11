@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.T
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.T

@@ -1,0 +1,6 @@
+﻿cupynumeric.gradient
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: gradient

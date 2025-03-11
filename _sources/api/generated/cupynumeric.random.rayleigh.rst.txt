@@ -1,0 +1,6 @@
+﻿cupynumeric.random.rayleigh
+===========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: rayleigh

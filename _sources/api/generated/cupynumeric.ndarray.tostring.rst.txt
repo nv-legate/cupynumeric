@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.tostring
+============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.tostring

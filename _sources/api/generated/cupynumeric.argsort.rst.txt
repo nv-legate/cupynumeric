@@ -1,0 +1,6 @@
+﻿cupynumeric.argsort
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: argsort

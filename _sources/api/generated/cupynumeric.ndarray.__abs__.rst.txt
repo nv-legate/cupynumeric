@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_abs\_\_
+===============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__abs__

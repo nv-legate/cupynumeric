@@ -1,0 +1,6 @@
+﻿cupynumeric.random.exponential
+==============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: exponential

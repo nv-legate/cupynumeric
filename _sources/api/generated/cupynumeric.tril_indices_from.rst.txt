@@ -1,0 +1,6 @@
+﻿cupynumeric.tril\_indices\_from
+===============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: tril_indices_from

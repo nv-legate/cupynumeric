@@ -1,0 +1,6 @@
+﻿cupynumeric.kaiser
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: kaiser

@@ -1,0 +1,6 @@
+﻿cupynumeric.lcm
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: lcm

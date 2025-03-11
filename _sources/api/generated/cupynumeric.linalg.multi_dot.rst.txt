@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.multi\_dot
+=============================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: multi_dot

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.reshape
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.reshape

@@ -1,0 +1,6 @@
+﻿cupynumeric.sum
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: sum

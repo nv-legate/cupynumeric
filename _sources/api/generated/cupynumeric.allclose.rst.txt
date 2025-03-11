@@ -1,0 +1,6 @@
+﻿cupynumeric.allclose
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: allclose

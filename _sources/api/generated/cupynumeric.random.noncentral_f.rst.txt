@@ -1,0 +1,6 @@
+﻿cupynumeric.random.noncentral\_f
+================================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: noncentral_f

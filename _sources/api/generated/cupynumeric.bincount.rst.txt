@@ -1,0 +1,6 @@
+﻿cupynumeric.bincount
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: bincount

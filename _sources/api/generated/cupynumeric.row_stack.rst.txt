@@ -1,0 +1,6 @@
+﻿cupynumeric.row\_stack
+======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: row_stack

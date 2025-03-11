@@ -1,0 +1,6 @@
+﻿cupynumeric.rad2deg
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: rad2deg

@@ -1,0 +1,6 @@
+﻿cupynumeric.random.seed
+=======================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: seed

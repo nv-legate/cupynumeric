@@ -1,0 +1,6 @@
+﻿cupynumeric.exp2
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: exp2

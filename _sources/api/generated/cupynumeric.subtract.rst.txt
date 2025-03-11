@@ -1,0 +1,6 @@
+﻿cupynumeric.subtract
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: subtract

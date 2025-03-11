@@ -1,0 +1,6 @@
+﻿cupynumeric.random.sample
+=========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: sample

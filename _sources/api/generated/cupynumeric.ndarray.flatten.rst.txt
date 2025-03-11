@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.flatten
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.flatten

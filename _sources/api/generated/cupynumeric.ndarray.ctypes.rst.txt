@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.ctypes
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.ctypes

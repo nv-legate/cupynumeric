@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.flags
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.flags

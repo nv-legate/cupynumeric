@@ -1,0 +1,6 @@
+﻿cupynumeric.greater
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: greater

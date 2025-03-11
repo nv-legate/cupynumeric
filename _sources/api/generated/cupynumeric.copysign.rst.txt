@@ -1,0 +1,6 @@
+﻿cupynumeric.copysign
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: copysign

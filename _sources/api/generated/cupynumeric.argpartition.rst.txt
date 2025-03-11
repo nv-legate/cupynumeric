@@ -1,0 +1,6 @@
+﻿cupynumeric.argpartition
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: argpartition

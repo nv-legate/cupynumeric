@@ -1,0 +1,6 @@
+﻿cupynumeric.take\_along\_axis
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: take_along_axis

@@ -1,0 +1,6 @@
+﻿cupynumeric.ix\_
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: ix_

@@ -1,0 +1,6 @@
+﻿cupynumeric.put\_along\_axis
+============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: put_along_axis

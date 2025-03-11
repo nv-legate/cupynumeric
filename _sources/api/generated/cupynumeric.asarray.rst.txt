@@ -1,0 +1,6 @@
+﻿cupynumeric.asarray
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: asarray

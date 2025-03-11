@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.diagonal
+============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.diagonal

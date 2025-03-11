@@ -1,0 +1,6 @@
+﻿cupynumeric.broadcast\_arrays
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: broadcast_arrays

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.squeeze
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.squeeze

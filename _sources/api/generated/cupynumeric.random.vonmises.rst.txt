@@ -1,0 +1,6 @@
+﻿cupynumeric.random.vonmises
+===========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: vonmises

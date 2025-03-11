@@ -1,0 +1,6 @@
+﻿cupynumeric.nanmin
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanmin

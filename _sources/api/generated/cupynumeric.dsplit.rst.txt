@@ -1,0 +1,6 @@
+﻿cupynumeric.dsplit
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: dsplit

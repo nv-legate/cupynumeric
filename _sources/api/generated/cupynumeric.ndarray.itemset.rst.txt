@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.itemset
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.itemset

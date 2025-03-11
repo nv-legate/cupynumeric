@@ -1,0 +1,6 @@
+﻿cupynumeric.triu\_indices
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: triu_indices

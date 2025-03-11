@@ -1,0 +1,6 @@
+﻿cupynumeric.conjugate
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: conjugate

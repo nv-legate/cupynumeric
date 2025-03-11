@@ -1,0 +1,6 @@
+﻿cupynumeric.find\_common\_type
+==============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: find_common_type

@@ -1,0 +1,6 @@
+﻿cupynumeric.true\_divide
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: true_divide

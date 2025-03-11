@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_gt\_\_
+==============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__gt__

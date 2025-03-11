@@ -1,0 +1,6 @@
+﻿cupynumeric.choose
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: choose

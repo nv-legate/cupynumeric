@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_pos\_\_
+===============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__pos__

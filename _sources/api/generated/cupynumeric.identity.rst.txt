@@ -1,0 +1,6 @@
+﻿cupynumeric.identity
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: identity

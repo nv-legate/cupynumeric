@@ -1,0 +1,6 @@
+﻿cupynumeric.ravel
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: ravel

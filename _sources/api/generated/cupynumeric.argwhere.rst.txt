@@ -1,0 +1,6 @@
+﻿cupynumeric.argwhere
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: argwhere

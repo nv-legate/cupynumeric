@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_rshift\_\_
+==================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__rshift__

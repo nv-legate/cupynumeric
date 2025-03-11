@@ -1,0 +1,6 @@
+﻿cupynumeric.hanning
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: hanning

@@ -1,0 +1,6 @@
+﻿cupynumeric.append
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: append

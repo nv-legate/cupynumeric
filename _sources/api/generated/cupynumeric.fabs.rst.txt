@@ -1,0 +1,6 @@
+﻿cupynumeric.fabs
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: fabs

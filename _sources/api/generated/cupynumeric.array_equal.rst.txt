@@ -1,0 +1,6 @@
+﻿cupynumeric.array\_equal
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: array_equal

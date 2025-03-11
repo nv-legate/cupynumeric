@@ -1,0 +1,6 @@
+﻿cupynumeric.flatnonzero
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: flatnonzero

@@ -1,0 +1,6 @@
+﻿cupynumeric.where
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: where

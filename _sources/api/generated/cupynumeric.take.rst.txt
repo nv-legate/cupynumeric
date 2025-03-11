@@ -1,0 +1,6 @@
+﻿cupynumeric.take
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: take

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_bool\_\_
+================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__bool__

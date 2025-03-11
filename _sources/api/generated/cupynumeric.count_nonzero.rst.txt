@@ -1,0 +1,6 @@
+﻿cupynumeric.count\_nonzero
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: count_nonzero

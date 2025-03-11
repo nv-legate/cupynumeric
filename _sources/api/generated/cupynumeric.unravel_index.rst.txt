@@ -1,0 +1,6 @@
+﻿cupynumeric.unravel\_index
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: unravel_index

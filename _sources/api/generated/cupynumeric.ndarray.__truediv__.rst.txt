@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_truediv\_\_
+===================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__truediv__

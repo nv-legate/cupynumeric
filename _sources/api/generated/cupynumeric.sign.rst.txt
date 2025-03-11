@@ -1,0 +1,6 @@
+﻿cupynumeric.sign
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: sign

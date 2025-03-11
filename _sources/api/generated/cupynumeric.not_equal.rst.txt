@@ -1,0 +1,6 @@
+﻿cupynumeric.not\_equal
+======================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: not_equal

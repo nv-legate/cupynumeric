@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.setfield
+============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.setfield

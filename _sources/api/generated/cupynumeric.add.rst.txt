@@ -1,0 +1,6 @@
+﻿cupynumeric.add
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: add

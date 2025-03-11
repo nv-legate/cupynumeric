@@ -1,0 +1,6 @@
+﻿cupynumeric.square
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: square

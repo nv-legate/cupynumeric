@@ -1,0 +1,6 @@
+﻿cupynumeric.ndim
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: ndim

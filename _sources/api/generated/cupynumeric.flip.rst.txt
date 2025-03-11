@@ -1,0 +1,6 @@
+﻿cupynumeric.flip
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: flip

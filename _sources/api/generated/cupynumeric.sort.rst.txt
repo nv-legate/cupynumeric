@@ -1,0 +1,6 @@
+﻿cupynumeric.sort
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: sort

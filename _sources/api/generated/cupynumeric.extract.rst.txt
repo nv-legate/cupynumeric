@@ -1,0 +1,6 @@
+﻿cupynumeric.extract
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: extract

@@ -1,0 +1,6 @@
+﻿cupynumeric.minimum
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: minimum

@@ -1,0 +1,6 @@
+﻿cupynumeric.exp
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: exp

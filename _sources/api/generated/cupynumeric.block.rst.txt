@@ -1,0 +1,6 @@
+﻿cupynumeric.block
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: block

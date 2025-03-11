@@ -1,0 +1,6 @@
+﻿cupynumeric.unpackbits
+======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: unpackbits

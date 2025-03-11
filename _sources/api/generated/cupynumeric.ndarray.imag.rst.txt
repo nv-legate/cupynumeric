@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.imag
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.imag

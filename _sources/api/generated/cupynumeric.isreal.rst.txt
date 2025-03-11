@@ -1,0 +1,6 @@
+﻿cupynumeric.isreal
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isreal

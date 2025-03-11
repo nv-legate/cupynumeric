@@ -1,0 +1,6 @@
+﻿cupynumeric.conj
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: conj

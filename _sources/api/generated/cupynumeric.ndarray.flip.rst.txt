@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.flip
+========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.flip

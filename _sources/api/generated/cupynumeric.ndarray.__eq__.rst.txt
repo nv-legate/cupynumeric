@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_eq\_\_
+==============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__eq__

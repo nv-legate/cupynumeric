@@ -1,0 +1,6 @@
+﻿cupynumeric.arctan2
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: arctan2

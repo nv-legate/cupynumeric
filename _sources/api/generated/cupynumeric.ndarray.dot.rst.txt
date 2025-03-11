@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.dot
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.dot

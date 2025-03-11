@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_invert\_\_
+==================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__invert__

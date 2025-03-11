@@ -1,0 +1,6 @@
+﻿cupynumeric.random.beta
+=======================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: beta

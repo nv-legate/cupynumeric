@@ -1,0 +1,6 @@
+﻿cupynumeric.nextafter
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: nextafter

@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.solve
+========================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: solve

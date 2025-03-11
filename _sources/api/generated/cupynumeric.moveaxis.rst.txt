@@ -1,0 +1,6 @@
+﻿cupynumeric.moveaxis
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: moveaxis

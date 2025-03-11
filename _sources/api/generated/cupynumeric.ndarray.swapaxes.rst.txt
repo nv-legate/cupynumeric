@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.swapaxes
+============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.swapaxes

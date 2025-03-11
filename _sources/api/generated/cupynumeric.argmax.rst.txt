@@ -1,0 +1,6 @@
+﻿cupynumeric.argmax
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: argmax

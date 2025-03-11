@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_imatmul\_\_
+===================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__imatmul__

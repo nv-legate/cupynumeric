@@ -1,0 +1,6 @@
+﻿cupynumeric.floor\_divide
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: floor_divide

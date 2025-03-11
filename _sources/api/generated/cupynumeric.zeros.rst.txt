@@ -1,0 +1,6 @@
+﻿cupynumeric.zeros
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: zeros

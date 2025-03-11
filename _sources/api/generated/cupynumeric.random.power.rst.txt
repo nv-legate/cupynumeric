@@ -1,0 +1,6 @@
+﻿cupynumeric.random.power
+========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: power

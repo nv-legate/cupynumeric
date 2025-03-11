@@ -1,0 +1,18 @@
+[
+    {
+        "name": "24.11",
+        "version": "24.11",
+        "url": "https://docs.nvidia.com/cupynumeric/24.11/"
+    },
+    {
+        "name": "25.01",
+        "version": "25.01",
+        "url": "https://docs.nvidia.com/cupynumeric/25.01/"
+    },
+    {
+      "name": "25.03",
+      "version": "25.03",
+      "preferred": true,
+      "url": "https://docs.nvidia.com/cupynumeric/25.03/"
+  }
+]

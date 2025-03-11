@@ -1,0 +1,6 @@
+﻿cupynumeric.empty
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: empty

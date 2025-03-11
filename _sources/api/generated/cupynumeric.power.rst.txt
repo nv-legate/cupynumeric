@@ -1,0 +1,6 @@
+﻿cupynumeric.power
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: power

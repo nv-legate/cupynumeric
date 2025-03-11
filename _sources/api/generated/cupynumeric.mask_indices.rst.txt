@@ -1,0 +1,6 @@
+﻿cupynumeric.mask\_indices
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: mask_indices

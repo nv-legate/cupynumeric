@@ -1,0 +1,6 @@
+﻿cupynumeric.expand\_dims
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: expand_dims

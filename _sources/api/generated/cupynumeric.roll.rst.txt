@@ -1,0 +1,6 @@
+﻿cupynumeric.roll
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: roll

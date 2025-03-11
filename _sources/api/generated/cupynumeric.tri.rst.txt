@@ -1,0 +1,6 @@
+﻿cupynumeric.tri
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: tri

@@ -1,0 +1,6 @@
+﻿cupynumeric.random.ranf
+=======================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: ranf

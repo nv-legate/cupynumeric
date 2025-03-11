@@ -1,0 +1,6 @@
+﻿cupynumeric.cosh
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: cosh

@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.eig
+======================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: eig

@@ -1,0 +1,6 @@
+﻿cupynumeric.dot
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: dot

@@ -1,0 +1,6 @@
+﻿cupynumeric.histogram
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: histogram

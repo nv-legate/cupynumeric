@@ -1,0 +1,6 @@
+﻿cupynumeric.divide
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: divide

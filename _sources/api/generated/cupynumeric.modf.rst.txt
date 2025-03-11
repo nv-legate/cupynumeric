@@ -1,0 +1,6 @@
+﻿cupynumeric.modf
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: modf

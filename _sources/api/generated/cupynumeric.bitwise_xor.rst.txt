@@ -1,0 +1,6 @@
+﻿cupynumeric.bitwise\_xor
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: bitwise_xor

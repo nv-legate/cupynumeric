@@ -1,0 +1,6 @@
+﻿cupynumeric.tan
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: tan

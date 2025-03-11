@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_iadd\_\_
+================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__iadd__

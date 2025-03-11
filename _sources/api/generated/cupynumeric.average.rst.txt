@@ -1,0 +1,6 @@
+﻿cupynumeric.average
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: average

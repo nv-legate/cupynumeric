@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.setflags
+============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.setflags

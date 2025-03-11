@@ -1,0 +1,6 @@
+﻿cupynumeric.bartlett
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: bartlett

@@ -1,0 +1,6 @@
+﻿cupynumeric.vdot
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: vdot

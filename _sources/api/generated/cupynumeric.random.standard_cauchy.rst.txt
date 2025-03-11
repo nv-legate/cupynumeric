@@ -1,0 +1,6 @@
+﻿cupynumeric.random.standard\_cauchy
+===================================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: standard_cauchy

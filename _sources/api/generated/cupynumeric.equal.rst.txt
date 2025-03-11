@@ -1,0 +1,6 @@
+﻿cupynumeric.equal
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: equal

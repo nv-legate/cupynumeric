@@ -1,0 +1,6 @@
+﻿cupynumeric.var
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: var

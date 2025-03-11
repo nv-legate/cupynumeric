@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.tofile
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.tofile

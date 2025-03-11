@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.ndim
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.ndim

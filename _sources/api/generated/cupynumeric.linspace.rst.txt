@@ -1,0 +1,6 @@
+﻿cupynumeric.linspace
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: linspace

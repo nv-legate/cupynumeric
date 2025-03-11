@@ -1,0 +1,6 @@
+﻿cupynumeric.cumsum
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: cumsum

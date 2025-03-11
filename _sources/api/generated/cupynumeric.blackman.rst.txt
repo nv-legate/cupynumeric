@@ -1,0 +1,6 @@
+﻿cupynumeric.blackman
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: blackman

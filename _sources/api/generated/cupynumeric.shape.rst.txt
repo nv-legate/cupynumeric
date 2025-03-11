@@ -1,0 +1,6 @@
+﻿cupynumeric.shape
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: shape

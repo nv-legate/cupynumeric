@@ -1,0 +1,6 @@
+﻿cupynumeric.nanargmax
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanargmax

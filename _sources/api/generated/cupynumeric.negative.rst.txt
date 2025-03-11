@@ -1,0 +1,6 @@
+﻿cupynumeric.negative
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: negative

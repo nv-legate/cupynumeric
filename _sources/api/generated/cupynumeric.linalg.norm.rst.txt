@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.norm
+=======================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: norm

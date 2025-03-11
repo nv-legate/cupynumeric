@@ -1,0 +1,6 @@
+﻿cupynumeric.flipud
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: flipud

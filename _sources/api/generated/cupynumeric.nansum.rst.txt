@@ -1,0 +1,6 @@
+﻿cupynumeric.nansum
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nansum

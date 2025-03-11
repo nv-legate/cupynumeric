@@ -1,0 +1,6 @@
+﻿cupynumeric.random.negative\_binomial
+=====================================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: negative_binomial

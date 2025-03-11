@@ -1,0 +1,6 @@
+﻿cupynumeric.msort
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: msort

@@ -1,0 +1,6 @@
+﻿cupynumeric.searchsorted
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: searchsorted

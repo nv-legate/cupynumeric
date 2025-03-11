@@ -1,0 +1,6 @@
+﻿cupynumeric.isclose
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isclose

@@ -1,0 +1,6 @@
+﻿cupynumeric.diag\_indices\_from
+===============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: diag_indices_from

@@ -1,0 +1,6 @@
+﻿cupynumeric.eye
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: eye

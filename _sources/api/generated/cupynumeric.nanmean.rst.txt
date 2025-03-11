@@ -1,0 +1,6 @@
+﻿cupynumeric.nanmean
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanmean

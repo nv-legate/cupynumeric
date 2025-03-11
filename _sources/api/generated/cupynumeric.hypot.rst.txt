@@ -1,0 +1,6 @@
+﻿cupynumeric.hypot
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: hypot

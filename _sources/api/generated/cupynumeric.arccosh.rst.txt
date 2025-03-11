@@ -1,0 +1,6 @@
+﻿cupynumeric.arccosh
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: arccosh

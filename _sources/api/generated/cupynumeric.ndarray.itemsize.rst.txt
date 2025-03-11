@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.itemsize
+============================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.itemsize

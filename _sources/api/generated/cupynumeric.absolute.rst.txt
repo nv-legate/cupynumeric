@@ -1,0 +1,6 @@
+﻿cupynumeric.absolute
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: absolute

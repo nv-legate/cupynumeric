@@ -1,0 +1,6 @@
+﻿cupynumeric.vstack
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: vstack

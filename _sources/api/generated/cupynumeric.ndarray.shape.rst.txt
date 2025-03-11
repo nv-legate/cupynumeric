@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.shape
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.shape

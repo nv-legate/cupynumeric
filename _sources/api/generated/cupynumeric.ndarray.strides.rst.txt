@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.strides
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.strides

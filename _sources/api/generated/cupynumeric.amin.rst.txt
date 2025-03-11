@@ -1,0 +1,6 @@
+﻿cupynumeric.amin
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: amin

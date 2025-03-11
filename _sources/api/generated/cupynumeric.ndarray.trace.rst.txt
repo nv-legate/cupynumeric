@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.trace
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.trace

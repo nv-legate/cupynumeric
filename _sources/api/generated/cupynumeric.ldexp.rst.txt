@@ -1,0 +1,6 @@
+﻿cupynumeric.ldexp
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: ldexp

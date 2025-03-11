@@ -1,0 +1,6 @@
+﻿cupynumeric.isnan
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: isnan

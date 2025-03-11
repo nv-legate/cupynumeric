@@ -1,0 +1,6 @@
+﻿cupynumeric.random.poisson
+==========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: poisson

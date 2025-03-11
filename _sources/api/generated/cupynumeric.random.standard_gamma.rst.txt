@@ -1,0 +1,6 @@
+﻿cupynumeric.random.standard\_gamma
+==================================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: standard_gamma

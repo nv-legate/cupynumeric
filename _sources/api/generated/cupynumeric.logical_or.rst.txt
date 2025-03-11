@@ -1,0 +1,6 @@
+﻿cupynumeric.logical\_or
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: logical_or

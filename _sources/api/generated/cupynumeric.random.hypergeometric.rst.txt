@@ -1,0 +1,6 @@
+﻿cupynumeric.random.hypergeometric
+=================================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: hypergeometric

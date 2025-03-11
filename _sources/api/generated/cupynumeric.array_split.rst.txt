@@ -1,0 +1,6 @@
+﻿cupynumeric.array\_split
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: array_split

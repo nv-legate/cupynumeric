@@ -1,0 +1,6 @@
+﻿cupynumeric.less\_equal
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: less_equal

@@ -1,0 +1,6 @@
+﻿cupynumeric.imag
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: imag

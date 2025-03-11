@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.nonzero
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.nonzero

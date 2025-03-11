@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.mean
+========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.mean

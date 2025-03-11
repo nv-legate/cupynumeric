@@ -1,0 +1,6 @@
+﻿cupynumeric.real
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: real

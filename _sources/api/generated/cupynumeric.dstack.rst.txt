@@ -1,0 +1,6 @@
+﻿cupynumeric.dstack
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: dstack

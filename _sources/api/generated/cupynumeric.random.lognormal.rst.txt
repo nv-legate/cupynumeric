@@ -1,0 +1,6 @@
+﻿cupynumeric.random.lognormal
+============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: lognormal

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.copy
+========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.copy

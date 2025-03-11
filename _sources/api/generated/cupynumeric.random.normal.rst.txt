@@ -1,0 +1,6 @@
+﻿cupynumeric.random.normal
+=========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: normal

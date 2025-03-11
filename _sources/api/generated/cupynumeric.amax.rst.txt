@@ -1,0 +1,6 @@
+﻿cupynumeric.amax
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: amax

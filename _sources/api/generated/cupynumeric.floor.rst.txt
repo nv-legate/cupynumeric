@@ -1,0 +1,6 @@
+﻿cupynumeric.floor
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: floor

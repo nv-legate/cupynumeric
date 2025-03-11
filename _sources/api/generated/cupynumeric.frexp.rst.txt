@@ -1,0 +1,6 @@
+﻿cupynumeric.frexp
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: frexp

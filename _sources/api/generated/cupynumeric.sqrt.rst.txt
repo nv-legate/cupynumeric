@@ -1,0 +1,6 @@
+﻿cupynumeric.sqrt
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: sqrt

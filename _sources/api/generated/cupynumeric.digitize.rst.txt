@@ -1,0 +1,6 @@
+﻿cupynumeric.digitize
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: digitize

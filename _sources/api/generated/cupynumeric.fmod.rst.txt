@@ -1,0 +1,6 @@
+﻿cupynumeric.fmod
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: fmod

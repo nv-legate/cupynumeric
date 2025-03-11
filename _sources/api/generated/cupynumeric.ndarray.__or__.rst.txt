@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_or\_\_
+==============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__or__

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.base
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.base

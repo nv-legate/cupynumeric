@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.data
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.data

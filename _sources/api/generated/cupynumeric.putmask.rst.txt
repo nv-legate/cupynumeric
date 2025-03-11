@@ -1,0 +1,6 @@
+﻿cupynumeric.putmask
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: putmask

@@ -1,0 +1,6 @@
+﻿cupynumeric.random.logistic
+===========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: logistic

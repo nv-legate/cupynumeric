@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.dumps
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.dumps

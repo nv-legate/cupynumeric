@@ -1,0 +1,6 @@
+﻿cupynumeric.split
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: split

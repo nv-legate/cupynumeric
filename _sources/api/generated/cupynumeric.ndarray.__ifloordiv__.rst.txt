@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_ifloordiv\_\_
+=====================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__ifloordiv__

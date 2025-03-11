@@ -1,0 +1,6 @@
+﻿cupynumeric.arccos
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: arccos

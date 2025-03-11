@@ -1,0 +1,6 @@
+﻿cupynumeric.nanprod
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanprod

@@ -1,0 +1,6 @@
+﻿cupynumeric.fill\_diagonal
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: fill_diagonal

@@ -1,0 +1,6 @@
+﻿cupynumeric.signbit
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: signbit

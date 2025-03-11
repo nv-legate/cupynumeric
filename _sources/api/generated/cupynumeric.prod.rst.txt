@@ -1,0 +1,6 @@
+﻿cupynumeric.prod
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: prod

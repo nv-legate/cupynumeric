@@ -1,0 +1,6 @@
+﻿cupynumeric.mean
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: mean

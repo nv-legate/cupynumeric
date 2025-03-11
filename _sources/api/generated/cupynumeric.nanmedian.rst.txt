@@ -1,0 +1,6 @@
+﻿cupynumeric.nanmedian
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanmedian

@@ -1,0 +1,6 @@
+﻿cupynumeric.cov
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: cov

@@ -1,0 +1,6 @@
+﻿cupynumeric.swapaxes
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: swapaxes

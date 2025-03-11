@@ -1,0 +1,6 @@
+﻿cupynumeric.ones
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: ones

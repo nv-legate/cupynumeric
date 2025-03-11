@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.choose
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.choose

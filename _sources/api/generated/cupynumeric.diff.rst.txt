@@ -1,0 +1,6 @@
+﻿cupynumeric.diff
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: diff

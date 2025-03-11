@@ -1,0 +1,6 @@
+﻿cupynumeric.random.geometric
+============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: geometric

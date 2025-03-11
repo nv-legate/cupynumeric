@@ -1,0 +1,6 @@
+﻿cupynumeric.packbits
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: packbits

@@ -1,0 +1,6 @@
+﻿cupynumeric.tensordot
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: tensordot

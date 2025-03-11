@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.take
+========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.take

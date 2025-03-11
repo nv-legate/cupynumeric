@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.flat
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.flat

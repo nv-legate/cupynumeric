@@ -1,0 +1,6 @@
+﻿cupynumeric.rot90
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: rot90

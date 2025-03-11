@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.ravel
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.ravel

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.compress
+============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.compress

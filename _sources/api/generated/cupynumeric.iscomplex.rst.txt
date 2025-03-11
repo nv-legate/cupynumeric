@@ -1,0 +1,6 @@
+﻿cupynumeric.iscomplex
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: iscomplex

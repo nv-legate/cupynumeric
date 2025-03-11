@@ -1,0 +1,6 @@
+﻿cupynumeric.isfinite
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: isfinite

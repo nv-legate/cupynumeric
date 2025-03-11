@@ -1,0 +1,6 @@
+﻿cupynumeric.float\_power
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: float_power

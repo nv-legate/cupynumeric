@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.matrix\_power
+================================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: matrix_power

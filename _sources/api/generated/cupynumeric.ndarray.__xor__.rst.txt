@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_xor\_\_
+===============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__xor__

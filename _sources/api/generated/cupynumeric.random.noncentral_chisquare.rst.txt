@@ -1,0 +1,6 @@
+﻿cupynumeric.random.noncentral\_chisquare
+========================================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: noncentral_chisquare

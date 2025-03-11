@@ -1,0 +1,6 @@
+﻿cupynumeric.cbrt
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: cbrt

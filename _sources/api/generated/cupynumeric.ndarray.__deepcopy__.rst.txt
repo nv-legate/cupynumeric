@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_deepcopy\_\_
+====================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__deepcopy__

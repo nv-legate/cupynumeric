@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.svd
+======================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: svd

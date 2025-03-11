@@ -1,0 +1,6 @@
+﻿cupynumeric.random.laplace
+==========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: laplace

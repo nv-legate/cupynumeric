@@ -1,0 +1,6 @@
+﻿cupynumeric.concatenate
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: concatenate

@@ -1,0 +1,6 @@
+﻿cupynumeric.log2
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: log2

@@ -1,0 +1,6 @@
+﻿cupynumeric.diagonal
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: diagonal

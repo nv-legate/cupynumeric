@@ -1,0 +1,6 @@
+﻿cupynumeric.random.logseries
+============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: logseries

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.nbytes
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.nbytes

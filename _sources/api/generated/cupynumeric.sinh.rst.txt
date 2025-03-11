@@ -1,0 +1,6 @@
+﻿cupynumeric.sinh
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: sinh

@@ -1,0 +1,6 @@
+﻿cupynumeric.multiply
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: multiply

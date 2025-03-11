@@ -1,0 +1,6 @@
+﻿cupynumeric.trunc
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: trunc

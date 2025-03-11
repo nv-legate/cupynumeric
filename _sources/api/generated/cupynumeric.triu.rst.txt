@@ -1,0 +1,6 @@
+﻿cupynumeric.triu
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: triu

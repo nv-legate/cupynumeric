@@ -1,0 +1,6 @@
+﻿cupynumeric.tanh
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: tanh

@@ -1,0 +1,6 @@
+﻿cupynumeric.full
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: full

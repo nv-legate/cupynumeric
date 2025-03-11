@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.partition
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.partition

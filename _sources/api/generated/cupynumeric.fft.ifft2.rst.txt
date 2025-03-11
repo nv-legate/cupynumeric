@@ -1,0 +1,6 @@
+﻿cupynumeric.fft.ifft2
+=====================
+
+.. currentmodule:: cupynumeric.fft
+
+.. autofunction:: ifft2

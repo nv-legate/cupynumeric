@@ -1,0 +1,6 @@
+﻿cupynumeric.zeros\_like
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: zeros_like

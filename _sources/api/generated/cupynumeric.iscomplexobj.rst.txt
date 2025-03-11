@@ -1,0 +1,6 @@
+﻿cupynumeric.iscomplexobj
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: iscomplexobj

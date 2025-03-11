@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.argmin
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.argmin

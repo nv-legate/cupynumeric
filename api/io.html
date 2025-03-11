@@ -1,0 +1,1080 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Input and output &#8212; NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=d0aa047a" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/params.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=e8361340"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=4ea706d9"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/io';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '25.03';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="icon" href="../_static/favicon.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="cupynumeric.load" href="generated/cupynumeric.load.html" />
+    <link rel="prev" title="cupynumeric.place" href="generated/cupynumeric.place.html" />
+
+<script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js"></script>
+
+
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40) - Home"/>
+  
+  
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40) - Home"/>
+  
+  
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.03.00.dev+43.gc8c63e40)</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../user/index.html">User guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user/usage.html">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user/practices.html">Best practices</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../user/howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/measuring.html">Measure API coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/benchmarking.html">Performance Benchmarking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying Numpy code without changes</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../user/advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user/differences.html">Differences with Numpy</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/black_scholes.html">Black-Scholes options pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/cholesky.html">Cholesky decomposition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/stencil.html">Jacobi stencil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/kmeans.html">K-Means Clustering Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/edge_detection.html">Edge Detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/newton_raphson_2d.html">Newton Raphson Method In Two Dimensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/compact_finite_difference.html">Compact Finite Difference Scheme</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/torchswe.html">TorchSWE case study</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="classes.html">Classes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="broadcast.html">cupynumeric.broadcast</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="ndarray.html">The N-Dimensional array (<code class="xref py py-class docutils literal notranslate"><span class="pre">cupynumeric.ndarray</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_ndarray.html">cupynumeric.ndarray</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.all.html">cupynumeric.ndarray.all</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.any.html">cupynumeric.ndarray.any</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.flags.html">cupynumeric.ndarray.flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.shape.html">cupynumeric.ndarray.shape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.strides.html">cupynumeric.ndarray.strides</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.ndim.html">cupynumeric.ndarray.ndim</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.data.html">cupynumeric.ndarray.data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.size.html">cupynumeric.ndarray.size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.itemsize.html">cupynumeric.ndarray.itemsize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.nbytes.html">cupynumeric.ndarray.nbytes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.base.html">cupynumeric.ndarray.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.ctypes.html">cupynumeric.ndarray.ctypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dtype.html">cupynumeric.ndarray.dtype</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.T.html">cupynumeric.ndarray.T</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.real.html">cupynumeric.ndarray.real</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.imag.html">cupynumeric.ndarray.imag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.flat.html">cupynumeric.ndarray.flat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.item.html">cupynumeric.ndarray.item</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.tolist.html">cupynumeric.ndarray.tolist</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.itemset.html">cupynumeric.ndarray.itemset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.tostring.html">cupynumeric.ndarray.tostring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.tobytes.html">cupynumeric.ndarray.tobytes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.tofile.html">cupynumeric.ndarray.tofile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dump.html">cupynumeric.ndarray.dump</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dumps.html">cupynumeric.ndarray.dumps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.astype.html">cupynumeric.ndarray.astype</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.copy.html">cupynumeric.ndarray.copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.view.html">cupynumeric.ndarray.view</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.getfield.html">cupynumeric.ndarray.getfield</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.setfield.html">cupynumeric.ndarray.setfield</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.setflags.html">cupynumeric.ndarray.setflags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.fill.html">cupynumeric.ndarray.fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.reshape.html">cupynumeric.ndarray.reshape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.transpose.html">cupynumeric.ndarray.transpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.swapaxes.html">cupynumeric.ndarray.swapaxes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.flatten.html">cupynumeric.ndarray.flatten</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.ravel.html">cupynumeric.ndarray.ravel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.squeeze.html">cupynumeric.ndarray.squeeze</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.take.html">cupynumeric.ndarray.take</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.put.html">cupynumeric.ndarray.put</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.choose.html">cupynumeric.ndarray.choose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.sort.html">cupynumeric.ndarray.sort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.argsort.html">cupynumeric.ndarray.argsort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.partition.html">cupynumeric.ndarray.partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.argpartition.html">cupynumeric.ndarray.argpartition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.searchsorted.html">cupynumeric.ndarray.searchsorted</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.nonzero.html">cupynumeric.ndarray.nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.compress.html">cupynumeric.ndarray.compress</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.diagonal.html">cupynumeric.ndarray.diagonal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.trace.html">cupynumeric.ndarray.trace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.max.html">cupynumeric.ndarray.max</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.argmax.html">cupynumeric.ndarray.argmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.min.html">cupynumeric.ndarray.min</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.argmin.html">cupynumeric.ndarray.argmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.clip.html">cupynumeric.ndarray.clip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.conj.html">cupynumeric.ndarray.conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.conjugate.html">cupynumeric.ndarray.conjugate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dot.html">cupynumeric.ndarray.dot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.flip.html">cupynumeric.ndarray.flip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.sum.html">cupynumeric.ndarray.sum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.cumsum.html">cupynumeric.ndarray.cumsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.mean.html">cupynumeric.ndarray.mean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.var.html">cupynumeric.ndarray.var</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.prod.html">cupynumeric.ndarray.prod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.cumprod.html">cupynumeric.ndarray.cumprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.all.html">cupynumeric.ndarray.all</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.any.html">cupynumeric.ndarray.any</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.unique.html">cupynumeric.ndarray.unique</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__lt__.html">cupynumeric.ndarray.__lt__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__le__.html">cupynumeric.ndarray.__le__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__gt__.html">cupynumeric.ndarray.__gt__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ge__.html">cupynumeric.ndarray.__ge__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__eq__.html">cupynumeric.ndarray.__eq__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ne__.html">cupynumeric.ndarray.__ne__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__bool__.html">cupynumeric.ndarray.__bool__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__neg__.html">cupynumeric.ndarray.__neg__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__pos__.html">cupynumeric.ndarray.__pos__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__abs__.html">cupynumeric.ndarray.__abs__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__invert__.html">cupynumeric.ndarray.__invert__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__add__.html">cupynumeric.ndarray.__add__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__sub__.html">cupynumeric.ndarray.__sub__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__mul__.html">cupynumeric.ndarray.__mul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__truediv__.html">cupynumeric.ndarray.__truediv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__floordiv__.html">cupynumeric.ndarray.__floordiv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__mod__.html">cupynumeric.ndarray.__mod__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__divmod__.html">cupynumeric.ndarray.__divmod__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__pow__.html">cupynumeric.ndarray.__pow__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__lshift__.html">cupynumeric.ndarray.__lshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__rshift__.html">cupynumeric.ndarray.__rshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__and__.html">cupynumeric.ndarray.__and__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__or__.html">cupynumeric.ndarray.__or__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__xor__.html">cupynumeric.ndarray.__xor__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__iadd__.html">cupynumeric.ndarray.__iadd__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__isub__.html">cupynumeric.ndarray.__isub__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__imul__.html">cupynumeric.ndarray.__imul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__itruediv__.html">cupynumeric.ndarray.__itruediv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ifloordiv__.html">cupynumeric.ndarray.__ifloordiv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__imod__.html">cupynumeric.ndarray.__imod__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ipow__.html">cupynumeric.ndarray.__ipow__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ilshift__.html">cupynumeric.ndarray.__ilshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__irshift__.html">cupynumeric.ndarray.__irshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__iand__.html">cupynumeric.ndarray.__iand__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ior__.html">cupynumeric.ndarray.__ior__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__ixor__.html">cupynumeric.ndarray.__ixor__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__matmul__.html">cupynumeric.ndarray.__matmul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__imatmul__.html">cupynumeric.ndarray.__imatmul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__rmatmul__.html">cupynumeric.ndarray.__rmatmul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__copy__.html">cupynumeric.ndarray.__copy__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__deepcopy__.html">cupynumeric.ndarray.__deepcopy__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__index__.html">cupynumeric.ndarray.__index__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__reduce__.html">cupynumeric.ndarray.__reduce__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__setstate__.html">cupynumeric.ndarray.__setstate__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__new__.html">cupynumeric.ndarray.__new__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__array__.html">cupynumeric.ndarray.__array__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__len__.html">cupynumeric.ndarray.__len__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__getitem__.html">cupynumeric.ndarray.__getitem__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__setitem__.html">cupynumeric.ndarray.__setitem__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__contains__.html">cupynumeric.ndarray.__contains__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__int__.html">cupynumeric.ndarray.__int__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__float__.html">cupynumeric.ndarray.__float__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__complex__.html">cupynumeric.ndarray.__complex__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__str__.html">cupynumeric.ndarray.__str__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__repr__.html">cupynumeric.ndarray.__repr__</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="routines.html">Routines</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="creation.html">Array creation routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.empty.html">cupynumeric.empty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.empty_like.html">cupynumeric.empty_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.eye.html">cupynumeric.eye</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.identity.html">cupynumeric.identity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ones.html">cupynumeric.ones</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ones_like.html">cupynumeric.ones_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.zeros.html">cupynumeric.zeros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.zeros_like.html">cupynumeric.zeros_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.full.html">cupynumeric.full</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.full_like.html">cupynumeric.full_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.array.html">cupynumeric.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.asarray.html">cupynumeric.asarray</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.copy.html">cupynumeric.copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.repeat.html">cupynumeric.repeat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arange.html">cupynumeric.arange</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linspace.html">cupynumeric.linspace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.meshgrid.html">cupynumeric.meshgrid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.diag.html">cupynumeric.diag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tri.html">cupynumeric.tri</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tril.html">cupynumeric.tril</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.triu.html">cupynumeric.triu</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="manipulation.html">Array manipulation routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndim.html">cupynumeric.ndim</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.shape.html">cupynumeric.shape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.reshape.html">cupynumeric.reshape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ravel.html">cupynumeric.ravel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.moveaxis.html">cupynumeric.moveaxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.swapaxes.html">cupynumeric.swapaxes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.transpose.html">cupynumeric.transpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.atleast_1d.html">cupynumeric.atleast_1d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.atleast_2d.html">cupynumeric.atleast_2d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.atleast_3d.html">cupynumeric.atleast_3d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.broadcast_arrays.html">cupynumeric.broadcast_arrays</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.broadcast_shapes.html">cupynumeric.broadcast_shapes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.broadcast_to.html">cupynumeric.broadcast_to</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.expand_dims.html">cupynumeric.expand_dims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.squeeze.html">cupynumeric.squeeze</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.asarray.html">cupynumeric.asarray</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.append.html">cupynumeric.append</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.concatenate.html">cupynumeric.concatenate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.stack.html">cupynumeric.stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.block.html">cupynumeric.block</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.vstack.html">cupynumeric.vstack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.hstack.html">cupynumeric.hstack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.dstack.html">cupynumeric.dstack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.column_stack.html">cupynumeric.column_stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.row_stack.html">cupynumeric.row_stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.split.html">cupynumeric.split</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.array_split.html">cupynumeric.array_split</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.dsplit.html">cupynumeric.dsplit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.hsplit.html">cupynumeric.hsplit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.vsplit.html">cupynumeric.vsplit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tile.html">cupynumeric.tile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.flip.html">cupynumeric.flip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fliplr.html">cupynumeric.fliplr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.flipud.html">cupynumeric.flipud</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.roll.html">cupynumeric.roll</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.rot90.html">cupynumeric.rot90</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="binary.html">Binary operations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.bitwise_and.html">cupynumeric.bitwise_and</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.bitwise_or.html">cupynumeric.bitwise_or</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.bitwise_xor.html">cupynumeric.bitwise_xor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.invert.html">cupynumeric.invert</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.left_shift.html">cupynumeric.left_shift</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.right_shift.html">cupynumeric.right_shift</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.packbits.html">cupynumeric.packbits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.unpackbits.html">cupynumeric.unpackbits</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="datatype.html">Data type routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.find_common_type.html">cupynumeric.find_common_type</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="indexing.html">Indexing routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.unravel_index.html">cupynumeric.unravel_index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.diag_indices.html">cupynumeric.diag_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.diag_indices_from.html">cupynumeric.diag_indices_from</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.mask_indices.html">cupynumeric.mask_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tril_indices.html">cupynumeric.tril_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tril_indices_from.html">cupynumeric.tril_indices_from</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.triu_indices.html">cupynumeric.triu_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.triu_indices_from.html">cupynumeric.triu_indices_from</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.indices.html">cupynumeric.indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ix_.html">cupynumeric.ix_</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nonzero.html">cupynumeric.nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.flatnonzero.html">cupynumeric.flatnonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.where.html">cupynumeric.where</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.choose.html">cupynumeric.choose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.compress.html">cupynumeric.compress</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.diag.html">cupynumeric.diag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.diagonal.html">cupynumeric.diagonal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.select.html">cupynumeric.select</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.take.html">cupynumeric.take</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.take_along_axis.html">cupynumeric.take_along_axis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fill_diagonal.html">cupynumeric.fill_diagonal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.put.html">cupynumeric.put</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.putmask.html">cupynumeric.putmask</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.put_along_axis.html">cupynumeric.put_along_axis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.place.html">cupynumeric.place</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">Input and output</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.load.html">cupynumeric.load</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="linalg.html">Linear algebra (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cupynumeric.linalg</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.dot.html">cupynumeric.dot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.vdot.html">cupynumeric.vdot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.inner.html">cupynumeric.inner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.outer.html">cupynumeric.outer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.matmul.html">cupynumeric.matmul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tensordot.html">cupynumeric.tensordot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.einsum.html">cupynumeric.einsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.einsum_path.html">cupynumeric.einsum_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.matrix_power.html">cupynumeric.linalg.matrix_power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.multi_dot.html">cupynumeric.linalg.multi_dot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.cholesky.html">cupynumeric.linalg.cholesky</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.eig.html">cupynumeric.linalg.eig</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.eigvals.html">cupynumeric.linalg.eigvals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.qr.html">cupynumeric.linalg.qr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.svd.html">cupynumeric.linalg.svd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.norm.html">cupynumeric.linalg.norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.trace.html">cupynumeric.trace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.solve.html">cupynumeric.linalg.solve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.linalg.expm.html">cupynumeric.linalg.expm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="logic.html">Logic functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.all.html">cupynumeric.all</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.any.html">cupynumeric.any</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isfinite.html">cupynumeric.isfinite</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isinf.html">cupynumeric.isinf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isnan.html">cupynumeric.isnan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isneginf.html">cupynumeric.isneginf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isposinf.html">cupynumeric.isposinf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.iscomplex.html">cupynumeric.iscomplex</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.iscomplexobj.html">cupynumeric.iscomplexobj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isreal.html">cupynumeric.isreal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isrealobj.html">cupynumeric.isrealobj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isscalar.html">cupynumeric.isscalar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.logical_and.html">cupynumeric.logical_and</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.logical_or.html">cupynumeric.logical_or</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.logical_not.html">cupynumeric.logical_not</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.logical_xor.html">cupynumeric.logical_xor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.allclose.html">cupynumeric.allclose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.isclose.html">cupynumeric.isclose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.array_equal.html">cupynumeric.array_equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.greater.html">cupynumeric.greater</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.greater_equal.html">cupynumeric.greater_equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.less.html">cupynumeric.less</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.less_equal.html">cupynumeric.less_equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.equal.html">cupynumeric.equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.not_equal.html">cupynumeric.not_equal</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="math.html">Mathematical functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sin.html">cupynumeric.sin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cos.html">cupynumeric.cos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tan.html">cupynumeric.tan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arcsin.html">cupynumeric.arcsin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arccos.html">cupynumeric.arccos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arctan.html">cupynumeric.arctan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.hypot.html">cupynumeric.hypot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arctan2.html">cupynumeric.arctan2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.degrees.html">cupynumeric.degrees</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.radians.html">cupynumeric.radians</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.deg2rad.html">cupynumeric.deg2rad</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.rad2deg.html">cupynumeric.rad2deg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sinh.html">cupynumeric.sinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cosh.html">cupynumeric.cosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.tanh.html">cupynumeric.tanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arcsinh.html">cupynumeric.arcsinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arccosh.html">cupynumeric.arccosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.arctanh.html">cupynumeric.arctanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.round.html">cupynumeric.round</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.rint.html">cupynumeric.rint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.floor.html">cupynumeric.floor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ceil.html">cupynumeric.ceil</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.trunc.html">cupynumeric.trunc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.prod.html">cupynumeric.prod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sum.html">cupynumeric.sum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cumprod.html">cupynumeric.cumprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cumsum.html">cupynumeric.cumsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.diff.html">cupynumeric.diff</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nancumprod.html">cupynumeric.nancumprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nancumsum.html">cupynumeric.nancumsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanprod.html">cupynumeric.nanprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nansum.html">cupynumeric.nansum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.gradient.html">cupynumeric.gradient</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.exp.html">cupynumeric.exp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.expm1.html">cupynumeric.expm1</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.exp2.html">cupynumeric.exp2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.log.html">cupynumeric.log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.log10.html">cupynumeric.log10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.log2.html">cupynumeric.log2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.log1p.html">cupynumeric.log1p</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.logaddexp.html">cupynumeric.logaddexp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.logaddexp2.html">cupynumeric.logaddexp2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.signbit.html">cupynumeric.signbit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.copysign.html">cupynumeric.copysign</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.frexp.html">cupynumeric.frexp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ldexp.html">cupynumeric.ldexp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nextafter.html">cupynumeric.nextafter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.lcm.html">cupynumeric.lcm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.gcd.html">cupynumeric.gcd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.add.html">cupynumeric.add</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.reciprocal.html">cupynumeric.reciprocal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.positive.html">cupynumeric.positive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.negative.html">cupynumeric.negative</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.multiply.html">cupynumeric.multiply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.divide.html">cupynumeric.divide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.power.html">cupynumeric.power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.subtract.html">cupynumeric.subtract</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.true_divide.html">cupynumeric.true_divide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.floor_divide.html">cupynumeric.floor_divide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.float_power.html">cupynumeric.float_power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fmod.html">cupynumeric.fmod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.mod.html">cupynumeric.mod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.modf.html">cupynumeric.modf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.remainder.html">cupynumeric.remainder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.real.html">cupynumeric.real</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.imag.html">cupynumeric.imag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.angle.html">cupynumeric.angle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.conj.html">cupynumeric.conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.conjugate.html">cupynumeric.conjugate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.maximum.html">cupynumeric.maximum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fmax.html">cupynumeric.fmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.amax.html">cupynumeric.amax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.minimum.html">cupynumeric.minimum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fmin.html">cupynumeric.fmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.amin.html">cupynumeric.amin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanmin.html">cupynumeric.nanmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanmax.html">cupynumeric.nanmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.convolve.html">cupynumeric.convolve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.clip.html">cupynumeric.clip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sqrt.html">cupynumeric.sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cbrt.html">cupynumeric.cbrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.square.html">cupynumeric.square</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.absolute.html">cupynumeric.absolute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fabs.html">cupynumeric.fabs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sign.html">cupynumeric.sign</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.inner.html">cupynumeric.inner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.outer.html">cupynumeric.outer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.vdot.html">cupynumeric.vdot</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="fft.html">Discrete Fourier Transform (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cupynumeric.fft</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.fft.html">cupynumeric.fft.fft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.ifft.html">cupynumeric.fft.ifft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.fft2.html">cupynumeric.fft.fft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.ifft2.html">cupynumeric.fft.ifft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.fftn.html">cupynumeric.fft.fftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.ifftn.html">cupynumeric.fft.ifftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.rfft.html">cupynumeric.fft.rfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.irfft.html">cupynumeric.fft.irfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.rfft2.html">cupynumeric.fft.rfft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.irfft2.html">cupynumeric.fft.irfft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.rfftn.html">cupynumeric.fft.rfftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.irfftn.html">cupynumeric.fft.irfftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.hfft.html">cupynumeric.fft.hfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.ihfft.html">cupynumeric.fft.ihfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.fftshift.html">cupynumeric.fft.fftshift</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.fft.ifftshift.html">cupynumeric.fft.ifftshift</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="random.html">Random sampling (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cupynumeric.random</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.default_rng.html">cupynumeric.random.default_rng</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_generator.html">cupynumeric.random.Generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_bitgenerator.html">cupynumeric.random.BitGenerator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.seed.html">cupynumeric.random.seed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.default_rng.html">cupynumeric.random.default_rng</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.rand.html">cupynumeric.random.rand</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.randn.html">cupynumeric.random.randn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.randint.html">cupynumeric.random.randint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.random.html">cupynumeric.random.random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.random_integers.html">cupynumeric.random.random_integers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.random_sample.html">cupynumeric.random.random_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.bytes.html">cupynumeric.random.bytes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.beta.html">cupynumeric.random.beta</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.binomial.html">cupynumeric.random.binomial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.chisquare.html">cupynumeric.random.chisquare</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.exponential.html">cupynumeric.random.exponential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.f.html">cupynumeric.random.f</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.gamma.html">cupynumeric.random.gamma</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.geometric.html">cupynumeric.random.geometric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.gumbel.html">cupynumeric.random.gumbel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.hypergeometric.html">cupynumeric.random.hypergeometric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.laplace.html">cupynumeric.random.laplace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.logistic.html">cupynumeric.random.logistic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.lognormal.html">cupynumeric.random.lognormal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.logseries.html">cupynumeric.random.logseries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.negative_binomial.html">cupynumeric.random.negative_binomial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.noncentral_chisquare.html">cupynumeric.random.noncentral_chisquare</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.noncentral_f.html">cupynumeric.random.noncentral_f</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.normal.html">cupynumeric.random.normal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.pareto.html">cupynumeric.random.pareto</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.poisson.html">cupynumeric.random.poisson</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.power.html">cupynumeric.random.power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.ranf.html">cupynumeric.random.ranf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.rayleigh.html">cupynumeric.random.rayleigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.sample.html">cupynumeric.random.sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.standard_cauchy.html">cupynumeric.random.standard_cauchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.standard_exponential.html">cupynumeric.random.standard_exponential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.standard_gamma.html">cupynumeric.random.standard_gamma</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.standard_t.html">cupynumeric.random.standard_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.triangular.html">cupynumeric.random.triangular</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.uniform.html">cupynumeric.random.uniform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.vonmises.html">cupynumeric.random.vonmises</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.wald.html">cupynumeric.random.wald</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.weibull.html">cupynumeric.random.weibull</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.random.zipf.html">cupynumeric.random.zipf</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="set.html">Set routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.unique.html">cupynumeric.unique</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="sorting.html">Sorting, searching, and counting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.argpartition.html">cupynumeric.argpartition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.argsort.html">cupynumeric.argsort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.msort.html">cupynumeric.msort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.partition.html">cupynumeric.partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sort.html">cupynumeric.sort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sort_complex.html">cupynumeric.sort_complex</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.argmax.html">cupynumeric.argmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.argmin.html">cupynumeric.argmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.argwhere.html">cupynumeric.argwhere</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.flatnonzero.html">cupynumeric.flatnonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanargmax.html">cupynumeric.nanargmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanargmin.html">cupynumeric.nanargmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nonzero.html">cupynumeric.nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.searchsorted.html">cupynumeric.searchsorted</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.extract.html">cupynumeric.extract</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.where.html">cupynumeric.where</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.count_nonzero.html">cupynumeric.count_nonzero</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="statistics.html">Statistics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.quantile.html">cupynumeric.quantile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.percentile.html">cupynumeric.percentile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanquantile.html">cupynumeric.nanquantile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanpercentile.html">cupynumeric.nanpercentile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.average.html">cupynumeric.average</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.mean.html">cupynumeric.mean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanmean.html">cupynumeric.nanmean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.var.html">cupynumeric.var</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.median.html">cupynumeric.median</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanmedian.html">cupynumeric.nanmedian</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cov.html">cupynumeric.cov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.bincount.html">cupynumeric.bincount</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.histogram.html">cupynumeric.histogram</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.digitize.html">cupynumeric.digitize</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="window.html">Window functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.bartlett.html">cupynumeric.bartlett</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.blackman.html">cupynumeric.blackman</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.hamming.html">cupynumeric.hamming</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.hanning.html">cupynumeric.hanning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.kaiser.html">cupynumeric.kaiser</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="comparison.html">Project comparisons</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../faqs.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../developer/index.html">Developer guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../developer/CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../developer/building.html">Building from source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../developer/testing.html">Running tests</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="routines.html" class="nav-link">Routines</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Input and output</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="input-and-output">
+<h1>Input and output<a class="headerlink" href="#input-and-output" title="Link to this heading">#</a></h1>
+<section id="numpy-binary-files-npy-npz">
+<h2>NumPy binary files (npy, npz)<a class="headerlink" href="#numpy-binary-files-npy-npz" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.load.html#cupynumeric.load" title="cupynumeric.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(file, *[, max_header_size])</p></td>
+<td><p>Load an array from a <code class="docutils literal notranslate"><span class="pre">.npy</span></code> file.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="generated/cupynumeric.place.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">cupynumeric.place</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="generated/cupynumeric.load.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">cupynumeric.load</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#numpy-binary-files-npy-npz">NumPy binary files (npy, npz)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+<a class="footer-brand logo" href="https://www.nvidia.com">
+  <img src="../_static/nvidia-logo-horiz-rgb-1c-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA"/>
+  <img src="../_static/nvidia-logo-horiz-rgb-1c-wht-for-screen.svg" class="logo__image only-dark" alt="NVIDIA"/>
+</a></div>
+      
+        <div class="footer-item">
+
+<div class="footer-links">
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-policy/">Privacy Policy</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Manage My Privacy</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/preferences/start/">Do Not Sell or Share My Data</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/terms-of-service/">Terms of Service</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/accessibility/">Accessibility</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/company-policies/">Corporate Policies</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/product-security/">Product Security</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/contact/">Contact</a>
+  
+  
+  
+</div>
+</div>
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2024, NVIDIA.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+<div class="extra_footer">
+  
+  This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.
+  
+  <script type="text/javascript">if (typeof _satellite !== “undefined”){ _satellite.pageBottom();}</script>
+  
+</div></div>
+      
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+  </body>
+</html>

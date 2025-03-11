@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.sort
+========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.sort

@@ -1,0 +1,6 @@
+﻿cupynumeric.random.wald
+=======================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: wald

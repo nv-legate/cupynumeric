@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.unique
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.unique

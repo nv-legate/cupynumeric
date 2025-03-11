@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_ge\_\_
+==============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__ge__

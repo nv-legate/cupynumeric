@@ -1,0 +1,6 @@
+﻿cupynumeric.isscalar
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isscalar

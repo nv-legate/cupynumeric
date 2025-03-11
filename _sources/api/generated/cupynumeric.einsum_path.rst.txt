@@ -1,0 +1,6 @@
+﻿cupynumeric.einsum\_path
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: einsum_path

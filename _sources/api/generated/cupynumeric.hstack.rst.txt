@@ -1,0 +1,6 @@
+﻿cupynumeric.hstack
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: hstack

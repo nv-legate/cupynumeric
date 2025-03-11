@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.transpose
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.transpose

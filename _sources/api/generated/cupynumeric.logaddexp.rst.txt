@@ -1,0 +1,6 @@
+﻿cupynumeric.logaddexp
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: logaddexp

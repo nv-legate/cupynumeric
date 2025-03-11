@@ -1,0 +1,6 @@
+﻿cupynumeric.vsplit
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: vsplit

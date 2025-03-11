@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.argmax
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.argmax

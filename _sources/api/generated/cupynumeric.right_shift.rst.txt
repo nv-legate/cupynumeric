@@ -1,0 +1,6 @@
+﻿cupynumeric.right\_shift
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: right_shift

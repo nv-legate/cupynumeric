@@ -1,0 +1,6 @@
+﻿cupynumeric.tile
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: tile

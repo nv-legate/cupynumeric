@@ -1,0 +1,6 @@
+﻿cupynumeric.isneginf
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isneginf

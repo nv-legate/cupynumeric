@@ -1,0 +1,6 @@
+﻿cupynumeric.angle
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: angle

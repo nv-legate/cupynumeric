@@ -1,0 +1,6 @@
+﻿cupynumeric.random.zipf
+=======================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: zipf

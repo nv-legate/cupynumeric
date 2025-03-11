@@ -1,0 +1,6 @@
+﻿cupynumeric.random.randn
+========================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: randn

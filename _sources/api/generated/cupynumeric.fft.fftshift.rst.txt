@@ -1,0 +1,6 @@
+﻿cupynumeric.fft.fftshift
+========================
+
+.. currentmodule:: cupynumeric.fft
+
+.. autofunction:: fftshift

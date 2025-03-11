@@ -1,0 +1,6 @@
+﻿cupynumeric.place
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: place

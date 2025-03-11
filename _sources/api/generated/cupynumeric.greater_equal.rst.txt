@@ -1,0 +1,6 @@
+﻿cupynumeric.greater\_equal
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: greater_equal

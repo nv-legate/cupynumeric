@@ -1,0 +1,6 @@
+﻿cupynumeric.nanargmin
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nanargmin

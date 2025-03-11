@@ -1,0 +1,6 @@
+﻿cupynumeric.random.standard\_t
+==============================
+
+.. currentmodule:: cupynumeric.random
+
+.. autofunction:: standard_t

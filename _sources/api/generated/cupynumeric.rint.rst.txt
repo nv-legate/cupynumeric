@@ -1,0 +1,6 @@
+﻿cupynumeric.rint
+================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: rint

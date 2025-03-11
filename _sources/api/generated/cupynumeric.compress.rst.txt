@@ -1,0 +1,6 @@
+﻿cupynumeric.compress
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: compress

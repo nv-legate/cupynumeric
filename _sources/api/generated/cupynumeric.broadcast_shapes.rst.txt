@@ -1,0 +1,6 @@
+﻿cupynumeric.broadcast\_shapes
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: broadcast_shapes

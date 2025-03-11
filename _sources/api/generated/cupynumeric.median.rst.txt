@@ -1,0 +1,6 @@
+﻿cupynumeric.median
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: median

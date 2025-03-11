@@ -1,0 +1,6 @@
+﻿cupynumeric.sort\_complex
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: sort_complex

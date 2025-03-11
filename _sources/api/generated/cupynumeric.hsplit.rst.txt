@@ -1,0 +1,6 @@
+﻿cupynumeric.hsplit
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: hsplit

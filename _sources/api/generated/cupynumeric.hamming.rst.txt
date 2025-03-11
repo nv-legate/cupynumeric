@@ -1,0 +1,6 @@
+﻿cupynumeric.hamming
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: hamming

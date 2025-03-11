@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.cholesky
+===========================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: cholesky

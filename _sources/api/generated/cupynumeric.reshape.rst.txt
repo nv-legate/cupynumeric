@@ -1,0 +1,6 @@
+﻿cupynumeric.reshape
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: reshape

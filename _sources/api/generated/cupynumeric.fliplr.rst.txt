@@ -1,0 +1,6 @@
+﻿cupynumeric.fliplr
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: fliplr

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.searchsorted
+================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.searchsorted

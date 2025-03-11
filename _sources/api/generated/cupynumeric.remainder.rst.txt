@@ -1,0 +1,6 @@
+﻿cupynumeric.remainder
+=====================
+
+.. currentmodule:: cupynumeric
+
+.. autoufunc:: remainder

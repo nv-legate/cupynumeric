@@ -1,0 +1,6 @@
+﻿cupynumeric.repeat
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: repeat

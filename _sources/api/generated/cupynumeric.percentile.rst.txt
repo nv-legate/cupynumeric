@@ -1,0 +1,6 @@
+﻿cupynumeric.percentile
+======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: percentile
