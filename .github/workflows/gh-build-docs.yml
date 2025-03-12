@@ -1,0 +1,122 @@
+---
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        required: true
+      target-device:
+        type: string
+        required: true
+      build-mode:
+        type: string
+        required: true
+      build-type:
+        type: string
+        required: true
+      upload-docs-to-gh-pages:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build-cupynumeric:
+    if: ${{ github.repository_owner == 'nv-legate' }}
+    uses:
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@push_nightly_docs_to_gh_pages
+    with:
+      build-has-tests: false
+      client-repo: ${{ github.event.repository.name }}
+      target-device: ${{ inputs.target-device }}
+      runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-cpu4') || (inputs.platform == 'mac' && 'macos-latest') }}
+      build-type: ${{ inputs.build-type }}
+      use-container: ${{ inputs.platform == 'linux' }}
+      platform: ${{ inputs.platform }}
+      dependencies-file: ""
+      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
+      build-mode: ${{ inputs.build-mode }}
+      upload-enabled: false
+      network: "ucx"
+    secrets: inherit
+
+
+  build-docs:
+    needs:
+      - build-cupynumeric
+    name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
+
+    uses:
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@push_nightly_docs_to_gh_pages
+    with:
+      build-has-tests: false
+      build-mode: ${{ inputs.build-mode }}
+      build-type: ${{ inputs.build-type }}
+      output-build-type: docs
+      client-repo: ${{ github.event.repository.name }}
+      has-gpu: false
+      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
+      name: Build documentation
+      network: "ucx"
+      platform: ${{ inputs.platform }}
+      python-version: ${{ inputs.python-version }}
+      runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-gpu-l4-latest-1') || (inputs.platform == 'mac' && 'macos-latest') }}
+      target-device: ${{ inputs.target-device }}
+      test-options: docs
+      upload-enabled: false
+    secrets: inherit
+
+
+  upload-docs-to-gh-pages:
+    if: ${{ inputs.upload-docs-to-gh-pages }}
+    needs:
+      - build-docs
+    runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-cpu4') || (inputs.platform == 'mac' && 'macos-latest') }}
+    steps:
+      - name: Set environment variables
+        shell: bash --noprofile --norc -xeuo pipefail {0}
+        run: |
+          echo "${{ needs.build-docs.outputs.output-artifact-name }}"
+
+          ARTIFACTS_DIR=$(realpath "$(pwd)/../artifacts")
+          echo "ARTIFACTS_DIR=${ARTIFACTS_DIR}" >> $GITHUB_ENV
+
+          mkdir -p "${ARTIFACTS_DIR}"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-docs.outputs.output-artifact-name }}
+          path: ${{ env.ARTIFACTS_DIR }}
+
+      - name: Display structure of downloaded artifacts
+        shell: bash --noprofile --norc -xeuo pipefail {0}
+        run: |
+          pwd
+          ls -lahR ${{ env.ARTIFACTS_DIR }}
+
+      - name: Find index.html's parent folder
+        shell: bash --noprofile --norc -xeuo pipefail {0}
+        id: find_docs_dir
+        run: |
+          FILE_PATH="$(
+            find "${{ env.ARTIFACTS_DIR }}" -name "index.html" -printf '%d %p\n' \
+              | sort -nk1 \
+              | cut -d' ' -f2- \
+              | head -n 1
+          )"
+          if [ -z "${FILE_PATH}" ]; then
+            echo "index.html not found" >&2
+            exit 1
+          fi
+          PARENT_DIR=$(dirname "${FILE_PATH}")
+          echo "docs_dir=${PARENT_DIR}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ${{ steps.find_docs_dir.outputs.docs_dir }}
+          token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS }}
+          repository-name: "nv-legate/cupynumeric"
