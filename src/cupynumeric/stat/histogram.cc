@@ -69,7 +69,7 @@ struct HistogramImplBody<VariantKind::CPU, CODE> {
 
 namespace  // unnamed
 {
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   HistogramTask::register_variants();
   return 0;
 }();

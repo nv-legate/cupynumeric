@@ -45,7 +45,7 @@ struct UnpackbitsImplBody<VariantKind::CPU, DIM, BITORDER> {
 
 namespace  // unnamed
 {
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   UnpackbitsTask::register_variants();
   return 0;
 }();

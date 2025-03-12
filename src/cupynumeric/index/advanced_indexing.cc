@@ -111,7 +111,7 @@ struct AdvancedIndexingImplBody<VariantKind::CPU, CODE, DIM, OUT_TYPE> {
 
 namespace  // unnamed
 {
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   AdvancedIndexingTask::register_variants();
   return 0;
 }();

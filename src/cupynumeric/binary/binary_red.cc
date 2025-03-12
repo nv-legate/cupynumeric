@@ -66,7 +66,7 @@ struct BinaryRedImplBody<VariantKind::CPU, OP_CODE, CODE, DIM> {
 
 namespace  // unnamed
 {
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   BinaryRedTask::register_variants();
   return 0;
 }();

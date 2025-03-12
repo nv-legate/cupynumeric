@@ -108,7 +108,7 @@ std::mutex BitGeneratorImplBody<VariantKind::CPU>::lock_generators = {};
 namespace  // unnamed
 {
 
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   BitGeneratorTask::register_variants();
   return 0;
 }();

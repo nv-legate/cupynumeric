@@ -566,7 +566,7 @@ class UnloadCUDALibsTask : public CuPyNumericTask<UnloadCUDALibsTask> {
   }
 };
 
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   LoadCUDALibsTask::register_variants();
   UnloadCUDALibsTask::register_variants();
   return 0;

@@ -26,7 +26,7 @@ namespace cupynumeric {
 
 namespace  // unnamed
 {
-const auto reg_ = []() -> char {
+const auto cupynumeric_reg_task_ = []() -> char {
   UniqueReduceTask::register_variants();
   return 0;
 }();

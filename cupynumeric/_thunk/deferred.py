@@ -3386,13 +3386,14 @@ class DeferredArray(NumPyThunk):
         args: tuple[Scalar, ...],
     ) -> None:
         lhs = self.base
-        rhs1 = src1.base
-        rhs2 = src2.base
         assert lhs.has_scalar_storage
 
         if broadcast is not None:
-            rhs1 = rhs1._broadcast(broadcast)
-            rhs2 = rhs2._broadcast(broadcast)
+            rhs1 = src1._broadcast(broadcast)
+            rhs2 = src2._broadcast(broadcast)
+        else:
+            rhs1 = src1.base
+            rhs2 = src2.base
 
         # Populate the Legate launcher
         if op == BinaryOpCode.NOT_EQUAL:
