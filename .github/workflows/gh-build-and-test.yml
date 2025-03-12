@@ -53,13 +53,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.26
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@push_nightly_docs_to_gh_pages
     with:
+      build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: ""
-      legate-gh-ci-tag: "v1.26"
+      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -74,12 +75,13 @@ jobs:
     if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
     name: Upload package to Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.26
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@push_nightly_docs_to_gh_pages
     with:
+      build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.26"
+      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -127,7 +129,6 @@ jobs:
             'Eager execution test:test --use eager --debug:gpu'
             'Eager execution test:test --use eager --debug:cpu'
             'mypy:mypy:cpu'
-            'Documentation:docs:cpu'
             'Unit tests:unit:cpu'
           )
           for RUNNER in "${RUNNERS[@]}"; do
@@ -164,13 +165,14 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.26
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@push_nightly_docs_to_gh_pages
     with:
+      build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "v1.26"
+      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -186,12 +188,13 @@ jobs:
     name: Update Test status on Server
     if: ${{ false }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.26
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@push_nightly_docs_to_gh_pages
     with:
+      build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.26"
+      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
       name: UpdateTestStatus
       network: "ucx"
       pkgSubString: "cupynumeric-"

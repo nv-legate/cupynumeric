@@ -9,6 +9,7 @@ on:
   schedule:
     - cron: '0 23 * * *'  # Nightly at 11:00 PM
 
+
 jobs:
   build-and-test:
     strategy:
@@ -38,4 +39,25 @@ jobs:
       waive-gpu-tests: ${{ github.workflow == 'Build Release package' && matrix.platform == 'linux-aarch64' }}
       refname: ${{ github.ref_name }}
       default-branch: ${{ github.event.repository.default_branch }}
+    secrets: inherit
+
+  build-nightly-docs:
+    name: Build Nightly documentation (${{ matrix.platform }}, ${{ matrix.target-device }}, ${{ matrix.build-mode }}, ucx enabled)
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        target-device:
+          - gpu
+        build-mode:
+          - release
+    uses:
+      ./.github/workflows/gh-build-docs.yml
+    with:
+      platform: ${{ matrix.platform }}
+      target-device: ${{ matrix.target-device }}
+      build-mode: ${{ matrix.build-mode }}
+      build-type: nightly
+      upload-docs-to-gh-pages: true
     secrets: inherit

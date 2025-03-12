@@ -1,0 +1,46 @@
+---
+name: Docs
+
+concurrency:
+  group: ${{ startsWith(github.ref_name, 'main') && format('unique-{0}', github.run_id) || format('ci-build-docs-on-{0}-from-{1}', github.event_name, github.ref_name) }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+      - "branch-*"
+      - "main"
+  merge_group:
+
+jobs:
+  build-and-test:
+    name: Build documentation (${{ matrix.platform }}, ${{ matrix.target-device }}, ${{ matrix.build-mode }}, ucx enabled)
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        target-device:
+          - gpu
+        build-mode:
+          - release
+    uses:
+      ./.github/workflows/gh-build-docs.yml
+    with:
+      platform: ${{ matrix.platform }}
+      target-device: ${{ matrix.target-device }}
+      build-mode: ${{ matrix.build-mode }}
+      build-type: ci
+      upload-docs-to-gh-pages: false
+    secrets: inherit
+
+  docs-pass:
+    if: always()
+    needs:
+      - build-and-test
+    runs-on: linux-amd64-cpu4
+    steps:
+      - name: Check job results
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

@@ -5,7 +5,26 @@ set -x
 . conda-utils
 
 make_release_env() {
-    mamba create -q -y -n "${CONDA_ENV}" -c conda-forge boa
+    legate-mamba-retry create -q -y -n "${CONDA_ENV}" -c conda-forge boa
+}
+
+make_docs_env() {
+    set -xeuo pipefail
+
+    export DEBIAN_FRONTEND=non-interactive
+    export CONDA_ENV=legate
+
+    # Run package updates and install packages
+    apt-get update
+    apt-get install -y numactl make
+
+    legate-mamba-retry create -yn "${CONDA_ENV}" pandoc doxygen
+
+    . conda-utils;
+    activate_conda_env;
+
+    # mamba install -y pandoc doxygen
+    pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme cffi
 }
 
 make_conda_env() {
@@ -14,6 +33,7 @@ make_conda_env() {
     case "$1" in
         ci) make_release_env;;
         nightly) make_release_env;;
+        docs) make_docs_env;;
         *) return 1;;
     esac
 

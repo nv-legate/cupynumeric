@@ -13,29 +13,29 @@ setup_env() {
     apt-get update
     apt-get install -y numactl make
 
-    mamba search --override-channels -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" --info cupynumeric
+    legate-mamba-retry search --override-channels -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" --info cupynumeric
 
     # This requires strict channel priority to work (prioritize local channel)
-    mamba create -y -n legate -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} -c conda-forge legate cupynumeric
+    legate-mamba-retry create -y -n legate -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} -c conda-forge legate cupynumeric
 }
 
 setup_test_env() {
-    mamba install -y "clang-tools>=8" "clang>=8" colorama coverage mock pre-commit pytest-cov pytest-mock "pytest" types-docutils pynvml psutil
+    legate-mamba-retry install -y "clang-tools>=8" "clang>=8" colorama coverage mock pre-commit pytest-cov pytest-mock "pytest" types-docutils pynvml psutil
 
     pip install tifffile
 }
 
 setup_docs_env() {
-    mamba install -y pandoc doxygen
+    legate-mamba-retry install -y pandoc doxygen
     pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme cffi
 }
 
 setup_mypy_env() {
-    mamba install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0" types-docutils
+    legate-mamba-retry install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0" types-docutils
 }
 
 setup_unit_env() {
-    mamba install -y pytest pytest-mock mock cffi
+    legate-mamba-retry install -y pytest pytest-mock mock cffi
 }
 
 test_cupynumeric() {
@@ -67,9 +67,14 @@ test_cupynumeric() {
         "docs")
             echo "Building docs..."
             shift;
+
             setup_docs_env;
             cd docs/cupynumeric
             make clean html
+            # ls -lah .
+            echo Copying artifacts
+            cd build/html
+            cp -r . "${OUTPUT_ARTIFACTS_DIR}"
             ;;
         "unit")
             echo "Running Unit tests..."
