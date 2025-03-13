@@ -17,7 +17,7 @@ from __future__ import annotations
 import operator
 import warnings
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Sequence, cast
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
 
 import legate.core.types as ty
 import numpy as np
@@ -106,6 +106,7 @@ class ndarray:
         order: OrderType | None = None,
         thunk: NumPyThunk | None = None,
         inputs: Any | None = None,
+        force_thunk: Literal["deferred"] | Literal["eager"] | None = None,
         writeable: bool = True,
     ) -> None:
         # `inputs` being a cuPyNumeric ndarray is definitely a bug
@@ -138,7 +139,7 @@ class ndarray:
                     ]
                 core_dtype = to_core_type(dtype)
                 self._thunk = runtime.create_empty_thunk(
-                    sanitized_shape, core_dtype, inputs
+                    sanitized_shape, core_dtype, inputs, force_thunk
                 )
         else:
             self._thunk = thunk

@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 import warnings
 from functools import lru_cache, reduce
-from typing import TYPE_CHECKING, Any, Sequence, TypeGuard
+from typing import TYPE_CHECKING, Any, Literal, Sequence, TypeGuard
 
 import legate.core.types as ty
 import numpy as np
@@ -480,10 +480,16 @@ class Runtime(object):
         shape: NdShape,
         dtype: ty.Type,
         inputs: Sequence[NumPyThunk] | None = None,
+        force_thunk: Literal["deferred"] | Literal["eager"] | None = None,
     ) -> NumPyThunk:
         from ._thunk.deferred import DeferredArray
 
-        if self.is_eager_shape(shape) and self.are_all_eager_inputs(inputs):
+        assert inputs is None or force_thunk is None
+        if force_thunk == "eager" or (
+            force_thunk is None
+            and self.is_eager_shape(shape)
+            and self.are_all_eager_inputs(inputs)
+        ):
             return self.create_eager_thunk(shape, dtype.to_numpy_dtype())
 
         store = legate_runtime.create_store(

@@ -14,11 +14,12 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
 from .._utils import is_np2
+from ..runtime import runtime
 
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index  # type: ignore
@@ -31,12 +32,13 @@ else:
         normalize_axis_tuple,
     )
 
+from legate.core import get_machine
+
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module import dot, empty_like, eye, matmul, ndarray
+from .._module.creation_shape import zeros, zeros_like
 from .._ufunc.math import add, sqrt as _sqrt
 from ._exception import LinAlgError
-from .._module.creation_shape import zeros, zeros_like
-from legate.core import get_machine, TaskTarget
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -864,17 +866,29 @@ def _thunk_eig(a: ndarray) -> tuple[ndarray, ...]:
     else:
         raise TypeError("Eig input not supported (missing a conversion?)")
 
-    out_ew = ndarray(
-        shape=a.shape[:-1],
-        dtype=complex_dtype,
-        inputs=(a,),
-    )
-
-    out_ev = ndarray(
-        shape=a.shape,
-        dtype=complex_dtype,
-        inputs=(a,),
-    )
+    if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
+        a = ndarray(a.shape, a.dtype, thunk=runtime.to_eager_array(a._thunk))
+        out_ew = ndarray(
+            shape=a.shape[:-1],
+            dtype=complex_dtype,
+            force_thunk="eager",
+        )
+        out_ev = ndarray(
+            shape=a.shape,
+            dtype=complex_dtype,
+            force_thunk="eager",
+        )
+    else:
+        out_ew = ndarray(
+            shape=a.shape[:-1],
+            dtype=complex_dtype,
+            inputs=(a,),
+        )
+        out_ev = ndarray(
+            shape=a.shape,
+            dtype=complex_dtype,
+            inputs=(a,),
+        )
 
     if a.shape[-1] > 0:
         a._thunk.eig(out_ew._thunk, out_ev._thunk)
@@ -894,11 +908,19 @@ def _thunk_eigvals(a: ndarray) -> ndarray:
     else:
         raise TypeError("Eigvals input not supported (missing a conversion?)")
 
-    out_ew = ndarray(
-        shape=a.shape[:-1],
-        dtype=complex_dtype,
-        inputs=(a,),
-    )
+    if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
+        a = ndarray(a.shape, a.dtype, thunk=runtime.to_eager_array(a._thunk))
+        out_ew = ndarray(
+            shape=a.shape[:-1],
+            dtype=complex_dtype,
+            force_thunk="eager",
+        )
+    else:
+        out_ew = ndarray(
+            shape=a.shape[:-1],
+            dtype=complex_dtype,
+            inputs=(a,),
+        )
 
     if a.shape[-1] > 0:
         a._thunk.eigvals(out_ew._thunk)
@@ -995,9 +1017,7 @@ def _thunk_svd(a: ndarray, full_matrices: bool) -> tuple[ndarray, ...]:
 # helper function to construct rational Pade
 # numerator / denominator for expm(A):
 #
-def make_uv(A: ndarray,
-            b: Any,
-            m: int) -> tuple[ndarray, ndarray]:
+def make_uv(A: ndarray, b: Any, m: int) -> tuple[ndarray, ndarray]:
     # 1 + floor(m/2):
     #
     k = 1 + m // 2
@@ -1012,8 +1032,8 @@ def make_uv(A: ndarray,
     A2 = matmul(A, A)
     A2k = eye(n, dtype=A.dtype)
     for j in range(k):
-        U = U + b[2*j+1] * A2k
-        V = V + b[2*j] * A2k
+        U = U + b[2 * j + 1] * A2k
+        V = V + b[2 * j] * A2k
         A2k = matmul(A2k, A2)
 
     U = matmul(A, U)
@@ -1025,6 +1045,7 @@ class ExpmConstants:
     """
     Aggregates all the necessary expm(A) constants.
     """
+
     # Pade `b` coefficient generators
     # for both numerator `p(x)` and
     # denominator `q(x)` coefficients
@@ -1034,19 +1055,45 @@ class ExpmConstants:
     # diagonal Pade implementation;
     #
     b_coeff = {
-        3: np.array([120, 60, 12, 1], dtype = np.float64),
-        5: np.array([30240, 15120, 3360, 420, 30, 1], dtype = np.float64),
-        7: np.array([17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1],
-                    dtype = np.float64),
+        3: np.array([120, 60, 12, 1], dtype=np.float64),
+        5: np.array([30240, 15120, 3360, 420, 30, 1], dtype=np.float64),
+        7: np.array(
+            [17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1],
+            dtype=np.float64,
+        ),
         9: np.array(
-            [17643225600, 8821612800, 2075673600, 302702400, 30270240,
-            2162160, 110880, 3960, 90, 1], dtype = np.float64
+            [
+                17643225600,
+                8821612800,
+                2075673600,
+                302702400,
+                30270240,
+                2162160,
+                110880,
+                3960,
+                90,
+                1,
+            ],
+            dtype=np.float64,
         ),
         13: np.array(
-            [64764752532480000, 32382376266240000, 7771770303897600,
-             1187353796428800, 129060195264000, 10559470521600,
-             670442572800, 33522128640, 1323241920, 40840800,
-             960960, 16380, 182, 1], dtype = np.float64
+            [
+                64764752532480000,
+                32382376266240000,
+                7771770303897600,
+                1187353796428800,
+                129060195264000,
+                10559470521600,
+                670442572800,
+                33522128640,
+                1323241920,
+                40840800,
+                960960,
+                16380,
+                182,
+                1,
+            ],
+            dtype=np.float64,
         ),
     }
 
@@ -1058,7 +1105,7 @@ class ExpmConstants:
         5: 2.5e-1,
         7: 9.5e-1,
         9: 2.1,
-        13:5.4,
+        13: 5.4,
     }
 
     # Taylor-18 coefficients
@@ -1095,14 +1142,13 @@ class ExpmConstants:
 
 
 def expm_impl(a: ndarray, output: ndarray) -> tuple[int, int]:
-    """ 
-    Implements Pade rational aproximant of 
+    """
+    Implements Pade rational aproximant of
     Algorithm 10.20, p.246-247 in
     "Functions of Matrices - Theory and Computation",
     Nicholas J. Higham, SIAM 2008.
     """
 
-    n = a.shape[0]
     lst_keys = list(ExpmConstants.theta.keys())
 
     # maximum polynomial degree for [p(x)/q(x)]:
@@ -1181,8 +1227,8 @@ def expm_impl(a: ndarray, output: ndarray) -> tuple[int, int]:
 
 
 def expm_expl(a: ndarray, output: ndarray) -> tuple[int, int]:
-    """ 
-    Implements Taylor expansion, algorithm T_18 
+    """
+    Implements Taylor expansion, algorithm T_18
     in "Computing the Matrix Exponential with an
     Optimized Taylor Polynomial Approximation",
     Philipp Bader et. al.,
@@ -1190,12 +1236,12 @@ def expm_expl(a: ndarray, output: ndarray) -> tuple[int, int]:
     for given number of terms in the expansion.
     """
 
-    tol_m = ExpmConstants.theta_m # may vary w/ degree, m, in future impls.
+    tol_m = ExpmConstants.theta_m  # may vary w/ degree, m, in future impls.
 
     # L1 norm of matrix input:
     l1_norm_a = norm(a, 1)
 
-    requires_scaling = (l1_norm_a > tol_m)
+    requires_scaling = l1_norm_a > tol_m
 
     s = 0
     A = a
@@ -1212,18 +1258,38 @@ def expm_expl(a: ndarray, output: ndarray) -> tuple[int, int]:
         #
         A = a / sfactor
 
-    I = eye(A.shape[0], dtype=A.dtype)
+    EYE = eye(A.shape[0], dtype=A.dtype)
     A2 = matmul(A, A)
     A3 = matmul(A2, A)
     A6 = matmul(A3, A3)
-    B1 = ExpmConstants.a11*A + ExpmConstants.a21*A2 + ExpmConstants.a31*A3
-    B2 = ExpmConstants.b11*A + ExpmConstants.b21*A2 + ExpmConstants.b31*A3 \
-        + ExpmConstants.b61*A6
-    B3 = ExpmConstants.b02*I + ExpmConstants.b12*A + ExpmConstants.b22*A2 \
-        + ExpmConstants.b32*A3 + ExpmConstants.b62*A6
-    B4 = ExpmConstants.b03*I + ExpmConstants.b13*A + ExpmConstants.b23*A2 \
-        + ExpmConstants.b33*A3 + ExpmConstants.b63*A6
-    B5 = ExpmConstants.b24*A2 + ExpmConstants.b34*A3 + ExpmConstants.b64*A6
+    B1 = (
+        ExpmConstants.a11 * A + ExpmConstants.a21 * A2 + ExpmConstants.a31 * A3
+    )
+    B2 = (
+        ExpmConstants.b11 * A
+        + ExpmConstants.b21 * A2
+        + ExpmConstants.b31 * A3
+        + ExpmConstants.b61 * A6
+    )
+    B3 = (
+        ExpmConstants.b02 * EYE
+        + ExpmConstants.b12 * A
+        + ExpmConstants.b22 * A2
+        + ExpmConstants.b32 * A3
+        + ExpmConstants.b62 * A6
+    )
+    B4 = (
+        ExpmConstants.b03 * EYE
+        + ExpmConstants.b13 * A
+        + ExpmConstants.b23 * A2
+        + ExpmConstants.b33 * A3
+        + ExpmConstants.b63 * A6
+    )
+    B5 = (
+        ExpmConstants.b24 * A2
+        + ExpmConstants.b34 * A3
+        + ExpmConstants.b64 * A6
+    )
 
     A9 = B4 + matmul(B1, B5)
     B39 = B3 + A9
@@ -1237,18 +1303,18 @@ def expm_expl(a: ndarray, output: ndarray) -> tuple[int, int]:
         for j in range(s):
             output[:] = matmul(output, output)
 
-    return (m, s)    
+    return (m, s)
 
 
 @add_boilerplate("a")
 def expm(a: ndarray, method: str = "pade") -> ndarray:
     """
-    Matrix exponential. 
+    Matrix exponential.
 
     Returns exp(A) for each (M x M) slice into a multi-dimensional
     array, assumed to be of shape (..., M, M);
 
-    By default Pade (implicit) implementation is used. 
+    By default Pade (implicit) implementation is used.
     However, explicit Taylor(deg = 18) implementation can be used,
     by supplying additional flag `use_explicit = True`.
 
@@ -1262,15 +1328,15 @@ def expm(a: ndarray, method: str = "pade") -> ndarray:
 
     Returns
     -------
-    exp(A): matrix exponential of input, or a matrix exponential 
+    exp(A): matrix exponential of input, or a matrix exponential
         for each slice in the input.
 
     Notes
     -----
-    Implicit Pade implementation is more stable but more computationally intensive than
-    explicit Taylor, which is less stable when matrix norm is big enough.
-    Also, Taylor can be slightly more performant for matrices of small
-    enough norms, but more memory consuming.
+    Implicit Pade implementation is more stable but more computationally
+    intensive than explicit Taylor, which is less stable when matrix norm is
+    big enough. Also, Taylor can be slightly more performant for matrices of
+    small enough norms, but more memory consuming.
 
     See Also
     --------
@@ -1292,7 +1358,7 @@ def expm(a: ndarray, method: str = "pade") -> ndarray:
     # run implicit (Pade) method by default:
     #
     if method == "pade":
-        expm_func = expm_impl 
+        expm_func = expm_impl
     elif method == "taylor":
         expm_func = expm_expl
     else:
