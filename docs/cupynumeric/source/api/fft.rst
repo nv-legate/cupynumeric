@@ -1,7 +1,7 @@
 .. module:: cupynumeric.fft
 
 Discrete Fourier Transform (:mod:`cupynumeric.fft`)
-==================================================
+===================================================
 
 Standard FFTs
 ---------------

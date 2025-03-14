@@ -1,7 +1,7 @@
 .. module:: cupynumeric.linalg
 
 Linear algebra (:mod:`cupynumeric.linalg`)
-========================================
+==========================================
 
 .. currentmodule:: cupynumeric
 

@@ -1,7 +1,7 @@
 .. currentmodule:: cupynumeric
 
 The N-Dimensional array (:class:`cupynumeric.ndarray`)
-====================================================
+======================================================
 
 Constructing arrays
 -------------------

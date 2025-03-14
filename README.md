@@ -19,10 +19,15 @@ limitations under the License.
 
 # cuPyNumeric
 
-cuPyNumeric is a [Legate](https://github.com/nv-legate/legate.core) library
-that aims to provide a distributed and accelerated drop-in replacement for the
-[NumPy API](https://numpy.org/doc/stable/reference/) on top of the
-[Legion](https://legion.stanford.edu) runtime. Using cuPyNumeric you can do things like run
+cuPyNumeric is a library that aims to provide a distributed and accelerated
+drop-in replacement for [NumPy](https://numpy.org/) built on top of the
+[Legate](https://github.com/nv-legate/legate) framework.
+
+With cuPyNumeric you can write code productively in Python, using the familiar
+NumPy API, and have your program scale with no code changes from single-CPU
+computers to multi-node-multi-GPU clusters.
+
+For example, you can run
 [the final example of the Python CFD course](https://github.com/barbagroup/CFDPython/blob/master/lessons/15_Step_12.ipynb)
 completely unmodified on 2048 A100 GPUs in a
 [DGX SuperPOD](https://www.nvidia.com/en-us/data-center/dgx-superpod/)
