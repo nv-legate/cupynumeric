@@ -1,5 +1,5 @@
 cupynumeric.random.BitGenerator
-=============================
+===============================
 
 .. currentmodule:: cupynumeric.random
 

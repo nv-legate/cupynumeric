@@ -1,7 +1,7 @@
 .. module:: cupynumeric.random
 
 Random sampling (:mod:`cupynumeric.random`)
-=========================================
+===========================================
 
 Random Generator
 -----------------

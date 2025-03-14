@@ -1,5 +1,5 @@
 cupynumeric.ndarray
-=================
+===================
 
 .. currentmodule:: cupynumeric
 

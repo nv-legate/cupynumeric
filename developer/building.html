@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Building from source &#8212; NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb)</title>
+    <title>Building from source &#8212; NVIDIA cuPyNumeric</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=282aad6b"></script>
+    <script src="../_static/documentation_options.js?v=6c75b2f1"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -52,7 +52,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '25.05';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '25.03';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             true;
         </script>
@@ -130,11 +130,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric</p>
   
 </a></div>
     
@@ -241,11 +241,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+5.gab44cbfb)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric</p>
   
 </a>
 
@@ -905,26 +905,59 @@
 <span id="building-cupynumeric-from-source"></span><h1>Building from source<a class="headerlink" href="#building-from-source" title="Link to this heading">#</a></h1>
 <section id="basic-build">
 <h2>Basic build<a class="headerlink" href="#basic-build" title="Link to this heading">#</a></h2>
-<p>Users must have a working installation of the <a class="reference external" href="https://github.com/nv-legate/legate.core">Legate</a> library prior to
+<p>Users must have a working installation of the <a class="reference external" href="https://github.com/nv-legate/legate">Legate</a> library prior to
 installing cuPyNumeric.
 <strong>Installing cuPyNumeric by itself will not automatically install Legate.</strong></p>
-<p>As for other dependencies, the Dependencies section on the
-<a class="reference external" href="https://github.com/nv-legate/legate.core/blob/HEAD/BUILD.md">Legate build instructions</a> also covers cuPyNumeric, so no additional
-packages are required.</p>
-<p>Once Legate is installed, you can simply invoke <code class="docutils literal notranslate"><span class="pre">./install.py</span></code> from the
-cuPyNumeric top-level directory. The build will automatically pick up the
+<p>See below for a list of cuPyNumeric’s dependencies. The easiest way to set up a
+build environment that includes all of cuPyNumeric dependencies is to use the
+<code class="docutils literal notranslate"><span class="pre">scripts/generate-conda-envs.py</span></code> script from the <a class="reference external" href="https://docs.nvidia.com/legate/latest/BUILD.html#dependencies">Legate build instructions</a>,
+passing the <code class="docutils literal notranslate"><span class="pre">--cupynumeric</span></code> flag.</p>
+<p>Once all dependencies are installed, you can simply invoke <code class="docutils literal notranslate"><span class="pre">./install.py</span></code> from
+the cuPyNumeric top-level directory. The build will automatically pick up the
 configuration used when building Legate (e.g. the CUDA Toolkit directory).</p>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">#</a></h2>
+<section id="openblas">
+<h3>OpenBLAS<a class="headerlink" href="#openblas" title="Link to this heading">#</a></h3>
+<p>Used for implementing linear algebra routines on CPUs.</p>
+<p>If you want to use a custom build of OpenBLAS, you will need to get a
+Fortran compiler, e.g. by pulling <code class="docutils literal notranslate"><span class="pre">fortran-compiler</span></code> from conda-forge.</p>
+<p>If using a build of Legate that includes OpenMP support, then you need a build
+of OpenBLAS configured with the following options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">USE_THREAD=1</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">USE_OPENMP=1</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NUM_PARALLEL=32</span></code> (or at least as many as the NUMA domains on the target
+machine) – The <code class="docutils literal notranslate"><span class="pre">NUM_PARALLEL</span></code> flag defines how many instances of OpenBLAS’s
+calculation API can run in parallel. Legate will typically instantiate a
+separate OpenMP group per NUMA domain, and each group can launch independent
+BLAS work. If <code class="docutils literal notranslate"><span class="pre">NUM_PARALLEL</span></code> is not high enough, some of this parallel work
+will be serialized.</p></li>
+</ul>
+</section>
+<section id="tblis">
+<h3>TBLIS<a class="headerlink" href="#tblis" title="Link to this heading">#</a></h3>
+<p>Used for implementing tensor contraction routines on CPUs.</p>
+<p>This library will be automatically downloaded and built during cuPyNumeric
+installation.</p>
+<p>cuPyNumeric requires a build of TBLIS configured as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>--with-label-type=int32_t --with-length-type=int64_t --with-stride-type=int64_t
+</pre></div>
+</div>
+<p>and additionally <code class="docutils literal notranslate"><span class="pre">--enable-thread-model=openmp</span></code> if using a build of Legate
+that includes OpenMP support.</p>
+</section>
 </section>
 <section id="advanced-topics">
 <h2>Advanced topics<a class="headerlink" href="#advanced-topics" title="Link to this heading">#</a></h2>
 <section id="building-through-pip-cmake">
 <h3>Building through pip &amp; cmake<a class="headerlink" href="#building-through-pip-cmake" title="Link to this heading">#</a></h3>
-<p>cuPyNumeric uses the same cmake/scikit-build-based build workflow as Legate.
-See the <a class="reference external" href="https://github.com/nv-legate/legate.core/blob/HEAD/BUILD.md">Legate build instructions</a> for an overview.</p>
-<p>There are several examples in the <code class="docutils literal notranslate"><span class="pre">scripts</span></code> folder. We walk through the steps in
-<code class="docutils literal notranslate"><span class="pre">build-with-legate-separately-no-install.sh</span></code> here.</p>
-<p>We assume a pre-existing Legate build. For details on building Legate,
-consult the <a class="reference external" href="https://github.com/nv-legate/legate.core">Legate repository</a>.</p>
+<p>cuPyNumeric uses a cmake/scikit-build-based build workflow. There are several
+examples in the <code class="docutils literal notranslate"><span class="pre">scripts</span></code> directory, showing how to build different
+configurations of cuPyNumeric. We walk through the steps in
+<code class="docutils literal notranslate"><span class="pre">build-with-legate-separately-no-install.sh</span></code> here. We assume a pre-existing
+Legate build.</p>
 <p>First, the CMake build needs to be configured:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cmake<span class="w"> </span>-S<span class="w"> </span>.<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>-GNinja<span class="w"> </span>-D<span class="w"> </span>legate_ROOT:STRING<span class="o">=</span>path/to/legate/build
 </pre></div>
@@ -1002,6 +1035,11 @@ complete workflow for building both Legate and cuPyNumeric.</p>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-build">Basic build</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dependencies">Dependencies</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#openblas">OpenBLAS</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tblis">TBLIS</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-topics">Advanced topics</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#building-through-pip-cmake">Building through pip &amp; cmake</a></li>
 </ul>

@@ -10,13 +10,54 @@ Users must have a working installation of the `Legate`_ library prior to
 installing cuPyNumeric.
 **Installing cuPyNumeric by itself will not automatically install Legate.**
 
-As for other dependencies, the Dependencies section on the
-`Legate build instructions`_ also covers cuPyNumeric, so no additional
-packages are required.
+See below for a list of cuPyNumeric's dependencies. The easiest way to set up a
+build environment that includes all of cuPyNumeric dependencies is to use the
+``scripts/generate-conda-envs.py`` script from the `Legate build instructions`_,
+passing the ``--cupynumeric`` flag.
 
-Once Legate is installed, you can simply invoke ``./install.py`` from the
-cuPyNumeric top-level directory. The build will automatically pick up the
+Once all dependencies are installed, you can simply invoke ``./install.py`` from
+the cuPyNumeric top-level directory. The build will automatically pick up the
 configuration used when building Legate (e.g. the CUDA Toolkit directory).
+
+Dependencies
+------------
+
+OpenBLAS
+~~~~~~~~
+
+Used for implementing linear algebra routines on CPUs.
+
+If you want to use a custom build of OpenBLAS, you will need to get a
+Fortran compiler, e.g. by pulling ``fortran-compiler`` from conda-forge.
+
+If using a build of Legate that includes OpenMP support, then you need a build
+of OpenBLAS configured with the following options:
+
+* ``USE_THREAD=1``
+* ``USE_OPENMP=1``
+* ``NUM_PARALLEL=32`` (or at least as many as the NUMA domains on the target
+  machine) -- The ``NUM_PARALLEL`` flag defines how many instances of OpenBLAS's
+  calculation API can run in parallel. Legate will typically instantiate a
+  separate OpenMP group per NUMA domain, and each group can launch independent
+  BLAS work. If ``NUM_PARALLEL`` is not high enough, some of this parallel work
+  will be serialized.
+
+TBLIS
+~~~~~
+
+Used for implementing tensor contraction routines on CPUs.
+
+This library will be automatically downloaded and built during cuPyNumeric
+installation.
+
+cuPyNumeric requires a build of TBLIS configured as follows:
+
+.. code-block:: none
+
+   --with-label-type=int32_t --with-length-type=int64_t --with-stride-type=int64_t
+
+and additionally ``--enable-thread-model=openmp`` if using a build of Legate
+that includes OpenMP support.
 
 Advanced topics
 ---------------
@@ -24,14 +65,11 @@ Advanced topics
 Building through pip & cmake
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-cuPyNumeric uses the same cmake/scikit-build-based build workflow as Legate.
-See the `Legate build instructions`_ for an overview.
-
-There are several examples in the ``scripts`` folder. We walk through the steps in
-``build-with-legate-separately-no-install.sh`` here.
-
-We assume a pre-existing Legate build. For details on building Legate,
-consult the `Legate repository`_.
+cuPyNumeric uses a cmake/scikit-build-based build workflow. There are several
+examples in the ``scripts`` directory, showing how to build different
+configurations of cuPyNumeric. We walk through the steps in
+``build-with-legate-separately-no-install.sh`` here. We assume a pre-existing
+Legate build.
 
 First, the CMake build needs to be configured:
 
@@ -66,6 +104,5 @@ complete workflow for building both Legate and cuPyNumeric.
   :width: 600
   :alt: "notional diagram of cupynumeric build process"
 
-.. _Legate: https://github.com/nv-legate/legate.core
-.. _Legate build instructions: https://github.com/nv-legate/legate.core/blob/HEAD/BUILD.md
-.. _Legate repository: https://github.com/nv-legate/legate.core
+.. _Legate: https://github.com/nv-legate/legate
+.. _Legate build instructions: https://docs.nvidia.com/legate/latest/BUILD.html#dependencies
