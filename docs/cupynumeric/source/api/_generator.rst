@@ -1,5 +1,5 @@
 cupynumeric.random.Generator
-==========================
+============================
 
 .. currentmodule:: cupynumeric.random
 

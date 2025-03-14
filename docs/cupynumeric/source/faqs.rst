@@ -194,7 +194,7 @@ Where I can read more about cuPyNumeric?
 ----------------------------------------
 
 Check out this `blog post <https://developer.nvidia.com/blog/accelerating-python-applications-with-cupynumeric-and-legate/>`_
-or this `tutorial <https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_X_Distributed_Computing_cuPyNumeric.ipynb>`_
+or this `tutorial <https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_11_Distributed_Computing_cuPyNumeric.ipynb>`_
 to learn more about cuPyNumeric.
 
 Questions?
