@@ -23,7 +23,7 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@push_nightly_docs_to_gh_pages
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.28
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
@@ -33,7 +33,7 @@ jobs:
       use-container: ${{ inputs.platform == 'linux' }}
       platform: ${{ inputs.platform }}
       dependencies-file: ""
-      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
+      legate-gh-ci-tag: "v1.28"
       build-mode: ${{ inputs.build-mode }}
       upload-enabled: false
       network: "ucx"
@@ -46,7 +46,7 @@ jobs:
     name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@push_nightly_docs_to_gh_pages
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.28
     with:
       build-has-tests: false
       build-mode: ${{ inputs.build-mode }}
@@ -54,7 +54,7 @@ jobs:
       output-build-type: docs
       client-repo: ${{ github.event.repository.name }}
       has-gpu: false
-      legate-gh-ci-tag: "push_nightly_docs_to_gh_pages"
+      legate-gh-ci-tag: "v1.28"
       name: Build documentation
       network: "ucx"
       platform: ${{ inputs.platform }}
