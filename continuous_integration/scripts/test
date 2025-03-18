@@ -38,6 +38,14 @@ setup_unit_env() {
     legate-mamba-retry install -y pytest pytest-mock mock cffi
 }
 
+run_legate_issue() {
+    if command -v "legate-issue" &> /dev/null; then
+      legate-issue
+    else
+      echo "WARNING: legate-issue not found."
+    fi
+}
+
 test_cupynumeric() {
     set -xeo pipefail
 
@@ -56,19 +64,21 @@ test_cupynumeric() {
             echo "Executing tests..."
             shift;
             setup_test_env;
+            run_legate_issue;
             ./test.py -vv --timeout 300 "$@"
             ;;
         "mypy")
             echo "Installing and executing mypy..."
             shift;
             setup_mypy_env;
+            run_legate_issue;
             mypy cupynumeric
             ;;
         "docs")
             echo "Building docs..."
             shift;
-
             setup_docs_env;
+            run_legate_issue;
             cd docs/cupynumeric
             make clean html
             # ls -lah .
@@ -80,7 +90,15 @@ test_cupynumeric() {
             echo "Running Unit tests..."
             shift;
             setup_unit_env;
+            run_legate_issue;
             LEGATE_AUTO_CONFIG=0 pytest tests/unit
+            ;;
+        "cpp")
+            echo "Running CPP tests..."
+            shift;
+            run_legate_issue;
+            export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib/legate/deps:${LD_LIBRARY_PATH:-}
+            REALM_BACKTRACE=1 LEGATE_TEST=1 LEGATE_LOG_MAPPING=1 ${CONDA_PREFIX}/bin/cpp_tests
             ;;
         *)
             echo "Invalid command: $1"

@@ -2,7 +2,7 @@
 set -x
 
 build_release_product() {
-    set -xeo pipefail;
+    set -xeuo pipefail;
 
     echo "RUNNING build_release_product"
 
@@ -28,15 +28,22 @@ build_release_product() {
     UPLOAD_BUILD=true
     [ "${UPLOAD_ENABLED:-}" = "OFF" ] && UPLOAD_BUILD=false
 
-    variantOpts=$(printf "{\"gpu_enabled\": [$GPU_ENABLED], \"upload_build\": [$UPLOAD_BUILD], \"python\": [$PYTHON_VERSION]}")
+    variantOpts=$(printf "{\"gpu_enabled\": [$GPU_ENABLED], \"build_tests\": [$BUILD_TESTS], \"upload_build\": [$UPLOAD_BUILD], \"python\": [$PYTHON_VERSION]}")
 
     conda_build_args+=(--variants "$variantOpts")
 
     # https://github.com/nv-legate/cupynumeric.internal/pull/351#issuecomment-2286922486
     export CONDA_OVERRIDE_CUDA="${CUDA_VERSION}"
+
     # Use the new .conda format.
     conda config --set conda_build.pkg_format 2
-    conda mambabuild "${conda_build_args[@]}" "${REPO_DIR}/conda/conda-build";
+
+    set +u;
+
+    # For whatever reason, the default buffering of conda/mamba is not sufficient, and
+    # leads to garbled output in CI (mixing conda output and whatever build.sh prints). So
+    # we need to force unbuffered output.
+    stdbuf -o0 -e0 conda mambabuild "${conda_build_args[@]}" "${REPO_DIR}/conda/conda-build";
 
     copy_release_artifacts
 }

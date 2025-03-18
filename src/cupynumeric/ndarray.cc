@@ -703,10 +703,13 @@ NDArray NDArray::unique()
   auto part_in  = task.declare_partition();
   task.add_output(result.store_, part_out);
   task.add_input(store_, part_in);
-  task.add_communicator("nccl");
-  if (!has_gpus) {
+
+  if (has_gpus) {
+    task.add_communicator("nccl");
+  } else {
     task.add_constraint(legate::broadcast(part_in, legate::from_range<uint32_t>(0, dim())));
   }
+
   runtime->submit(std::move(task));
   return result;
 }

@@ -29,6 +29,12 @@ else
 -Dcupynumeric_cuRAND_INCLUDE_DIR=$PREFIX/targets/x86_64-linux/include"
 fi
 
+# We rely on an environment variable to determine if we need to build cpp tests
+if [[ "$BUILD_TESTS" == "1" ]]; then
+  CMAKE_ARGS+="
+-Dcupynumeric_BUILD_TESTS=ON"
+fi
+
 export CMAKE_GENERATOR=Ninja
 export CUDAHOSTCXX=${CXX}
 export OPENSSL_DIR="$PREFIX"

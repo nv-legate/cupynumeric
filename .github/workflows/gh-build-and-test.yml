@@ -13,10 +13,6 @@ on:
       upload-enabled:
         type: boolean
         required: true
-      waive-gpu-tests:
-         required: true
-         type: boolean
-         description: Waive GPU tests based on specific configuration
       python-version:
         required: false
         type: string
@@ -53,14 +49,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.28
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cpp_tests
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: ""
-      legate-gh-ci-tag: "v1.28"
+      legate-gh-ci-tag: "cpp_tests"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -75,13 +71,13 @@ jobs:
     if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
     name: Upload package to Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.28
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cpp_tests
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.28"
+      legate-gh-ci-tag: "cpp_tests"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -107,19 +103,24 @@ jobs:
       - id: set-matrix
         run: |
           set -xeuo pipefail
+
           MATRIX_JSON='{"include": ['
+
           RUNNERS=(
             'linux-amd64-gpu-v100-latest-1:gpu:gpu:linux' 'linux-amd64-2gpu:gpu:2gpu:linux'
             'linux-amd64-cpu16:cpu:cpu:linux'
             'linux-arm64-cpu16:cpu:cpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:2gpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:gpu:linux-aarch64'
             'macos-latest:cpu:cpu:mac')
+
           TEST_CONFIGS=(
             '1 CPU test:test --cpus 1 --debug:cpu'
             '1 CPU test:test --cpus 1 --debug:gpu'
             '2 CPU test:test --cpus 2 --debug:cpu'
             '2 CPU test:test --cpus 2 --debug:gpu'
-            # set the number of workers manually because nvidia runners report 6 gpus when onyl one is really available
-            # this workaround can be removed when the number of available gpus is reported correctly (when we run on VMs)
+            # Set the number of workers manually because nvidia runners report 6
+            # gpus when only one is really available this workaround can be
+            # removed when the number of available gpus is reported correctly
+            # (when we run on VMs)
             'GPU test:test --use cuda --gpus 1 -j 7 --debug:gpu'
             '2 GPU test:test --use cuda --gpus 2 --debug:2gpu'
             'OpenMP test:test --use openmp --omps 1 --ompthreads 2 --debug:gpu'
@@ -130,29 +131,48 @@ jobs:
             'Eager execution test:test --use eager --debug:cpu'
             'mypy:mypy:cpu'
             'Unit tests:unit:cpu'
+            'CPP tests:cpp:cpu'
+            # TODO: Uncomment the following lines once
+            # https://github.com/nv-legate/cupynumeric.internal/issues/654 has
+            # been fixed.
+            # 'CPP tests:cpp:gpu'
+            # 'CPP tests:cpp:2gpu'
           )
+
           for RUNNER in "${RUNNERS[@]}"; do
             IFS=':' read -ra RUNNER_INFO <<< "$RUNNER"
             RUNNER_NAME=${RUNNER_INFO[0]}
             RUNNER_TYPE=${RUNNER_INFO[1]}
             RUNNER_DEVICE=${RUNNER_INFO[2]}
             RUNNER_PLATFORM=${RUNNER_INFO[3]}
+
             if [[ "$RUNNER_TYPE" == "${{ inputs.target-device }}" && "$RUNNER_PLATFORM" == "${{ inputs.platform }}" ]]; then
+
               for TEST_CONFIG in "${TEST_CONFIGS[@]}"; do
                 IFS=':' read -ra CONFIG_INFO <<< "$TEST_CONFIG"
                 TEST_NAME=${CONFIG_INFO[0]}
                 TEST_OPTIONS=${CONFIG_INFO[1]}
                 TEST_TARGET_DEVICE=${CONFIG_INFO[2]}
+
+                # Note: we don't have enough linux-aarch64 GPU runners to
+                # support per commit testing. This is why these tests are waived
+                # here.
+                WAIVE_TEST="${{ inputs.target-device == 'gpu' && inputs.build-type == 'ci' && inputs.platform == 'linux-aarch64' }}"
+
                 if [[ "$TEST_TARGET_DEVICE" == "$RUNNER_DEVICE" ]]; then
-                  if ! [[ "$TEST_NAME" =~ "GPU" && "${{ inputs.waive-gpu-tests }}" == 'true' ]]; then
+                  if [[ "${WAIVE_TEST}" == "false" ]]; then
                     MATRIX_JSON+="{\"runner\": {\"name\": \"$RUNNER_NAME\", \"type\": \"$RUNNER_TYPE\", \"platform\": \"$RUNNER_PLATFORM\"}, \"test-config\": {\"name\": \"$TEST_NAME\", \"test-options\": \"$TEST_OPTIONS\"}},"
                   fi
                 fi
               done
             fi
           done
-          MATRIX_JSON=$(echo "$MATRIX_JSON" | sed 's/,$//') # Remove the trailing comma
+
+          # Remove the trailing comma
+          MATRIX_JSON=$(echo "$MATRIX_JSON" | sed 's/,$//')
+          # Terminate JSON expression
           MATRIX_JSON+=']}'
+
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
   test:
@@ -165,14 +185,14 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.28
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@cpp_tests
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "v1.28"
+      legate-gh-ci-tag: "cpp_tests"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -188,13 +208,13 @@ jobs:
     name: Update Test status on Server
     if: ${{ false }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.28
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cpp_tests
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.28"
+      legate-gh-ci-tag: "cpp_tests"
       name: UpdateTestStatus
       network: "ucx"
       pkgSubString: "cupynumeric-"
