@@ -65,10 +65,10 @@ jobs:
           - { ARCH: 'amd64', PY_VER: '3.10', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          # arm64
-          - { ARCH: 'arm64', PY_VER: '3.10', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
-          - { ARCH: 'arm64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
-          - { ARCH: 'arm64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
+          # arm64 - disabled due to ARM GPU runner availability
+          # - { ARCH: 'arm64', PY_VER: '3.10', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
           "
 
           MATRIX="$(
