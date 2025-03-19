@@ -13,14 +13,10 @@
 # limitations under the License.
 #
 
-import os
-
 import pytest
 from utils.comparisons import allclose
 
 import cupynumeric as num
-
-CUDA_TEST = os.environ.get("LEGATE_NEED_CUDA") == "1"
 
 
 def test_interpolation_x():

@@ -11,6 +11,7 @@ build_release_product() {
     local conda_build_args=();
     # The channel sequence below needs to be preserved
     conda_build_args+=(-c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL});
+    conda_build_args+=(-c legate/label/ucc140);
     conda_build_args+=(-c conda-forge);
     conda_build_args+=(--override-channels);
     conda_build_args+=(--croot /tmp/conda-build/cupynumeric);

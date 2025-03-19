@@ -13,16 +13,15 @@
 # limitations under the License.
 #
 
-import os
-
 import numpy as np
 import pytest
 import scipy.signal as sig
 from utils.comparisons import allclose
 
 import cupynumeric as num
+from cupynumeric.runtime import runtime
 
-CUDA_TEST = os.environ.get("LEGATE_NEED_CUDA") == "1"
+CUDA_TEST = runtime.num_gpus > 0
 
 SHAPES = [(100,), (10, 10), (10, 10, 10), (32, 2, 32)]
 FILTER_SHAPES = [(5,), (3, 5), (3, 5, 3), (32, 1, 32)]
