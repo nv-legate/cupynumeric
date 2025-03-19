@@ -23,17 +23,17 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cpp_tests
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.29
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
       target-device: ${{ inputs.target-device }}
-      runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-cpu4') || (inputs.platform == 'mac' && 'macos-latest') }}
+      runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-cpu16') || (inputs.platform == 'mac' && 'macos-latest') }}
       build-type: ${{ inputs.build-type }}
       use-container: ${{ inputs.platform == 'linux' }}
       platform: ${{ inputs.platform }}
       dependencies-file: ""
-      legate-gh-ci-tag: "cpp_tests"
+      legate-gh-ci-tag: "v1.29"
       build-mode: ${{ inputs.build-mode }}
       upload-enabled: false
       network: "ucx"
@@ -46,7 +46,7 @@ jobs:
     name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@cpp_tests
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.29
     with:
       build-has-tests: false
       build-mode: ${{ inputs.build-mode }}
@@ -54,7 +54,7 @@ jobs:
       output-build-type: docs
       client-repo: ${{ github.event.repository.name }}
       has-gpu: false
-      legate-gh-ci-tag: "cpp_tests"
+      legate-gh-ci-tag: "v1.29"
       name: Build documentation
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -67,7 +67,7 @@ jobs:
 
 
   upload-docs-to-gh-pages:
-    if: ${{ inputs.upload-docs-to-gh-pages }}
+    if: ${{ inputs.upload-docs-to-gh-pages && github.ref_name == 'main' }}
     needs:
       - build-docs
     runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-cpu4') || (inputs.platform == 'mac' && 'macos-latest') }}
