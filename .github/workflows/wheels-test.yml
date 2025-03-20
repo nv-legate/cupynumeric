@@ -96,12 +96,6 @@ jobs:
         run: |
           sha=$(echo ${{github.sha}} | head -c 10)
           echo "sha=$sha" >> $GITHUB_OUTPUT
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Check it worked...
-        run: echo "${{steps.get-sha.outputs.sha}}"
       - uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repo }}
@@ -121,7 +115,8 @@ jobs:
         id: cache
         env:
           BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12.5.1-py${{ matrix.PY_VER }}
-        uses: dawidd6/action-download-artifact@v8
+        # Pin to the v9 release SHA
+        uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295
         with:
           github_token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
           repo: nv-legate/legate.internal
@@ -130,14 +125,13 @@ jobs:
           name: "legate-wheel-${{ env.BUILD_NAME }}"
           check_artifacts: true
           path: wheel
-      - name: Restore the cached wheel
-        id: cached-wheel
+      - name: Download the wheel from the build job
         env:
           BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
           BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12.5.1-py${{ matrix.PY_VER }}
-        uses: actions/cache@v4
+        uses: actions/download-artifact@v4
         with:
-          path: final-dist/*.whl
-          key: wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}
+          path: final-dist
+          name: cupynumeric-wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}
       - name: Run tests
         run: ${{ inputs.script }}
