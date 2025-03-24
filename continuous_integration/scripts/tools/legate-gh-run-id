@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: Copyright (c) 2025-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# A utility script adapted from https://github.com/rapidsai/gha-tools/blob/main/tools/rapids-github-run-id
+# This gets the GitHub run ID for the specified workflow and commit SHA.
+
+set -euo pipefail
+
+# Default values for the environment variables.
+LEGATE_WORKFLOW_NAME=${LEGATE_WORKFLOW_NAME:-"pr"}
+LEGATE_REF_NAME=${LEGATE_REF_NAME:-"main"}
+LEGATE_REPO_NAME=${LEGATE_REPO_NAME:-"nv-legate/legate.internal"}
+
+# Check if the script was called with exactly 1 argument
+if [[ ${#} -ne 1 ]]; then
+  echo "Error: This script requires exactly 1 argument (the git SHA). You provided ${#}"
+  echo "Usage: ${0} git-sha"
+  exit 1
+fi
+
+gh_run_id=$(gh run list \
+  --repo "${LEGATE_REPO_NAME}" \
+  --branch "${LEGATE_REF_NAME}" \
+  --workflow "${LEGATE_WORKFLOW_NAME}" \
+  --commit "${1}" \
+  --json databaseId --jq '.[0] | .databaseId')
+
+echo -n "${gh_run_id}"
