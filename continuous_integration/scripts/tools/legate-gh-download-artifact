@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: Copyright (c) 2025-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# A utility script adapted from https://github.com/rapidsai/gha-tools/blob/main/tools/rapids-download-from-github
+# Given a git SHA, artifact name and output path grab the artifact from the run.
+
+set -euo pipefail
+
+# Default values for the environment variables.
+LEGATE_REPO_NAME=${LEGATE_REPO_NAME:-"nv-legate/legate.internal"}
+
+# Check if the script was called with exactly 1 argument
+if [[ ${#} -ne 3 ]]; then
+  echo "Error: This script requires exactly 3 arguments (the git SHA, the artifact name, and the output path)."
+  echo "You provided ${#} arguments."
+  echo "Usage: ${0} git-sha artifact-name output-path"
+  exit 1
+fi
+
+# Poppulate our variables from the arguments.
+run_id=$(legate-gh-run-id "${1}")
+artifact_name="${2}"
+output_path="${3}"
+
+echo "Downloading and decompressing artifact ${artifact_name} from run ${run_id} to ${output_path}"
+
+gh run download "${run_id}" \
+  --repo "${LEGATE_REPO_NAME}" \
+  --name "${artifact_name}" \
+  --dir "${output_path}"
+
+echo -n "${output_path}"

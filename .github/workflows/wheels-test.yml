@@ -111,20 +111,12 @@ jobs:
         continue-on-error: true
         # Skip the cache on RDS Lab nodes
         if: ${{ matrix.GPU != 'v100' && matrix.GPU != 'a100' }}
-      - name: Get the legate wheel
-        id: cache
+      - name: Download the legate wheel
         env:
           BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12.5.1-py${{ matrix.PY_VER }}
-        # Pin to the v9 release SHA
-        uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295
-        with:
-          github_token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
-          repo: nv-legate/legate.internal
-          workflow: pr.yml
-          commit: ${{ inputs.legate-sha }}
-          name: "legate-wheel-${{ env.BUILD_NAME }}"
-          check_artifacts: true
-          path: wheel
+          GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+        run: |
+          legate-gh-download-artifact ${{ inputs.legate-sha }} "legate-wheel-${{ env.BUILD_NAME }}" "wheel"
       - name: Download the wheel from the build job
         env:
           BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
