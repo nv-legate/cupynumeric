@@ -10,7 +10,6 @@ set -euo pipefail
 
 # Default values for the environment variables.
 LEGATE_WORKFLOW_NAME=${LEGATE_WORKFLOW_NAME:-"pr"}
-LEGATE_REF_NAME=${LEGATE_REF_NAME:-"main"}
 LEGATE_REPO_NAME=${LEGATE_REPO_NAME:-"nv-legate/legate.internal"}
 
 # Check if the script was called with exactly 1 argument
@@ -22,7 +21,6 @@ fi
 
 gh_run_id=$(gh run list \
   --repo "${LEGATE_REPO_NAME}" \
-  --branch "${LEGATE_REF_NAME}" \
   --workflow "${LEGATE_WORKFLOW_NAME}" \
   --commit "${1}" \
   --json databaseId --jq '.[0] | .databaseId')
