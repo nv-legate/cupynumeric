@@ -61,6 +61,12 @@ sitepkgs=$(python -c 'import site; print(site.getsitepackages()[0], end="")')
 ln -fs "${sitepkgs}"/cutensor/lib/libcutensor.so.2 "${sitepkgs}"/cutensor/lib/libcutensor.so
 ln -fs "${sitepkgs}"/cutensor/lib/libcutensorMg.so.2 "${sitepkgs}"/cutensor/lib/libcutensorMg.so
 
+# TODO(cryos): https://github.com/nv-legate/cupynumeric.internal/issues/666
+# This is a very hackish way to generate the version for now.
+scm_version=$(python -m setuptools_scm -c "${CUPYNUMERIC_DIR}"/scripts/build/python/cupynumeric/pyproject.toml)
+export SETUPTOOLS_SCM_PRETEND_VERSION="${scm_version}"
+echo "Building wheels with version '${scm_version}'"
+
 # build with '--no-build-isolation', for better sccache hit rate
 # 0 really means "add --no-build-isolation" (ref: https://github.com/pypa/pip/issues/5735)
 export PIP_NO_BUILD_ISOLATION=0
