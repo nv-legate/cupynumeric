@@ -9,7 +9,6 @@ on:
   schedule:
     - cron: '0 23 * * *'  # Nightly at 11:00 PM
 
-
 jobs:
   build-and-test:
     strategy:
@@ -59,4 +58,14 @@ jobs:
       build-mode: ${{ matrix.build-mode }}
       build-type: nightly
       upload-docs-to-gh-pages: true
+    secrets: inherit
+
+  push_code:
+    name: Nightly source release
+    uses:
+      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@nightly_push_to_external_repo
+    with:
+      runs-on: linux-amd64-cpu4
+      source-repo: "${{ github.repository_owner }}/cupynumeric.internal"
+      dest-repo: "${{ github.repository_owner }}/cupynumeric"
     secrets: inherit
