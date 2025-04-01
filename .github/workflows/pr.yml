@@ -13,23 +13,34 @@ concurrency:
 
 defaults:
   run:
-    shell: bash
+    shell: bash -eou pipefail {0}
 
 jobs:
+  legate-sha:
+    runs-on: linux-amd64-cpu4
+    outputs:
+      LEGATE_SHA: ${{ steps.legate-sha.outputs.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get the Legate SHA
+        id: legate-sha
+        run: |
+          sha=$(jq .packages.legate.git_tag cmake/versions.json)
+          echo "sha=$sha" >> $GITHUB_OUTPUT
   wheels-build:
+    needs: legate-sha
     secrets: inherit
     uses: ./.github/workflows/wheels-build.yml
     with:
       build-type: pull-request
-      # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1893
-      # Remove this once we have uploads to PyPi.
-      legate-sha: 37d52d7c7d0a6fa8c27224115334c97daf6f7cb7
+      legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
   wheels-test:
-    needs: wheels-build
+    needs: [wheels-build, legate-sha]
     secrets: inherit
     uses: ./.github/workflows/wheels-test.yml
     with:
       build-type: pull-request
-      # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1893
-      # Remove this once we have uploads to PyPi.
-      legate-sha: 37d52d7c7d0a6fa8c27224115334c97daf6f7cb7
+      legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
