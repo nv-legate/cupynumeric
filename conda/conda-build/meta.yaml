@@ -78,10 +78,10 @@ build:
 {% set upload_tag='' if upload_build_bool else '_with_tests' %}
 {% if use_local_path is not defined %}
 # use git hash
-  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}{{ cpu_gpu_tag }}{{ upload_tag }}"
+  string: "cuda{{ cuda_major }}_py{{ py_version }}{{ cpu_gpu_tag }}{{ upload_tag }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}"
 {% else %}
 # do not use git hash
-  string: "cuda{{ cuda_major }}_py{{ py_version }}_{{ PKG_BUILDNUM }}{{ cpu_gpu_tag }}{{ upload_tag }}"
+  string: "cuda{{ cuda_major }}_py{{ py_version }}{{ cpu_gpu_tag }}{{ upload_tag }}_{{ PKG_BUILDNUM }}"
 {% endif %}
   script_env:
     - SCCACHE_BUCKET
