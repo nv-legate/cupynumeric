@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Installation &#8212; NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99)</title>
+    <title>Installation &#8212; NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9)</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=40e02373"></script>
+    <script src="_static/documentation_options.js?v=5d261148"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -130,11 +130,11 @@
       
     
     
-    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99) - Home"/>
-    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99) - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9) - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9)</p>
   
 </a></div>
     
@@ -241,11 +241,11 @@
       
     
     
-    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99) - Home"/>
-    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99) - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9) - Home"/>
+    <img src="_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+18.g7fc9dc99)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+22.g0a1f3dc9)</p>
   
 </a>
 
@@ -900,38 +900,67 @@
                   
   <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h1>
-<section id="default-conda-install">
-<h2>Default conda install<a class="headerlink" href="#default-conda-install" title="Link to this heading">#</a></h2>
+<section id="installing-conda-packages">
+<h2>Installing Conda Packages<a class="headerlink" href="#installing-conda-packages" title="Link to this heading">#</a></h2>
 <p>cuPyNumeric supports the
 <a class="reference external" href="https://docs.nvidia.com/legate/latest/installation.html#support-matrix">same platforms as Legate</a>.</p>
 <p>cuPyNumeric is available from
 <a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/index.html">conda</a>
-on the <a class="reference external" href="https://anaconda.org/legate/cupynumeric">legate channel</a>.
-Please make sure you have at least conda version 24.1 installed, then create
-a new environment containing cuPyNumeric:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>myenv<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
+on the <a class="reference external" href="https://anaconda.org/legate/cupynumeric">legate channel</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>conda version &gt;= 24.1 required</p>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># with a new environment</span>
+$<span class="w"> </span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>myenv<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
+
+<span class="c1"># =========== OR =========== #</span>
+
+<span class="c1"># into an existing environment</span>
+$<span class="w"> </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
 </pre></div>
 </div>
-<p>or install it into an existing environment:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
+</section>
+<section id="installing-pypi-packages">
+<h2>Installing PyPI Packages<a class="headerlink" href="#installing-pypi-packages" title="Link to this heading">#</a></h2>
+<p>cuPyNumeric is also available from <a class="reference external" href="https://pypi.org/project/nvidia-cupynumeric">PyPI</a>.  To install, run the following
+command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># into existing environment</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>nvidia-cupynumeric
+
+<span class="c1"># =========== OR =========== #</span>
+
+<span class="c1"># into new environment</span>
+$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>myenv
+$<span class="w"> </span><span class="nb">source</span><span class="w"> </span>myenv/bin/activate
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>nvidia-cupynumeric
 </pre></div>
 </div>
-<p>Packages with GPU support are available, and will be chosen automatically by
-<code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span></code> on systems with GPUs.</p>
-<p>In an environment without GPUs available, <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span></code> will by default
-choose a CPU-only package. To install a version with GPU support in such an
-environment, use environment variable <code class="docutils literal notranslate"><span class="pre">CONDA_OVERRIDE_CUDA</span></code>:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nv">CONDA_OVERRIDE_CUDA</span><span class="o">=</span><span class="s2">&quot;12.2&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
-</pre></div>
-</div>
-<p>Once installed, you can verify the installation by running one of the examples
-from the
-<a class="reference external" href="https://github.com/nv-legate/cunumeric/tree/HEAD/examples">cuPyNumeric repository</a>,
-for instance:</p>
+<p>This will install the latest version of cuPyNumeric and the corresponding
+version of <a class="reference external" href="https://github.com/nv-legate/legate">Legate</a>.</p>
+<p>The cuPyNumeric package on PyPI is multi-node and multi-rank capable.  Please
+check <a class="reference external" href="https://docs.nvidia.com/legate">Legate</a> documentation to find more
+details about running on multiple nodes.</p>
+</section>
+<section id="verify-your-installation">
+<h2>Verify your Installation<a class="headerlink" href="#verify-your-installation" title="Link to this heading">#</a></h2>
+<p>You can verify the installation by running one of the
+<a class="reference external" href="https://github.com/nv-legate/cunumeric/tree/HEAD/examples">examples</a>.</p>
+<p>For instance:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>legate<span class="w"> </span>examples/black_scholes.py
 Running<span class="w"> </span>black<span class="w"> </span>scholes<span class="w"> </span>on<span class="w"> </span>10K<span class="w"> </span>options...
 Elapsed<span class="w"> </span>Time:<span class="w"> </span><span class="m">129</span>.017<span class="w"> </span>ms
+</pre></div>
+</div>
+</section>
+<section id="conda-and-gpu-cpu-variants">
+<h2>Conda and GPU / CPU Variants<a class="headerlink" href="#conda-and-gpu-cpu-variants" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">conda</span></code> automatically installs the right variant for the system:
+* CPU variant if no NVIDIA GPU is detected
+* GPU variant if an NVIDIA GPU is detected</p>
+<p>To override this behavior and force install a version with GPU support, use the
+following (with the desired CUDA version):</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CONDA_OVERRIDE_CUDA</span><span class="o">=</span><span class="s2">&quot;12.2&quot;</span><span class="w"> </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
 </pre></div>
 </div>
 </section>
@@ -999,7 +1028,10 @@ source projects before use.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-conda-install">Default conda install</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-conda-packages">Installing Conda Packages</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-pypi-packages">Installing PyPI Packages</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#verify-your-installation">Verify your Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#conda-and-gpu-cpu-variants">Conda and GPU / CPU Variants</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-from-source">Building from source</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#licenses">Licenses</a></li>
 </ul>
