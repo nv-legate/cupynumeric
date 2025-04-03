@@ -39,12 +39,19 @@ build_release_product() {
     # Use the new .conda format.
     conda config --set conda_build.pkg_format 2
 
+    # Set up the SCCACHE environment variables
+    export CI=true
+    source "${REPO_DIR}/continuous_integration/scripts/tools/legate-configure-sccache"
+    sccache --zero-stats
+
     set +u;
 
     # For whatever reason, the default buffering of conda/mamba is not sufficient, and
     # leads to garbled output in CI (mixing conda output and whatever build.sh prints). So
     # we need to force unbuffered output.
     stdbuf -o0 -e0 conda mambabuild "${conda_build_args[@]}" "${REPO_DIR}/conda/conda-build";
+
+    sccache --show-adv-stats
 
     copy_release_artifacts
 }

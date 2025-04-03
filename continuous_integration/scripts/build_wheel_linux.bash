@@ -20,7 +20,8 @@ ls -lah
 
 ls -lh wheel
 
-export PARALLEL_LEVEL=${PARALLEL_LEVEL:-$(nproc --all --ignore=2)}
+# Configure and enable sccache for the build.
+source legate-configure-sccache
 export CMAKE_BUILD_PARALLEL_LEVEL=${PARALLEL_LEVEL}
 
 if [[ "${CI:-false}" == "true" ]]; then
@@ -102,12 +103,16 @@ ls -lah
 echo "Building wheel..."
 cd "${package_dir}"
 
+sccache --zero-stats
+
 python -m pip wheel \
   -w "${CUPYNUMERIC_DIR}"/dist \
   -v \
   --no-deps \
   --disable-pip-version-check \
   .
+
+sccache --show-adv-stats
 
 echo "Show dist contents"
 pwd
