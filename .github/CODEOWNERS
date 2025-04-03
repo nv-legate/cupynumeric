@@ -1,4 +1,4 @@
 # Code Ownership
-.github                   @marcinz @m3vaz @sandeepd-nv @mag1cp1n @cryos
-continuous_integration    @marcinz @m3vaz @sandeepd-nv @mag1cp1n @cryos
-conda                     @marcinz @m3vaz @sandeepd-nv @mag1cp1n @cryos
+.github                   @nv-legate/devops-reviewers
+continuous_integration    @nv-legate/devops-reviewers
+conda                     @nv-legate/devops-reviewers
