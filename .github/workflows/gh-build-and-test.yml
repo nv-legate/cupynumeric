@@ -107,7 +107,7 @@ jobs:
           MATRIX_JSON='{"include": ['
 
           RUNNERS=(
-            'linux-amd64-gpu-v100-latest-1:gpu:gpu:linux' 'linux-amd64-2gpu:gpu:2gpu:linux'
+            'linux-amd64-gpu-l4-latest-1:gpu:gpu:linux' 'linux-amd64-2gpu:gpu:2gpu:linux'
             'linux-amd64-cpu16:cpu:cpu:linux'
             'linux-arm64-cpu16:cpu:cpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:2gpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:gpu:linux-aarch64'
             'macos-latest:cpu:cpu:mac')
@@ -121,7 +121,7 @@ jobs:
             # gpus when only one is really available this workaround can be
             # removed when the number of available gpus is reported correctly
             # (when we run on VMs)
-            'GPU test:test --use cuda --gpus 1 -j 7 --debug:gpu'
+            'GPU test:test --use cuda --gpus 1 --debug:gpu'
             '2 GPU test:test --use cuda --gpus 2 --debug:2gpu'
             'OpenMP test:test --use openmp --omps 1 --ompthreads 2 --debug:gpu'
             'OpenMP test:test --use openmp --omps 1 --ompthreads 2 --debug:cpu'
