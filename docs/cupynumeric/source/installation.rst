@@ -1,8 +1,8 @@
 Installation
 ============
 
-Default conda install
----------------------
+Installing Conda Packages
+-------------------------
 
 cuPyNumeric supports the
 `same platforms as Legate <https://docs.nvidia.com/legate/latest/installation.html#support-matrix>`_.
@@ -10,41 +10,74 @@ cuPyNumeric supports the
 cuPyNumeric is available from
 `conda <https://docs.conda.io/projects/conda/en/latest/index.html>`_
 on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
-Please make sure you have at least conda version 24.1 installed, then create
-a new environment containing cuPyNumeric:
+
+.. note::
+   conda version >= 24.1 required
+
+.. code-block:: bash
+
+   # with a new environment
+   $ conda create -n myenv -c conda-forge -c legate cupynumeric
+
+   # =========== OR =========== #
+
+   # into an existing environment
+   $ conda install -c conda-forge -c legate cupynumeric
+
+Installing PyPI Packages
+------------------------
+
+cuPyNumeric is also available from `PyPI
+<https://pypi.org/project/nvidia-cupynumeric>`_.  To install, run the following
+command:
+
+.. code-block:: bash
+
+   # into existing environment
+   $ pip install nvidia-cupynumeric
+
+   # =========== OR =========== #
+
+   # into new environment
+   $ python -m venv myenv
+   $ source myenv/bin/activate
+   $ pip install nvidia-cupynumeric
+
+This will install the latest version of cuPyNumeric and the corresponding
+version of `Legate <https://github.com/nv-legate/legate>`_.
+
+The cuPyNumeric package on PyPI is multi-node and multi-rank capable.  Please
+check `Legate <https://docs.nvidia.com/legate>`_ documentation to find more
+details about running on multiple nodes.
+
+Verify your Installation
+------------------------
+
+You can verify the installation by running one of the
+`examples <https://github.com/nv-legate/cunumeric/tree/HEAD/examples>`_.
+
+For instance:
 
 .. code-block:: sh
 
-    conda create -n myenv -c conda-forge -c legate cupynumeric
+   $ legate examples/black_scholes.py
+   Running black scholes on 10K options...
+   Elapsed Time: 129.017 ms
 
-or install it into an existing environment:
+Conda and GPU / CPU Variants
+----------------------------
 
-.. code-block:: sh
+``conda`` automatically installs the right variant for the system:
+* CPU variant if no NVIDIA GPU is detected
+* GPU variant if an NVIDIA GPU is detected
 
-    conda install -c conda-forge -c legate cupynumeric
-
-Packages with GPU support are available, and will be chosen automatically by
-``conda install`` on systems with GPUs.
-
-In an environment without GPUs available, ``conda install`` will by default
-choose a CPU-only package. To install a version with GPU support in such an
-environment, use environment variable ``CONDA_OVERRIDE_CUDA``:
-
-.. code-block:: sh
-
-    CONDA_OVERRIDE_CUDA="12.2" \
-      conda install -c conda-forge -c legate cupynumeric
-
-Once installed, you can verify the installation by running one of the examples
-from the
-`cuPyNumeric repository <https://github.com/nv-legate/cunumeric/tree/HEAD/examples>`_,
-for instance:
+To override this behavior and force install a version with GPU support, use the
+following (with the desired CUDA version):
 
 .. code-block:: sh
 
-    $ legate examples/black_scholes.py
-    Running black scholes on 10K options...
-    Elapsed Time: 129.017 ms
+   $ CONDA_OVERRIDE_CUDA="12.2" conda install -c conda-forge -c legate cupynumeric
+
 
 Building from source
 ---------------------
