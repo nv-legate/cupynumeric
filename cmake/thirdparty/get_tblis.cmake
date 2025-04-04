@@ -171,11 +171,11 @@ function(find_or_configure_tblis)
 endfunction()
 
 if(NOT DEFINED cunumeric_TBLIS_BRANCH)
-  set(cunumeric_TBLIS_BRANCH master)
+  set(cunumeric_TBLIS_BRANCH arm-build)
 endif()
 
 if(NOT DEFINED cunumeric_TBLIS_REPOSITORY)
-  set(cunumeric_TBLIS_REPOSITORY https://github.com/devinamatthews/tblis.git)
+  set(cunumeric_TBLIS_REPOSITORY https://github.com/nv-legate/tblis.git)
 endif()
 
 find_or_configure_tblis(VERSION          1.2.0
