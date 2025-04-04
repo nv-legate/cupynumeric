@@ -336,10 +336,15 @@ def install_cunumeric(
     if debug or verbose:
         cmake_flags += ["--log-level=%s" % ("DEBUG" if debug else "VERBOSE")]
 
+    if debug:
+        build_type = "Debug"
+    elif debug_release:
+        build_type = "RelWithDebInfo"
+    else:
+        build_type = "Release"
+
     cmake_flags += f"""\
--DCMAKE_BUILD_TYPE={(
-    "Debug" if debug else "RelWithDebInfo" if debug_release else "Release"
-)}
+-DCMAKE_BUILD_TYPE={build_type}
 -DBUILD_SHARED_LIBS=ON
 -DCMAKE_CUDA_ARCHITECTURES={str(arch)}
 -DLegion_MAX_DIM={str(maxdim)}

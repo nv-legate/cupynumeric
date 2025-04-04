@@ -12,6 +12,7 @@
 *.gcda
 *.gcov
 core
+!core/
 *.fluid
 *.pyc
 *.swp

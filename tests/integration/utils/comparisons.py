@@ -50,7 +50,7 @@ def allclose(
         inds = islice(zip(*np.where(~close)), diff_limit)
         diffs = [f"  index {i}: {a[i]} {b[i]}" for i in inds]
         N = len(diffs)
-        print(f"First {N} difference{'s' if N>1 else ''} for allclose:\n")
+        print(f"First {N} difference{'s' if N > 1 else ''} for allclose:\n")
         print("\n".join(diffs))
         print(f"\nWith diff_limit={diff_limit}\n")
 

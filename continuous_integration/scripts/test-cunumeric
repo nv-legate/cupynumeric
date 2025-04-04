@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 setup_env() {
-    mamba create -yn legate -c ~/.artifacts/conda-build/legate_core -c ~/.artifacts/conda-build/cunumeric -c conda-forge -c "nvidia/label/cuda-12.0.0" legate-core cunumeric
+    mamba create -yn legate -c ~/.artifacts/conda-build/legate_core -c ~/.artifacts/conda-build/cunumeric -c conda-forge -c "nvidia/label/cuda-12.0.0" legate-core cunumeric cuda-nvcc
 }
 
 setup_test_env() {

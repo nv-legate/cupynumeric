@@ -144,6 +144,7 @@ requirements:
     - libnvjitlink
     - libcusparse
 {% endif %}
+    - numba >=0.57.1
     - opt_einsum >=3.3
     - scipy
     - typing_extensions

@@ -1748,7 +1748,7 @@ def check_list_depth(arr: Any, prefix: NdShape = (0,)) -> int:
                     "List depths are mismatched. First element was at depth "
                     f"{first_depth}, but there is an element at"
                     f" depth {other_depth}, "
-                    f"arrays{convert_to_array_form(prefix+(idx+1,))}"
+                    f"arrays{convert_to_array_form(prefix + (idx + 1,))}"
                 )
 
     return depths[0] + 1
