@@ -16,6 +16,8 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct pareto_t;
 
@@ -26,8 +28,8 @@ struct pareto_t<float> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
-    float y = curand_uniform(&gen);                    // y cannot be 0
-    return xm * ::expf(-::logf(y) * invalpha) - 1.0f;  // here, use -1.0f to align with numpy
+    auto y = randutilimpl::engine_uniform<float>(gen);  // y cannot be 0
+    return xm * ::expf(-::logf(y) * invalpha) - 1.0f;   // here, use -1.0f to align with numpy
   }
 };
 
@@ -38,7 +40,7 @@ struct pareto_t<double> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS double operator()(gen_t& gen)
   {
-    double y = curand_uniform_double(&gen);         // y cannot be 0
-    return xm * ::exp(-::log(y) * invalpha) - 1.0;  // here, use -1.0 to align with numpy
+    auto y = randutilimpl::engine_uniform<double>(gen);  // y cannot be 0
+    return xm * ::exp(-::log(y) * invalpha) - 1.0;       // here, use -1.0 to align with numpy
   }
 };

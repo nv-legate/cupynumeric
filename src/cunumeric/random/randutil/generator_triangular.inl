@@ -16,6 +16,8 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct triangular_t;
 
@@ -26,7 +28,7 @@ struct triangular_t<float> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
-    float y = curand_uniform(&gen);  // y cannot be 0
+    float y = randutilimpl::engine_uniform<float>(gen);  // y cannot be 0
     if (y <= ((c - a) / (b - a))) {
       float delta = (y * (b - a) * (c - a));
       if (delta < 0.0f) delta = 0.0f;
@@ -46,7 +48,7 @@ struct triangular_t<double> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS double operator()(gen_t& gen)
   {
-    double y = curand_uniform_double(&gen);  // y cannot be 0
+    double y = randutilimpl::engine_uniform<double>(gen);  // y cannot be 0
     if (y <= ((c - a) / (b - a))) {
       double delta = (y * (b - a) * (c - a));
       if (delta < 0.0) delta = 0.0;

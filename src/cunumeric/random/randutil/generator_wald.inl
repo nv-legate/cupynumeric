@@ -17,6 +17,8 @@
 #include "generator.h"
 #include "random_distributions.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct wald_t;
 
@@ -27,11 +29,11 @@ struct wald_t<float> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
-    float v = curand_normal(&gen);
+    float v = randutilimpl::engine_normal<float>(gen);
     float y = v * v;
     float x = mu + (mu * mu * y) / (2.0f * lambda) -
               (mu / (2.0f * lambda)) * ::sqrtf(mu * y * (4.0f * lambda + mu * y));
-    float z = curand_uniform(&gen);
+    float z = randutilimpl::engine_uniform<float>(gen);
     if (z <= (mu) / (mu + x))
       return x;
     else
@@ -46,11 +48,11 @@ struct wald_t<double> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS double operator()(gen_t& gen)
   {
-    double v = curand_normal(&gen);
+    double v = randutilimpl::engine_normal<double>(gen);
     double y = v * v;
     double x = mu + (mu * mu * y) / (2.0 * lambda) -
                (mu / (2.0 * lambda)) * ::sqrtf(mu * y * (4.0 * lambda + mu * y));
-    double z = curand_uniform(&gen);
+    double z = randutilimpl::engine_uniform<double>(gen);
     if (z <= (mu) / (mu + x))
       return x;
     else

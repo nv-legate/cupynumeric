@@ -16,6 +16,8 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct exponential_t;
 
@@ -26,7 +28,7 @@ struct exponential_t<float> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
-    float uni = curand_uniform(&gen);
+    float uni = randutilimpl::engine_uniform<float>(gen);
     return -::logf(uni) * scale;
   }
 };
@@ -38,7 +40,7 @@ struct exponential_t<double> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS double operator()(gen_t& gen)
   {
-    double uni = curand_uniform_double(&gen);
+    double uni = randutilimpl::engine_uniform<double>(gen);
     return -::logf(uni) * scale;
   }
 };

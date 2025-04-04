@@ -14,16 +14,22 @@
  *
  */
 
+// MacOS host variant:
+//
+#if defined(__APPLE__) && defined(__MACH__)
+#define USE_STL_RANDOM_ENGINE_
+#endif
+
 #include "generator.h"
 
 #pragma region exponential
 
 #include "generator_exponential.inl"
 
-extern "C" curandStatus_t randutilGenerateExponentialEx(randutilGenerator_t generator,
-                                                        float* outputPtr,
-                                                        size_t n,
-                                                        float scale)
+extern "C" rnd_status_t randutilGenerateExponentialEx(randutilGenerator_t generator,
+                                                      float* outputPtr,
+                                                      size_t n,
+                                                      float scale)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
   exponential_t<float> func;
@@ -31,10 +37,10 @@ extern "C" curandStatus_t randutilGenerateExponentialEx(randutilGenerator_t gene
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateExponentialDoubleEx(randutilGenerator_t generator,
-                                                              double* outputPtr,
-                                                              size_t n,
-                                                              double scale)
+extern "C" rnd_status_t randutilGenerateExponentialDoubleEx(randutilGenerator_t generator,
+                                                            double* outputPtr,
+                                                            size_t n,
+                                                            double scale)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
   exponential_t<double> func;
@@ -48,7 +54,7 @@ extern "C" curandStatus_t randutilGenerateExponentialDoubleEx(randutilGenerator_
 
 #include "generator_gumbel.inl"
 
-extern "C" curandStatus_t randutilGenerateGumbelEx(
+extern "C" rnd_status_t randutilGenerateGumbelEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float mu, float beta)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -58,7 +64,7 @@ extern "C" curandStatus_t randutilGenerateGumbelEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateGumbelDoubleEx(
+extern "C" rnd_status_t randutilGenerateGumbelDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double mu, double beta)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -74,7 +80,7 @@ extern "C" curandStatus_t randutilGenerateGumbelDoubleEx(
 
 #include "generator_laplace.inl"
 
-extern "C" curandStatus_t randutilGenerateLaplaceEx(
+extern "C" rnd_status_t randutilGenerateLaplaceEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float mu, float beta)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -84,7 +90,7 @@ extern "C" curandStatus_t randutilGenerateLaplaceEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateLaplaceDoubleEx(
+extern "C" rnd_status_t randutilGenerateLaplaceDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double mu, double beta)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -100,7 +106,7 @@ extern "C" curandStatus_t randutilGenerateLaplaceDoubleEx(
 
 #include "generator_logistic.inl"
 
-extern "C" curandStatus_t randutilGenerateLogisticEx(
+extern "C" rnd_status_t randutilGenerateLogisticEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float mu, float beta)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -110,7 +116,7 @@ extern "C" curandStatus_t randutilGenerateLogisticEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateLogisticDoubleEx(
+extern "C" rnd_status_t randutilGenerateLogisticDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double mu, double beta)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -126,7 +132,7 @@ extern "C" curandStatus_t randutilGenerateLogisticDoubleEx(
 
 #include "generator_pareto.inl"
 
-extern "C" curandStatus_t randutilGenerateParetoEx(
+extern "C" rnd_status_t randutilGenerateParetoEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float xm, float alpha)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -136,7 +142,7 @@ extern "C" curandStatus_t randutilGenerateParetoEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateParetoDoubleEx(
+extern "C" rnd_status_t randutilGenerateParetoDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double xm, double alpha)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -152,10 +158,10 @@ extern "C" curandStatus_t randutilGenerateParetoDoubleEx(
 
 #include "generator_power.inl"
 
-extern "C" curandStatus_t randutilGeneratePowerEx(randutilGenerator_t generator,
-                                                  float* outputPtr,
-                                                  size_t n,
-                                                  float alpha)
+extern "C" rnd_status_t randutilGeneratePowerEx(randutilGenerator_t generator,
+                                                float* outputPtr,
+                                                size_t n,
+                                                float alpha)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
   power_t<float> func;
@@ -163,10 +169,10 @@ extern "C" curandStatus_t randutilGeneratePowerEx(randutilGenerator_t generator,
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGeneratePowerDoubleEx(randutilGenerator_t generator,
-                                                        double* outputPtr,
-                                                        size_t n,
-                                                        double alpha)
+extern "C" rnd_status_t randutilGeneratePowerDoubleEx(randutilGenerator_t generator,
+                                                      double* outputPtr,
+                                                      size_t n,
+                                                      double alpha)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
   power_t<double> func;
@@ -180,10 +186,10 @@ extern "C" curandStatus_t randutilGeneratePowerDoubleEx(randutilGenerator_t gene
 
 #include "generator_rayleigh.inl"
 
-extern "C" curandStatus_t randutilGenerateRayleighEx(randutilGenerator_t generator,
-                                                     float* outputPtr,
-                                                     size_t n,
-                                                     float sigma)
+extern "C" rnd_status_t randutilGenerateRayleighEx(randutilGenerator_t generator,
+                                                   float* outputPtr,
+                                                   size_t n,
+                                                   float sigma)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
   rayleigh_t<float> func;
@@ -191,10 +197,10 @@ extern "C" curandStatus_t randutilGenerateRayleighEx(randutilGenerator_t generat
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateRayleighDoubleEx(randutilGenerator_t generator,
-                                                           double* outputPtr,
-                                                           size_t n,
-                                                           double sigma)
+extern "C" rnd_status_t randutilGenerateRayleighDoubleEx(randutilGenerator_t generator,
+                                                         double* outputPtr,
+                                                         size_t n,
+                                                         double sigma)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
   rayleigh_t<double> func;
@@ -208,7 +214,7 @@ extern "C" curandStatus_t randutilGenerateRayleighDoubleEx(randutilGenerator_t g
 
 #include "generator_cauchy.inl"
 
-extern "C" curandStatus_t randutilGenerateCauchyEx(
+extern "C" rnd_status_t randutilGenerateCauchyEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float x0, float gamma)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -218,7 +224,7 @@ extern "C" curandStatus_t randutilGenerateCauchyEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateCauchyDoubleEx(
+extern "C" rnd_status_t randutilGenerateCauchyDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double x0, double gamma)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -234,7 +240,7 @@ extern "C" curandStatus_t randutilGenerateCauchyDoubleEx(
 
 #include "generator_triangular.inl"
 
-extern "C" curandStatus_t randutilGenerateTriangularEx(
+extern "C" rnd_status_t randutilGenerateTriangularEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float a, float b, float c)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -245,7 +251,7 @@ extern "C" curandStatus_t randutilGenerateTriangularEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateTriangularDoubleEx(
+extern "C" rnd_status_t randutilGenerateTriangularDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double a, double b, double c)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -262,7 +268,7 @@ extern "C" curandStatus_t randutilGenerateTriangularDoubleEx(
 
 #include "generator_weibull.inl"
 
-extern "C" curandStatus_t randutilGenerateWeibullEx(
+extern "C" rnd_status_t randutilGenerateWeibullEx(
   randutilGenerator_t generator, float* outputPtr, size_t n, float lam, float k)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;
@@ -272,7 +278,7 @@ extern "C" curandStatus_t randutilGenerateWeibullEx(
   return randutilimpl::dispatch<decltype(func), float>(gen, func, n, outputPtr);
 }
 
-extern "C" curandStatus_t randutilGenerateWeibullDoubleEx(
+extern "C" rnd_status_t randutilGenerateWeibullDoubleEx(
   randutilGenerator_t generator, double* outputPtr, size_t n, double lam, double k)
 {
   randutilimpl::basegenerator* gen = (randutilimpl::basegenerator*)generator;

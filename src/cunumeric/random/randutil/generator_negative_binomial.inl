@@ -17,6 +17,8 @@
 #include "generator.h"
 #include "random_distributions.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct negative_binomial_t;
 
@@ -29,6 +31,6 @@ struct negative_binomial_t<uint32_t> {
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
     double lambda = rk_standard_gamma(&gen, (double)n) * ((1 - p) / p);
-    return curand_poisson(&gen, lambda);
+    return static_cast<float>(randutilimpl::engine_poisson<uint32_t>(gen, lambda));
   }
 };

@@ -16,6 +16,8 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct lognormal_t;
 
@@ -27,7 +29,7 @@ struct lognormal_t<float> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
-    return curand_log_normal(&gen, mean, stddev);
+    return randutilimpl::engine_log_normal(gen, mean, stddev);
   }
 };
 
@@ -39,6 +41,6 @@ struct lognormal_t<double> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS double operator()(gen_t& gen)
   {
-    return curand_log_normal_double(&gen, mean, stddev);
+    return randutilimpl::engine_log_normal(gen, mean, stddev);
   }
 };

@@ -16,6 +16,8 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct uniform_t;
 
@@ -26,7 +28,8 @@ struct uniform_t<float> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS float operator()(gen_t& gen)
   {
-    return offset + mult * curand_uniform(&gen);
+    auto y = randutilimpl::engine_uniform<float>(gen);  // returns (0, 1];
+    return offset + mult * y;
   }
 };
 
@@ -37,6 +40,7 @@ struct uniform_t<double> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS double operator()(gen_t& gen)
   {
-    return offset + mult * curand_uniform_double(&gen);
+    auto y = randutilimpl::engine_uniform<double>(gen);  // returns (0, 1];
+    return offset + mult * y;
   }
 };

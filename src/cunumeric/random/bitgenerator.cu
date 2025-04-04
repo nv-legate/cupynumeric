@@ -27,19 +27,30 @@ namespace cunumeric {
 
 using namespace legate;
 
+// required by CHECK_CURAND_DEVICE:
+//
+void randutil_check_curand_device(curandStatus_t error, const char* file, int line)
+{
+  if (error != CURAND_STATUS_SUCCESS) {
+    randutil_log().fatal() << "Internal CURAND failure with error " << (int)error << " in file "
+                           << file << " at line " << line;
+    assert(false);
+  }
+}
+
 struct GPUGenerator : public CURANDGenerator {
   cudaStream_t stream_;
   GPUGenerator(BitGeneratorType gentype, uint64_t seed, uint64_t generatorId, uint32_t flags)
     : CURANDGenerator(gentype, seed, generatorId)
   {
     CHECK_CUDA(::cudaStreamCreate(&stream_));
-    CHECK_CURAND(::randutilCreateGenerator(&gen_, type_, seed, generatorId, flags, stream_));
+    CHECK_CURAND_DEVICE(::randutilCreateGenerator(&gen_, type_, seed, generatorId, flags, stream_));
   }
 
   virtual ~GPUGenerator()
   {
     CHECK_CUDA(::cudaStreamSynchronize(stream_));
-    CHECK_CURAND(::randutilDestroyGenerator(gen_));
+    CHECK_CURAND_DEVICE(::randutilDestroyGenerator(gen_));
   }
 };
 

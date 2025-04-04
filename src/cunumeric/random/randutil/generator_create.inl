@@ -17,34 +17,32 @@
 #include "generator.h"
 
 template <typename gen_t, randutilimpl::execlocation location>
-curandStatus_t randutilGenerator(randutilGenerator_t* generator,
-                                 uint64_t seed,
-                                 uint64_t generatorID,
-                                 cudaStream_t stream = nullptr)
+rnd_status_t randutilGenerator(randutilGenerator_t* generator,
+                               uint64_t seed,
+                               uint64_t generatorID,
+                               stream_t stream = nullptr)
 {
   randutilimpl::inner_generator<gen_t, location>* result =
     new randutilimpl::inner_generator<gen_t, location>(seed, generatorID, stream);
   *generator = (randutilGenerator_t)result;
-  return CURAND_STATUS_SUCCESS;
+  return RND_STATUS_SUCCESS;
 }
 
 template <randutilimpl::execlocation location>
-static curandStatus_t inner_randutilCreateGenerator(randutilGenerator_t* generator,
-                                                    curandRngType_t rng_type,
-                                                    uint64_t seed,
-                                                    uint64_t generatorID,
-                                                    cudaStream_t stream = nullptr)
+static rnd_status_t inner_randutilCreateGenerator(randutilGenerator_t* generator,
+                                                  randRngType_t rng_type,
+                                                  uint64_t seed,
+                                                  uint64_t generatorID,
+                                                  stream_t stream = nullptr)
 {
-  switch (rng_type) {
-    case CURAND_RNG_PSEUDO_XORWOW:
-      return randutilGenerator<curandStateXORWOW_t, location>(generator, seed, generatorID, stream);
-    case CURAND_RNG_PSEUDO_PHILOX4_32_10:
-      return randutilGenerator<curandStatePhilox4_32_10_t, location>(
-        generator, seed, generatorID, stream);
-    case CURAND_RNG_PSEUDO_MRG32K3A:
-      return randutilGenerator<curandStateMRG32k3a_t, location>(
-        generator, seed, generatorID, stream);
+  switch (static_cast<int>(rng_type)) {
+    case RND_RNG_PSEUDO_XORWOW:
+      return randutilGenerator<gen_XORWOW_t, location>(generator, seed, generatorID, stream);
+    case RND_RNG_PSEUDO_PHILOX4_32_10:
+      return randutilGenerator<gen_Philox4_32_10_t, location>(generator, seed, generatorID, stream);
+    case RND_RNG_PSEUDO_MRG32K3A:
+      return randutilGenerator<gen_MRG32k3a_t, location>(generator, seed, generatorID, stream);
     default: LEGATE_ABORT;
   }
-  return CURAND_STATUS_TYPE_ERROR;
+  return RND_STATUS_TYPE_ERROR;
 }

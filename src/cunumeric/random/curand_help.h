@@ -24,9 +24,25 @@
     randutil_check_curand(__result__, __FILE__, __LINE__); \
   } while (false)
 
+// necessary, b/c the STL variant (host only MacOS) uses non-curand abstractions,
+// hence a different checker defined in bitgenerator.cc, while the curand checker
+// gets undefined; however the device code still requires the curand checker and
+// attempts to link against the definition in bitgenerator.cc, which is disabled
+// in this situation; the checker below fulfills that purpose:
+//
+#define CHECK_CURAND_DEVICE(expr)                                 \
+  do {                                                            \
+    curandStatus_t __result__ = (expr);                           \
+    randutil_check_curand_device(__result__, __FILE__, __LINE__); \
+  } while (false)
+
 namespace cunumeric {
 legate::Logger& randutil_log();
 void randutil_check_curand(curandStatus_t error, const char* file, int line);
+
+// required by CHECK_CURAND_DEVICE:
+//
+void randutil_check_curand_device(curandStatus_t error, const char* file, int line);
 
 static inline curandRngType get_curandRngType(cunumeric::BitGeneratorType kind)
 {

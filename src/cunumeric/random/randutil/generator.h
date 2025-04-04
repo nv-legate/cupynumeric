@@ -23,6 +23,8 @@
 #include "randutil_curand.h"
 #include "randutil_impl.h"
 
+#include "cunumeric/random/rnd_aliases.h"
+
 namespace randutilimpl {
 
 struct basegenerator {
@@ -36,33 +38,42 @@ template <typename gen_t>
 struct generatorid;
 
 template <>
-struct generatorid<curandStateXORWOW_t> {
-  static constexpr int rng_type = CURAND_RNG_PSEUDO_XORWOW;
-};
-template <>
-struct generatorid<curandStatePhilox4_32_10_t> {
-  static constexpr int rng_type = CURAND_RNG_PSEUDO_PHILOX4_32_10;
-};
-template <>
-struct generatorid<curandStateMRG32k3a_t> {
-  static constexpr int rng_type = CURAND_RNG_PSEUDO_MRG32K3A;
+struct generatorid<gen_XORWOW_t> {
+  static constexpr int rng_type = RND_RNG_PSEUDO_XORWOW;
 };
 
+#ifndef USE_STL_RANDOM_ENGINE_
+// Curand *different* specializations, not possible with only one generator
+//
+template <>
+struct generatorid<gen_Philox4_32_10_t> {
+  static constexpr int rng_type = RND_RNG_PSEUDO_PHILOX4_32_10;
+};
+template <>
+struct generatorid<gen_MRG32k3a_t> {
+  static constexpr int rng_type = RND_RNG_PSEUDO_MRG32K3A;
+};
+#endif
+
+#if 0
+// this seems dead code
+//
 template <int gen_id>
 struct generatortype;
 
 template <>
-struct generatortype<CURAND_RNG_PSEUDO_XORWOW> {
-  using rng_t = curandStateXORWOW_t;
+struct generatortype<RND_RNG_PSEUDO_XORWOW> {
+  using rng_t = gen_XORWOW_t;
 };
 template <>
-struct generatortype<CURAND_RNG_PSEUDO_PHILOX4_32_10> {
-  using rng_t = curandStatePhilox4_32_10_t;
+struct generatortype<RND_RNG_PSEUDO_PHILOX4_32_10> {
+  using rng_t = gen_Philox4_32_10_t;
 };
 template <>
-struct generatortype<CURAND_RNG_PSEUDO_MRG32K3A> {
-  using rng_t = curandStateMRG32k3a_t;
+struct generatortype<RND_RNG_PSEUDO_MRG32K3A> {
+  using rng_t = gen_MRG32k3a_t;
 };
+#endif
 
 template <typename gen_t>
 struct inner_generator<gen_t, randutilimpl::execlocation::HOST> : basegenerator {
@@ -70,10 +81,19 @@ struct inner_generator<gen_t, randutilimpl::execlocation::HOST> : basegenerator 
   uint64_t generatorID;
   gen_t generator;
 
-  inner_generator(uint64_t seed, uint64_t generatorID, cudaStream_t ignored)
-    : seed(seed), generatorID(generatorID)
+  inner_generator(uint64_t seed, uint64_t generatorID, stream_t ignored)
+    : seed(seed),
+      generatorID(generatorID)
+#ifdef USE_STL_RANDOM_ENGINE_
+      ,
+      generator(seed)
+#endif
   {
+#ifdef USE_STL_RANDOM_ENGINE_
+    std::srand(seed);
+#else
     curand_init(seed, generatorID, 0, &generator);
+#endif
   }
 
   virtual void destroy() override {}
@@ -93,36 +113,36 @@ struct inner_generator<gen_t, randutilimpl::execlocation::HOST> : basegenerator 
 };
 
 template <randutilimpl::execlocation location, typename func_t, typename out_t>
-curandStatus_t inner_dispatch_sample(basegenerator* gen, func_t func, size_t N, out_t* out)
+rnd_status_t inner_dispatch_sample(basegenerator* gen, func_t func, size_t N, out_t* out)
 {
   switch (gen->generatorTypeId()) {
-    case CURAND_RNG_PSEUDO_XORWOW:
-      return static_cast<inner_generator<curandStateXORWOW_t, location>*>(gen)
+    case RND_RNG_PSEUDO_XORWOW:
+      return static_cast<inner_generator<gen_XORWOW_t, location>*>(gen)
         ->template draw<func_t, out_t>(func, N, out);
-    case CURAND_RNG_PSEUDO_PHILOX4_32_10:
-      return static_cast<inner_generator<curandStatePhilox4_32_10_t, location>*>(gen)
+    case RND_RNG_PSEUDO_PHILOX4_32_10:
+      return static_cast<inner_generator<gen_Philox4_32_10_t, location>*>(gen)
         ->template draw<func_t, out_t>(func, N, out);
-    case CURAND_RNG_PSEUDO_MRG32K3A:
-      return static_cast<inner_generator<curandStateMRG32k3a_t, location>*>(gen)
+    case RND_RNG_PSEUDO_MRG32K3A:
+      return static_cast<inner_generator<gen_MRG32k3a_t, location>*>(gen)
         ->template draw<func_t, out_t>(func, N, out);
     default: LEGATE_ABORT;
   }
-  return CURAND_STATUS_INTERNAL_ERROR;
+  return RND_STATUS_INTERNAL_ERROR;
 }
 
 // template funtion with HOST and DEVICE implementations
 template <randutilimpl::execlocation location, typename func_t, typename out_t>
 struct dispatcher {
-  static curandStatus_t run(randutilimpl::basegenerator* generator,
-                            func_t func,
-                            size_t N,
-                            out_t* out);
+  static rnd_status_t run(randutilimpl::basegenerator* generator,
+                          func_t func,
+                          size_t N,
+                          out_t* out);
 };
 
 // HOST-side template instantiation of generator
 template <typename func_t, typename out_t>
 struct dispatcher<randutilimpl::execlocation::HOST, func_t, out_t> {
-  static curandStatus_t run(randutilimpl::basegenerator* gen, func_t func, size_t N, out_t* out)
+  static rnd_status_t run(randutilimpl::basegenerator* gen, func_t func, size_t N, out_t* out)
   {
     return inner_dispatch_sample<randutilimpl::execlocation::HOST, func_t, out_t>(
       gen, func, N, out);
@@ -130,7 +150,7 @@ struct dispatcher<randutilimpl::execlocation::HOST, func_t, out_t> {
 };
 
 template <typename func_t, typename out_t>
-curandStatus_t dispatch(randutilimpl::basegenerator* gen, func_t func, size_t N, out_t* out)
+rnd_status_t dispatch(randutilimpl::basegenerator* gen, func_t func, size_t N, out_t* out)
 {
   switch (gen->location()) {
     case randutilimpl::execlocation::HOST:
@@ -141,7 +161,7 @@ curandStatus_t dispatch(randutilimpl::basegenerator* gen, func_t func, size_t N,
 #endif
     default: LEGATE_ABORT;
   }
-  return CURAND_STATUS_INTERNAL_ERROR;
+  return RND_STATUS_INTERNAL_ERROR;
 }
 
 }  // namespace randutilimpl

@@ -16,12 +16,14 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 struct poisson {
   double lambda = 1.0;
 
   template <typename gen_t>
   RANDUTIL_QUALIFIERS unsigned operator()(gen_t& gen)
   {
-    return curand_poisson(&gen, lambda);
+    return randutilimpl::engine_poisson<unsigned>(gen, lambda);
   }
 };

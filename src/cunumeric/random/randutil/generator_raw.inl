@@ -16,6 +16,8 @@
 
 #include "generator.h"
 
+#include "randomizer.h"
+
 template <typename field_t>
 struct raw;
 
@@ -24,6 +26,6 @@ struct raw<uint32_t> {
   template <typename gen_t>
   RANDUTIL_QUALIFIERS uint32_t operator()(gen_t& gen)
   {
-    return (uint32_t)curand(&gen);
+    return (uint32_t)randutilimpl::engine_rand(gen);
   }
 };
