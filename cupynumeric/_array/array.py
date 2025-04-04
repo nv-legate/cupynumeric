@@ -266,6 +266,11 @@ class ndarray:
                 except NotImplementedError:
                     what = f"the requested combination of arguments to {what}"
 
+        # special case for @ matmul
+        if what == "matmul.__call__":
+            from .._module import matmul
+            return matmul(*inputs, **kwargs)
+
         # We cannot handle this ufunc call, so we will fall back to NumPy.
         warnings.warn(
             FALLBACK_WARNING.format(what=what),
