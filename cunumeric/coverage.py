@@ -17,6 +17,7 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 from functools import WRAPPER_ASSIGNMENTS, wraps
+from itertools import islice
 from types import (
     BuiltinFunctionType,
     FunctionType,
@@ -71,6 +72,46 @@ def filter_namespace(
     }
 
 
+def allclose(
+    a: Any,  # numpy or cunumeric array-like
+    b: Any,  # numpy or cunumeric array-like
+    rtol: float = 1e-5,
+    atol: float = 1e-8,
+    equal_nan: bool = False,
+    *,
+    diff_limit: Union[int, None] = 5,  # None means no limit at all
+    check_dtype: bool = True,
+) -> bool:
+    import numpy as np
+
+    if np.shape(a) != np.shape(b):
+        print(f"allclose: different shape: {np.shape(a)} vs {np.shape(b)}")
+        return False
+
+    # simplify handling of scalar values
+    a, b = np.atleast_1d(a), np.atleast_1d(b)
+
+    if check_dtype and a.dtype != b.dtype:
+        print(f"allclose: different dtype: {a.dtype} vs {b.dtype}")
+        return False
+
+    close = np.isclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+    all_close = np.all(close)
+
+    if (diff_limit is None or diff_limit > 0) and not all_close:
+        a += np.zeros(b.shape, dtype=a.dtype)
+        b += np.zeros(a.shape, dtype=b.dtype)
+        inds = islice(zip(*np.where(~close)), diff_limit)
+        diffs = [f"  index {i}: {a[i]} {b[i]}" for i in inds]
+        N = len(diffs)
+        print(f"First {N} difference{'s' if N>1 else ''} for allclose:\n")
+        print("\n".join(diffs))
+        print(f"\nWith diff_limit={diff_limit}\n")
+
+    return bool(all_close)
+
+
 class AnyCallable(Protocol):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         ...
@@ -91,7 +132,12 @@ class CuWrapped(AnyCallable, Protocol):
 
 
 def implemented(
-    func: AnyCallable, prefix: str, name: str, reporting: bool = True
+    func: AnyCallable,
+    orig_func: AnyCallable,
+    prefix: str,
+    name: str,
+    reporting: bool = True,
+    fallback: Union[Callable[[Any], Any], None] = None,
 ) -> CuWrapped:
     name = f"{prefix}.{name}"
 
@@ -113,11 +159,34 @@ def implemented(
             return func(*args, **kwargs)
 
     else:
-
+        # TODO: unify with "reporting" branch
         @wraps(func)
         @track_provenance()
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return func(*args, **kwargs)
+            import cunumeric
+
+            res = func(*args, **kwargs)
+            # TODO: Handle functions that return results in other ways, e.g.
+            # np.add(out=) and np.put.
+            # TODO: parameterize on the classes to check equality on
+            # TODO: more disciplined way to filter non-deterministic functions
+            if (
+                res is not None
+                and isinstance(res, cunumeric.ndarray)
+                and not name.startswith("numpy.random")
+                and fallback
+            ):
+                args = deep_apply(args, fallback)
+                kwargs = deep_apply(kwargs, fallback)
+                try:
+                    orig_res = orig_func(*args, **kwargs)
+                except Exception as e:
+                    print(f"SKIP {name}: {e}")
+                else:
+                    # TODO: parameterize on the function used to check equality
+                    # TODO: skipping type checks for now
+                    assert allclose(fallback(res), orig_res, check_dtype=False)
+            return res
 
     # This is incredibly ugly and unpleasant, but @wraps(func) doesn't handle
     # ufuncs the way we need it to. The alternative would be to vendor and
@@ -262,7 +331,12 @@ def clone_module(
             and isinstance(value, BuiltinFunctionType)
         ):
             wrapped = implemented(
-                cast(AnyCallable, value), mod_name, attr, reporting=reporting
+                cast(AnyCallable, value),
+                getattr(origin_module, attr),
+                mod_name,
+                attr,
+                reporting=reporting,
+                fallback=fallback,
             )
             new_globals[attr] = wrapped
             if isinstance(value, lgufunc):
@@ -270,9 +344,11 @@ def clone_module(
                     wrapped_method = (
                         implemented(
                             getattr(value, method),
+                            getattr(getattr(origin_module, attr), method),
                             f"{mod_name}.{attr}",
                             method,
                             reporting=reporting,
+                            fallback=fallback,
                         )
                         if hasattr(value, method)
                         else unimplemented(
@@ -348,9 +424,11 @@ def clone_class(
             if should_wrap(value):
                 wrapped = implemented(
                     value,
+                    getattr(origin_class, attr),
                     class_name,
                     attr,
                     reporting=reporting,
+                    fallback=fallback,
                 )
                 setattr(cls, attr, wrapped)
 
