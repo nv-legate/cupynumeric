@@ -324,6 +324,21 @@ class TestLinspaceErrors:
             num.linspace(0, None, num=5)
 
 
+@pytest.mark.parametrize("sparse", [True, False])
+@pytest.mark.parametrize("indexing", ["xy", "ij"])
+def test_meshgrid(sparse, indexing):
+    xnp = np.linspace(0.0, 1.0, 10)
+    ynp = np.linspace(0.5, 1.5, 10)
+    Xnp, Ynp = np.meshgrid(xnp, ynp, sparse=sparse, indexing=indexing)
+
+    xnum = num.linspace(0.0, 1.0, 10)
+    ynum = num.linspace(0.5, 1.5, 10)
+    Xnum, Ynum = num.meshgrid(xnum, ynum, sparse=sparse, indexing=indexing)
+
+    assert num.array_equal(Xnum, Xnp)
+    assert num.array_equal(Ynum, Ynp)
+
+
 if __name__ == "__main__":
     import sys
 
