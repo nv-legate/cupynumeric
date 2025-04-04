@@ -255,6 +255,12 @@ class EagerArray(NumPyThunk):
         self.record_escape()
         return self.array.__array__()
 
+    @property
+    def can_write_through_numpy_array(self) -> bool:
+        if self.deferred is not None:
+            return self.deferred.can_write_through_numpy_array
+        return True
+
     def record_escape(self) -> None:
         if self.parent is None:
             self.escaped = True

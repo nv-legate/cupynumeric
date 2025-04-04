@@ -68,10 +68,20 @@ def is_advanced_indexing(key: Any) -> bool:
     return True
 
 
+_INTERNAL_MODULE_PREFIXES = ("cunumeric.", "legate.core.")
+
+
+def is_internal_frame(frame: FrameType) -> bool:
+    if "__name__" not in frame.f_globals:
+        return False
+    name = frame.f_globals["__name__"]
+    return any(name.startswith(prefix) for prefix in _INTERNAL_MODULE_PREFIXES)
+
+
 def find_last_user_stacklevel() -> int:
     stacklevel = 1
     for frame, _ in traceback.walk_stack(None):
-        if not frame.f_globals["__name__"].startswith("cunumeric"):
+        if not is_internal_frame(frame):
             break
         stacklevel += 1
     return stacklevel
@@ -83,10 +93,7 @@ def get_line_number_from_frame(frame: FrameType) -> str:
 
 def find_last_user_frames(top_only: bool = True) -> str:
     for last, _ in traceback.walk_stack(None):
-        if "__name__" not in last.f_globals:
-            continue
-        name = last.f_globals["__name__"]
-        if not any(name.startswith(pkg) for pkg in ("cunumeric", "legate")):
+        if not is_internal_frame(last):
             break
 
     if top_only:

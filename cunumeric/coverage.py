@@ -14,7 +14,6 @@
 #
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from functools import WRAPPER_ASSIGNMENTS, wraps
 from types import (
@@ -41,7 +40,7 @@ from typing_extensions import Protocol
 
 from .runtime import runtime
 from .settings import settings
-from .utils import deep_apply, find_last_user_frames, find_last_user_stacklevel
+from .utils import deep_apply, find_last_user_frames
 
 __all__ = ("clone_module", "clone_class")
 
@@ -182,10 +181,8 @@ def unimplemented(
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            stacklevel = find_last_user_stacklevel()
-            warnings.warn(
+            runtime.warn(
                 FALLBACK_WARNING.format(what=name),
-                stacklevel=stacklevel,
                 category=RuntimeWarning,
             )
             if fallback:

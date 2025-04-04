@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import operator
-import warnings
 from functools import reduce, wraps
 from inspect import signature
 from typing import (
@@ -81,6 +80,15 @@ from math import prod
 
 R = TypeVar("R")
 P = ParamSpec("P")
+
+
+_WARN_SINGLE_ELEM_ACCESS = (
+    "cuNumeric detected a single-element access, and is proactively pulling "
+    "the entire array onto a single memory, to serve this and future "
+    "accesses. This may result in blocking and increased memory consumption. "
+    "Looping over ndarray elements is not efficient, please consider using "
+    "full-array operations instead."
+)
 
 
 def add_boilerplate(
@@ -423,10 +431,9 @@ class ndarray:
                 what = f"the requested combination of arguments to {what}"
 
         # We cannot handle this call, so we will fall back to NumPy.
-        warnings.warn(
+        runtime.warn(
             FALLBACK_WARNING.format(what=what),
             category=RuntimeWarning,
-            stacklevel=4,
         )
         args = deep_apply(args, maybe_convert_to_np_ndarray)
         kwargs = deep_apply(kwargs, maybe_convert_to_np_ndarray)
@@ -469,10 +476,9 @@ class ndarray:
                     what = f"the requested combination of arguments to {what}"
 
         # We cannot handle this ufunc call, so we will fall back to NumPy.
-        warnings.warn(
+        runtime.warn(
             FALLBACK_WARNING.format(what=what),
             category=RuntimeWarning,
-            stacklevel=3,
         )
         inputs = deep_apply(inputs, maybe_convert_to_np_ndarray)
         kwargs = deep_apply(kwargs, maybe_convert_to_np_ndarray)
@@ -1027,6 +1033,14 @@ class ndarray:
 
             return key._thunk
 
+    def _is_single_elem_access(self, key: Any) -> bool:
+        # Just do a quick check to catch literal uses of scalar indices
+        return (
+            isinstance(key, tuple)
+            and len(key) == self.ndim
+            and all(np.isscalar(k) for k in key)
+        )
+
     @add_boilerplate()
     def __getitem__(self, key: Any) -> ndarray:
         """a.__getitem__(key, /)
@@ -1035,6 +1049,12 @@ class ndarray:
 
         """
         key = self._convert_key(key)
+        if self._is_single_elem_access(key):
+            runtime.warn(
+                _WARN_SINGLE_ELEM_ACCESS,
+                category=RuntimeWarning,
+            )
+            return convert_to_cunumeric_ndarray(self.__array__()[key])
         return ndarray(shape=None, thunk=self._thunk.get_item(key))
 
     def __gt__(self, rhs: Any) -> ndarray:
@@ -1664,19 +1684,27 @@ class ndarray:
         return bitwise_xor(lhs, self)
 
     # __setattr__
-    @add_boilerplate("value")
-    def __setitem__(self, key: Any, value: ndarray) -> None:
+    def __setitem__(self, key: Any, raw_value: Any) -> None:
         """__setitem__(key, value, /)
 
         Set ``self[key]=value``.
 
         """
         check_writeable(self)
+        key = self._convert_key(key)
+        if self._is_single_elem_access(key):
+            runtime.warn(
+                _WARN_SINGLE_ELEM_ACCESS,
+                category=RuntimeWarning,
+            )
+            if self._thunk.can_write_through_numpy_array:
+                self.__array__()[key] = raw_value
+                return
+        value = convert_to_cunumeric_ndarray(raw_value)
         if value.dtype != self.dtype:
             temp = ndarray(value.shape, dtype=self.dtype, inputs=(value,))
             temp._thunk.convert(value._thunk)
             value = temp
-        key = self._convert_key(key)
         self._thunk.set_item(key, value._thunk)
 
     def __setstate__(self, state: Any) -> None:
@@ -2962,7 +2990,7 @@ class ndarray:
             raise KeyError("invalid key")
         return args
 
-    def item(self, *args: Any) -> Any:
+    def item(self, *args: Any) -> npt.NDArray[Any]:
         """a.item(*args)
 
         Copy an element of an array to a standard Python scalar and return it.

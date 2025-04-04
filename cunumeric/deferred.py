@@ -312,7 +312,9 @@ class DeferredArray(NumPyThunk):
             # and type
             return np.empty(shape=self.shape, dtype=self.dtype)
 
-        if self.scalar:
+        if self.base.kind == Future:
+            # TODO: Updates to this "inline mapped" array won't actually
+            # write-through to the Future
             result = np.full(
                 self.shape,
                 self.get_scalar_array(),
@@ -336,6 +338,10 @@ class DeferredArray(NumPyThunk):
 
         self.numpy_array = weakref.ref(result)
         return result
+
+    @property
+    def can_write_through_numpy_array(self) -> bool:
+        return self.base.kind != Future
 
     # TODO: We should return a view of the field instead of a copy
     def imag(self) -> NumPyThunk:

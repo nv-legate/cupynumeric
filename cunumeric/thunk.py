@@ -86,6 +86,10 @@ class NumPyThunk(ABC):
     def __numpy_array__(self) -> npt.NDArray[Any]:
         ...
 
+    @abstractproperty
+    def can_write_through_numpy_array(self) -> bool:
+        ...
+
     @abstractmethod
     def imag(self) -> NumPyThunk:
         ...

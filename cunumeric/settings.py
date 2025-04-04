@@ -40,7 +40,7 @@ class CunumericRuntimeSettings(Settings):
     warn: PrioritizedSetting[bool] = PrioritizedSetting(
         "warn",
         "CUNUMERIC_WARN",
-        default=False,
+        default=True,
         convert=convert_bool,
         help="""
         Turn on warnings.
