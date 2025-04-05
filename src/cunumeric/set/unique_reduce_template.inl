@@ -19,6 +19,7 @@
 // Useful for IDEs
 #include "cunumeric/set/unique_reduce.h"
 #include "cunumeric/pitches.h"
+#include "cunumeric/set/zip_indices.h"
 
 #include <thrust/copy.h>
 #include <thrust/sort.h>
@@ -29,10 +30,21 @@ namespace cunumeric {
 
 using namespace legate;
 
+template <typename VAL>
+struct IndexFreeEqual {
+  bool operator()(const ZippedIndex<VAL>& a, const ZippedIndex<VAL>& b)
+  {
+    return a.value == b.value;
+  }
+};
+
 template <typename exe_pol_t>
 struct UniqueReduceImpl {
   template <Type::Code CODE>
-  void operator()(Array& output, std::vector<Array>& input_arrs, const exe_pol_t& exe_pol)
+  void operator()(Array& output,
+                  std::vector<Array>& input_arrs,
+                  const exe_pol_t& exe_pol,
+                  bool return_index)
   {
     using VAL = legate_type_of<CODE>;
 
@@ -41,33 +53,65 @@ struct UniqueReduceImpl {
       auto shape = input_arr.shape<1>();
       res_size += shape.hi[0] - shape.lo[0] + 1;
     }
-    auto result  = output.create_output_buffer<VAL, 1>(Point<1>(res_size));
-    VAL* res_ptr = result.ptr(0);
 
-    size_t offset = 0;
-    for (auto& input_arr : input_arrs) {
-      size_t strides[1];
-      Rect<1> shape     = input_arr.shape<1>();
-      size_t volume     = shape.volume();
-      const VAL* in_ptr = input_arr.read_accessor<VAL, 1>(shape).ptr(shape, strides);
-      assert(shape.volume() <= 1 || strides[0] == 1);
-      thrust::copy(exe_pol, in_ptr, in_ptr + volume, res_ptr + offset);
-      offset += volume;
+    // Is splitting into two completely distinct cases the most concise way to do this?
+    if (return_index) {
+      auto result = output.create_output_buffer<ZippedIndex<VAL>, 1>(Point<1>(res_size));
+      ZippedIndex<VAL>* res_ptr = result.ptr(0);
+
+      size_t offset = 0;
+      for (auto& input_arr : input_arrs) {
+        size_t strides[1];
+        Rect<1> shape = input_arr.shape<1>();
+        size_t volume = shape.volume();
+        const ZippedIndex<VAL>* in_ptr =
+          input_arr.read_accessor<ZippedIndex<VAL>, 1>(shape).ptr(shape, strides);
+        assert(shape.volume() <= 1 || strides[0] == 1);
+        thrust::copy(exe_pol, in_ptr, in_ptr + volume, res_ptr + offset);
+        offset += volume;
+      }
+      assert(offset == res_size);
+
+      thrust::sort(exe_pol, res_ptr, res_ptr + res_size, ZippedComparator<VAL>());
+      ZippedIndex<VAL>* actual_end =
+        thrust::unique(exe_pol, res_ptr, res_ptr + res_size, IndexFreeEqual<VAL>());
+      output.bind_data(result, Point<1>(actual_end - res_ptr));
+    } else {
+      auto result  = output.create_output_buffer<VAL, 1>(Point<1>(res_size));
+      VAL* res_ptr = result.ptr(0);
+
+      size_t offset = 0;
+      for (auto& input_arr : input_arrs) {
+        size_t strides[1];
+        Rect<1> shape     = input_arr.shape<1>();
+        size_t volume     = shape.volume();
+        const VAL* in_ptr = input_arr.read_accessor<VAL, 1>(shape).ptr(shape, strides);
+        assert(shape.volume() <= 1 || strides[0] == 1);
+        thrust::copy(exe_pol, in_ptr, in_ptr + volume, res_ptr + offset);
+        offset += volume;
+      }
+      assert(offset == res_size);
+
+      thrust::sort(exe_pol, res_ptr, res_ptr + res_size);
+      VAL* actual_end = thrust::unique(exe_pol, res_ptr, res_ptr + res_size);
+      output.bind_data(result, Point<1>(actual_end - res_ptr));
     }
-    assert(offset == res_size);
-
-    thrust::sort(exe_pol, res_ptr, res_ptr + res_size);
-    VAL* actual_end = thrust::unique(exe_pol, res_ptr, res_ptr + res_size);
-    output.bind_data(result, Point<1>(actual_end - res_ptr));
   }
 };
 
 template <typename exe_pol_t>
 static void unique_reduce_template(TaskContext& context, const exe_pol_t& exe_pol)
 {
-  auto& inputs = context.inputs();
-  auto& output = context.outputs()[0];
-  type_dispatch(output.code(), UniqueReduceImpl<exe_pol_t>{}, output, inputs, exe_pol);
+  auto& inputs      = context.inputs();
+  auto& output      = context.outputs()[0];
+  bool return_index = context.scalars()[0].value<bool>();
+  Type::Code code{output.code()};
+  if (return_index) {
+    assert(Type::Code::STRUCT == code);
+    auto& field_type = static_cast<const StructType&>(output.type()).field_type(0);
+    code             = field_type.code;
+  }
+  type_dispatch(code, UniqueReduceImpl<exe_pol_t>{}, output, inputs, exe_pol, return_index);
 }
 
 }  // namespace cunumeric

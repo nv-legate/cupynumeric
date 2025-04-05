@@ -31,41 +31,53 @@ def test_with_nonzero():
 
 
 @pytest.mark.parametrize("ndim", range(LEGATE_MAX_DIM + 1))
-def test_ndim(ndim):
-    shape = (4,) * ndim
+@pytest.mark.parametrize("return_index", (True, False))
+def test_ndim(ndim, return_index):
+    shape = (10,) * ndim
     a = num.random.randint(0, 3, size=shape)
     a_np = np.array(a)
 
-    b = np.unique(a)
-    b_np = num.unique(a_np)
+    b = np.unique(a, return_index=return_index)
+    b_np = num.unique(a_np, return_index=return_index)
 
-    assert np.array_equal(b, b_np)
+    if return_index:
+        assert num.array_equal(b[0], b_np[0])
+        assert num.array_equal(b[1], b_np[1])
+    else:
+        assert num.array_equal(b, b_np)
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize("return_index", (True, False))
 @pytest.mark.parametrize("return_inverse", (True, False))
 @pytest.mark.parametrize("return_counts", (True, False))
 @pytest.mark.parametrize("axis", (0, 1))
-def test_parameters(return_index, return_inverse, return_counts, axis):
+def test_parameters(return_inverse, return_counts, axis):
     arr_num = num.random.randint(0, 3, size=(3, 3))
     arr_np = np.array(arr_num)
     res_num = num.unique(
         arr_num,
-        return_index=return_index,
         return_inverse=return_inverse,
         return_counts=return_counts,
     )
     # cuNumeric raises NotImplementedError: Keyword arguments
-    # for `unique` are not yet supported
+    # for `unique` outside of return_index are not yet supported
     res_np = np.unique(
         arr_np,
-        return_index=return_index,
         return_inverse=return_inverse,
         return_counts=return_counts,
         axis=axis,
     )
     assert np.array_equal(res_np, res_num)
+
+
+def test_index_selection():
+    a = np.array([[1, 2, 3, 4, 1, 1, 9, 1, 1], [1, 4, 7, 2, 0, 1, 3, 10, 10]])
+
+    b_num = np.unique(a, return_index=True)
+    b_np = num.unique(a, return_index=True)
+
+    assert num.array_equal(b_num[0], b_np[0])
+    assert num.array_equal(b_num[1], b_np[1])
 
 
 if __name__ == "__main__":

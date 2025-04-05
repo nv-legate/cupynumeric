@@ -105,7 +105,8 @@ std::vector<StoreMapping> CuNumericMapper::store_mappings(
     }
     case CUNUMERIC_MATMUL:
     case CUNUMERIC_MATVECMUL:
-    case CUNUMERIC_UNIQUE_REDUCE: {
+    case CUNUMERIC_UNIQUE_REDUCE:
+    case CUNUMERIC_UNZIP_INDICES: {
       // TODO: Our actual requirements are a little less strict than this; we require each array or
       // vector to have a stride of 1 on at least one dimension.
       std::vector<StoreMapping> mappings;

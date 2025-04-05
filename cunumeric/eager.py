@@ -1713,11 +1713,21 @@ class EagerArray(NumPyThunk):
         else:
             raise RuntimeError(f"unsupported scan op {op}")
 
-    def unique(self) -> NumPyThunk:
+    def unique(
+        self, return_index: bool = False
+    ) -> Union[NumPyThunk, tuple[NumPyThunk, Optional[NumPyThunk]]]:
         if self.deferred is not None:
-            return self.deferred.unique()
+            return self.deferred.unique(return_index=return_index)
         else:
-            return EagerArray(self.runtime, np.unique(self.array))
+            if return_index:
+                np_values, np_indices = np.unique(
+                    self.array, return_index=return_index
+                )
+                return EagerArray(self.runtime, np_values), EagerArray(
+                    self.runtime, np_indices
+                )
+            else:
+                return EagerArray(self.runtime, np.unique(self.array))
 
     def create_window(self, op_code: WindowOpCode, M: int, *args: Any) -> None:
         if self.deferred is not None:

@@ -3487,25 +3487,76 @@ class DeferredArray(NumPyThunk):
             assert self.shape == swapped.shape
             self.copy(swapped, deep=True)
 
-    def unique(self) -> NumPyThunk:
-        result = self.runtime.create_unbound_thunk(self.base.type)
-
+    def unique(
+        self, return_index: bool = False
+    ) -> Union[NumPyThunk, tuple[NumPyThunk, Optional[NumPyThunk]]]:
         task = self.context.create_auto_task(CuNumericOpCode.UNIQUE)
 
-        task.add_output(result.base)
         task.add_input(self.base)
+        task.add_scalar_arg(return_index, ty.bool_)
 
+        result = None
+        # Assuming legate core will always choose GPU variant
+        # CPU uses legate.core Reduce op, which requires storing indices in struct
         if self.runtime.num_gpus > 0:
             task.add_nccl_communicator()
+            result = self.runtime.create_unbound_thunk(self.base.type)
+        elif return_index:
+            result = self.runtime.create_unbound_thunk(
+                ty.struct_type(
+                    [
+                        self.base.type,
+                        ty.int64,
+                    ],
+                    True,
+                )
+            )
+        else:
+            result = self.runtime.create_unbound_thunk(self.base.type)
+        task.add_output(result.base)
+
+        returned_indices = None
+        if return_index:
+            # GPU variant uses NCCL for reduction so can directly output indices
+            if self.runtime.num_gpus > 0:
+                returned_indices = self.runtime.create_unbound_thunk(ty.int64)
+                task.add_output(returned_indices.base)
+
+            for i in range(self.ndim):
+                task.add_scalar_arg(self.shape[i], ty.int32)
 
         task.execute()
 
-        if self.runtime.num_gpus == 0 and self.runtime.num_procs > 1:
-            result.base = self.context.tree_reduce(
-                CuNumericOpCode.UNIQUE_REDUCE, result.base
-            )
+        if self.runtime.num_gpus == 0:
+            if self.runtime.num_procs > 1:
+                result.base = self.context.tree_reduce(
+                    CuNumericOpCode.UNIQUE_REDUCE,
+                    result.base,
+                    scalar_args=[(return_index, ty.bool_)],
+                )
+            if return_index:
+                task = self.context.create_auto_task(CuNumericOpCode.UNZIP)
+                task.add_input(result.base)
 
-        return result
+                result = self.runtime.create_empty_thunk(
+                    result.shape, self.base.type
+                )
+                returned_indices = self.runtime.create_empty_thunk(
+                    result.shape, ty.int64
+                )
+
+                task.add_output(result.base)
+
+                returned_indices = cast(DeferredArray, returned_indices)
+                task.add_output(returned_indices.base)
+                task.add_alignment(result.base, returned_indices.base)
+
+                task.execute()
+
+        if return_index:
+            return result, returned_indices
+        else:
+            return result
 
     @auto_convert("rhs", "v")
     def searchsorted(self, rhs: Any, v: Any, side: SortSide = "left") -> None:

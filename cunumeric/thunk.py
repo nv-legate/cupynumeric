@@ -723,7 +723,9 @@ class NumPyThunk(ABC):
         ...
 
     @abstractmethod
-    def unique(self) -> NumPyThunk:
+    def unique(
+        self, return_index: bool = False
+    ) -> Union[NumPyThunk, tuple[NumPyThunk, Optional[NumPyThunk]]]:
         ...
 
     @abstractmethod

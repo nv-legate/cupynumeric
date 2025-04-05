@@ -6803,7 +6803,7 @@ def unique(
     return_inverse: bool = False,
     return_counts: bool = False,
     axis: Optional[int] = None,
-) -> ndarray:
+) -> Union[ndarray, tuple[ndarray, ndarray]]:
     """
 
     Find the unique elements of an array.
@@ -6868,12 +6868,13 @@ def unique(
     `axis` is also not handled currently.
 
     """
-    if _builtin_any((return_index, return_inverse, return_counts, axis)):
+    if _builtin_any((return_inverse, return_counts, axis)):
         raise NotImplementedError(
-            "Keyword arguments for `unique` are not yet supported"
+            "Keyword arguments for `unique` outside"
+            " of return_index are not yet supported"
         )
 
-    return ar.unique()
+    return ar.unique(return_index)
 
 
 ##################################

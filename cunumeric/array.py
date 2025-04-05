@@ -4152,7 +4152,9 @@ class ndarray:
             writeable=self._writeable,
         )
 
-    def unique(self) -> ndarray:
+    def unique(
+        self, return_index: bool = False
+    ) -> Union[ndarray, tuple[ndarray, ndarray]]:
         """a.unique()
 
         Find the unique elements of an array.
@@ -4168,8 +4170,21 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        thunk = self._thunk.unique()
-        return ndarray(shape=thunk.shape, thunk=thunk)
+        deferred_result = self._thunk.unique(return_index)
+        if return_index:
+            if TYPE_CHECKING:
+                deferred_result = cast(
+                    tuple[NumPyThunk, NumPyThunk], deferred_result
+                )
+            return ndarray(
+                shape=deferred_result[0].shape, thunk=deferred_result[0]
+            ), ndarray(
+                shape=deferred_result[1].shape, thunk=deferred_result[1]
+            )
+        else:
+            if TYPE_CHECKING:
+                deferred_result = cast(NumPyThunk, deferred_result)
+            return ndarray(shape=deferred_result.shape, thunk=deferred_result)
 
     @classmethod
     def _get_where_thunk(

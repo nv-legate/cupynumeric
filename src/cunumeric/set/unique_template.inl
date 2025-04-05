@@ -19,10 +19,19 @@
 // Useful for IDEs
 #include "cunumeric/set/unique.h"
 #include "cunumeric/pitches.h"
+#include "cunumeric/set/zip_indices.h"
 
 namespace cunumeric {
 
 using namespace legate;
+
+template <typename VAL>
+struct IndexEquality {
+  bool operator()(const ZippedIndex<VAL>& a, const ZippedIndex<VAL>& b) const
+  {
+    return a.value < b.value;
+  }
+};
 
 template <VariantKind KIND, Type::Code CODE, int32_t DIM>
 struct UniqueImplBody;
@@ -30,11 +39,13 @@ struct UniqueImplBody;
 template <VariantKind KIND>
 struct UniqueImpl {
   template <Type::Code CODE, int32_t DIM>
-  void operator()(Array& output,
+  void operator()(std::vector<Array>& outputs,
                   Array& input,
                   std::vector<comm::Communicator>& comms,
                   const DomainPoint& point,
-                  const Domain& launch_domain) const
+                  const Domain& launch_domain,
+                  const bool return_index,
+                  std::vector<int>& parent_extents) const
   {
     using VAL = legate_type_of<CODE>;
 
@@ -42,26 +53,42 @@ struct UniqueImpl {
     Pitches<DIM - 1> pitches;
     size_t volume = pitches.flatten(rect);
 
+    Point<DIM> parent_point;
+    if (return_index) {
+      for (int i = 0; i < DIM; i++) { parent_point[i] = parent_extents[i]; }
+    }
+
     auto in = input.read_accessor<VAL, DIM>(rect);
     UniqueImplBody<KIND, CODE, DIM>()(
-      output, in, pitches, rect, volume, comms, point, launch_domain);
+      outputs, in, pitches, rect, volume, comms, point, launch_domain, return_index, parent_point);
   }
 };
 
 template <VariantKind KIND>
 static void unique_template(TaskContext& context)
 {
-  auto& input  = context.inputs()[0];
-  auto& output = context.outputs()[0];
-  auto& comms  = context.communicators();
+  auto& input       = context.inputs()[0];
+  auto& outputs     = context.outputs();
+  auto& comms       = context.communicators();
+  bool return_index = context.scalars()[0].value<bool>();
+  if (outputs.size() > 1) { assert(return_index); }
+  std::vector<int> parent_extents(input.dim());
+  if (return_index) {
+    for (int i = 0; i < parent_extents.size(); i++) {
+      parent_extents[i] = context.scalars()[1 + i].value<int>();
+    }
+  }
+
   double_dispatch(input.dim(),
                   input.code(),
                   UniqueImpl<KIND>{},
-                  output,
+                  outputs,
                   input,
                   comms,
                   context.get_task_index(),
-                  context.get_launch_domain());
+                  context.get_launch_domain(),
+                  return_index,
+                  parent_extents);
 }
 
 }  // namespace cunumeric

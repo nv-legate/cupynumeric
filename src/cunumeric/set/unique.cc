@@ -25,25 +25,42 @@ template <Type::Code CODE, int32_t DIM>
 struct UniqueImplBody<VariantKind::CPU, CODE, DIM> {
   using VAL = legate_type_of<CODE>;
 
-  void operator()(Array& output,
+  void operator()(std::vector<Array>& outputs,
                   const AccessorRO<VAL, DIM>& in,
                   const Pitches<DIM - 1>& pitches,
                   const Rect<DIM>& rect,
                   const size_t volume,
                   const std::vector<comm::Communicator>& comms,
                   const DomainPoint& point,
-                  const Domain& launch_domain)
+                  const Domain& launch_domain,
+                  const bool return_index,
+                  const DomainPoint& parent_point)
   {
-    std::set<VAL> dedup_set;
+    auto& output = outputs[0];
+    if (return_index) {
+      std::set<ZippedIndex<VAL>, IndexEquality<VAL>> dedup_set;
+      for (size_t idx = 0; idx < volume; ++idx) {
+        auto p        = pitches.unflatten(idx, rect.lo);
+        auto value    = in[p];
+        int64_t index = rowwise_linearize(DIM, p, parent_point);
 
-    for (size_t idx = 0; idx < volume; ++idx) {
-      auto p = pitches.unflatten(idx, rect.lo);
-      dedup_set.insert(in[p]);
+        dedup_set.insert(ZippedIndex<VAL>({value, index}));
+      }
+
+      auto result = output.create_output_buffer<ZippedIndex<VAL>, 1>(dedup_set.size(), true);
+      size_t pos  = 0;
+      for (auto e : dedup_set) { result[pos++] = e; }
+    } else {
+      std::set<VAL> dedup_set;
+      for (size_t idx = 0; idx < volume; ++idx) {
+        auto p = pitches.unflatten(idx, rect.lo);
+        dedup_set.insert(in[p]);
+      }
+
+      auto result = output.create_output_buffer<VAL, 1>(dedup_set.size(), true);
+      size_t pos  = 0;
+      for (auto e : dedup_set) result[pos++] = e;
     }
-
-    auto result = output.create_output_buffer<VAL, 1>(dedup_set.size(), true);
-    size_t pos  = 0;
-    for (auto e : dedup_set) result[pos++] = e;
   }
 };
 

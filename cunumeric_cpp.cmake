@@ -164,6 +164,7 @@ list(APPEND cunumeric_SOURCES
   src/cunumeric/search/nonzero.cc
   src/cunumeric/set/unique.cc
   src/cunumeric/set/unique_reduce.cc
+  src/cunumeric/set/unzip_indices.cc
   src/cunumeric/stat/bincount.cc
   src/cunumeric/convolution/convolve.cc
   src/cunumeric/transform/flip.cc
@@ -217,6 +218,7 @@ if(Legion_USE_OpenMP)
     src/cunumeric/search/nonzero_omp.cc
     src/cunumeric/set/unique_omp.cc
     src/cunumeric/set/unique_reduce_omp.cc
+    src/cunumeric/set/unzip_indices_omp.cc
     src/cunumeric/stat/bincount_omp.cc
     src/cunumeric/convolution/convolve_omp.cc
     src/cunumeric/transform/flip_omp.cc

@@ -27,48 +27,96 @@ template <Type::Code CODE, int32_t DIM>
 struct UniqueImplBody<VariantKind::OMP, CODE, DIM> {
   using VAL = legate_type_of<CODE>;
 
-  void operator()(Array& output,
+  void operator()(std::vector<Array>& outputs,
                   const AccessorRO<VAL, DIM>& in,
                   const Pitches<DIM - 1>& pitches,
                   const Rect<DIM>& rect,
                   const size_t volume,
                   const std::vector<comm::Communicator>& comms,
                   const DomainPoint& point,
-                  const Domain& launch_domain)
+                  const Domain& launch_domain,
+                  const bool return_index,
+                  const DomainPoint& parent_point)
   {
+    auto& output           = outputs[0];
     const auto max_threads = omp_get_max_threads();
-    std::vector<std::set<VAL>> dedup_set(max_threads);
+
+    if (return_index) {
+      std::vector<std::set<ZippedIndex<VAL>, IndexEquality<VAL>>> dedup_set(max_threads);
 
 #pragma omp parallel
-    {
-      const int tid      = omp_get_thread_num();
-      auto& my_dedup_set = dedup_set[tid];
+      {
+        const int tid      = omp_get_thread_num();
+        auto& my_dedup_set = dedup_set[tid];
 #pragma omp for schedule(static)
-      for (size_t idx = 0; idx < volume; ++idx) {
-        auto p = pitches.unflatten(idx, rect.lo);
-        my_dedup_set.insert(in[p]);
-      }
-    }
+        for (size_t idx = 0; idx < volume; ++idx) {
+          auto p        = pitches.unflatten(idx, rect.lo);
+          auto value    = in[p];
+          int64_t index = rowwise_linearize(DIM, p, parent_point);
 
-    size_t remaining = max_threads;
-    size_t radix     = (max_threads + 1) / 2;
-    while (remaining > 1) {
-#pragma omp for schedule(static, 1)
-      for (size_t idx = 0; idx < radix; ++idx) {
-        if (idx + radix < remaining) {
-          auto& my_set    = dedup_set[idx];
-          auto& other_set = dedup_set[idx + radix];
-          my_set.insert(other_set.begin(), other_set.end());
+          my_dedup_set.insert(ZippedIndex<VAL>({value, index}));
         }
       }
-      remaining = radix;
-      radix     = (radix + 1) / 2;
-    }
 
-    auto& final_dedup_set = dedup_set[0];
-    auto result           = output.create_output_buffer<VAL, 1>(final_dedup_set.size(), true);
-    size_t pos            = 0;
-    for (auto e : final_dedup_set) result[pos++] = e;
+      size_t remaining = max_threads;
+      size_t radix     = (max_threads + 1) / 2;
+      while (remaining > 1) {
+#pragma omp for schedule(static, 1)
+        for (size_t idx = 0; idx < radix; ++idx) {
+          if (idx + radix < remaining) {
+            auto& my_set    = dedup_set[idx];
+            auto& other_set = dedup_set[idx + radix];
+
+            for (auto e : other_set) {
+              auto temp = my_set.find(e);
+              if (temp != my_set.end() && e.index < temp->index) my_set.erase(temp);
+              my_set.insert(e);
+            }
+          }
+        }
+        remaining = radix;
+        radix     = (radix + 1) / 2;
+      }
+
+      auto& final_dedup_set = dedup_set[0];
+      auto result = output.create_output_buffer<ZippedIndex<VAL>, 1>(final_dedup_set.size(), true);
+      size_t pos  = 0;
+      for (auto e : final_dedup_set) result[pos++] = e;
+
+    } else {
+      std::vector<std::set<VAL>> dedup_set(max_threads);
+
+#pragma omp parallel
+      {
+        const int tid      = omp_get_thread_num();
+        auto& my_dedup_set = dedup_set[tid];
+#pragma omp for schedule(static)
+        for (size_t idx = 0; idx < volume; ++idx) {
+          auto p = pitches.unflatten(idx, rect.lo);
+          my_dedup_set.insert(in[p]);
+        }
+      }
+
+      size_t remaining = max_threads;
+      size_t radix     = (max_threads + 1) / 2;
+      while (remaining > 1) {
+#pragma omp for schedule(static, 1)
+        for (size_t idx = 0; idx < radix; ++idx) {
+          if (idx + radix < remaining) {
+            auto& my_set    = dedup_set[idx];
+            auto& other_set = dedup_set[idx + radix];
+            my_set.insert(other_set.begin(), other_set.end());
+          }
+        }
+        remaining = radix;
+        radix     = (radix + 1) / 2;
+      }
+
+      auto& final_dedup_set = dedup_set[0];
+      auto result           = output.create_output_buffer<VAL, 1>(final_dedup_set.size(), true);
+      size_t pos            = 0;
+      for (auto e : final_dedup_set) result[pos++] = e;
+    }
   }
 };
 
