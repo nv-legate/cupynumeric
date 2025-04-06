@@ -44,11 +44,12 @@ canonical NumPy implementation.
 
 ## Installation
 
-cuPyNumeric is available from [conda](https://docs.conda.io/projects/conda/en/latest/index.html)
-on the [legate channel](https://anaconda.org/legate/cupynumeric).
-See https://docs.nvidia.com/cupynumeric/latest/installation.html for
-details about different install configurations, or building
-cuPyNumeric from source.
+Pre-built cuPyNumeric packages are available from
+[conda](https://docs.conda.io/projects/conda/en/latest/index.html) on the
+[legate channel](https://anaconda.org/legate/cupynumeric) and from
+[PyPI](https://pypi.org/project/nvidia-cupynumeric/). See
+https://docs.nvidia.com/cupynumeric/latest/installation.html for details about
+different install configurations, or building cuPyNumeric from source.
 
 ## Documentation
 
