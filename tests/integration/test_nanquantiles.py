@@ -96,6 +96,57 @@ def test_multi_axes(str_method, axes, qin_arr, keepdims, overwrite_input):
     assert allclose(np_q_out, q_out, atol=eps, equal_nan=True)
 
 
+@pytest.mark.parametrize("axes", (1, None))
+def test_keepdims(axes: int | None) -> None:
+    arr = np.asarray([[10.0, np.nan, 4.0], [4.0, 2.0, 2]])
+    np_out = np.nanquantile(
+        arr,
+        0.5,
+        axis=axes,
+        keepdims=True,
+    )
+    num_out = num.nanquantile(
+        arr,
+        0.5,
+        axis=axes,
+        keepdims=True,
+    )
+    assert np.array_equal(np_out, num_out)
+
+
+def test_complex_error() -> None:
+    arr = np.array([1 + 2j, np.nan + 0j, 5 + 6j])
+    msg_np = r"a must be an array of real numbers"
+    with pytest.raises(TypeError, match=msg_np):
+        np.nanquantile(arr, 0.5)
+
+    msg_num = r"input array cannot be of complex type"
+    with pytest.raises(TypeError, match=msg_num):
+        num.nanquantile(arr, 0.5)
+
+
+def test_output_shape() -> None:
+    arr = np.array([[10.0, np.nan, 4.0], [4.0, 2.0, 2]])
+    out_np = np.zeros(
+        2,
+    )
+    np.nanquantile(arr, 0.5, axis=1, out=out_np)
+
+    out_num = num.zeros(
+        2,
+    )
+    num.nanquantile(arr, 0.5, axis=1, out=out_num)
+    assert np.array_equal(out_np, out_num)
+
+
+def test_wrong_output_shape() -> None:
+    arr = np.array([[10.0, np.nan, 4.0], [4.0, 2.0, 2]])
+    out_num = num.zeros((2, 2))
+    msg = r"wrong shape on output array"
+    with pytest.raises(ValueError, match=msg):
+        num.nanquantile(arr, 0.5, axis=1, out=out_num)
+
+
 if __name__ == "__main__":
     import sys
 

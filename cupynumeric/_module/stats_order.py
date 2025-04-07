@@ -708,7 +708,8 @@ def nanquantile_impl(
         if qs_all.shape != qresult_shape:
             raise ValueError("wrong shape on output array")
 
-    assert non_nan_counts.shape == remaining_shape
+    if not keepdims:
+        assert non_nan_counts.shape == remaining_shape
 
     arr_gammas = zeros(remaining_shape, dtype=arr.dtype)
     arr_lvals = zeros(remaining_shape, dtype=arr.dtype)
