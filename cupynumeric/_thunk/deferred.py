@@ -143,9 +143,11 @@ def auto_convert(
         def wrapper(*args: Any, **kwargs: Any) -> R:
             # Convert relevant arguments to DeferredArrays
             args = tuple(
-                runtime.to_deferred_array(arg, read_only=True)
-                if idx in indices and arg is not None
-                else arg
+                (
+                    runtime.to_deferred_array(arg, read_only=True)
+                    if idx in indices and arg is not None
+                    else arg
+                )
                 for (idx, arg) in enumerate(args)
             )
             for k, v in kwargs.items():
@@ -1590,7 +1592,7 @@ class DeferredArray(NumPyThunk):
 
                 # TODO: better heuristics
                 def choose_2d_color_shape(
-                    shape: tuple[int, int]
+                    shape: tuple[int, int],
                 ) -> tuple[int, int]:
                     # 1M elements, we should probably even go larger
                     MIN_MATRIX_SIZE = 1 << 20

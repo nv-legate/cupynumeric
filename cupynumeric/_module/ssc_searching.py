@@ -197,8 +197,9 @@ def flatnonzero(a: ndarray) -> ndarray:
 
 
 @overload
-def where(a: npt.ArrayLike | ndarray, x: None, y: None) -> tuple[ndarray, ...]:
-    ...
+def where(
+    a: npt.ArrayLike | ndarray, x: None, y: None
+) -> tuple[ndarray, ...]: ...
 
 
 @overload
@@ -206,8 +207,7 @@ def where(
     a: npt.ArrayLike | ndarray,
     x: npt.ArrayLike | ndarray,
     y: npt.ArrayLike | ndarray,
-) -> ndarray:
-    ...
+) -> ndarray: ...
 
 
 @add_boilerplate("a", "x", "y")  # type: ignore [misc]

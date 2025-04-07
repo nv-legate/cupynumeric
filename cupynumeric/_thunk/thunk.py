@@ -74,24 +74,19 @@ class NumPyThunk(ABC):
     # Abstract methods
 
     @abstractproperty
-    def shape(self) -> NdShape:
-        ...
+    def shape(self) -> NdShape: ...
 
     @abstractmethod
-    def __numpy_array__(self) -> npt.NDArray[Any]:
-        ...
+    def __numpy_array__(self) -> npt.NDArray[Any]: ...
 
     @abstractmethod
-    def imag(self) -> NumPyThunk:
-        ...
+    def imag(self) -> NumPyThunk: ...
 
     @abstractmethod
-    def real(self) -> NumPyThunk:
-        ...
+    def real(self) -> NumPyThunk: ...
 
     @abstractmethod
-    def conj(self) -> NumPyThunk:
-        ...
+    def conj(self) -> NumPyThunk: ...
 
     @abstractmethod
     def convolve(
@@ -100,8 +95,7 @@ class NumPyThunk(ABC):
         filter: Any,
         mode: ConvolveMode,
         method: ConvolveMethod,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def fft(
@@ -110,43 +104,34 @@ class NumPyThunk(ABC):
         axes: Sequence[int],
         kind: FFTType,
         direction: FFTDirection,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def copy(self, rhs: Any, deep: bool) -> None:
-        ...
+    def copy(self, rhs: Any, deep: bool) -> None: ...
 
     @abstractmethod
     def repeat(
         self, repeats: Any, axis: int, scalar_repeats: bool
-    ) -> NumPyThunk:
-        ...
+    ) -> NumPyThunk: ...
 
     @property
     @abstractmethod
-    def scalar(self) -> bool:
-        ...
+    def scalar(self) -> bool: ...
 
     @abstractmethod
-    def get_item(self, key: Any) -> NumPyThunk:
-        ...
+    def get_item(self, key: Any) -> NumPyThunk: ...
 
     @abstractmethod
-    def set_item(self, key: Any, value: Any) -> None:
-        ...
+    def set_item(self, key: Any, value: Any) -> None: ...
 
     @abstractmethod
-    def reshape(self, newshape: NdShape, order: OrderType) -> NumPyThunk:
-        ...
+    def reshape(self, newshape: NdShape, order: OrderType) -> NumPyThunk: ...
 
     @abstractmethod
-    def squeeze(self, axis: int | tuple[int, ...] | None) -> NumPyThunk:
-        ...
+    def squeeze(self, axis: int | tuple[int, ...] | None) -> NumPyThunk: ...
 
     @abstractmethod
-    def swapaxes(self, axis1: int, axis2: int) -> NumPyThunk:
-        ...
+    def swapaxes(self, axis1: int, axis2: int) -> NumPyThunk: ...
 
     @abstractmethod
     def convert(
@@ -155,20 +140,16 @@ class NumPyThunk(ABC):
         warn: bool = True,
         nan_op: ConvertCode = ConvertCode.NOOP,
         temporary: bool = False,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def fill(self, value: Any) -> None:
-        ...
+    def fill(self, value: Any) -> None: ...
 
     @abstractmethod
-    def transpose(self, axes: tuple[int, ...] | list[int]) -> NumPyThunk:
-        ...
+    def transpose(self, axes: tuple[int, ...] | list[int]) -> NumPyThunk: ...
 
     @abstractmethod
-    def flip(self, rhs: Any, axes: int | tuple[int, ...] | None) -> None:
-        ...
+    def flip(self, rhs: Any, axes: int | tuple[int, ...] | None) -> None: ...
 
     @abstractmethod
     def contract(
@@ -179,12 +160,10 @@ class NumPyThunk(ABC):
         rhs2_thunk: Any,
         rhs2_modes: list[str],
         mode2extent: dict[str, int],
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def choose(self, rhs: Any, *args: Any) -> None:
-        ...
+    def choose(self, rhs: Any, *args: Any) -> None: ...
 
     @abstractmethod
     def select(
@@ -192,46 +171,38 @@ class NumPyThunk(ABC):
         condlist: Iterable[Any],
         choicelist: Iterable[Any],
         default: npt.NDArray[Any],
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def _diag_helper(
         self, rhs: Any, offset: int, naxes: int, extract: bool, trace: bool
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def put(self, indices: Any, values: Any, check_bounds: bool) -> None:
-        ...
+    def put(self, indices: Any, values: Any, check_bounds: bool) -> None: ...
 
     @abstractmethod
-    def putmask(self, mask: Any, values: Any) -> None:
-        ...
+    def putmask(self, mask: Any, values: Any) -> None: ...
 
     @abstractmethod
-    def eye(self, k: int) -> None:
-        ...
+    def eye(self, k: int) -> None: ...
 
     @abstractmethod
-    def arange(self, start: float, stop: float, step: float) -> None:
-        ...
+    def arange(self, start: float, stop: float, step: float) -> None: ...
 
     @abstractmethod
-    def tile(self, rhs: Any, reps: Any | Sequence[int]) -> None:
-        ...
+    def tile(self, rhs: Any, reps: Any | Sequence[int]) -> None: ...
 
     @abstractmethod
-    def trilu(self, rhs: Any, k: int, lower: bool) -> None:
-        ...
+    def trilu(self, rhs: Any, k: int, lower: bool) -> None: ...
 
     @abstractmethod
-    def bincount(self, rhs: Any, weights: NumPyThunk | None = None) -> None:
-        ...
+    def bincount(
+        self, rhs: Any, weights: NumPyThunk | None = None
+    ) -> None: ...
 
     @abstractmethod
-    def nonzero(self) -> tuple[NumPyThunk, ...]:
-        ...
+    def nonzero(self) -> tuple[NumPyThunk, ...]: ...
 
     @abstractmethod
     def bitgenerator_random_raw(
@@ -240,8 +211,7 @@ class NumPyThunk(ABC):
         generatorType: BitGeneratorType,
         seed: int | None,
         flags: int,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_integers(
@@ -252,8 +222,7 @@ class NumPyThunk(ABC):
         flags: int,
         low: int,
         high: int,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_uniform(
@@ -264,8 +233,7 @@ class NumPyThunk(ABC):
         flags: int,
         low: float,
         high: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_lognormal(
@@ -276,8 +244,7 @@ class NumPyThunk(ABC):
         flags: int,
         mean: float,
         sigma: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_normal(
@@ -288,8 +255,7 @@ class NumPyThunk(ABC):
         flags: int,
         mean: float,
         sigma: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_poisson(
@@ -299,8 +265,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         lam: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_exponential(
@@ -310,8 +275,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         scale: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_gumbel(
@@ -322,8 +286,7 @@ class NumPyThunk(ABC):
         flags: int,
         mu: float,
         beta: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_laplace(
@@ -334,8 +297,7 @@ class NumPyThunk(ABC):
         flags: int,
         mu: float,
         beta: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_logistic(
@@ -346,8 +308,7 @@ class NumPyThunk(ABC):
         flags: int,
         mu: float,
         beta: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_pareto(
@@ -357,8 +318,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         alpha: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_power(
@@ -368,8 +328,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         alpha: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_rayleigh(
@@ -379,8 +338,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         sigma: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_cauchy(
@@ -391,8 +349,7 @@ class NumPyThunk(ABC):
         flags: int,
         x0: float,
         gamma: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_triangular(
@@ -404,8 +361,7 @@ class NumPyThunk(ABC):
         a: float,
         b: float,
         c: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_weibull(
@@ -416,8 +372,7 @@ class NumPyThunk(ABC):
         flags: int,
         lam: float,
         k: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_bytes(
@@ -426,8 +381,7 @@ class NumPyThunk(ABC):
         generatorType: BitGeneratorType,
         seed: int | None,
         flags: int,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_beta(
@@ -438,8 +392,7 @@ class NumPyThunk(ABC):
         flags: int,
         a: float,
         b: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_f(
@@ -450,8 +403,7 @@ class NumPyThunk(ABC):
         flags: int,
         dfnum: float,
         dfden: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_logseries(
@@ -461,8 +413,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         p: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_noncentral_f(
@@ -474,8 +425,7 @@ class NumPyThunk(ABC):
         dfnum: float,
         dfden: float,
         nonc: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_chisquare(
@@ -486,8 +436,7 @@ class NumPyThunk(ABC):
         flags: int,
         df: float,
         nonc: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_gamma(
@@ -498,8 +447,7 @@ class NumPyThunk(ABC):
         flags: int,
         k: float,
         theta: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_standard_t(
@@ -509,8 +457,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         df: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_hypergeometric(
@@ -522,8 +469,7 @@ class NumPyThunk(ABC):
         ngood: int,
         nbad: int,
         nsample: int,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_vonmises(
@@ -534,8 +480,7 @@ class NumPyThunk(ABC):
         flags: int,
         mu: float,
         kappa: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_zipf(
@@ -545,8 +490,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         alpha: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_geometric(
@@ -556,8 +500,7 @@ class NumPyThunk(ABC):
         seed: int | None,
         flags: int,
         p: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_wald(
@@ -568,8 +511,7 @@ class NumPyThunk(ABC):
         flags: int,
         mean: float,
         scale: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_binomial(
@@ -580,8 +522,7 @@ class NumPyThunk(ABC):
         flags: int,
         ntrials: int,
         p: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def bitgenerator_negative_binomial(
@@ -592,12 +533,10 @@ class NumPyThunk(ABC):
         flags: int,
         ntrials: int,
         p: float,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def random_uniform(self) -> None:
-        ...
+    def random_uniform(self) -> None: ...
 
     @abstractmethod
     def partition(
@@ -608,24 +547,22 @@ class NumPyThunk(ABC):
         axis: int | None = -1,
         kind: SelectKind = "introselect",
         order: str | list[str] | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def random_normal(self) -> None:
-        ...
+    def random_normal(self) -> None: ...
 
     @abstractmethod
     def random_integer(
         self,
         low: int | npt.NDArray[Any],
         high: int | npt.NDArray[Any],
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def searchsorted(self, rhs: Any, v: Any, side: SortSide = "left") -> None:
-        ...
+    def searchsorted(
+        self, rhs: Any, v: Any, side: SortSide = "left"
+    ) -> None: ...
 
     @abstractmethod
     def sort(
@@ -635,8 +572,7 @@ class NumPyThunk(ABC):
         axis: int | None = -1,
         kind: SortType = "quicksort",
         order: str | list[str] | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def unary_op(
@@ -646,8 +582,7 @@ class NumPyThunk(ABC):
         where: Any,
         args: tuple[Scalar, ...] = (),
         multiout: Any | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def unary_reduction(
@@ -660,14 +595,12 @@ class NumPyThunk(ABC):
         keepdims: bool,
         args: tuple[Scalar, ...],
         initial: Any,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def isclose(
         self, rhs1: Any, rhs2: Any, rtol: float, atol: float, equal_nan: bool
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def binary_op(
@@ -677,8 +610,7 @@ class NumPyThunk(ABC):
         rhs2: Any,
         where: Any,
         args: tuple[Scalar, ...],
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def binary_reduction(
@@ -688,44 +620,34 @@ class NumPyThunk(ABC):
         rhs2: Any,
         broadcast: NdShape | None,
         args: tuple[Scalar, ...],
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def broadcast_to(self, shape: NdShape) -> NumPyThunk:
-        ...
+    def broadcast_to(self, shape: NdShape) -> NumPyThunk: ...
 
     @abstractmethod
-    def argwhere(self) -> NumPyThunk:
-        ...
+    def argwhere(self) -> NumPyThunk: ...
 
     @abstractmethod
-    def where(self, rhs1: Any, rhs2: Any, rhs3: Any) -> None:
-        ...
+    def where(self, rhs1: Any, rhs2: Any, rhs3: Any) -> None: ...
 
     @abstractmethod
-    def cholesky(self, src: Any) -> None:
-        ...
+    def cholesky(self, src: Any) -> None: ...
 
     @abstractmethod
-    def eig(self, ew: Any, ev: Any) -> None:
-        ...
+    def eig(self, ew: Any, ev: Any) -> None: ...
 
     @abstractmethod
-    def eigvals(self, ew: Any) -> None:
-        ...
+    def eigvals(self, ew: Any) -> None: ...
 
     @abstractmethod
-    def qr(self, q: Any, r: Any) -> None:
-        ...
+    def qr(self, q: Any, r: Any) -> None: ...
 
     @abstractmethod
-    def solve(self, a: Any, b: Any) -> None:
-        ...
+    def solve(self, a: Any, b: Any) -> None: ...
 
     @abstractmethod
-    def svd(self, u: Any, s: Any, vh: Any) -> None:
-        ...
+    def svd(self, u: Any, s: Any, vh: Any) -> None: ...
 
     @abstractmethod
     def scan(
@@ -735,39 +657,35 @@ class NumPyThunk(ABC):
         axis: int,
         dtype: npt.DTypeLike | None,
         nan_to_identity: bool,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def unique(self) -> NumPyThunk:
-        ...
+    def unique(self) -> NumPyThunk: ...
 
     @abstractmethod
-    def create_window(self, op_code: WindowOpCode, M: Any, *args: Any) -> None:
-        ...
+    def create_window(
+        self, op_code: WindowOpCode, M: Any, *args: Any
+    ) -> None: ...
 
     @abstractmethod
-    def packbits(self, src: Any, axis: int | None, bitorder: BitOrder) -> None:
-        ...
+    def packbits(
+        self, src: Any, axis: int | None, bitorder: BitOrder
+    ) -> None: ...
 
     @abstractmethod
     def unpackbits(
         self, src: Any, axis: int | None, bitorder: BitOrder
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def _wrap(self, src: Any, new_len: int) -> None:
-        ...
+    def _wrap(self, src: Any, new_len: int) -> None: ...
 
     @abstractmethod
-    def histogram(self, src: Any, bins: Any, weights: Any) -> None:
-        ...
+    def histogram(self, src: Any, bins: Any, weights: Any) -> None: ...
 
     @abstractmethod
     def stencil_hint(
         self,
         low_offsets: tuple[int, ...],
         high_offsets: tuple[int, ...],
-    ) -> None:
-        ...
+    ) -> None: ...

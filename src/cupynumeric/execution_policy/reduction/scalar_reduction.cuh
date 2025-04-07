@@ -49,10 +49,8 @@ static __global__ void __launch_bounds__(1, 1) copy_kernel(Buffer result, RedAcc
 template <class LG_OP, class Tag>
 struct ScalarReductionPolicy<VariantKind::GPU, LG_OP, Tag> {
   template <class AccessorRD, class LHS, class Kernel>
-  void __attribute__((visibility("hidden"))) operator()(size_t volume,
-                                                        AccessorRD& out,
-                                                        const LHS& identity,
-                                                        Kernel&& kernel)
+  void __attribute__((visibility("hidden"))) operator()(
+    size_t volume, AccessorRD & out, const LHS & identity, Kernel && kernel)
   {
     if (0 == volume) {
       return;

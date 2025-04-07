@@ -42,12 +42,12 @@ struct BincountImpl {
     auto rhs = args.rhs.read_accessor<VAL, 1>(rect);
     if (args.has_weights) {
       auto weights = args.weights.read_accessor<double, 1>(rect);
-      auto lhs =
-        args.lhs.reduce_accessor<SumReduction<double>, KIND != VariantKind::GPU, 1>(lhs_rect);
+      auto lhs     = args.lhs.reduce_accessor < SumReduction<double>, KIND != VariantKind::GPU,
+           1 > (lhs_rect);
       BincountImplBody<KIND, CODE>()(lhs, rhs, weights, rect, lhs_rect);
     } else {
-      auto lhs =
-        args.lhs.reduce_accessor<SumReduction<int64_t>, KIND != VariantKind::GPU, 1>(lhs_rect);
+      auto lhs = args.lhs.reduce_accessor < SumReduction<int64_t>, KIND != VariantKind::GPU,
+           1 > (lhs_rect);
       BincountImplBody<KIND, CODE>()(lhs, rhs, rect, lhs_rect);
     }
   }

@@ -48,6 +48,7 @@ def _fixup_version() -> str:
         return v
 
     from . import _version
+
     if hasattr(_version, "get_versions"):
         return _version.get_versions()["version"]  # type: ignore [no-untyped-call]
     if hasattr(_version, "__version__"):

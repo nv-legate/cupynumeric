@@ -118,7 +118,7 @@ class Philox_2x32 {
     // This syntax is only supported on >= c++17
     const float scale = 0x1.p-32;  // 2^-32
 #else
-    const float scale  = 0.00000000023283064365386962890625;
+    const float scale = 0.00000000023283064365386962890625;
 #endif
     return (bits * scale);
   }

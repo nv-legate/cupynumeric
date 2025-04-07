@@ -68,8 +68,7 @@ class BitGenerator:
         )
 
     @abstractproperty
-    def generatorType(self) -> BitGeneratorType:
-        ...
+    def generatorType(self) -> BitGeneratorType: ...
 
     def __del__(self) -> None:
         if self.handle != 0:

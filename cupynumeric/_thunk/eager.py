@@ -1467,17 +1467,21 @@ class EagerArray(NumPyThunk):
                 func(
                     rhs.array,
                     out=self.array,
-                    where=where
-                    if not isinstance(where, EagerArray)
-                    else where.array,
+                    where=(
+                        where
+                        if not isinstance(where, EagerArray)
+                        else where.array
+                    ),
                 )
             else:
                 func(
                     rhs.array,
                     out=(self.array, *(out.array for out in multiout)),
-                    where=where
-                    if not isinstance(where, EagerArray)
-                    else where.array,
+                    where=(
+                        where
+                        if not isinstance(where, EagerArray)
+                        else where.array
+                    ),
                 )
         elif op == UnaryOpCode.CLIP:
             np.clip(
@@ -1549,9 +1553,9 @@ class EagerArray(NumPyThunk):
                 out=self.array,
                 axis=orig_axis,
                 keepdims=keepdims,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
+                where=(
+                    where if not isinstance(where, EagerArray) else where.array
+                ),
                 **kws,
             )
         elif op == UnaryRedCode.SUM_SQUARES:
@@ -1560,9 +1564,9 @@ class EagerArray(NumPyThunk):
                 squared,
                 out=self.array,
                 axis=orig_axis,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
+                where=(
+                    where if not isinstance(where, EagerArray) else where.array
+                ),
                 keepdims=keepdims,
             )
         elif op == UnaryRedCode.VARIANCE:
@@ -1572,9 +1576,9 @@ class EagerArray(NumPyThunk):
             np.sum(
                 squares,
                 axis=orig_axis,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
+                where=(
+                    where if not isinstance(where, EagerArray) else where.array
+                ),
                 keepdims=keepdims,
                 out=self.array,
             )
@@ -1619,9 +1623,9 @@ class EagerArray(NumPyThunk):
                 rhs1.array,
                 rhs2.array,
                 out=self.array,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
+                where=(
+                    where if not isinstance(where, EagerArray) else where.array
+                ),
             )
 
     def binary_reduction(

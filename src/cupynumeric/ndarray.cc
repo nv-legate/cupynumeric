@@ -1715,8 +1715,7 @@ NDArray NDArray::reshape(std::vector<int64_t> newshape)
   // case 1: zero size
   if (size() == 0) {
     if (1 == num_unknowns) {
-      std::replace_if(
-        newshape.begin(), newshape.end(), [](auto x) { return x < 0; }, 0);
+      std::replace_if(newshape.begin(), newshape.end(), [](auto x) { return x < 0; }, 0);
     }
     auto out_size = vec_prod(newshape);
     if (out_size != 0) {
@@ -1738,8 +1737,7 @@ NDArray NDArray::reshape(std::vector<int64_t> newshape)
   if (unknown_extent * known_volume != size()) {
     throw std::invalid_argument("cannot reshape, size mismatch");
   }
-  std::replace_if(
-    newshape.begin(), newshape.end(), [](auto x) { return x < 0; }, unknown_extent);
+  std::replace_if(newshape.begin(), newshape.end(), [](auto x) { return x < 0; }, unknown_extent);
 
   auto in_shape  = shape();
   auto out_shape = vec_convert<int64_t, uint64_t>(newshape);

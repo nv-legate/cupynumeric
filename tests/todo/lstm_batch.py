@@ -137,9 +137,7 @@ class LSTM:
             tanhCt = Ct[t]
             dIFOGf[t, :, 2 * d : 3 * d] = tanhCt * dHout[t]
             # backprop tanh non-linearity first then continue backprop
-            dC[t] += (1 - tanhCt**2) * (
-                IFOGf[t, :, 2 * d : 3 * d] * dHout[t]
-            )
+            dC[t] += (1 - tanhCt**2) * (IFOGf[t, :, 2 * d : 3 * d] * dHout[t])
             if t > 0:
                 dIFOGf[t, :, d : 2 * d] = C[t - 1] * dC[t]
                 dC[t - 1] += IFOGf[t, :, d : 2 * d] * dC[t]

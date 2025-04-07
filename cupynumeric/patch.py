@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-""" This module may be imported in order to globably replace NumPy with
+"""This module may be imported in order to globably replace NumPy with
 cuPyNumeric.
 
 In order to function properly, this module must be imported early (ideally

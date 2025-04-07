@@ -168,26 +168,26 @@ TEST(Where, BroadcastShape)
 TEST(Where, EmptyAndScalar)
 {
   auto A        = mk_array<bool>({true},
-                          {
+                                 {
                             1,
                           });
   auto A_SCALAR = mk_array<bool>({false}, {});
   auto A_EMPTY  = mk_array<bool>({},
-                                {
+                                 {
                                   0,
                                 });
   auto X        = mk_array<int32_t>({10},
-                             {
+                                    {
                                1,
                              });
   auto Y        = mk_array<int32_t>({20},
-                             {
+                                    {
                                1,
                              });
   auto X_SCALAR = mk_array<int32_t>({10}, {});
   auto Y_SCALAR = mk_array<int32_t>({20}, {});
   auto EMPTY    = mk_array<int32_t>({},
-                                 {
+                                    {
                                    0,
                                  });
 

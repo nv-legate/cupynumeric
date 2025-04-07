@@ -676,9 +676,11 @@ class binary_ufunc(ufunc):
         else:
             to_dtypes = tuple(arr.dtype for arr in arrs)
             key = tuple(
-                arr.dtype.char
-                if type(orig) not in (int, float, complex)
-                else type(orig)
+                (
+                    arr.dtype.char
+                    if type(orig) not in (int, float, complex)
+                    else type(orig)
+                )
                 for orig, arr in zip(orig_args, arrs)
             )
             # When all inputs are scalars, cannot use weak logic below.

@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
+import scipy as sp
 from utils.comparisons import allclose
 
 import cupynumeric as num
-import scipy as sp
 
 SIZES = (4, 10)
 
@@ -36,55 +36,63 @@ ATOL = {
     np.dtype(np.complex128): 1e-8,
 }
 
-def make_skew_hermitian(n: int,
-                        min_v: float = 0.0,
-                        max_v: float = 100.0) -> np.ndarray:
-    num_off_d = int(n*(n-1)/2)
+
+def make_skew_hermitian(
+    n: int, min_v: float = 0.0, max_v: float = 100.0
+) -> np.ndarray:
+    num_off_d = int(n * (n - 1) / 2)
 
     np.random.seed(1729)
 
-    r_array = np.array([ np.random.uniform(min_v, max_v)
-                         for k in range(num_off_d)], dtype=np.dtype('float64'))
+    r_array = np.array(
+        [np.random.uniform(min_v, max_v) for k in range(num_off_d)],
+        dtype=np.dtype("float64"),
+    )
 
-    i_array = np.array([ np.random.uniform(min_v, max_v)
-                         for k in range(num_off_d)], dtype=np.dtype('float64'))
+    i_array = np.array(
+        [np.random.uniform(min_v, max_v) for k in range(num_off_d)],
+        dtype=np.dtype("float64"),
+    )
 
-    d_array = np.array([ np.random.uniform(min_v, max_v)
-                         for k in range(n)], dtype=np.dtype('float64'))
-    
-    mat = np.zeros((n, n), dtype=np.dtype('complex64'))
+    d_array = np.array(
+        [np.random.uniform(min_v, max_v) for k in range(n)],
+        dtype=np.dtype("float64"),
+    )
+
+    mat = np.zeros((n, n), dtype=np.dtype("complex64"))
 
     arr_index = 0
     for col in range(1, n):
         for row in range(0, col):
-            mat[row, col] = r_array[arr_index] + i_array[arr_index]*1.j
+            mat[row, col] = r_array[arr_index] + i_array[arr_index] * 1.0j
             mat[col, row] = -np.conjugate(mat[row, col])
 
             arr_index = arr_index + 1
 
         c_1 = col - 1
-        mat[c_1, c_1] = d_array[c_1]*1.j
+        mat[c_1, c_1] = d_array[c_1] * 1.0j
 
-    mat[n-1][n-1] = d_array[n-1]*1.j
+    mat[n - 1][n - 1] = d_array[n - 1] * 1.0j
 
     return mat
-        
-            
+
+
 def check_skew_hermitian(A: np.ndarray) -> bool:
     assert A.ndim == 2
     n = A.shape[0]
     assert n == A.shape[1]
-    num_half_off_d = int(n*(n-1)/2)
+    num_half_off_d = int(n * (n - 1) / 2)
 
-    arr_off_d = np.array([A[i, j] + np.conjugate(A[j, i]) for i in range(n)
-                          for j in range(i)],
-                         dtype=np.dtype('complex64'))
+    arr_off_d = np.array(
+        [A[i, j] + np.conjugate(A[j, i]) for i in range(n) for j in range(i)],
+        dtype=np.dtype("complex64"),
+    )
 
-    check_arr = np.zeros((num_half_off_d, ), dtype=np.dtype('complex64'))
+    check_arr = np.zeros((num_half_off_d,), dtype=np.dtype("complex64"))
     assert arr_off_d.size == num_half_off_d
-    
-    assert allclose(arr_off_d, check_arr, atol=ATOL[A.dtype],
-                    check_dtype=False
+
+    assert allclose(
+        arr_off_d, check_arr, atol=ATOL[A.dtype], check_dtype=False
     )
 
     assert np.all([np.real(A[k, k]) for k in range(n)] == np.zeros(n))
@@ -92,22 +100,18 @@ def check_skew_hermitian(A: np.ndarray) -> bool:
 
 
 @pytest.mark.parametrize("n", SIZES)
-@pytest.mark.parametrize(
-    "min_v", (0.0, )
-)
-@pytest.mark.parametrize(
-    "max_v", (10.0,)
-)
+@pytest.mark.parametrize("min_v", (0.0,))
+@pytest.mark.parametrize("max_v", (10.0,))
 def test_expm_rnd_sh_tensor_pade(n, min_v, max_v):
     m = 3
-    a = np.zeros(shape=(m,n,n), dtype=np.complex64)
+    a = np.zeros(shape=(m, n, n), dtype=np.complex64)
     for idx in np.ndindex(a.shape[:-2]):
         a[idx] = make_skew_hermitian(n, min_v, max_v)
 
     # more info for debug purposes:
     # (out_num, m, s) = num.linalg.expm_impl(a)
     #
-    out_num = num.linalg.expm(a, method='pade')
+    out_num = num.linalg.expm(a, method="pade")
     out_s = sp.linalg.expm(a)
 
     rtol = RTOL[out_num.dtype]
@@ -132,8 +136,8 @@ def test_expm_rnd_sh_tensor_pade(n, min_v, max_v):
             #
             # conversion to string shows more decimals...
             #
-            print("external ||exp(A)|| = %s\n"%(str(norm_exp_s)))
-            print("Cupynumeric ||exp(A)|| = %s\n"%(str(norm_exp_num)))
+            print("external ||exp(A)|| = %s\n" % (str(norm_exp_s)))
+            print("Cupynumeric ||exp(A)|| = %s\n" % (str(norm_exp_num)))
 
             assert np.abs(1.0 - norm_exp_num) <= np.abs(1.0 - norm_exp_s)
 
@@ -141,22 +145,18 @@ def test_expm_rnd_sh_tensor_pade(n, min_v, max_v):
 
 
 @pytest.mark.parametrize("n", SIZES)
-@pytest.mark.parametrize(
-    "min_v", (0.0, )
-)
-@pytest.mark.parametrize(
-    "max_v", (10.0,)
-)
+@pytest.mark.parametrize("min_v", (0.0,))
+@pytest.mark.parametrize("max_v", (10.0,))
 def test_expm_rnd_sh_tensor_taylor(n, min_v, max_v):
     m = 3
-    a = np.zeros(shape=(m,n,n), dtype=np.complex64)
+    a = np.zeros(shape=(m, n, n), dtype=np.complex64)
     for idx in np.ndindex(a.shape[:-2]):
         a[idx] = make_skew_hermitian(n, min_v, max_v)
 
     # more info for debug purposes:
     # (out_num, m, s) = num.linalg.expm_impl(a)
     #
-    out_num = num.linalg.expm(a, method='taylor')
+    out_num = num.linalg.expm(a, method="taylor")
     out_s = sp.linalg.expm(a)
 
     rtol = RTOL[out_num.dtype]
@@ -181,8 +181,8 @@ def test_expm_rnd_sh_tensor_taylor(n, min_v, max_v):
             #
             # conversion to string shows more decimals...
             #
-            print("external ||exp(A)|| = %s\n"%(str(norm_exp_s)))
-            print("Cupynumeric ||exp(A)|| = %s\n"%(str(norm_exp_num)))
+            print("external ||exp(A)|| = %s\n" % (str(norm_exp_s)))
+            print("Cupynumeric ||exp(A)|| = %s\n" % (str(norm_exp_num)))
 
             assert np.abs(1.0 - norm_exp_num) <= np.abs(1.0 - norm_exp_s)
 

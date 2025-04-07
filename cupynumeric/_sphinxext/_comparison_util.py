@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from ._comparison_config import SectionConfig
 
 YES = "\u2713"
-NO = "\u274C"
+NO = "\u274c"
 
 
 @dataclass(frozen=True)

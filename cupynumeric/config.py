@@ -285,20 +285,18 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_ZIP: int
 
     @abstractmethod
-    def cupynumeric_has_cusolvermp(self) -> bool:
-        ...
+    def cupynumeric_has_cusolvermp(self) -> bool: ...
 
     @abstractmethod
-    def cupynumeric_cusolver_has_geev(self) -> bool:
-        ...
+    def cupynumeric_cusolver_has_geev(self) -> bool: ...
 
     @abstractmethod
-    def cupynumeric_max_eager_volume(self) -> int:
-        ...
+    def cupynumeric_max_eager_volume(self) -> int: ...
 
     @abstractmethod
-    def cupynumeric_register_reduction_ops(self, code: int) -> _ReductionOpIds:
-        ...
+    def cupynumeric_register_reduction_ops(
+        self, code: int
+    ) -> _ReductionOpIds: ...
 
 
 def dlopen_no_autoclose(ffi: Any, lib_path: str) -> Any:

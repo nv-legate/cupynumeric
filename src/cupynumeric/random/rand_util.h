@@ -20,7 +20,7 @@
 #include "cupynumeric/random/philox.h"
 
 #define HI_BITS(x) (static_cast<unsigned>((x) >> 32))
-#define LO_BITS(x) (static_cast<unsigned>((x)&0x00000000FFFFFFFF))
+#define LO_BITS(x) (static_cast<unsigned>((x) & 0x00000000FFFFFFFF))
 
 namespace cupynumeric {
 
