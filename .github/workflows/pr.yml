@@ -23,7 +23,7 @@ jobs:
       build-type: pull-request
       # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1893
       # Remove this once we have uploads to PyPi.
-      legate-sha: bbecd8997cef88d2fdca0cd7246dddcb577daa5e
+      legate-sha: 75dc0a92bbd2dfb79b6b680a0f37cbd0370d0181
   wheels-test:
     needs: wheels-build
     secrets: inherit
@@ -32,4 +32,4 @@ jobs:
       build-type: pull-request
       # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1893
       # Remove this once we have uploads to PyPi.
-      legate-sha: bbecd8997cef88d2fdca0cd7246dddcb577daa5e
+      legate-sha: 75dc0a92bbd2dfb79b6b680a0f37cbd0370d0181
