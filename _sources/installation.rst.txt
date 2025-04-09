@@ -24,6 +24,11 @@ on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
    # into an existing environment
    $ conda install -c conda-forge -c legate cupynumeric
 
+.. important::
+
+   Packages are only offered for Linux (x86_64 and aarch64) supporting Python
+   versions 3.10 to 3.12.
+
 Installing PyPI Packages
 ------------------------
 
@@ -47,8 +52,13 @@ This will install the latest version of cuPyNumeric and the corresponding
 version of `Legate <https://github.com/nv-legate/legate>`_.
 
 The cuPyNumeric package on PyPI is multi-node and multi-rank capable.  Please
-check `Legate <https://docs.nvidia.com/legate>`_ documentation to find more
-details about running on multiple nodes.
+check `Legate <https://docs.nvidia.com/legate/latest/networking-wheels.html>`_
+documentation to find more details about running on multiple nodes.
+
+.. important::
+
+   Packages are only offered for Linux (x86_64 and aarch64) supporting Python
+   versions 3.10 to 3.12.
 
 Verify your Installation
 ------------------------
