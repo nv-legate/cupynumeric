@@ -23,7 +23,7 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.29
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@use_nv_proxy_cache
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
@@ -33,10 +33,11 @@ jobs:
       use-container: ${{ inputs.platform == 'linux' }}
       platform: ${{ inputs.platform }}
       dependencies-file: ""
-      legate-gh-ci-tag: "v1.29"
+      legate-gh-ci-tag: "use_nv_proxy_cache"
       build-mode: ${{ inputs.build-mode }}
       upload-enabled: false
       network: "ucx"
+      setup-python-proxy-cache: true
     secrets: inherit
 
 

@@ -49,14 +49,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.29
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@use_nv_proxy_cache
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: ""
-      legate-gh-ci-tag: "v1.29"
+      legate-gh-ci-tag: "use_nv_proxy_cache"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -64,6 +64,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       upload-enabled: ${{ inputs.upload-enabled }}
       use-container: ${{ inputs.platform == 'linux' || inputs.platform == 'linux-aarch64' }}
+      setup-python-proxy-cache: true
     secrets: inherit
 
   upload:
@@ -154,6 +155,12 @@ jobs:
                 TEST_OPTIONS=${CONFIG_INFO[1]}
                 TEST_TARGET_DEVICE=${CONFIG_INFO[2]}
 
+                if [[ "${RUNNER_DEVICE}" != "2gpu" ]]; then
+                  SETUP_PYTHON_PROXY_CACHE=true
+                else
+                  SETUP_PYTHON_PROXY_CACHE=false
+                fi
+
                 # Note: we don't have enough linux-aarch64 GPU runners to
                 # support per commit testing. This is why these tests are waived
                 # here.
@@ -161,7 +168,7 @@ jobs:
 
                 if [[ "$TEST_TARGET_DEVICE" == "$RUNNER_DEVICE" ]]; then
                   if [[ "${WAIVE_TEST}" == "false" ]]; then
-                    MATRIX_JSON+="{\"runner\": {\"name\": \"$RUNNER_NAME\", \"type\": \"$RUNNER_TYPE\", \"platform\": \"$RUNNER_PLATFORM\"}, \"test-config\": {\"name\": \"$TEST_NAME\", \"test-options\": \"$TEST_OPTIONS\"}},"
+                    MATRIX_JSON+="{\"runner\": {\"name\": \"$RUNNER_NAME\", \"type\": \"$RUNNER_TYPE\", \"platform\": \"$RUNNER_PLATFORM\", \"setup-python-proxy-cache\": ${SETUP_PYTHON_PROXY_CACHE}}, \"test-config\": {\"name\": \"$TEST_NAME\", \"test-options\": \"$TEST_OPTIONS\"}},"
                   fi
                 fi
               done
@@ -185,14 +192,14 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.29
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@use_nv_proxy_cache
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "v1.29"
+      legate-gh-ci-tag: "use_nv_proxy_cache"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -201,6 +208,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       test-options: ${{ matrix.test-config.test-options }}
       upload-enabled: ${{ inputs.upload-enabled }}
+      setup-python-proxy-cache: ${{ matrix.runner.setup-python-proxy-cache }}
     secrets: inherit
 
   updateTestStatus:
