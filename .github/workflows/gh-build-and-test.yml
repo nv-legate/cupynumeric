@@ -72,13 +72,13 @@ jobs:
     if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
     name: Upload package to Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.29
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.31
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.29"
+      legate-gh-ci-tag: "v1.31"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -216,13 +216,13 @@ jobs:
     name: Update Test status on Server
     if: ${{ false }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.29
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.31
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.29"
+      legate-gh-ci-tag: "v1.31"
       name: UpdateTestStatus
       network: "ucx"
       pkgSubString: "cupynumeric-"
