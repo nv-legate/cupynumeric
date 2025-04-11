@@ -47,8 +47,8 @@ This will install the latest version of cuPyNumeric and the corresponding
 version of `Legate <https://github.com/nv-legate/legate>`_.
 
 The cuPyNumeric package on PyPI is multi-node and multi-rank capable.  Please
-check `Legate <https://docs.nvidia.com/legate>`_ documentation to find more
-details about running on multiple nodes.
+check `Legate <https://docs.nvidia.com/legate/latest/networking-wheels.html>`_
+documentation to find more details about running on multiple nodes.
 
 Verify your Installation
 ------------------------
