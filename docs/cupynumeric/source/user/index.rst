@@ -9,3 +9,4 @@ User guide
   howtos/index
   advanced
   differences
+  tutorial
