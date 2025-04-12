@@ -51,6 +51,11 @@ Pre-built cuPyNumeric packages are available from
 https://docs.nvidia.com/cupynumeric/latest/installation.html for details about
 different install configurations, or building cuPyNumeric from source.
 
+📌 **Note**
+
+Packages are only offered for Linux (x86_64 and aarch64) supporting Python
+versions 3.10 to 3.12.
+
 ## Documentation
 
 The cuPyNumeric documentation can be found
