@@ -64,6 +64,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       test-options: docs
       upload-enabled: false
+      setup-python-proxy-cache: true
     secrets: inherit
 
 
