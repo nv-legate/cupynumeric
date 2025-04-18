@@ -1,0 +1,2081 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tutorial &#8212; NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373)</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=df3ac72c" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/params.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=1e12efde"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=4ea706d9"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user/tutorial';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '25.05';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            true;
+        </script>
+    <link rel="icon" href="../_static/favicon.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Examples" href="../examples/index.html" />
+    <link rel="prev" title="Differences with Numpy" href="differences.html" />
+
+<script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js"></script>
+
+
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373) - Home"/>
+  
+  
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373)</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373) - Home"/>
+  
+  
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+32.gbab08373)</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">User guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="practices.html">Best practices</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="howtos/measuring.html">Measure API coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="howtos/benchmarking.html">Performance Benchmarking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="howtos/patching.html">Trying Numpy code without changes</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="differences.html">Differences with Numpy</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Tutorial</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/black_scholes.html">Black-Scholes options pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/cholesky.html">Cholesky decomposition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/stencil.html">Jacobi stencil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/kmeans.html">K-Means Clustering Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/edge_detection.html">Edge Detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/newton_raphson_2d.html">Newton Raphson Method In Two Dimensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/compact_finite_difference.html">Compact Finite Difference Scheme</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/torchswe.html">TorchSWE case study</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/classes.html">Classes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/broadcast.html">cupynumeric.broadcast</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/ndarray.html">The N-Dimensional array (<code class="xref py py-class docutils literal notranslate"><span class="pre">cupynumeric.ndarray</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/_ndarray.html">cupynumeric.ndarray</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.all.html">cupynumeric.ndarray.all</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.any.html">cupynumeric.ndarray.any</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.flags.html">cupynumeric.ndarray.flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.shape.html">cupynumeric.ndarray.shape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.strides.html">cupynumeric.ndarray.strides</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.ndim.html">cupynumeric.ndarray.ndim</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.data.html">cupynumeric.ndarray.data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.size.html">cupynumeric.ndarray.size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.itemsize.html">cupynumeric.ndarray.itemsize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.nbytes.html">cupynumeric.ndarray.nbytes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.base.html">cupynumeric.ndarray.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.ctypes.html">cupynumeric.ndarray.ctypes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.dtype.html">cupynumeric.ndarray.dtype</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.T.html">cupynumeric.ndarray.T</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.real.html">cupynumeric.ndarray.real</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.imag.html">cupynumeric.ndarray.imag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.flat.html">cupynumeric.ndarray.flat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.item.html">cupynumeric.ndarray.item</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.tolist.html">cupynumeric.ndarray.tolist</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.itemset.html">cupynumeric.ndarray.itemset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.tostring.html">cupynumeric.ndarray.tostring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.tobytes.html">cupynumeric.ndarray.tobytes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.tofile.html">cupynumeric.ndarray.tofile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.dump.html">cupynumeric.ndarray.dump</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.dumps.html">cupynumeric.ndarray.dumps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.astype.html">cupynumeric.ndarray.astype</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.copy.html">cupynumeric.ndarray.copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.view.html">cupynumeric.ndarray.view</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.getfield.html">cupynumeric.ndarray.getfield</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.setfield.html">cupynumeric.ndarray.setfield</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.setflags.html">cupynumeric.ndarray.setflags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.fill.html">cupynumeric.ndarray.fill</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.reshape.html">cupynumeric.ndarray.reshape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.transpose.html">cupynumeric.ndarray.transpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.swapaxes.html">cupynumeric.ndarray.swapaxes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.flatten.html">cupynumeric.ndarray.flatten</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.ravel.html">cupynumeric.ndarray.ravel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.squeeze.html">cupynumeric.ndarray.squeeze</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.take.html">cupynumeric.ndarray.take</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.put.html">cupynumeric.ndarray.put</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.choose.html">cupynumeric.ndarray.choose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.sort.html">cupynumeric.ndarray.sort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.argsort.html">cupynumeric.ndarray.argsort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.partition.html">cupynumeric.ndarray.partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.argpartition.html">cupynumeric.ndarray.argpartition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.searchsorted.html">cupynumeric.ndarray.searchsorted</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.nonzero.html">cupynumeric.ndarray.nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.compress.html">cupynumeric.ndarray.compress</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.diagonal.html">cupynumeric.ndarray.diagonal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.trace.html">cupynumeric.ndarray.trace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.max.html">cupynumeric.ndarray.max</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.argmax.html">cupynumeric.ndarray.argmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.min.html">cupynumeric.ndarray.min</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.argmin.html">cupynumeric.ndarray.argmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.clip.html">cupynumeric.ndarray.clip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.conj.html">cupynumeric.ndarray.conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.conjugate.html">cupynumeric.ndarray.conjugate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.dot.html">cupynumeric.ndarray.dot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.flip.html">cupynumeric.ndarray.flip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.sum.html">cupynumeric.ndarray.sum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.cumsum.html">cupynumeric.ndarray.cumsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.mean.html">cupynumeric.ndarray.mean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.var.html">cupynumeric.ndarray.var</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.prod.html">cupynumeric.ndarray.prod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.cumprod.html">cupynumeric.ndarray.cumprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.all.html">cupynumeric.ndarray.all</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.any.html">cupynumeric.ndarray.any</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.unique.html">cupynumeric.ndarray.unique</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__lt__.html">cupynumeric.ndarray.__lt__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__le__.html">cupynumeric.ndarray.__le__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__gt__.html">cupynumeric.ndarray.__gt__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ge__.html">cupynumeric.ndarray.__ge__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__eq__.html">cupynumeric.ndarray.__eq__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ne__.html">cupynumeric.ndarray.__ne__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__bool__.html">cupynumeric.ndarray.__bool__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__neg__.html">cupynumeric.ndarray.__neg__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__pos__.html">cupynumeric.ndarray.__pos__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__abs__.html">cupynumeric.ndarray.__abs__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__invert__.html">cupynumeric.ndarray.__invert__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__add__.html">cupynumeric.ndarray.__add__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__sub__.html">cupynumeric.ndarray.__sub__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__mul__.html">cupynumeric.ndarray.__mul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__truediv__.html">cupynumeric.ndarray.__truediv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__floordiv__.html">cupynumeric.ndarray.__floordiv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__mod__.html">cupynumeric.ndarray.__mod__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__divmod__.html">cupynumeric.ndarray.__divmod__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__pow__.html">cupynumeric.ndarray.__pow__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__lshift__.html">cupynumeric.ndarray.__lshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__rshift__.html">cupynumeric.ndarray.__rshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__and__.html">cupynumeric.ndarray.__and__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__or__.html">cupynumeric.ndarray.__or__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__xor__.html">cupynumeric.ndarray.__xor__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__iadd__.html">cupynumeric.ndarray.__iadd__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__isub__.html">cupynumeric.ndarray.__isub__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__imul__.html">cupynumeric.ndarray.__imul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__itruediv__.html">cupynumeric.ndarray.__itruediv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ifloordiv__.html">cupynumeric.ndarray.__ifloordiv__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__imod__.html">cupynumeric.ndarray.__imod__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ipow__.html">cupynumeric.ndarray.__ipow__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ilshift__.html">cupynumeric.ndarray.__ilshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__irshift__.html">cupynumeric.ndarray.__irshift__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__iand__.html">cupynumeric.ndarray.__iand__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ior__.html">cupynumeric.ndarray.__ior__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__ixor__.html">cupynumeric.ndarray.__ixor__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__matmul__.html">cupynumeric.ndarray.__matmul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__imatmul__.html">cupynumeric.ndarray.__imatmul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__rmatmul__.html">cupynumeric.ndarray.__rmatmul__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__copy__.html">cupynumeric.ndarray.__copy__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__deepcopy__.html">cupynumeric.ndarray.__deepcopy__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__index__.html">cupynumeric.ndarray.__index__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__reduce__.html">cupynumeric.ndarray.__reduce__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__setstate__.html">cupynumeric.ndarray.__setstate__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__new__.html">cupynumeric.ndarray.__new__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__array__.html">cupynumeric.ndarray.__array__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__len__.html">cupynumeric.ndarray.__len__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__getitem__.html">cupynumeric.ndarray.__getitem__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__setitem__.html">cupynumeric.ndarray.__setitem__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__contains__.html">cupynumeric.ndarray.__contains__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__int__.html">cupynumeric.ndarray.__int__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__float__.html">cupynumeric.ndarray.__float__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__complex__.html">cupynumeric.ndarray.__complex__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__str__.html">cupynumeric.ndarray.__str__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndarray.__repr__.html">cupynumeric.ndarray.__repr__</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/routines.html">Routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/creation.html">Array creation routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.empty.html">cupynumeric.empty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.empty_like.html">cupynumeric.empty_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.eye.html">cupynumeric.eye</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.identity.html">cupynumeric.identity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ones.html">cupynumeric.ones</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ones_like.html">cupynumeric.ones_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.zeros.html">cupynumeric.zeros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.zeros_like.html">cupynumeric.zeros_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.full.html">cupynumeric.full</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.full_like.html">cupynumeric.full_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.array.html">cupynumeric.array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.asarray.html">cupynumeric.asarray</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.copy.html">cupynumeric.copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.repeat.html">cupynumeric.repeat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arange.html">cupynumeric.arange</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linspace.html">cupynumeric.linspace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.meshgrid.html">cupynumeric.meshgrid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.diag.html">cupynumeric.diag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tri.html">cupynumeric.tri</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tril.html">cupynumeric.tril</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.triu.html">cupynumeric.triu</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/manipulation.html">Array manipulation routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ndim.html">cupynumeric.ndim</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.shape.html">cupynumeric.shape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.reshape.html">cupynumeric.reshape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ravel.html">cupynumeric.ravel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.moveaxis.html">cupynumeric.moveaxis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.swapaxes.html">cupynumeric.swapaxes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.transpose.html">cupynumeric.transpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.atleast_1d.html">cupynumeric.atleast_1d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.atleast_2d.html">cupynumeric.atleast_2d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.atleast_3d.html">cupynumeric.atleast_3d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.broadcast_arrays.html">cupynumeric.broadcast_arrays</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.broadcast_shapes.html">cupynumeric.broadcast_shapes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.broadcast_to.html">cupynumeric.broadcast_to</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.expand_dims.html">cupynumeric.expand_dims</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.squeeze.html">cupynumeric.squeeze</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.asarray.html">cupynumeric.asarray</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.append.html">cupynumeric.append</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.concatenate.html">cupynumeric.concatenate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.stack.html">cupynumeric.stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.block.html">cupynumeric.block</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.vstack.html">cupynumeric.vstack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.hstack.html">cupynumeric.hstack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.dstack.html">cupynumeric.dstack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.column_stack.html">cupynumeric.column_stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.row_stack.html">cupynumeric.row_stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.split.html">cupynumeric.split</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.array_split.html">cupynumeric.array_split</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.dsplit.html">cupynumeric.dsplit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.hsplit.html">cupynumeric.hsplit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.vsplit.html">cupynumeric.vsplit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tile.html">cupynumeric.tile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.flip.html">cupynumeric.flip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fliplr.html">cupynumeric.fliplr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.flipud.html">cupynumeric.flipud</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.roll.html">cupynumeric.roll</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.rot90.html">cupynumeric.rot90</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/binary.html">Binary operations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.bitwise_and.html">cupynumeric.bitwise_and</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.bitwise_or.html">cupynumeric.bitwise_or</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.bitwise_xor.html">cupynumeric.bitwise_xor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.invert.html">cupynumeric.invert</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.left_shift.html">cupynumeric.left_shift</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.right_shift.html">cupynumeric.right_shift</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.packbits.html">cupynumeric.packbits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.unpackbits.html">cupynumeric.unpackbits</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/datatype.html">Data type routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.find_common_type.html">cupynumeric.find_common_type</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/indexing.html">Indexing routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.unravel_index.html">cupynumeric.unravel_index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.diag_indices.html">cupynumeric.diag_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.diag_indices_from.html">cupynumeric.diag_indices_from</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.mask_indices.html">cupynumeric.mask_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tril_indices.html">cupynumeric.tril_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tril_indices_from.html">cupynumeric.tril_indices_from</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.triu_indices.html">cupynumeric.triu_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.triu_indices_from.html">cupynumeric.triu_indices_from</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.indices.html">cupynumeric.indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ix_.html">cupynumeric.ix_</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nonzero.html">cupynumeric.nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.flatnonzero.html">cupynumeric.flatnonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.where.html">cupynumeric.where</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.choose.html">cupynumeric.choose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.compress.html">cupynumeric.compress</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.diag.html">cupynumeric.diag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.diagonal.html">cupynumeric.diagonal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.select.html">cupynumeric.select</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.take.html">cupynumeric.take</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.take_along_axis.html">cupynumeric.take_along_axis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fill_diagonal.html">cupynumeric.fill_diagonal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.put.html">cupynumeric.put</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.putmask.html">cupynumeric.putmask</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.put_along_axis.html">cupynumeric.put_along_axis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.place.html">cupynumeric.place</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/io.html">Input and output</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.load.html">cupynumeric.load</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/linalg.html">Linear algebra (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cupynumeric.linalg</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.dot.html">cupynumeric.dot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.vdot.html">cupynumeric.vdot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.inner.html">cupynumeric.inner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.outer.html">cupynumeric.outer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.matmul.html">cupynumeric.matmul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tensordot.html">cupynumeric.tensordot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.einsum.html">cupynumeric.einsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.einsum_path.html">cupynumeric.einsum_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.matrix_power.html">cupynumeric.linalg.matrix_power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.multi_dot.html">cupynumeric.linalg.multi_dot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.cholesky.html">cupynumeric.linalg.cholesky</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.eig.html">cupynumeric.linalg.eig</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.eigvals.html">cupynumeric.linalg.eigvals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.qr.html">cupynumeric.linalg.qr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.svd.html">cupynumeric.linalg.svd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.norm.html">cupynumeric.linalg.norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.trace.html">cupynumeric.trace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.solve.html">cupynumeric.linalg.solve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.linalg.expm.html">cupynumeric.linalg.expm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/logic.html">Logic functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.all.html">cupynumeric.all</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.any.html">cupynumeric.any</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isfinite.html">cupynumeric.isfinite</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isinf.html">cupynumeric.isinf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isnan.html">cupynumeric.isnan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isneginf.html">cupynumeric.isneginf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isposinf.html">cupynumeric.isposinf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.iscomplex.html">cupynumeric.iscomplex</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.iscomplexobj.html">cupynumeric.iscomplexobj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isreal.html">cupynumeric.isreal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isrealobj.html">cupynumeric.isrealobj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isscalar.html">cupynumeric.isscalar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.logical_and.html">cupynumeric.logical_and</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.logical_or.html">cupynumeric.logical_or</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.logical_not.html">cupynumeric.logical_not</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.logical_xor.html">cupynumeric.logical_xor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.allclose.html">cupynumeric.allclose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.isclose.html">cupynumeric.isclose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.array_equal.html">cupynumeric.array_equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.greater.html">cupynumeric.greater</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.greater_equal.html">cupynumeric.greater_equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.less.html">cupynumeric.less</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.less_equal.html">cupynumeric.less_equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.equal.html">cupynumeric.equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.not_equal.html">cupynumeric.not_equal</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/math.html">Mathematical functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sin.html">cupynumeric.sin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.cos.html">cupynumeric.cos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tan.html">cupynumeric.tan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arcsin.html">cupynumeric.arcsin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arccos.html">cupynumeric.arccos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arctan.html">cupynumeric.arctan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.hypot.html">cupynumeric.hypot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arctan2.html">cupynumeric.arctan2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.degrees.html">cupynumeric.degrees</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.radians.html">cupynumeric.radians</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.deg2rad.html">cupynumeric.deg2rad</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.rad2deg.html">cupynumeric.rad2deg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sinh.html">cupynumeric.sinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.cosh.html">cupynumeric.cosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.tanh.html">cupynumeric.tanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arcsinh.html">cupynumeric.arcsinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arccosh.html">cupynumeric.arccosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.arctanh.html">cupynumeric.arctanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.round.html">cupynumeric.round</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.rint.html">cupynumeric.rint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.floor.html">cupynumeric.floor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ceil.html">cupynumeric.ceil</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.trunc.html">cupynumeric.trunc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.prod.html">cupynumeric.prod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sum.html">cupynumeric.sum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.cumprod.html">cupynumeric.cumprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.cumsum.html">cupynumeric.cumsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.diff.html">cupynumeric.diff</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nancumprod.html">cupynumeric.nancumprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nancumsum.html">cupynumeric.nancumsum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanprod.html">cupynumeric.nanprod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nansum.html">cupynumeric.nansum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.gradient.html">cupynumeric.gradient</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.exp.html">cupynumeric.exp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.expm1.html">cupynumeric.expm1</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.exp2.html">cupynumeric.exp2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.log.html">cupynumeric.log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.log10.html">cupynumeric.log10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.log2.html">cupynumeric.log2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.log1p.html">cupynumeric.log1p</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.logaddexp.html">cupynumeric.logaddexp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.logaddexp2.html">cupynumeric.logaddexp2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.signbit.html">cupynumeric.signbit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.copysign.html">cupynumeric.copysign</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.frexp.html">cupynumeric.frexp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.ldexp.html">cupynumeric.ldexp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nextafter.html">cupynumeric.nextafter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.lcm.html">cupynumeric.lcm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.gcd.html">cupynumeric.gcd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.add.html">cupynumeric.add</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.reciprocal.html">cupynumeric.reciprocal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.positive.html">cupynumeric.positive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.negative.html">cupynumeric.negative</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.multiply.html">cupynumeric.multiply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.divide.html">cupynumeric.divide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.power.html">cupynumeric.power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.subtract.html">cupynumeric.subtract</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.true_divide.html">cupynumeric.true_divide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.floor_divide.html">cupynumeric.floor_divide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.float_power.html">cupynumeric.float_power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fmod.html">cupynumeric.fmod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.mod.html">cupynumeric.mod</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.modf.html">cupynumeric.modf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.remainder.html">cupynumeric.remainder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.real.html">cupynumeric.real</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.imag.html">cupynumeric.imag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.angle.html">cupynumeric.angle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.conj.html">cupynumeric.conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.conjugate.html">cupynumeric.conjugate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.maximum.html">cupynumeric.maximum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fmax.html">cupynumeric.fmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.amax.html">cupynumeric.amax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.minimum.html">cupynumeric.minimum</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fmin.html">cupynumeric.fmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.amin.html">cupynumeric.amin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanmin.html">cupynumeric.nanmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanmax.html">cupynumeric.nanmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.convolve.html">cupynumeric.convolve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.clip.html">cupynumeric.clip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sqrt.html">cupynumeric.sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.cbrt.html">cupynumeric.cbrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.square.html">cupynumeric.square</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.absolute.html">cupynumeric.absolute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fabs.html">cupynumeric.fabs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sign.html">cupynumeric.sign</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.inner.html">cupynumeric.inner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.outer.html">cupynumeric.outer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.vdot.html">cupynumeric.vdot</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/fft.html">Discrete Fourier Transform (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cupynumeric.fft</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.fft.html">cupynumeric.fft.fft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.ifft.html">cupynumeric.fft.ifft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.fft2.html">cupynumeric.fft.fft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.ifft2.html">cupynumeric.fft.ifft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.fftn.html">cupynumeric.fft.fftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.ifftn.html">cupynumeric.fft.ifftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.rfft.html">cupynumeric.fft.rfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.irfft.html">cupynumeric.fft.irfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.rfft2.html">cupynumeric.fft.rfft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.irfft2.html">cupynumeric.fft.irfft2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.rfftn.html">cupynumeric.fft.rfftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.irfftn.html">cupynumeric.fft.irfftn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.hfft.html">cupynumeric.fft.hfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.ihfft.html">cupynumeric.fft.ihfft</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.fftshift.html">cupynumeric.fft.fftshift</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.fft.ifftshift.html">cupynumeric.fft.ifftshift</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/random.html">Random sampling (<code class="xref py py-mod docutils literal notranslate"><span class="pre">cupynumeric.random</span></code>)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.default_rng.html">cupynumeric.random.default_rng</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/_generator.html">cupynumeric.random.Generator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/_bitgenerator.html">cupynumeric.random.BitGenerator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.seed.html">cupynumeric.random.seed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.default_rng.html">cupynumeric.random.default_rng</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.rand.html">cupynumeric.random.rand</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.randn.html">cupynumeric.random.randn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.randint.html">cupynumeric.random.randint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.random.html">cupynumeric.random.random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.random_integers.html">cupynumeric.random.random_integers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.random_sample.html">cupynumeric.random.random_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.bytes.html">cupynumeric.random.bytes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.beta.html">cupynumeric.random.beta</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.binomial.html">cupynumeric.random.binomial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.chisquare.html">cupynumeric.random.chisquare</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.exponential.html">cupynumeric.random.exponential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.f.html">cupynumeric.random.f</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.gamma.html">cupynumeric.random.gamma</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.geometric.html">cupynumeric.random.geometric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.gumbel.html">cupynumeric.random.gumbel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.hypergeometric.html">cupynumeric.random.hypergeometric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.laplace.html">cupynumeric.random.laplace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.logistic.html">cupynumeric.random.logistic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.lognormal.html">cupynumeric.random.lognormal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.logseries.html">cupynumeric.random.logseries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.negative_binomial.html">cupynumeric.random.negative_binomial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.noncentral_chisquare.html">cupynumeric.random.noncentral_chisquare</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.noncentral_f.html">cupynumeric.random.noncentral_f</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.normal.html">cupynumeric.random.normal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.pareto.html">cupynumeric.random.pareto</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.poisson.html">cupynumeric.random.poisson</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.power.html">cupynumeric.random.power</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.ranf.html">cupynumeric.random.ranf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.rayleigh.html">cupynumeric.random.rayleigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.sample.html">cupynumeric.random.sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.standard_cauchy.html">cupynumeric.random.standard_cauchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.standard_exponential.html">cupynumeric.random.standard_exponential</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.standard_gamma.html">cupynumeric.random.standard_gamma</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.standard_t.html">cupynumeric.random.standard_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.triangular.html">cupynumeric.random.triangular</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.uniform.html">cupynumeric.random.uniform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.vonmises.html">cupynumeric.random.vonmises</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.wald.html">cupynumeric.random.wald</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.weibull.html">cupynumeric.random.weibull</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.random.zipf.html">cupynumeric.random.zipf</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/set.html">Set routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.unique.html">cupynumeric.unique</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/sorting.html">Sorting, searching, and counting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.argpartition.html">cupynumeric.argpartition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.argsort.html">cupynumeric.argsort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.msort.html">cupynumeric.msort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.partition.html">cupynumeric.partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sort.html">cupynumeric.sort</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.sort_complex.html">cupynumeric.sort_complex</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.argmax.html">cupynumeric.argmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.argmin.html">cupynumeric.argmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.argwhere.html">cupynumeric.argwhere</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.flatnonzero.html">cupynumeric.flatnonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanargmax.html">cupynumeric.nanargmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanargmin.html">cupynumeric.nanargmin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nonzero.html">cupynumeric.nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.searchsorted.html">cupynumeric.searchsorted</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.extract.html">cupynumeric.extract</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.where.html">cupynumeric.where</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.count_nonzero.html">cupynumeric.count_nonzero</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/statistics.html">Statistics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.quantile.html">cupynumeric.quantile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.percentile.html">cupynumeric.percentile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanquantile.html">cupynumeric.nanquantile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanpercentile.html">cupynumeric.nanpercentile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.average.html">cupynumeric.average</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.mean.html">cupynumeric.mean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanmean.html">cupynumeric.nanmean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.var.html">cupynumeric.var</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.median.html">cupynumeric.median</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.nanmedian.html">cupynumeric.nanmedian</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.cov.html">cupynumeric.cov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.bincount.html">cupynumeric.bincount</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.histogram.html">cupynumeric.histogram</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.digitize.html">cupynumeric.digitize</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/window.html">Window functions</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.bartlett.html">cupynumeric.bartlett</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.blackman.html">cupynumeric.blackman</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.hamming.html">cupynumeric.hamming</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.hanning.html">cupynumeric.hanning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/generated/cupynumeric.kaiser.html">cupynumeric.kaiser</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/comparison.html">Project comparisons</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../faqs.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../developer/index.html">Developer guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../developer/CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../developer/building.html">Building from source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../developer/testing.html">Running tests</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">User guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Tutorial</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="tutorial">
+<span id="id1"></span><h1>Tutorial<a class="headerlink" href="#tutorial" title="Link to this heading">#</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
+<p>cuPyNumeric is a NumPy-compatible library designed for large-scale computing.
+It is a distributed and accelerated drop-in replacement for the NumPy API,
+meaning that the same code running on a laptop can scale to multi-node,
+multi-GPU execution. cuPyNumeric is built on <a class="reference external" href="https://docs.nvidia.com/legate/latest/">Legate</a>, which provides scalable
+and accessible GPU acceleration and distributed computing capability by
+leveraging the <a class="reference external" href="https://legion.stanford.edu/">Legion</a> programming model. The goal of Legate and libraries
+like cuPyNumeric is to democratize high-performance computing by making it
+simpler to harness the power of large CPU and GPU clusters.</p>
+<section id="cupynumeric-vs-numpy">
+<h3>cuPyNumeric vs NumPy<a class="headerlink" href="#cupynumeric-vs-numpy" title="Link to this heading">#</a></h3>
+<p>cuPyNumeric is designed to have all the features that NumPy has, making it
+easy for NumPy users to try out cuPyNumeric on their own problems. However,
+there are several key differences:</p>
+<ul class="simple">
+<li><p><strong>Scalability</strong>: cuPyNumeric has the ability to run on large CPU/GPU
+clusters, making it better suited for larger data processing, e.g tasks
+related to emerging AI workloads.</p></li>
+<li><p><strong>GPU Acceleration</strong>: Since cuPyNumeric leverages GPU acceleration, it can
+afford large performance improvements over NumPy, which is limited to CPU
+execution. cuPyNumeric can make it significantly easier to tackle large
+quantities of data faster, by leveraging faster GPUs.</p></li>
+<li><p><strong>Distributed Computing</strong>: cuPyNumeric supports distributed computing,
+allowing for computations to be spread across multiple nodes. This enables
+users to handle large problems more efficiently, reducing the total
+computation time compared to using NumPy alone.</p></li>
+</ul>
+</section>
+</section>
+<section id="hardware-requirements">
+<h2>Hardware requirements<a class="headerlink" href="#hardware-requirements" title="Link to this heading">#</a></h2>
+<section id="single-node-setup">
+<h3>Single-node setup<a class="headerlink" href="#single-node-setup" title="Link to this heading">#</a></h3>
+<p>Suggested requirements:</p>
+<ul class="simple">
+<li><p><strong>GPU</strong>: Nvidia V100 or later</p></li>
+<li><p><strong>CPU</strong>: AMD EPYC or Intel Xeon (with multi-core support, at least 16 cores)</p></li>
+<li><p><strong>System memory</strong>: 64 GB or more (depending on dataset size)</p></li>
+</ul>
+</section>
+<section id="other-options">
+<h3>Other options<a class="headerlink" href="#other-options" title="Link to this heading">#</a></h3>
+<p>cuPyNumeric also works on HPC clusters, e.g. the large <a class="reference external" href="https://www.nersc.gov/systems/perlmutter/">Perlmutter</a>
+supercomputerlocated at the National Energy Research Scientific Computing
+Center (<a class="reference external" href="https://www.nersc.gov/">NERSC</a>).</p>
+</section>
+</section>
+<section id="basic-linux-installation">
+<h2>Basic Linux installation<a class="headerlink" href="#basic-linux-installation" title="Link to this heading">#</a></h2>
+<p>First, download CUDA on your computer, following these steps:</p>
+<ol class="arabic simple">
+<li><p>Go to <a class="reference external" href="https://developer.nvidia.com/cuda-downloads">CUDA Toolkit Downloads</a>.</p></li>
+<li><p>Select your operating system, architecture, distribution, and version.</p></li>
+<li><p>Choose the installer type (e.g. <em>runfile</em> or <em>deb</em>).</p></li>
+<li><p>Follow the provided installation instructions specific to your selected options.</p></li>
+</ol>
+<p>Next, install cuPyNumeric using either <code class="docutils literal notranslate"><span class="pre">pip</span></code> or <code class="docutils literal notranslate"><span class="pre">conda</span></code>.</p>
+<section id="pip">
+<h3>Pip<a class="headerlink" href="#pip" title="Link to this heading">#</a></h3>
+<p>Python wheel packages are available for Linux (x86 and aarch64) for Python
+3.10–3.12 from <a class="reference external" href="https://pypi.org/project/nvidia-cupynumeric">PyPI</a>. To install these into an existing environment, run
+the command:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>nvidia-cupynumeric
+</pre></div>
+</div>
+<p>or to create a new environment:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>myenv
+<span class="nb">source</span><span class="w"> </span>myenv/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>nvidia-cupynumeric
+</pre></div>
+</div>
+<p>This will install the latest version of cuPyNumeric and the corresponding
+version of <a class="reference external" href="https://docs.nvidia.com/legate/latest/">Legate</a>.</p>
+</section>
+<section id="conda">
+<h3>Conda<a class="headerlink" href="#conda" title="Link to this heading">#</a></h3>
+<p>First, install <a class="reference external" href="https://docs.anaconda.com/miniconda">Conda</a> on your computer by pasting the following commands
+into your terminal:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/miniforge3
+wget<span class="w"> </span>https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh<span class="w"> </span>-O<span class="w"> </span>~/miniforge3/miniforge.sh
+bash<span class="w"> </span>~/miniforge3/miniforge.sh<span class="w"> </span>-b<span class="w"> </span>-u<span class="w"> </span>-p<span class="w"> </span>~/miniforge3
+rm<span class="w"> </span>-rf<span class="w"> </span>~/miniforge3/miniforge.sh
+~/miniforge3/bin/conda<span class="w"> </span>init<span class="w"> </span>bash
+~/miniforge3/bin/conda<span class="w"> </span>init<span class="w"> </span>zsh
+<span class="nb">source</span><span class="w"> </span>~/.bashrc
+</pre></div>
+</div>
+<p>Next, install Legate and cuPyNumeric by executing these commands in the
+terminal:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>legate<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>legate<span class="w"> </span>cupynumeric
+conda<span class="w"> </span>activate<span class="w"> </span>legate
+</pre></div>
+</div>
+</section>
+</section>
+<section id="hpc-cluster-installation">
+<h2>HPC cluster installation<a class="headerlink" href="#hpc-cluster-installation" title="Link to this heading">#</a></h2>
+<p>Installing on HPC clusters such as Perlmutter requries extra steps to build
+wrappers for system MPI and GASNet libraries. See the Legate documentation for
+<a class="reference external" href="https://docs.nvidia.com/legate/latest/gasnet.html#gasnet-based-installation">GASNet-based Installation</a> for full details.</p>
+</section>
+<section id="running-cupynumeric-code">
+<h2>Running cuPyNumeric code<a class="headerlink" href="#running-cupynumeric-code" title="Link to this heading">#</a></h2>
+<p>We will start by demonstrating with a simple dot-product example. Create a
+new file file <code class="docutils literal notranslate"><span class="pre">main.py</span></code> containing the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Define the size of the vectors</span>
+<span class="n">size</span> <span class="o">=</span> <span class="mi">100000000</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+<span class="c1"># Generate two random vectors of the specified size</span>
+<span class="n">vector1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="n">vector2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+
+<span class="c1"># Compute the dot product using cuPyNumeric</span>
+<span class="n">dot_product</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vector1</span><span class="p">,</span> <span class="n">vector2</span><span class="p">)</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+<span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dot product:&quot;</span><span class="p">,</span> <span class="n">dot_product</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dot product took </span><span class="si">{</span><span class="n">elapsed_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="single-node">
+<h3>Single node<a class="headerlink" href="#single-node" title="Link to this heading">#</a></h3>
+<p>To run the above code on a single workstation with two GPUs, execute the
+following command:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>./main.py
+</pre></div>
+</div>
+</section>
+<section id="multi-node-hpc">
+<h3>Multi-node HPC<a class="headerlink" href="#multi-node-hpc" title="Link to this heading">#</a></h3>
+<p>Before running examples on systems like Perlmutter, create an interactive
+session. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">2</span><span class="w"> </span>--ntasks-per-node<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">01</span>:30:00<span class="w"> </span>--constraint<span class="w"> </span>gpu<span class="w"> </span>--gpus-per-node<span class="w"> </span><span class="m">4</span><span class="w"> </span>--account<span class="o">=</span>&lt;acct_name&gt;
+</pre></div>
+</div>
+<p>This command creates an allocation on 2 GPU nodes, with 4 GPUs per node.
+Ensure that the legate environment is activated. If not, load the <code class="docutils literal notranslate"><span class="pre">conda</span></code>
+module and activate the environment. Now, run the sample program:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">4</span><span class="w"> </span>--launcher<span class="w"> </span>srun<span class="w"> </span>--nodes<span class="w"> </span><span class="m">2</span><span class="w"> </span>./main.py
+</pre></div>
+</div>
+<p>This invocation runs legate through the legate driver and it executes the
+<code class="docutils literal notranslate"><span class="pre">main.py</span></code> example. In general, Legate can be started through Python by
+simply loading the appropriate modules, but in a multi-node setting the driver
+needs to be used to enable –launcher and related options. To see more details
+of the resulting invocation, add the <code class="docutils literal notranslate"><span class="pre">--verbose</span></code> option before <code class="docutils literal notranslate"><span class="pre">./main.py</span></code>.
+For more information on Command-Line Interface Options refer to the sections
+below or refer to <a class="reference external" href="https://docs.nvidia.com/legate/latest/usage.html">Running Legate Programs</a>.</p>
+<p>Running the code above produces output like the following when run on
+Perlmutter:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Dot product: 25001932.012924932
+Dot product took 141.2350 ms
+Dot product: 25001932.012924932
+Dot product took 141.2350 ms
+</pre></div>
+</div>
+<p>Note that there are two duplicated outputs. By default, legate outputs all
+output from all ranks, so the result will be repeated exactly as many times
+as the number of Legate ranks (2 in the example above). Set the environment
+variable <code class="docutils literal notranslate"><span class="pre">LEGATE_LIMIT_STDOUT=1</span></code> to only see output from the first rank.</p>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
+<section id="matrix-multiplication">
+<h3>Matrix multiplication<a class="headerlink" href="#matrix-multiplication" title="Link to this heading">#</a></h3>
+<p>Matrix multiplication is a basic operation where to two matrices are combined
+to produce a new matrix. The new matrix has elements that were computed as
+the sum of the products of the corresponding rows of the first matrix and the
+columns of the second matrix. When scaling matrix multiplication, multiple
+factors like load balancing and parallelization must be considered. As the
+work is distributed among the different devices, handling partial sums for
+the matrices becomes crucial, and may require reduction on a larger scale.
+When using cuPyNumeric, all of these fundamental aspects are handled by the
+library, and the user can focus on the high-level algorithm.</p>
+<p>If users don’t use cuPyNumeric, they will have to explicitly worry about
+things such as distributing inputs, gathering, and synchronization while
+writing their code. Below is an image depicting the typical sort of
+scatter-gather method found in data parallelism.</p>
+<p><em>(NOTE: The image below does not depict cuPyNumeric’s approach to parallelism.
+Instead, it illustrates how parallelism might be approached without using
+cuPyNumeric.)</em></p>
+<img alt="../_images/matmul1.jpeg" src="../_images/matmul1.jpeg" />
+<img alt="../_images/matmul2.png" src="../_images/matmul2.png" />
+<section id="running-on-cpu">
+<h4>Running on CPU<a class="headerlink" href="#running-on-cpu" title="Link to this heading">#</a></h4>
+<section id="numpy">
+<h5>NumPy<a class="headerlink" href="#numpy" title="Link to this heading">#</a></h5>
+<p>Create a new file named <code class="docutils literal notranslate"><span class="pre">simple_mm.py</span></code> for our matrix multiplication, and
+paste in the NumPy code below:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">size</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">)</span>
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Problem size: </span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Matrix multiplication took </span><span class="si">{</span><span class="n">elapsed_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cupynumeric">
+<h5>cuPyNumeric<a class="headerlink" href="#cupynumeric" title="Link to this heading">#</a></h5>
+<p>To run the same code with cuPyNumeric instead of NumPy, make a one line
+change to the imports:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span> <span class="c1"># &lt;--- one changed import</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">size</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">)</span>
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Problem size: </span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Matrix multiplication took </span><span class="si">{</span><span class="n">elapsed_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, execute this command:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--cpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">8000</span><span class="w"> </span>./simple_mm.py
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Problem size: 10000
+Matrix multiplication took 69664.2020 ms
+</pre></div>
+</div>
+</section>
+</section>
+<section id="running-on-gpu">
+<h4>Running on GPU<a class="headerlink" href="#running-on-gpu" title="Link to this heading">#</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">size</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">)</span>
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Problem size: </span><span class="si">{</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Matrix multiplication took </span><span class="si">{</span><span class="n">elapsed_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This time around we will increase the size of the problem to <strong>20,000</strong>, and
+use one GPU (edit the file to change the size):</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">2000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">12000</span><span class="w"> </span>./simple_mm.py
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Problem size: 20000
+Matrix multiplication took 2593.2960 ms
+</pre></div>
+</div>
+</section>
+<section id="running-on-gpu-cluster">
+<h4>Running on GPU cluster<a class="headerlink" href="#running-on-gpu-cluster" title="Link to this heading">#</a></h4>
+<p>In this section, experiments will be conducted on Perlmutter. First,
+allocate the resources:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">2</span><span class="w"> </span>--ntasks-per-node<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">01</span>:30:00<span class="w"> </span>--constraint<span class="w"> </span>gpu<span class="w"> </span>--gpus-per-node<span class="w"> </span><span class="m">4</span><span class="w"> </span>--account<span class="o">=</span>&lt;acct&gt;
+</pre></div>
+</div>
+<p>Now let’s use <strong>2 gpus (1 node)</strong> to solve a bigger problem, the problem size
+this time around will be <strong>40,000</strong>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--launcher<span class="w"> </span>srun<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">2000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">24000</span><span class="w"> </span>--eager-alloc-percentage<span class="w"> </span><span class="m">10</span><span class="w"> </span>./simple_mm.py
+</pre></div>
+</div>
+<p>This produces output like the following when run on Perlmutter:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>srun: warning: can&#39;t run 1 processes on 2 nodes, setting nnodes to 1
+Problem size: 40000
+Matrix multiplication took 4378.6040 ms
+</pre></div>
+</div>
+<p>In the above output, there is no need to worry about the srun warning. Two
+nodes were allocated, but this command only uses 1, thus the warning. Now
+let’s use <strong>4 gpus (1 node)</strong> to solve a bigger problem, the problem size this
+time around will be <strong>70,000</strong>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">4</span><span class="w"> </span>--launcher<span class="w"> </span>srun<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">2000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>--eager-alloc-percentage<span class="w"> </span><span class="m">10</span><span class="w"> </span>./simple_mm.py
+</pre></div>
+</div>
+<p>This produces output like the following when run on Perlmutter:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>srun: warning: can&#39;t run 1 processes on 2 nodes, setting nnodes to 1
+Problem size: 70000
+Matrix multiplication took 11680.5460 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>8 gpus (2 node)</strong> to solve a bigger problem, the problem
+size this time around will be <strong>100,000</strong>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">4</span><span class="w"> </span>--launcher<span class="w"> </span>srun<span class="w"> </span>--nodes<span class="w"> </span><span class="m">2</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">2000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>--eager-alloc-percentage<span class="w"> </span><span class="m">10</span><span class="w"> </span>./simple_mm.py
+</pre></div>
+</div>
+<p>This produces output like the following when run on Perlmutter:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Problem size: 100000
+Matrix multiplication took 16969.5050 ms
+Problem size: 100000
+Matrix multiplication took 16969.5050 ms
+</pre></div>
+</div>
+</section>
+</section>
+<section id="conjugate-gradient">
+<h3>Conjugate gradient<a class="headerlink" href="#conjugate-gradient" title="Link to this heading">#</a></h3>
+<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Conjugate_gradient_method">conjugate gradient (CG) method</a> is an iterative algorithm that is
+utilized to solve systems of linear equations of the form:</p>
+<div class="math notranslate nohighlight">
+\[A \mathbf{x} = \mathbf{b}\ .\]</div>
+<p><span class="math notranslate nohighlight">\(A\)</span> is a symmetric positive-definite matrix, <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> is an
+unknown vector that we want to solve for, and <span class="math notranslate nohighlight">\(\mathbf{b}\)</span> is a known
+vector.</p>
+<p>CG iteratively improves the estimate for <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> by optimizing
+along conjugate directions. This process minimizes the following quadratic
+function, which is at its minimum when
+<span class="math notranslate nohighlight">\(\mathbf{x}\)</span> solves <span class="math notranslate nohighlight">\(A \mathbf{x} = \mathbf{b}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[f(\mathbf{x}) = (1/2)\mathbf{x}^{T}A\mathbf{x} - \mathbf{x}^{T}\mathbf{b}\ .\]</div>
+<p>Below is an image of how to parallelize CG using Task parallelism. Task
+parallelism occurs when different tasks are executed across multiple
+nodes/processors/cores.</p>
+<p><em>(NOTE: The image below does not depict cuPyNumeric’s approach to parallelism.
+Instead, it illustrates how parallelism might be approached without using
+cuPyNumeric.)</em></p>
+<img alt="../_images/cg.jpeg" src="../_images/cg.jpeg" />
+<p>When parallelizing the Conjugate Gradient method on high-performance computing
+(HPC) systems, several critical factors must be addressed.</p>
+<ul class="simple">
+<li><p>First and foremost in task parallelism, it is important to distribute the
+tasks correctly, as improper partitioning can lead to load imbalances during
+computations. Clearly, in this depiction, distributing the tasks correctly
+is challenging and can significantly reduce efficiency. As such, finding an
+effective distribution strategy can be difficult at times.</p></li>
+<li><p>Additionally, synchronization is crucial, as nodes may require information
+from one another before they can execute their calculations. For instance,
+at the beginning of each iteration, synchronization ensures that all nodes
+have the most up-to-date data and are aligned in their computations.</p></li>
+<li><p>Finally, effective broadcasting of data is essential. Nodes may need to
+access results computed by the master node to proceed with their respective
+tasks. Addressing these factors will significantly enhance the efficiency
+and scalability of the parallelized Conjugate Gradient method.</p></li>
+</ul>
+<p>These challenges highlight the complexities of parallelizing the CG method
+without advanced libraries. However, utilizing cuPyNumeric can alleviate many
+of these concerns, as it provides optimized data structures and operations
+that inherently address issues of load balancing, communication efficiency,
+and synchronization. cuPyNumeric streamlines the parallelization process,
+allowing for more straightforward implementation and improved performance.</p>
+<section id="id2">
+<h4>Running on CPU<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
+<p>Create a new file for our CG code. Name it <code class="docutils literal notranslate"><span class="pre">cg.py</span></code>, and paste in the code
+at this link: <a class="reference external" href="https://github.com/nv-legate/cupynumeric/blob/HEAD/examples/cg.py">CG code</a>.</p>
+<p>Next, create another file <code class="docutils literal notranslate"><span class="pre">benchmark.py</span></code> in the same directory with this
+code: <a class="reference external" href="https://github.com/nv-legate/cupynumeric/blob/HEAD/examples/benchmark.py">Benchmark code</a>.</p>
+<p>In order to run the following file, run the command down below, this will be a
+10,000 x 10,000 2-d adjacency system:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--cpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">16000</span><span class="w"> </span>./cg.py<span class="w"> </span>--num<span class="w"> </span><span class="m">100</span><span class="w"> </span>--check<span class="w"> </span>--time
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h4>Running on GPU<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<p>This time around we will <strong>increase</strong> the size of the problem to generate
+roughly a 22,500 by 22,500 2-d adjacency system, and use one GPU:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">48000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">14000</span><span class="w"> </span>./cg.py<span class="w"> </span>--num<span class="w"> </span><span class="m">150</span><span class="w"> </span>--check<span class="w"> </span>--time
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating 22500x22500 2-D adjacency system without corners...
+Solving system...
+Converged in 725 iterations
+Checking result...
+PASS!
+Elapsed Time: 5384.21 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>2 GPUs (1 node)</strong> to solve a bigger problem, the size of the
+problem will be a <strong>50625 x 50625</strong> 2-d adjacency system:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">40000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>./cg.py<span class="w"> </span>--num<span class="w"> </span><span class="m">225</span><span class="w"> </span>--check<span class="w"> </span>--time
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating 50625 x 50625 2-D adjacency system without corners...
+Solving system...
+Converged in 1100 iterations
+Checking result...
+PASS!
+Elapsed Time: 11432.713 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>4 GPUs (1 node)</strong> to solve a bigger problem, the size of the
+problem will be a <strong>75625 x 75625</strong> 2-d adjacency system:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">4</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">40000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>./cg.py<span class="w"> </span>--num<span class="w"> </span><span class="m">275</span><span class="w"> </span>--check<span class="w"> </span>--time
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating 75625x75625 2-D adjacency system without corners...
+Solving system...
+Converged in 1300 iterations
+Checking result...
+PASS!
+Elapsed Time: 13012.767 ms
+</pre></div>
+</div>
+</section>
+</section>
+<section id="black-scholes">
+<h3>Black-Scholes<a class="headerlink" href="#black-scholes" title="Link to this heading">#</a></h3>
+<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Black–Scholes_model">Black-Scholes model</a> is a mathematical model developed by economists
+Fisher Black, Myron Scholes, and Rober Merton in the early 1970s. The model
+is used to calculate the theoretical price of stock options.</p>
+<p>Given the following inputs</p>
+<ul class="simple">
+<li><p>Current stock price (<span class="math notranslate nohighlight">\(\boldsymbol{S0}\)</span>): The price of the stock at
+the time of option pricing.</p></li>
+<li><p>Strike price (<span class="math notranslate nohighlight">\(\boldsymbol{K}\)</span>): The price at which the option can
+be exercised.</p></li>
+<li><p>Time to expiration (<span class="math notranslate nohighlight">\(\boldsymbol{T}\)</span>): How long until the option
+expires, measured in years.</p></li>
+<li><p>Risk-Free rate (<span class="math notranslate nohighlight">\(\boldsymbol{r}\)</span>): The theoretical return on an
+investment with no risk, often based on government bonds.</p></li>
+<li><p>Volatility (<span class="math notranslate nohighlight">\(\boldsymbol{\sigma}\)</span>): The degree of variation in the
+stock price; higher volatility increases option prices.</p></li>
+</ul>
+<p>The model is given by the formulas:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{eqnarray}
+C &amp;=&amp; S_0N(d_1) - Ke^{-rT}N(d_2) \\\
+\\
+P &amp;=&amp; Ke^{-rT}N(-d_2) - S_0N(-d_1)
+\end{eqnarray}\end{split}\]</div>
+<p>Where:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{eqnarray}
+d_1 &amp;=&amp; (\ln(S_0/K) + (r + \sigma^2/2)T)/(\sigma\sqrt{T}) \\\
+\\
+d_2 &amp;=&amp; d_1 - \sigma\sqrt{T}
+\end{eqnarray}\end{split}\]</div>
+<p>and <span class="math notranslate nohighlight">\(N(x)\)</span> is the cumulative distribution function of the standard
+normal distribuation</p>
+<p>The illustration below demonstrates how the Black-Scholes model might be
+used to compute call and put option prices for 10,000 options distributed
+across four worker nodes. Each node is responsible for processing a portion
+of the total calculations, allowing for efficient parallel computation. Once
+the calculations are complete, the results are collected and aggregated at a
+master node.</p>
+<p>While the diagram depicts the results being stored in arrays, the actual code
+implementation does not explicitly store the results in this manner. Instead,
+the pricing outcomes are computed but may not be gathered into an array format
+as shown here.</p>
+<p><em>(NOTE: The image below does not depict cuPyNumeric’s approach to parallelism.
+Instead, it illustrates how parallelism might be approached without using
+cuPyNumeric.)</em></p>
+<img alt="../_images/black-scholes.jpeg" src="../_images/black-scholes.jpeg" />
+<p>When parallelizing the Black-Scholes algorithm, several key considerations
+come into play.</p>
+<ul class="simple">
+<li><p>The independent nature of the algorithm for each option calculation makes
+it inherently suitable for parallelization. However, careful management of
+shared resources is essential to maximize efficiency.</p></li>
+<li><p>Effective memory management is particularly critical when dealing with large
+datasets of options, as it helps prevent bottlenecks and enhances performance
+across all nodes.</p></li>
+<li><p>The master node must synchronize with the worker nodes to ensure that all
+computations are completed before moving on to the aggregation phase. This
+synchronization can introduce latency, making it imperative to manage it
+efficiently to minimize delays in overall processing time.</p></li>
+<li><p>Reduction of the calculated option prices into separate arrays for call and
+put options, which must be aggregated back to the master node, is another
+crucial aspect. Properly implementing this reduction process is vital for
+ensuring the accuracy and integrity of the final results, while still
+leveraging the advantages of parallelization.</p></li>
+</ul>
+<p>Balancing these considerations will contribute to a more effective and
+efficient parallel execution of the Black-Scholes algorithm.</p>
+<p>cuPyNumeric improves the parallelization of the Black-Scholes algorithm by
+streamlining the management of parallel computing challenges. It automatically
+distributes independent option calculations across multiple processors or
+cores, ensuring optimal load distribution with ease</p>
+<section id="sample-computation">
+<h4>Sample computation<a class="headerlink" href="#sample-computation" title="Link to this heading">#</a></h4>
+<p>Let’s calculate the price of a call option using the Black-Scholes model.</p>
+<p>First, given the inputs:</p>
+<ul class="simple">
+<li><p>Current stock price (dollars): <span class="math notranslate nohighlight">\(\boldsymbol{S_0 = 50}\)</span></p></li>
+<li><p>Strike price (dollars): <span class="math notranslate nohighlight">\(\boldsymbol{K = 50}\)</span></p></li>
+<li><p>Time to expiration (years): <span class="math notranslate nohighlight">\(\boldsymbol{T = 1}\)</span></p></li>
+<li><p>Risk-free interest rate: <span class="math notranslate nohighlight">\(\boldsymbol{r = 0.05}\)</span></p></li>
+<li><p>Volatility: <span class="math notranslate nohighlight">\(\boldsymbol{\sigma = 0.20}\)</span></p></li>
+</ul>
+<p>We have:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{eqnarray}
+d_1 &amp;=&amp; (\ln(50/50) + (0.05 + (0.2^2/2))\cdot{1})/(0.2\sqrt{1}) = \boldsymbol{0.35} \\\
+\\
+d_2 &amp;=&amp; 0.35 - 0.2\sqrt{1} = \boldsymbol{0.15} \\\
+\end{eqnarray}\end{split}\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{eqnarray}
+N(0.35) &amp;=&amp; \boldsymbol{0.6368} \\\
+\\
+N(0.15) &amp;=&amp; \boldsymbol{0.5596} \\\
+\end{eqnarray}\end{split}\]</div>
+<p>This results in the call option price:</p>
+<div class="math notranslate nohighlight">
+\[C = 50 \cdot 0.6368 - 50e^{-0.05} \cdot 0.5596 \approx \boldsymbol{5.22}\ .\]</div>
+<p>This answer is the price of a call option. A similar computatation yields
+the price for a put option.</p>
+</section>
+<section id="id4">
+<h4>Running on CPU<a class="headerlink" href="#id4" title="Link to this heading">#</a></h4>
+<p>Create a new file for our Black-Scholes code. Name it <code class="docutils literal notranslate"><span class="pre">black_scholes.py</span></code>,
+and paste in the code at this link: <a class="reference external" href="https://github.com/nv-legate/cupynumeric/blob/HEAD/examples/black_scholes.py">Black-Scholes code</a>.</p>
+<p>Next, create another file <code class="docutils literal notranslate"><span class="pre">benchmark.py</span></code> in the same directory with this
+code: <a class="reference external" href="https://github.com/nv-legate/cupynumeric/blob/HEAD/examples/benchmark.py">Benchmark code</a>.</p>
+<p>In order to run the following file, run the command down below, this will
+perform the Black-Scholes algorithm on a set of <strong>10,000,000</strong> options:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--cpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">10000</span><span class="w"> </span>./black_scholes.py<span class="w"> </span>--num<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--precision<span class="w"> </span><span class="m">32</span><span class="w"> </span>--time
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Running black scholes on 10000K options...
+Elapsed Time: 993.466 ms
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h4>Running on GPU<a class="headerlink" href="#id5" title="Link to this heading">#</a></h4>
+<p>This time around we will <strong>increase</strong> the size of the problem with
+<strong>100,000,000</strong> options:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">14000</span><span class="w">  </span>./black_scholes.py<span class="w"> </span>--num<span class="w"> </span><span class="m">100000</span><span class="w"> </span>--precision<span class="w"> </span><span class="m">32</span><span class="w"> </span>--time
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Running black scholes on 100000K options...
+Elapsed Time: 2193.961 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>2 GPUs (1 node)</strong> to solve a bigger problem with
+<strong>1,000,000,000</strong> options:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w">  </span>./black_scholes.py<span class="w"> </span>--num<span class="w"> </span><span class="m">1000000</span><span class="w"> </span>--precision<span class="w"> </span><span class="m">32</span><span class="w"> </span>--time
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Running black scholes on 1000000K options...
+Elapsed Time: 1202.919 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>4 GPUs (1 node)</strong> to solve a bigger problem with
+<strong>2,000,000,000</strong> options:</p>
+<p>legate –gpus 4 –sysmem 10000 –fbmem 38000  ./black_scholes.py –num 2000000 –precision 32 –time</p>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Running black scholes on 2000000K options...
+Elapsed Time: 1241.457 ms
+</pre></div>
+</div>
+</section>
+</section>
+<section id="jacobi-stencil">
+<h3>Jacobi stencil<a class="headerlink" href="#jacobi-stencil" title="Link to this heading">#</a></h3>
+<p>The Jacobi stencil is a method used to solve systems of linear or partial
+differential equations. The technique works by repeatedly taking the averages
+of the neighboring points to update the value at each grid location. This
+method is often used along slide problems like heat diffusion.</p>
+<p>The forumula for the stencil computation is given by:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{X}_{i,j}^{k+1} = (1/4)\cdot(\mathbf{X}_{i-1,j}^k + \mathbf{X}_{i+1,j}^k + \mathbf{X}_{i,j-1}^k + \mathbf{X}_{i,j+1}^k)\ .\]</div>
+<p><em>(NOTE: The image below does not depict cuPyNumeric’s approach to parallelism.
+Instead, it illustrates how parallelism might be approached without using
+cuPyNumeric.)</em></p>
+<img alt="../_images/jacobi.jpeg" src="../_images/jacobi.jpeg" />
+<p>From the image above, it’s evident that when you attempt to distribute
+computations manually using MPI, you may encounter several challenges, such
+as handling synchronization and managing data gathering among nodes. These
+complexities can make parallel programming cumbersome and error-prone.</p>
+<p>With cuPyNumeric, you can bypass these issues entirely. cuPyNumeric simplifies
+the process by handling synchronization and data management automatically,
+allowing you to focus on your computations without worrying about the
+underlying complexities.</p>
+<section id="sample-code">
+<h4>Sample Code<a class="headerlink" href="#sample-code" title="Link to this heading">#</a></h4>
+<p>Create a new file for our Jacobi stencil code, simply name it
+<code class="docutils literal notranslate"><span class="pre">jacobi_stencil.py</span></code>, and insert this piece of code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">jacobi</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">I</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running Jacobi stencil... &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">center</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">north</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">east</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:]</span>
+    <span class="n">west</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">south</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">2</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">I</span><span class="p">):</span>
+        <span class="n">average</span> <span class="o">=</span> <span class="n">center</span> <span class="o">+</span> <span class="n">north</span> <span class="o">+</span> <span class="n">east</span> <span class="o">+</span> <span class="n">west</span> <span class="o">+</span> <span class="n">south</span>
+        <span class="n">center</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">average</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed Time: </span><span class="si">{</span><span class="p">(</span><span class="n">stop</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">grid</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-n&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--size&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of the grid&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-i&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--iterations&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of iterations&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating a grid of size </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of iterations: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">iterations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">jacobi</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">iterations</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h4>Running on CPU<a class="headerlink" href="#id6" title="Link to this heading">#</a></h4>
+<p>In order to run the following file, run the command down below. This will
+perform the Jacobi stencil on a grid size of <strong>10,000 x 10,000</strong>, and the
+number of iterations being 100:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--cpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">16000</span><span class="w"> </span>./jacobi_stencil.py<span class="w"> </span>--size<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--iterations<span class="w"> </span><span class="m">100</span>
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating a grid of size 10000 x 10000
+Number of iterations: 100
+Running Jacobi stencil... Elapsed Time: 294165.16 ms
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h4>Running on GPU<a class="headerlink" href="#id7" title="Link to this heading">#</a></h4>
+<p>This time around we will <strong>increase</strong> the size of the grid to
+<strong>15,000 x 15,000</strong> with 100 iterations:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">16000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">15000</span><span class="w"> </span>./jacobi_stencil.py<span class="w"> </span>--size<span class="w"> </span><span class="m">15000</span><span class="w"> </span>--iterations<span class="w"> </span><span class="m">100</span>
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating a grid of size 15000x15000
+Number of iterations: 100
+Running Jacobi stencil... Elapsed Time: 3550.49 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>2 GPUs (1 node)</strong> to solve a bigger problem with a grid size
+of <strong>30,000 x 30,000</strong> with 200 iterations:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">16000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>./jacobi_stencil.py<span class="w"> </span>--size<span class="w"> </span><span class="m">30000</span><span class="w"> </span>--iterations<span class="w"> </span><span class="m">200</span>
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating a grid of size 30000x30000
+Number of iterations: 200
+Running Jacobi stencil... Elapsed Time: 8850.259 ms
+</pre></div>
+</div>
+<p>Now let’s use <strong>4 GPUs (1 node)</strong> to solve a bigger problem with a grid size
+of <strong>50,000 x 50,000</strong> with 300 iterations:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">4</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">16000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>./jacobi_stencil.py<span class="w"> </span>--size<span class="w"> </span><span class="m">50000</span><span class="w"> </span>--iterations<span class="w"> </span><span class="m">300</span>
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generating a grid of size 50000x50000
+Number of iterations: 300
+Running Jacobi stencil... Elapsed Time: 17617.434 ms
+</pre></div>
+</div>
+</section>
+</section>
+<section id="edge-detection">
+<h3>Edge detection<a class="headerlink" href="#edge-detection" title="Link to this heading">#</a></h3>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Edge_detection">Edge detection</a> is a method that is used to find points within an image at
+which the brightness changes significantly. Pointing out these sharp changes
+allows for determining the shapes, features, and contours of an image. Edge
+detection is a fundamental technique used for image processing and computer
+vision.</p>
+<p>Prior to running the code, execute this <code class="docutils literal notranslate"><span class="pre">conda</span></code> command to install the
+<code class="docutils literal notranslate"><span class="pre">pillow</span></code> library:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>pillow
+</pre></div>
+</div>
+<section id="id8">
+<h4>Sample Code<a class="headerlink" href="#id8" title="Link to this heading">#</a></h4>
+<p>Create a new file named <code class="docutils literal notranslate"><span class="pre">edge.py</span></code> for our edge detection code, and paste
+in this code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">convolve</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="c1"># Intensity varies between 0 and 255 in the image</span>
+<span class="n">intensity_min</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">intensity_max</span> <span class="o">=</span> <span class="mf">255.0</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">convolve_nd</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">kernel</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;same&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform convolution on the input array with the provided kernel.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        array: ndarray</span>
+<span class="sd">            Input array corresponding to a grayscale image.</span>
+<span class="sd">        kernel: ndarray</span>
+<span class="sd">            Kernel to compute the gradient in x or y direction.</span>
+<span class="sd">        mode: str</span>
+<span class="sd">            Convolution mode. cuPyNumeric only supports the &quot;same&quot; mode.</span>
+<span class="sd">            Scipy also supports &quot;same&quot; mode.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The result of convolving the input array with the kernel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;cupynumeric&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">convolve</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+<span class="c1"># Read the image</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;image.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;L&quot;</span><span class="p">)</span>
+
+<span class="c1"># Can resize the image to a larger size, for example, 4x the original size</span>
+<span class="n">larger_image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="n">image</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">height</span><span class="p">))</span>
+
+<span class="c1"># Convert the image to a NumPy array for processing</span>
+<span class="n">image_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">larger_image</span><span class="p">)</span>
+
+
+<span class="c1"># Sobel kernels for x and y derivatives</span>
+<span class="n">kernel_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="n">kernel_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+
+<span class="c1"># Apply Sobel kernels to compute the gradient in x and y directions</span>
+<span class="n">grad_x</span> <span class="o">=</span> <span class="n">convolve_nd</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">kernel_x</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)</span>
+<span class="n">grad_y</span> <span class="o">=</span> <span class="n">convolve_nd</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">kernel_y</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)</span>
+
+<span class="c1"># Compute the magnitude of the gradient (edges)</span>
+<span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">grad_x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">grad_y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Normalize the gradient to the range of intensity values</span>
+<span class="n">edges</span> <span class="o">*=</span> <span class="n">intensity_max</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+<span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Edge detection took </span><span class="si">{</span><span class="n">elapsed_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additionally, take the image down below and name it <code class="docutils literal notranslate"><span class="pre">image.png</span></code>. If you’re
+connecting to a remote system like Perlmutter via SSH, you can use the <code class="docutils literal notranslate"><span class="pre">scp</span></code>
+(secure copy) command to transfer files such as images between your local
+machine and the remote system.</p>
+<img alt="../_images/edge1.png" src="../_images/edge1.png" />
+</section>
+<section id="id9">
+<h4>Running on GPU<a class="headerlink" href="#id9" title="Link to this heading">#</a></h4>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>legate<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">16000</span><span class="w"> </span>--fbmem<span class="w"> </span><span class="m">38000</span><span class="w"> </span>./edge.py
+</pre></div>
+</div>
+<p>This produces output like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Edge detection took 1083.3110 ms
+</pre></div>
+</div>
+<p>If you are able to run locally, you can also use Matplotlib to highlight the
+edges from image based on the results.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="c1"># the code down below is what helps showcase the images</span>
+<span class="c1"># Plot the original image and the detected edges</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
+
+<span class="c1"># Display the original image</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Original Image&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([]),</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+<span class="c1"># Display the edges</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Detected Edges&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([]),</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This should result in an image similar to this:</p>
+<img alt="../_images/edge2.png" src="../_images/edge2.png" />
+</section>
+</section>
+</section>
+<section id="resource-allocation">
+<h2>Resource allocation<a class="headerlink" href="#resource-allocation" title="Link to this heading">#</a></h2>
+<p>As previously mentioned, cuPyNumeric is build on top of Legate. Legate is what
+will be utilized to execute your programs. By default Legate will query the
+available hardware on the current system, and reserve for its use all CPU
+cores, all GPUs and most of the available memory. You can disable this
+behavior with <code class="docutils literal notranslate"><span class="pre">LEGATE_AUTO_CONFIG=0</span></code>, in order to explicitly specify the
+resources used to execute your application. There are three different types
+of processors (task variants): CPU, GPU, and OMP (the OMP variant utilizes
+OpenMP threads to parallelize the program). In addition to specifying the
+processors used, you must specify the amount of memory allocated for the
+program:</p>
+<p>Common arguments:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--nodes: number of Nodes to be utilized for the program
+
+--cpus: number of CPUs to be utilized for the program
+--gpus: number of GPUs to be utilized for the program
+
+--omps: number of OpenMP groups created
+--ompthreads: number of threads in each OpenMP group
+
+--sysmem: system memory (MB)
+--fbmem: framebuffer memory per GPU (MB)
+</pre></div>
+</div>
+<p>Here are some boilerplate templates to run programs:</p>
+<ul class="simple">
+<li><p>for <strong>CPU</strong>: <code class="docutils literal notranslate"><span class="pre">legate</span> <span class="pre">--cpus</span> <span class="pre">8</span> <span class="pre">--sysmem</span> <span class="pre">40000</span> <span class="pre">./main.py</span> <span class="pre">&lt;main.py</span> <span class="pre">options&gt;</span></code></p></li>
+<li><p>for <strong>GPU</strong>: <code class="docutils literal notranslate"><span class="pre">legate</span> <span class="pre">--gpus</span> <span class="pre">2</span> <span class="pre">--fbmem</span> <span class="pre">40000</span> <span class="pre">./main.py</span> <span class="pre">&lt;main.py</span> <span class="pre">options&gt;</span></code></p></li>
+<li><p>for <strong>OMP</strong>: <code class="docutils literal notranslate"><span class="pre">legate</span> <span class="pre">--omps</span> <span class="pre">1</span> <span class="pre">--ompthreads</span> <span class="pre">4</span> <span class="pre">--sysmem</span> <span class="pre">40000</span> <span class="pre">./main.py</span> <span class="pre">&lt;main.py</span> <span class="pre">options&gt;</span></code></p></li>
+</ul>
+</section>
+<section id="best-practices">
+<h2>Best practices<a class="headerlink" href="#best-practices" title="Link to this heading">#</a></h2>
+<p>First and foremost: <em>start from NumPy</em>. If you’re familiar with NumPy, you can
+begin by writing your code as you normally would in NumPy, and then replace
+<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">numpy</span> <span class="pre">as</span> <span class="pre">np</span></code> with <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">cupynumeric</span> <span class="pre">as</span> <span class="pre">np</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</pre></div>
+</div>
+<p>becomes</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</pre></div>
+</div>
+<section id="top-three-tips">
+<h3>Top three Tips<a class="headerlink" href="#top-three-tips" title="Link to this heading">#</a></h3>
+<section id="use-cupynumeric-arrays-avoid-native-lists">
+<h4>1. <em>Use cuPyNumeric arrays, AVOID native lists</em><a class="headerlink" href="#use-cupynumeric-arrays-avoid-native-lists" title="Link to this heading">#</a></h4>
+<p>When using arrays, do not use the native Python data structures like lists or
+tuples. Create a cuPyNumeric array from these structures and operate on them
+using the array-based functions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOT recommended: Performaing large-scale computation using lists</span>
+<span class="c1"># and other native Python data structures</span>
+<span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+    <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Recommended: Creating a cuPyNumeric array and using array-based operations</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</section>
+<section id="use-array-based-operations-avoid-loops-with-indexing">
+<h4>2. <em>Use array-based operations, AVOID loops with indexing</em><a class="headerlink" href="#use-array-based-operations-avoid-loops-with-indexing" title="Link to this heading">#</a></h4>
+<p>Replace explicit loops with array-based implementations, If a component of the
+array needs to be set/updated</p>
+<section id="example-1">
+<h5>Example 1<a class="headerlink" href="#example-1" title="Link to this heading">#</a></h5>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># x and y are three-dimensional arrays</span>
+
+<span class="c1"># NOT recommended: Performing naive element-wise implementation</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ny</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+
+<span class="c1"># Recommended: Using array-based operations</span>
+<span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="example-2">
+<h5>Example 2<a class="headerlink" href="#example-2" title="Link to this heading">#</a></h5>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># x and y are two-dimensional arrays, and we need to update x</span>
+<span class="c1"># depending on whether y meets a condition or not.</span>
+
+<span class="c1"># NOT recommended: Performing naive element-wise implementation</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ny</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">const</span>
+        <span class="k">else</span>
+            <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">const</span>
+
+<span class="c1"># Recommended: Using array-based operations</span>
+<span class="n">cond</span> <span class="o">=</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">tol</span>
+<span class="n">x</span><span class="p">[</span><span class="n">cond</span><span class="p">]</span> <span class="o">=</span> <span class="n">const</span>
+<span class="n">x</span><span class="p">[</span><span class="o">~</span><span class="n">cond</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">const</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="use-boolean-masks-avoid-advanced-indexing">
+<h4>3. <em>Use boolean masks, AVOID advanced indexing</em><a class="headerlink" href="#use-boolean-masks-avoid-advanced-indexing" title="Link to this heading">#</a></h4>
+<p>Indexing the array using a boolean mask will be faster than using an array
+with indices.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># NOT recommended: Using indices to index an array</span>
+<span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+
+<span class="c1"># Recommended: Using a boolean mask to index an array</span>
+<span class="n">cond</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&lt;</span> <span class="mi">0</span>
+<span class="n">x</span><span class="p">[</span><span class="n">cond</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">cond</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>For more best practices, refer to cuPyNumeric
+<a class="reference internal" href="practices.html"><span class="doc">Best Practices</span></a>.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="differences.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Differences with Numpy</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../examples/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Examples</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric-vs-numpy">cuPyNumeric vs NumPy</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardware-requirements">Hardware requirements</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#single-node-setup">Single-node setup</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#other-options">Other options</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-linux-installation">Basic Linux installation</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pip">Pip</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conda">Conda</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hpc-cluster-installation">HPC cluster installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-cupynumeric-code">Running cuPyNumeric code</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#single-node">Single node</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-node-hpc">Multi-node HPC</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#matrix-multiplication">Matrix multiplication</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#running-on-cpu">Running on CPU</a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#numpy">NumPy</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric">cuPyNumeric</a></li>
+</ul>
+</li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#running-on-gpu">Running on GPU</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#running-on-gpu-cluster">Running on GPU cluster</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conjugate-gradient">Conjugate gradient</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Running on CPU</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Running on GPU</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#black-scholes">Black-Scholes</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#sample-computation">Sample computation</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Running on CPU</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">Running on GPU</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#jacobi-stencil">Jacobi stencil</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#sample-code">Sample Code</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">Running on CPU</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">Running on GPU</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#edge-detection">Edge detection</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">Sample Code</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">Running on GPU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#resource-allocation">Resource allocation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#best-practices">Best practices</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#top-three-tips">Top three Tips</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-cupynumeric-arrays-avoid-native-lists">1. <em>Use cuPyNumeric arrays, AVOID native lists</em></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-array-based-operations-avoid-loops-with-indexing">2. <em>Use array-based operations, AVOID loops with indexing</em></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#example-1">Example 1</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#example-2">Example 2</a></li>
+</ul>
+</li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-boolean-masks-avoid-advanced-indexing">3. <em>Use boolean masks, AVOID advanced indexing</em></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+<a class="footer-brand logo" href="https://www.nvidia.com">
+  <img src="../_static/nvidia-logo-horiz-rgb-1c-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA"/>
+  <img src="../_static/nvidia-logo-horiz-rgb-1c-wht-for-screen.svg" class="logo__image only-dark" alt="NVIDIA"/>
+</a></div>
+      
+        <div class="footer-item">
+
+<div class="footer-links">
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-policy/">Privacy Policy</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/">Manage My Privacy</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/preferences/start/">Do Not Sell or Share My Data</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/terms-of-service/">Terms of Service</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/accessibility/">Accessibility</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/about-nvidia/company-policies/">Corporate Policies</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/product-security/">Product Security</a>
+   | 
+  
+  
+  
+  <a class="external" href="https://www.nvidia.com/en-us/contact/">Contact</a>
+  
+  
+  
+</div>
+</div>
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2024, NVIDIA.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+<div class="extra_footer">
+  
+  This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.
+  
+  <script type="text/javascript">if (typeof _satellite !== “undefined”){ _satellite.pageBottom();}</script>
+  
+</div></div>
+      
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+  </body>
+</html>
