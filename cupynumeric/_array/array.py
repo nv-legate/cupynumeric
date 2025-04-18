@@ -17,6 +17,7 @@ from __future__ import annotations
 import operator
 import warnings
 from functools import reduce
+from math import prod as builtin_prod
 from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
 
 import legate.core.types as ty
@@ -269,6 +270,7 @@ class ndarray:
         # special case for @ matmul
         if what == "matmul.__call__":
             from .._module import matmul
+
             return matmul(*inputs, **kwargs)
 
         # We cannot handle this ufunc call, so we will fall back to NumPy.
@@ -1430,10 +1432,23 @@ class ndarray:
 
         """
         check_writeable(self)
+
         if value.dtype != self.dtype:
             temp = ndarray(value.shape, dtype=self.dtype, inputs=(value,))
             temp._thunk.convert(value._thunk)
             value = temp
+
+        if len(value.shape) > len(self.shape):
+            N = len(value.shape) - len(self.shape)
+            first = value.shape[:N]
+            if builtin_prod(first) == 1:
+                value = value.squeeze(tuple(range(N)))
+            else:
+                raise ValueError(
+                    "could not broadcast input array from shape "
+                    f"{value.shape} into shape {self.shape}"
+                )
+
         key = self._convert_key(key)
         self._thunk.set_item(key, value._thunk)
 

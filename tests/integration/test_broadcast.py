@@ -199,6 +199,22 @@ def test_iteration(dim):
         assert item == next(c)
 
 
+@pytest.mark.parametrize("N", range(1, LEGATE_MAX_DIM), ids=str)
+def test_extra_1d_broadcast_assignment(N):
+    shape = (1 << 20,)
+    prefix = (1,) * N
+
+    z = num.zeros(prefix + shape)
+    w = num.ones(shape)
+    w[:] = z
+    assert np.array_equal(w, num.zeros(shape))
+
+    z = num.zeros(prefix + shape)
+    w = num.ones(shape)
+    z[:] = w
+    assert np.array_equal(z, num.ones(prefix + shape))
+
+
 if __name__ == "__main__":
     import sys
 
