@@ -16,6 +16,11 @@ Availability of each API (e.g., single CPU or Multiple GPUs/Multiple CPUs,
 etc.) is noted in the docstring of the API. This would be useful to know while
 designing the application since it can impact the scalability.
 
+Additionally, cuPyNumeric offers an optional "doctor" mode that will attempt to
+diagnose some common usage issues. To enable cuPyNumeric Doctor, set the
+environment variable ``CUPYNUMERIC_DOCTOR=1`` when you execute your code. See
+:ref:`settings` for additional configuration options for cuPyNumeric Doctor.
+
 Guidelines on using cuPyNumeric APIs
 ------------------------------------
 
