@@ -23,6 +23,10 @@ from legate.util.settings import EnvOnlySetting, PrioritizedSetting
 import cupynumeric.settings as m
 
 _expected_settings = (
+    "doctor",
+    "doctor_format",
+    "doctor_filename",
+    "doctor_traceback",
     "preload_cudalibs",
     "warn",
     "report_coverage",
@@ -49,6 +53,32 @@ _settings_with_test_defaults = (
 ENV_HEADER = Path(__file__).parents[3] / "src" / "env_defaults.h"
 
 
+class Test_convert_doctor_format:
+    def test_plain(self) -> None:
+        assert m.convert_doctor_format("plain") == "plain"
+        assert m.convert_doctor_format("PLAIN") == "plain"
+
+    def test_json(self) -> None:
+        assert m.convert_doctor_format("json") == "json"
+        assert m.convert_doctor_format("JSON") == "json"
+
+    def test_csv(self) -> None:
+        assert m.convert_doctor_format("csv") == "csv"
+        assert m.convert_doctor_format("CSV") == "csv"
+
+    def test_bad(self) -> None:
+        with pytest.raises(
+            ValueError, match="unknown cuPyNumeric Doctor format: junk"
+        ):
+            m.convert_doctor_format("junk")
+
+    def test_type(self) -> None:
+        assert (
+            m.convert_doctor_format.type
+            == 'DoctorFormat ("plain", "csv", or "json")'
+        )
+
+
 class TestSettings:
     def test_standard_settings(self) -> None:
         settings = [
@@ -64,6 +94,13 @@ class TestSettings:
         assert ps.env_var.startswith("CUPYNUMERIC_")
 
     def test_types(self) -> None:
+        assert m.settings.doctor.convert_type == 'bool ("0" or "1")'
+        assert (
+            m.settings.doctor_format.convert_type
+            == 'DoctorFormat ("plain", "csv", or "json")'
+        )
+        assert m.settings.doctor_filename.convert_type == "str"
+        assert m.settings.doctor_traceback.convert_type == 'bool ("0" or "1")'
         assert m.settings.preload_cudalibs.convert_type == 'bool ("0" or "1")'
         assert m.settings.warn.convert_type == 'bool ("0" or "1")'
         assert m.settings.report_coverage.convert_type == 'bool ("0" or "1")'
@@ -76,6 +113,18 @@ class TestSettings:
 
 
 class TestDefaults:
+    def test_doctor(self) -> None:
+        assert m.settings.doctor.default is False
+
+    def test_doctor_format(self) -> None:
+        assert m.settings.doctor_format.default == "plain"
+
+    def test_doctor_filename(self) -> None:
+        assert m.settings.doctor_filename.default is None
+
+    def test_doctor_traceback(self) -> None:
+        assert m.settings.doctor_traceback.default is False
+
     def test_preload_cudalibs(self) -> None:
         assert m.settings.preload_cudalibs.default is False
 

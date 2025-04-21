@@ -14,6 +14,8 @@
 #
 from __future__ import annotations
 
+from typing import Literal, cast
+
 from legate.util.settings import (
     EnvOnlySetting,
     PrioritizedSetting,
@@ -24,8 +26,67 @@ from legate.util.settings import (
 
 __all__ = ("settings",)
 
+DoctorFormat = Literal["plain", "json", "csv"]
+
+
+def convert_doctor_format(value: str) -> DoctorFormat:
+    """Return a DoctorFormat value."""
+    VALID = {"plain", "json", "csv"}
+    v = value.lower()
+    if v not in VALID:
+        raise ValueError(
+            f"unknown cuPyNumeric Doctor format: {value}, "
+            f"valid values are: {VALID}"
+        )
+    return cast(DoctorFormat, v)
+
+
+convert_doctor_format.type = (  # type: ignore [attr-defined]
+    'DoctorFormat ("plain", "csv", or "json")'
+)
+
 
 class CupynumericRuntimeSettings(Settings):
+    doctor: PrioritizedSetting[bool] = PrioritizedSetting(
+        "doctor",
+        "CUPYNUMERIC_DOCTOR",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Attempt to warn about certain usage patterns that are inefficient with
+        cuPyNumeric.
+        """,
+    )
+
+    doctor_format: PrioritizedSetting[DoctorFormat] = PrioritizedSetting(
+        "doctor_format",
+        "CUPYNUMERIC_DOCTOR_FORMAT",
+        default="plain",
+        convert=convert_doctor_format,
+        help="""
+        Format for cuPyNumeric ouput: plain, json, or csv.
+        """,
+    )
+
+    doctor_filename: PrioritizedSetting[str | None] = PrioritizedSetting(
+        "doctor_filename",
+        "CUPYNUMERIC_DOCTOR_FILENAME",
+        default=None,
+        help="""
+        A filename for a file to dump cuPyNumeric output to, otherwise stdout.
+        """,
+    )
+
+    doctor_traceback: PrioritizedSetting[bool] = PrioritizedSetting(
+        "doctor_filename",
+        "CUPYNUMERIC_DOCTOR_TRACEBACK",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Whether cuPyNumeric Doctor output should include full tracebacks.
+        """,
+    )
+
     preload_cudalibs: PrioritizedSetting[bool] = PrioritizedSetting(
         "preload_cudalibs",
         "CUPYNUMERIC_PRELOAD_CUDALIBS",

@@ -30,7 +30,9 @@ from typing import (
 import numpy as np
 
 from ..runtime import runtime
+from ..settings import settings
 from ..types import NdShape
+from .doctor import doctor
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -107,6 +109,8 @@ def add_boilerplate(
                     else:
                         kwargs[k] = convert_to_cupynumeric_ndarray(v)
 
+            if settings.doctor():
+                doctor.diagnose(func.__name__, args, kwargs)
             return func(*args, **kwargs)
 
         return wrapper
