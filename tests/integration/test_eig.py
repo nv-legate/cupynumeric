@@ -15,6 +15,8 @@
 
 import numpy as np
 import pytest
+import re
+from numpy.linalg.linalg import LinAlgError  # noqa: F401
 
 import cupynumeric as num
 
@@ -153,6 +155,92 @@ class TestEig(object):
         arr_num = num.array(arr_np)
         ew, ev = num.linalg.eig(arr_num)
         assert_result(arr_num, ew, ev)
+
+    def test_eig_1d_array(self) -> None:
+        arr = np.array([1, 2, 3])
+        msg = (
+            r"1-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+        with pytest.raises(LinAlgError, match=re.escape(msg)):
+            num.linalg.eig(arr)
+        with pytest.raises(LinAlgError, match=re.escape(msg)):
+            np.linalg.eig(arr)
+
+    def test_eig_non_square(self) -> None:
+        arr = np.array([[1, 2, 3], [4, 5, 6]])  # 2x3 matrix
+        msg = r"Last 2 dimensions of the array must be square"
+        with pytest.raises(LinAlgError, match=msg):
+            num.linalg.eig(arr)
+        with pytest.raises(LinAlgError, match=msg):
+            np.linalg.eig(arr)
+
+    def test_eig_float16(self) -> None:
+        arr = np.array([[1, 2], [3, 4]], dtype=np.float16)
+        msg = r"array type float16 is unsupported in linalg"
+        with pytest.raises(TypeError, match=msg):
+            num.linalg.eig(arr)
+        with pytest.raises(TypeError, match=msg):
+            np.linalg.eig(arr)
+
+
+class TestEigvals(object):
+    @pytest.mark.parametrize("size", SIZES)
+    @pytest.mark.parametrize("dtype", (np.int32, np.int64))
+    def test_arr_basic_int(self, size: tuple[int, ...], dtype: np.dtype) -> None:
+        arr_np = np.random.randint(-100, 100, size).astype(dtype)
+        arr_num = num.array(arr_np)
+        out_np = np.linalg.eigvals(arr_np)
+        out_num = num.linalg.eigvals(arr_num)
+        assert np.allclose(out_np, out_num)
+
+    @pytest.mark.parametrize("size", SIZES_4D)
+    @pytest.mark.parametrize("dtype", (np.float32, np.float64))
+    def test_arr_4d_real(self, size: tuple[int, ...], dtype: np.dtype) -> None:
+        arr_np = np.random.randint(-100, 100, size).astype(dtype)
+        arr_num = num.array(arr_np)
+        out_np = np.linalg.eigvals(arr_np)
+        out_num = num.linalg.eigvals(arr_num)
+        assert np.allclose(out_np, out_num)
+
+    @pytest.mark.parametrize("size", SIZES_4D)
+    @pytest.mark.parametrize("dtype", (np.complex64, np.complex128))
+    def test_arr_4d_complex(self, size: tuple[int, ...], dtype: np.dtype) -> None:
+        arr_np = (
+            np.random.randint(-100, 100, size)
+            + np.random.randint(-100, 100, size) * 1.0j
+        ).astype(dtype)
+        arr_num = num.array(arr_np)
+        out_num = num.linalg.eigvals(arr_num)
+        out_np = np.linalg.eigvals(arr_np)
+        assert np.allclose(out_np, out_num)
+
+    def test_eigvals_1d_array(self) -> None:
+        arr = np.array([1, 2, 3])
+        msg = (
+            r"1-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+        with pytest.raises(LinAlgError, match=msg):
+            num.linalg.eigvals(arr)
+        with pytest.raises(LinAlgError, match=msg):
+            np.linalg.eig(arr)
+
+    def test_eigvals_non_square(self) -> None:
+        arr = np.array([[1, 2, 3], [4, 5, 6]])  # 2x3 matrix
+        msg = r"Last 2 dimensions of the array must be square"
+        with pytest.raises(LinAlgError, match=msg):
+            num.linalg.eigvals(arr)
+        with pytest.raises(LinAlgError, match=msg):
+            np.linalg.eig(arr)
+
+    def test_eigvals_float16(self) -> None:
+        arr = np.array([[1, 2], [3, 4]], dtype=np.float16)
+        msg = r"array type float16 is unsupported in linalg"
+        with pytest.raises(TypeError, match=msg):
+            num.linalg.eigvals(arr)
+        with pytest.raises(TypeError, match=msg):
+            np.linalg.eig(arr)
 
 
 if __name__ == "__main__":

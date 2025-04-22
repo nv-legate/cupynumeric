@@ -117,6 +117,25 @@ def test_batched_4d(n):
             assert allclose(correct, test)
 
 
+@pytest.mark.parametrize("ddtype", (np.int32, np.uint8, np.int64))
+def test_cholesky_integer_input(ddtype: np.dtype) -> None:
+    arr = np.array([[4, 2], [2, 5]], dtype=ddtype)
+    result_num = num.linalg.cholesky(arr)
+    result_np = np.linalg.cholesky(arr)
+
+    assert np.allclose(result_np, result_num)
+
+
+def test_cholesky_bool_input() -> None:
+    arr = np.array([[True, False], [False, True]], dtype=bool)
+    result_num = num.linalg.cholesky(arr)
+    result_np = np.linalg.cholesky(arr)
+
+    expected = np.eye(2, dtype=np.float64)
+    assert np.allclose(result_num, expected)
+    assert np.allclose(result_num, result_np)
+
+
 if __name__ == "__main__":
     import sys
 
