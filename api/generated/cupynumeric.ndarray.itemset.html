@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cupynumeric.ndarray.itemset &#8212; NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995)</title>
+    <title>cupynumeric.ndarray.itemset &#8212; NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623)</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=599b7f72"></script>
+    <script src="../../_static/documentation_options.js?v=4d729ef6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -130,11 +130,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623)</p>
   
 </a></div>
     
@@ -241,11 +241,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+35.g85e06995)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.05.00.dev+37.g5816f623)</p>
   
 </a>
 
@@ -793,7 +793,6 @@
 <li class="toctree-l3 has-children"><a class="reference internal" href="../sorting.html">Sorting, searching, and counting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.argpartition.html">cupynumeric.argpartition</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.argsort.html">cupynumeric.argsort</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cupynumeric.msort.html">cupynumeric.msort</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.partition.html">cupynumeric.partition</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.sort.html">cupynumeric.sort</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.sort_complex.html">cupynumeric.sort_complex</a></li>
@@ -910,37 +909,10 @@
                   
   <section id="cupynumeric-ndarray-itemset">
 <h1>cupynumeric.ndarray.itemset<a class="headerlink" href="#cupynumeric-ndarray-itemset" title="Link to this heading">#</a></h1>
-<dl class="py method">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="cupynumeric.ndarray.itemset">
-<span class="sig-prename descclassname"><span class="pre">ndarray.</span></span><span class="sig-name descname"><span class="pre">itemset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cupynumeric.ndarray.itemset" title="Link to this definition">#</a></dt>
-<dd><p>Insert scalar into an array (scalar is cast to array’s dtype,
-if possible)</p>
-<p>There must be at least 1 argument, and define the last argument
-as <em>item</em>.  Then, <code class="docutils literal notranslate"><span class="pre">a.itemset(*args)</span></code> is equivalent to but faster
-than <code class="docutils literal notranslate"><span class="pre">a[args]</span> <span class="pre">=</span> <span class="pre">item</span></code>.  The item should be a scalar value and
-<cite>args</cite> must select a single item in the array <cite>a</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>*args</strong> – If one argument: a scalar, only used in case <cite>a</cite> is of size 1.
-If two arguments: the last argument is the value to be set
-and must be a scalar, the first argument specifies a single
-array element location. It is either an int or a tuple.</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>Compared to indexing syntax, <cite>itemset</cite> provides some speed increase
-for placing a scalar into a particular location in an <cite>ndarray</cite>,
-if you must do this.  However, generally this is discouraged:
-among other problems, it complicates the appearance of the code.
-Also, when using <cite>itemset</cite> (and <cite>item</cite>) inside a loop, be sure
-to assign the methods to a local variable to avoid the attribute
-look-up at each loop iteration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Availability<span class="colon">:</span></dt>
-<dd class="field-odd"><p><em>Multiple GPUs, Multiple CPUs</em></p>
-</dd>
-</dl>
-</dd></dl>
+<span class="sig-prename descclassname"><span class="pre">ndarray.</span></span><span class="sig-name descname"><span class="pre">itemset</span></span><a class="headerlink" href="#cupynumeric.ndarray.itemset" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 </section>
 
@@ -993,7 +965,7 @@ look-up at each loop iteration.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric.ndarray.itemset"><code class="docutils literal notranslate"><span class="pre">itemset()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric.ndarray.itemset"><code class="docutils literal notranslate"><span class="pre">itemset</span></code></a></li>
 </ul>
   </nav></div>
 

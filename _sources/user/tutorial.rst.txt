@@ -70,7 +70,7 @@ Pip
 ---
 
 Python wheel packages are available for Linux (x86 and aarch64) for Python
-3.10–3.12 from `PyPI`_. To install these into an existing environment, run
+3.11–3.13 from `PyPI`_. To install these into an existing environment, run
 the command:
 
 .. code-block:: sh
