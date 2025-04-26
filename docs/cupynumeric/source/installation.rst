@@ -27,7 +27,7 @@ on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
 .. important::
 
    Packages are only offered for Linux (x86_64 and aarch64) supporting Python
-   versions 3.10 to 3.12.
+   versions 3.11 to 3.13.
 
 Installing PyPI Packages
 ------------------------
@@ -58,7 +58,7 @@ documentation to find more details about running on multiple nodes.
 .. important::
 
    Packages are only offered for Linux (x86_64 and aarch64) supporting Python
-   versions 3.10 to 3.12.
+   versions 3.11 to 3.13.
 
 Verify your Installation
 ------------------------

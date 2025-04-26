@@ -19,7 +19,7 @@ from pytest_mock import MockerFixture
 
 import cupynumeric._array.util as m  # module under test
 
-from tests.unit.util import powerset
+from unit.util import powerset
 
 
 @m.add_boilerplate()

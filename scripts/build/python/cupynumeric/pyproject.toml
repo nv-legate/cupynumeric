@@ -15,7 +15,7 @@ requires = [
     "rich",
 ]
 build-backend = "scikit_build_core.build"
-python-requires = ">=3.10"
+python-requires = ">=3.11"
 
 [project]
 name = "nvidia-cupynumeric"
@@ -28,9 +28,9 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "numpy!=2.1.0",

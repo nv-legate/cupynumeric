@@ -62,13 +62,13 @@ jobs:
           #
           export MATRIX="
           # amd64
-          - { ARCH: 'amd64', PY_VER: '3.10', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          - { ARCH: 'amd64', PY_VER: '3.13', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           # arm64 - disabled due to ARM GPU runner availability
-          # - { ARCH: 'arm64', PY_VER: '3.10', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
           # - { ARCH: 'arm64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
           # - { ARCH: 'arm64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.13', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
           "
 
           MATRIX="$(
@@ -113,14 +113,14 @@ jobs:
         if: ${{ matrix.GPU != 'v100' && matrix.GPU != 'a100' }}
       - name: Download the legate wheel
         env:
-          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12.5.1-py${{ matrix.PY_VER }}
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
           GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
         run: |
           legate-gh-download-artifact ${{ inputs.legate-sha }} "legate-wheel-${{ env.BUILD_NAME }}" "wheel"
       - name: Download the wheel from the build job
         env:
           BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
-          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12.5.1-py${{ matrix.PY_VER }}
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
         uses: actions/download-artifact@v4
         with:
           path: final-dist

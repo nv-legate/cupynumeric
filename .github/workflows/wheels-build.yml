@@ -18,7 +18,7 @@ on:
         default: "cpu16"
       cuda_ver:
         type: string
-        default: "12.5.1"
+        default: "12.8.0"
       linux_ver:
         type: string
         default: "rockylinux8"
@@ -65,13 +65,13 @@ jobs:
           #
           export MATRIX="
           # amd64
-          - { ARCH: 'amd64', PY_VER: '3.10', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
           - { ARCH: 'amd64', PY_VER: '3.11', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
           - { ARCH: 'amd64', PY_VER: '3.12', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          - { ARCH: 'amd64', PY_VER: '3.13', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
           # arm64
-          - { ARCH: 'arm64', PY_VER: '3.10', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
           - { ARCH: 'arm64', PY_VER: '3.11', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
           - { ARCH: 'arm64', PY_VER: '3.12', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
+          - { ARCH: 'arm64', PY_VER: '3.13', TARGET_DEV: 'gpu', BUILD_MODE: 'release' }
           "
 
           MATRIX="$(

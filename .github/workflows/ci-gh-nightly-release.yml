@@ -24,9 +24,9 @@ jobs:
           - true
           - false
         python-version:
-          - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
     uses:
       ./.github/workflows/gh-build-and-test.yml
     with:

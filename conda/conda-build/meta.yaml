@@ -55,7 +55,7 @@
     {% set version = environ.get('GIT_DESCRIBE_TAG', placeholder_version).lstrip('v') %}
     {% set legate_version = os.environ.get("LEGATE_VERSION", version) %}
 {% endif %}
-{% set legate_buildstr = "_".join(["cuda" ~ cuda_major, "py" ~ py_version, os.environ.get("LEGATE_BUILDSTR", ""), cpu_gpu_tag.strip('_') ]) %}
+{% set legate_buildstr = "_".join(["cuda" ~ cuda_major, "py" ~ py_version, "*" ~ cpu_gpu_tag.strip('_'), os.environ.get("LEGATE_BUILDSTR", "") ]) %}
 
 package:
   name: {{ name|lower }}

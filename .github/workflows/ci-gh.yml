@@ -26,7 +26,7 @@ jobs:
         upload-enabled:
           - false
         python-version:
-          - "3.12"
+          - "3.13"
         exclude:
           - platform: linux-aarch64
             target-device: gpu

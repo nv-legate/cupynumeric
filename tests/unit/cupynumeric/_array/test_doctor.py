@@ -153,8 +153,7 @@ class TestDoctor:
         assert (
             d.output
             == """\
-{"filename": "fn1", "lineno": 11, "traceback": "", "source": "src1", "description": "desc1", "reference": "ref1"}
-{"filename": "fn2", "lineno": 12, "traceback": "", "source": "src2", "description": "desc2", "reference": "ref2"}
+[{"filename": "fn1", "lineno": 11, "traceback": "", "source": "src1", "description": "desc1", "reference": "ref1"}, {"filename": "fn2", "lineno": 12, "traceback": "", "source": "src2", "description": "desc2", "reference": "ref2"}]
 """  # noqa: E501
         )
         settings.doctor_format.unset_value()
@@ -191,7 +190,7 @@ class TestRepeatedItemOps:
             checkup.description
             == "multiple scalar item accesses repeated on the same line"
         )
-        assert checkup.reference is None
+        assert checkup.reference is not None
 
     def test_run_non_itemop(self) -> None:
         checkup = m.RepeatedItemOps()
