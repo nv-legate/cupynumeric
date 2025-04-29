@@ -1524,6 +1524,20 @@ class ndarray:
         """
         return _ufunc.bitwise_xor(self, rhs)
 
+    # scalar functions on 0d arrays
+    def __round__(self, ndigits: int | None = None) -> Any:
+        if self.ndim == 0:
+            value = self.__array__().item()
+            if not isinstance(value, (int, float, np.number)):
+                raise TypeError(
+                    f"Rounding not supported for type: {self.dtype}"
+                )
+            return round(float(value), ndigits)
+        else:
+            raise ValueError(
+                "Python's round method can be called only on scalars"
+            )
+
     @add_boilerplate()
     def all(
         self,
