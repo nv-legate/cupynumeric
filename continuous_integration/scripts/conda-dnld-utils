@@ -12,7 +12,7 @@ generate_legate_version() {
 }
 
 verify_legate_version() {
-    legate-mamba-retry search legate=${LEGATE_VERSION} --channel https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL}
+    legate-conda-retry search legate=${LEGATE_VERSION} --channel https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL}
     if [ $? -ne 0 ]; then
         echo "Error: conda search failed for legate." >&2; exit 1
     fi

@@ -5,7 +5,7 @@ set -x
 . conda-utils
 
 make_release_env() {
-    legate-mamba-retry create -q -y -n "${CONDA_ENV}" -c conda-forge boa
+    legate-conda-retry create -q -y -n "${CONDA_ENV}" -c conda-forge boa
 }
 
 make_docs_env() {
@@ -18,7 +18,7 @@ make_docs_env() {
     apt-get update
     apt-get install -y numactl make
 
-    legate-mamba-retry create -yn "${CONDA_ENV}" pandoc doxygen
+    legate-conda-retry create -yn "${CONDA_ENV}" pandoc doxygen
 
     . conda-utils;
     activate_conda_env;
