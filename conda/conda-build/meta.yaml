@@ -143,6 +143,8 @@ requirements:
     - libcurand-dev
     - libcufile-dev
     - cuda-version ={{ cuda_version }}
+    - libcusolvermp-dev
+    - libcal-dev
 {% endif %}
 
   run:

@@ -10,6 +10,9 @@ build_release_product() {
 
     local conda_build_args=();
     # The channel sequence below needs to be preserved
+    # The ucc140 label contains the provisional packages for UCC 1.4.0
+    # TODO(marcinz): Needs to be removed when the real UCC 1.4.0 packages are available
+    conda_build_args+=(-c legate/label/ucc140);
     conda_build_args+=(-c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL});
     conda_build_args+=(-c legate/label/ucc140);
     conda_build_args+=(-c conda-forge);

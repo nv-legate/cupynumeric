@@ -44,7 +44,7 @@ ATOL = {
     "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
 )
 def test_solve_1d(n, a_dtype, b_dtype):
-    a = np.random.rand(n, n).astype(a_dtype)
+    a = np.random.rand(n, n).astype(a_dtype) + np.eye(n) * n
     b = np.random.rand(n).astype(b_dtype)
 
     out = num.linalg.solve(a, b)
@@ -67,7 +67,7 @@ def test_solve_1d(n, a_dtype, b_dtype):
     "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
 )
 def test_solve_2d(n, a_dtype, b_dtype):
-    a = np.random.rand(n, n).astype(a_dtype)
+    a = np.random.rand(n, n).astype(a_dtype) + np.eye(n) * n
     b = np.random.rand(n, n + 2).astype(b_dtype)
 
     out = num.linalg.solve(a, b)

@@ -54,6 +54,10 @@ static inline void mp_potrf_template(
                                             &device_buffer_size,
                                             &host_buffer_size));
 
+  // ensure non-empty buffers
+  device_buffer_size = std::max(device_buffer_size, 1ul);
+  host_buffer_size   = std::max(host_buffer_size, 1ul);
+
   auto device_buffer = create_buffer<int8_t>(device_buffer_size, Memory::Kind::GPU_FB_MEM);
   auto host_buffer   = create_buffer<int8_t>(host_buffer_size, Memory::Kind::Z_COPY_MEM);
   auto info          = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);

@@ -961,17 +961,23 @@ def _thunk_solve(
         b = b.astype(dtype)
 
     if output is not None:
-        out = output
-        if out.shape != b.shape:
+        if output.shape != b.shape:
             raise ValueError(
                 f"Output shape mismatch: expected {b.shape}, "
-                f"but found {out.shape}"
+                f"but found {output.shape}"
             )
-        elif out.dtype != b.dtype:
+        elif output.dtype != b.dtype:
             raise TypeError(
                 f"Output type mismatch: expected {b.dtype}, "
-                f"but found {out.dtype}"
+                f"but found {output.dtype}"
             )
+
+    expand_b = b.ndim == 1
+    if expand_b:
+        b = b.reshape((b.shape[0], 1))
+
+    if output is not None:
+        out = output.reshape(b.shape)
     else:
         out = ndarray(
             shape=b.shape,
@@ -981,7 +987,12 @@ def _thunk_solve(
                 b,
             ),
         )
+
     out._thunk.solve(a._thunk, b._thunk)
+
+    if expand_b:
+        out = out.reshape((b.shape[0],))
+
     return out
 
 

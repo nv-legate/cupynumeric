@@ -59,13 +59,21 @@ test_cupynumeric() {
 
     cd "${REPO_DIR}";
 
+    export WORKERS=""
+    if command -v nvidia-smi &> /dev/null; then
+        gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
+        if [ "$gpu_count" -ge 2 ]; then
+            export WORKERS="-j 1"
+        fi
+    fi
+
     case "$1" in
         "test")
             echo "Executing tests..."
             shift;
             setup_test_env;
             run_legate_issue;
-            ./test.py -vv --timeout 300 "$@"
+            ./test.py ${WORKERS} -vv --timeout 300 "$@"
             ;;
         "mypy")
             echo "Installing and executing mypy..."

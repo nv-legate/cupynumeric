@@ -32,6 +32,13 @@ constexpr auto get_16b_aligned_count = [](auto count, auto element_bytes) {
   return (get_16b_aligned(count * element_bytes) + element_bytes - 1) / element_bytes;
 };
 
+template <typename T>
+Buffer<T> create_non_empty_buffer(size_t size,
+                                  legate::Memory::Kind kind = legate::Memory::Kind::NO_MEMKIND)
+{
+  return create_buffer<T>(std::max(size, size_t{1}), kind, alignof(T));
+}
+
 const auto is_device_only_ptr = [](const void* ptr) {
   cudaPointerAttributes attrs;
   auto res = cudaPointerGetAttributes(&attrs, ptr);
@@ -439,6 +446,7 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
       recv_info.ptr(r * stored_size_per_rank), stored_size_per_rank, ncclUint64, r, *comm, stream));
   }
   CHECK_NCCL(ncclGroupEnd());
+
   CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));  // need Z-copy synchronized to Host
 
   // allocate send/recv buffer
@@ -452,7 +460,7 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
     for (size_t rank_r = 0; rank_r < p_r; ++rank_r) {
       auto glob_rank = rank_r + rank_c * p_r;  // target ranks are col major
       assert(send_buffers.size() == glob_rank);
-      send_buffers.emplace_back(create_buffer<VAL>(
+      send_buffers.emplace_back(create_non_empty_buffer<VAL>(
         send_info[glob_rank * stored_size_per_rank + BlockInfo::TOTAL_SIZE], Memory::GPU_FB_MEM));
       auto receive_size = recv_info[glob_rank * stored_size_per_rank + BlockInfo::TOTAL_SIZE];
       if (receive_size > 0) {
@@ -463,7 +471,7 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
       }
       total_receive += receive_size;
       assert(recv_buffers.size() == glob_rank);
-      recv_buffers.emplace_back(create_buffer<VAL>(receive_size, Memory::GPU_FB_MEM));
+      recv_buffers.emplace_back(create_non_empty_buffer<VAL>(receive_size, Memory::GPU_FB_MEM));
     }
   }
 
@@ -484,6 +492,7 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
     // simplify - every tile handled by individual block (especially helpful for row/col transpose)
     dim3 grid = dim3(num_tiles_r, num_tiles_c);
     dim3 block(BLOCK_DIM, BLOCK_DIM);
+
     // row based needs shared mem for coalesced read/write
     // col based can access directly? maybe also use shared mem to unify
     copy_to_send_buffer<<<grid, block, 0, stream>>>(input,
@@ -528,7 +537,7 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
   }
 
   // combine data from all buffers
-  Buffer<VAL> result_2dbc = create_buffer<VAL>(total_receive, Memory::GPU_FB_MEM);
+  Buffer<VAL> result_2dbc = create_non_empty_buffer<VAL>(total_receive, Memory::GPU_FB_MEM);
   if (total_receive > 0) {
     Buffer<VAL*> recv_buffers_ptr = create_buffer<VAL*>(num_ranks, Memory::Z_COPY_MEM);
     for (size_t r = 0; r < num_ranks; r++) {
@@ -774,7 +783,8 @@ void repartition_matrix_block(
         send_info[other_rank * stored_size_per_rank + BlockInfo::OFFSET_COL] =
           active_send_column_start;
         assert(send_buffers.size() == other_rank);
-        send_buffers.emplace_back(create_buffer<VAL>(send_elements_for_rank, Memory::GPU_FB_MEM));
+        send_buffers.emplace_back(
+          create_non_empty_buffer<VAL>(send_elements_for_rank, Memory::GPU_FB_MEM));
       }
     }
   }
@@ -845,7 +855,8 @@ void repartition_matrix_block(
       recv_info[other_rank * stored_size_per_rank + BlockInfo::OFFSET_COL] =
         active_recv_column_start;
       assert(other_rank == recv_buffers.size());
-      recv_buffers.emplace_back(create_buffer<VAL>(recv_elements_for_rank, Memory::GPU_FB_MEM));
+      recv_buffers.emplace_back(
+        create_non_empty_buffer<VAL>(recv_elements_for_rank, Memory::GPU_FB_MEM));
     }
   }
 

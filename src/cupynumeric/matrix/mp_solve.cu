@@ -86,11 +86,14 @@ static inline void mp_solve_template(cal_comm_t comm,
                                             &getrs_device_buffer_size,
                                             &getrs_host_buffer_size));
 
-  auto device_buffer = create_buffer<int8_t>(
-    std::max(getrf_device_buffer_size, getrs_device_buffer_size), Memory::Kind::GPU_FB_MEM);
-  auto host_buffer = create_buffer<int8_t>(std::max(getrf_host_buffer_size, getrs_host_buffer_size),
-                                           Memory::Kind::Z_COPY_MEM);
-  auto info        = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
+  // ensure non-empty buffers
+  size_t device_buffer_size =
+    std::max(std::max(getrf_device_buffer_size, getrs_device_buffer_size), 1ul);
+  size_t host_buffer_size = std::max(std::max(getrf_host_buffer_size, getrs_host_buffer_size), 1ul);
+
+  auto device_buffer = create_buffer<int8_t>(device_buffer_size, Memory::Kind::GPU_FB_MEM);
+  auto host_buffer   = create_buffer<int8_t>(host_buffer_size, Memory::Kind::Z_COPY_MEM);
+  auto info          = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
 
   // initialize to zero
   info[0] = 0;
@@ -105,9 +108,9 @@ static inline void mp_solve_template(cal_comm_t comm,
                                  nullptr,
                                  cudaTypeToDataType<VAL>::type,
                                  device_buffer.ptr(0),
-                                 getrf_device_buffer_size,
+                                 device_buffer_size,
                                  host_buffer.ptr(0),
-                                 getrf_host_buffer_size,
+                                 host_buffer_size,
                                  info.ptr(0)));
 
   if (info[0] != 0) {
@@ -129,9 +132,9 @@ static inline void mp_solve_template(cal_comm_t comm,
                                  b_desc,
                                  cudaTypeToDataType<VAL>::type,
                                  device_buffer.ptr(0),
-                                 getrs_device_buffer_size,
+                                 device_buffer_size,
                                  host_buffer.ptr(0),
-                                 getrs_host_buffer_size,
+                                 host_buffer_size,
                                  info.ptr(0)));
 
   // TODO: We need a deferred exception to avoid this synchronization

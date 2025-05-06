@@ -399,6 +399,20 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         }
       }
     }
+    case CUPYNUMERIC_MP_POTRF:
+    case CUPYNUMERIC_MP_SOLVE: {
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::FBMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::ZCMEM: {
+          return std::nullopt;
+        }
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          LEGATE_ABORT("CPU tasks shouldn't reach here");
+          return 0;
+        }
+      }
+    }
     case CUPYNUMERIC_NONZERO: {
       auto&& input      = task.input(0);
       auto&& output     = task.output(0);
