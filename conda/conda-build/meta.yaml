@@ -132,7 +132,9 @@ requirements:
   host:
     - python
     - scikit-build
-    - openblas =* =*openmp*
+    # Versions after v0.3.23 conflict with Realm's OpenMP runtime
+    # see https://github.com/nv-legate/cupynumeric.internal/issues/342
+    - openblas <=0.3.23 =*openmp*
     - legate ={{ legate_version }}={{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cuda-cccl
@@ -152,7 +154,9 @@ requirements:
     - numpy {{ numpy_version }}
     - opt_einsum >=3.3
     - scipy
-    - openblas =* =*openmp*
+    # Versions after v0.3.23 conflict with Realm's OpenMP runtime
+    # see https://github.com/nv-legate/cupynumeric.internal/issues/342
+    - openblas <=0.3.23 =*openmp*
 {% if gpu_enabled_bool %}
     - cupy
     - libnvjitlink

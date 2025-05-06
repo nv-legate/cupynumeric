@@ -133,6 +133,10 @@ endfunction()
 
 if(NOT DEFINED cupynumeric_OPENBLAS_VERSION)
   # Before v0.3.18, OpenBLAS's throws CMake errors when configuring
+  # Versions after v0.3.23 conflict with Realm's OpenMP runtime
+  # see https://github.com/nv-legate/cupynumeric.internal/issues/342
+  # But we keep the wheels build at 0.3.29 because 0.3.23 uses an old minimum
+  # CMake version, which causes a configure failure
   set(cupynumeric_OPENBLAS_VERSION "0.3.29")
 endif()
 

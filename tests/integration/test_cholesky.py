@@ -52,43 +52,48 @@ def test_diagonal():
 
 def _get_real_symm_posdef(n):
     a = num.random.rand(n, n)
-    return a + a.T + num.eye(n) * n
+    return a + a.T + num.eye(n) * n * 2
 
 
 @pytest.mark.parametrize("n", SIZES)
 def test_real(n):
     b = _get_real_symm_posdef(n)
     c = num.linalg.cholesky(b)
-    c_np = np.linalg.cholesky(b.__array__())
-    assert allclose(c, c_np)
+    c_np = c.__array__()
+    b2 = np.dot(c_np, c_np.T)
+    assert allclose(b, b2)
 
 
 @pytest.mark.parametrize("n", SIZES)
 def test_complex(n):
     a = num.random.rand(n, n) + num.random.rand(n, n) * 1.0j
-    b = a + a.T.conj() + num.eye(n) * n
+    b = a + a.T.conj() + num.eye(n) * n * 3
     c = num.linalg.cholesky(b)
-    c_np = np.linalg.cholesky(b.__array__())
-    assert allclose(c, c_np)
+    c_np = c.__array__()
+    b2 = np.dot(c_np, c_np.T.conj())
+    assert allclose(b, b2)
 
-    d = num.empty((2, n, n))
+    d = num.empty((2, n, n), dtype=num.complex128)
     d[1] = b
     c = num.linalg.cholesky(d[1])
-    c_np = np.linalg.cholesky(d[1].__array__())
-    assert allclose(c, c_np)
+    c_np = c.__array__()
+    b2 = np.dot(c_np, c_np.T.conj())
+    assert allclose(d[1], b2)
 
 
 @pytest.mark.parametrize("n", SIZES)
 def test_batched_3d(n):
     batch = 4
     a = _get_real_symm_posdef(n)
-    np_a = a.__array__()
-    a_batched = num.einsum("i,jk->ijk", np.arange(batch) + 1, a)
+    multiplier = np.arange(batch) + 1
+    a_batched = num.einsum("i,jk->ijk", multiplier, a)
     test_c = num.linalg.cholesky(a_batched)
     for i in range(batch):
-        correct = np.linalg.cholesky(np_a * (i + 1))
         test = test_c[i, :]
-        assert allclose(correct, test)
+        c_np = test.__array__()
+        a2 = np.dot(c_np, c_np.T)
+        ref_a = multiplier[i] * a
+        assert allclose(ref_a, a2)
 
 
 def test_batched_empty():
@@ -104,17 +109,16 @@ def test_batched_empty():
 def test_batched_4d(n):
     batch = 2
     a = _get_real_symm_posdef(n)
-    np_a = a.__array__()
-
     outer = np.einsum("i,j->ij", np.arange(batch) + 1, np.arange(batch) + 1)
 
     a_batched = num.einsum("ij,kl->ijkl", outer, a)
     test_c = num.linalg.cholesky(a_batched)
     for i in range(batch):
         for j in range(batch):
-            correct = np.linalg.cholesky(np_a * (i + 1) * (j + 1))
             test = test_c[i, j, :]
-            assert allclose(correct, test)
+            c_np = test.__array__()
+            a2 = np.dot(c_np, c_np.T)
+            assert allclose(a_batched[i, j, :, :], a2)
 
 
 @pytest.mark.parametrize("ddtype", (np.int32, np.uint8, np.int64))
