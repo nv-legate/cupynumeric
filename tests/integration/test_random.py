@@ -190,22 +190,41 @@ class TestRandomSeed:
         L2 = np.random.randn(3, 3)
         assert L1.ndim == L2.ndim
 
-    def test_negative_seed(self) -> None:
-        with pytest.raises(ValueError):
-            np.random.seed(-10)
-        num.random.seed(-10)
-        # See https://github.com/nv-legate/cunumeric.internal/issues/484
-        # cuNumeric passed with negative value
-
-    def test_seed_float(self) -> None:
-        msg = r"Cannot cast scalar from dtype('float64') to dtype('int64') "
-        " according to the rule 'safe'"
-        with pytest.raises(TypeError, match=re.escape(msg)):
+    def test_invalid_type_seed(self) -> None:
+        msg = re.escape(
+            "Cannot cast scalar from dtype('<U3') to dtype('int64') "
+            "according to the rule 'safe'"
+        )
+        with pytest.raises(TypeError, match=msg):
+            np.random.seed("123")
+        with pytest.raises(TypeError, match=msg):
+            np.random.seed("abc")
+            
+        msg = re.escape(
+            "Cannot cast scalar from dtype('float64') to dtype('int64') "
+            "according to the rule 'safe'"
+        )
+        with pytest.raises(TypeError, match=msg):
             np.random.seed(10.5)
+            
+        msg_num = re.escape("seed must be an integer or None")
+        with pytest.raises(TypeError, match=msg_num):
+            num.random.seed("123")
+        with pytest.raises(TypeError, match=msg_num):
+            num.random.seed("abc")
+        with pytest.raises(TypeError, match=msg_num):
+            num.random.seed(10.5)
 
-        num.random.seed(10.5)
-        # See https://github.com/nv-legate/cunumeric.internal/issues/199
-        # cuNumeric passed with float value
+    def test_invalid_value_seed(self) -> None:
+        msg = re.escape("Seed must be between 0 and 2**32 - 1")
+        with pytest.raises(ValueError, match=msg):
+            np.random.seed(-10)
+        with pytest.raises(ValueError, match=msg):
+            np.random.seed(2 ** 32)
+        with pytest.raises(ValueError, match=msg):
+            num.random.seed(-10)
+        with pytest.raises(ValueError, match=msg):
+            num.random.seed(2 ** 32)
 
 
 def test_RandomState() -> None:
