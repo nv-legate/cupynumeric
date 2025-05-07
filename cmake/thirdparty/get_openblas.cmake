@@ -75,6 +75,7 @@ function(find_or_configure_OpenBLAS)
                 "BUILD_TESTING OFF"
                 "BUILD_WITHOUT_CBLAS OFF"
                 "BUILD_WITHOUT_LAPACK OFF"
+                "CMAKE_POLICY_VERSION_MINIMUM 3.5"
                 "INTERFACE64 ${INTERFACE64}"
                 "TARGET ${_target}"
                 "USE_OPENMP ${Legion_USE_OpenMP}"
@@ -135,9 +136,7 @@ if(NOT DEFINED cupynumeric_OPENBLAS_VERSION)
   # Before v0.3.18, OpenBLAS's throws CMake errors when configuring
   # Versions after v0.3.23 conflict with Realm's OpenMP runtime
   # see https://github.com/nv-legate/cupynumeric.internal/issues/342
-  # But we keep the wheels build at 0.3.29 because 0.3.23 uses an old minimum
-  # CMake version, which causes a configure failure
-  set(cupynumeric_OPENBLAS_VERSION "0.3.29")
+  set(cupynumeric_OPENBLAS_VERSION "0.3.23")
 endif()
 
 if(NOT DEFINED cupynumeric_OPENBLAS_BRANCH)
