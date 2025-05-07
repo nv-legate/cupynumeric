@@ -10,7 +10,7 @@
       "git_url" : "git@github.com:nv-legate/legate.internal.git",
       "git_shallow": false,
       "always_download": false,
-      "git_tag" : "0f774b1fece1e441043f948ab33f5d3a787f394f",
+      "git_tag" : "21c3e19dfe86410f264f1fe2c079c0c4cbefeae1",
       "anaconda_label": "experimental"
     }
   }
