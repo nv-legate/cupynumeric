@@ -63,7 +63,7 @@ jobs:
   push_code:
     name: Nightly source release
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@nightly_push_to_external_repo
+      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@cleanup_download_artifact_code
     with:
       runs-on: linux-amd64-cpu4
       source-repo: "${{ github.repository_owner }}/cupynumeric.internal"

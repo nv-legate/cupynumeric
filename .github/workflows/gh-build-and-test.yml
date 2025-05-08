@@ -49,14 +49,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@use_nv_proxy_cache
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cleanup_download_artifact_code
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: ""
-      legate-gh-ci-tag: "use_nv_proxy_cache"
+      legate-gh-ci-tag: "cleanup_download_artifact_code"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -72,13 +72,13 @@ jobs:
     if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
     name: Upload package to Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.31
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cleanup_download_artifact_code
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.31"
+      legate-gh-ci-tag: "cleanup_download_artifact_code"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -192,14 +192,14 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@use_nv_proxy_cache
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@cleanup_download_artifact_code
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "use_nv_proxy_cache"
+      legate-gh-ci-tag: "cleanup_download_artifact_code"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -216,13 +216,13 @@ jobs:
     name: Update Test status on Server
     if: ${{ false }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.31
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cleanup_download_artifact_code
     with:
       build-has-tests: ${{ !inputs.upload-enabled }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.31"
+      legate-gh-ci-tag: "cleanup_download_artifact_code"
       name: UpdateTestStatus
       network: "ucx"
       pkgSubString: "cupynumeric-"

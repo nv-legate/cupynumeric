@@ -23,7 +23,7 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@use_nv_proxy_cache
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cleanup_download_artifact_code
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
@@ -33,7 +33,7 @@ jobs:
       use-container: ${{ inputs.platform == 'linux' }}
       platform: ${{ inputs.platform }}
       dependencies-file: ""
-      legate-gh-ci-tag: "use_nv_proxy_cache"
+      legate-gh-ci-tag: "cleanup_download_artifact_code"
       build-mode: ${{ inputs.build-mode }}
       upload-enabled: false
       network: "ucx"
@@ -47,7 +47,7 @@ jobs:
     name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.31
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@cleanup_download_artifact_code
     with:
       build-has-tests: false
       build-mode: ${{ inputs.build-mode }}
@@ -55,7 +55,7 @@ jobs:
       output-build-type: docs
       client-repo: ${{ github.event.repository.name }}
       has-gpu: false
-      legate-gh-ci-tag: "v1.31"
+      legate-gh-ci-tag: "cleanup_download_artifact_code"
       name: Build documentation
       network: "ucx"
       platform: ${{ inputs.platform }}
