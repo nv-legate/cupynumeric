@@ -28,11 +28,12 @@ BITGENERATOR_ARGS = [
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_beta_float32(t):
+@pytest.mark.parametrize(
+    "alpha, beta", ((1e-8, 1e-8), (0.2, 0.5), (2.0, 5.0)), ids=str
+)
+def test_beta_float32(t: object, alpha: float, beta: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
-    alpha = 2.0
-    beta = 5.0
     a = gen.beta(alpha, beta, size=(1024 * 1024,), dtype=np.float32)
     theo_mean = alpha / (alpha + beta)
     theo_std = np.sqrt(alpha * beta / (alpha + beta + 1.0)) / (alpha + beta)
@@ -40,11 +41,12 @@ def test_beta_float32(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_beta_float64(t):
+@pytest.mark.parametrize(
+    "alpha, beta", ((1e-8, 1e-8), (0.2, 0.5), (2.0, 5.0)), ids=str
+)
+def test_beta_float64(t: object, alpha: float, beta: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
-    alpha = 2.0
-    beta = 5.0
     a = gen.beta(alpha, beta, size=(1024 * 1024,), dtype=np.float64)
     theo_mean = alpha / (alpha + beta)
     theo_std = np.sqrt(alpha * beta / (alpha + beta + 1.0)) / (alpha + beta)
@@ -52,7 +54,7 @@ def test_beta_float64(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_f_float32(t):
+def test_f_float32(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     d1 = 1.0
@@ -66,7 +68,7 @@ def test_f_float32(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_f_float64(t):
+def test_f_float64(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     d1 = 1.0
@@ -80,7 +82,7 @@ def test_f_float64(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_logseries(t):
+def test_logseries(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     p = 0.66
@@ -93,7 +95,7 @@ def test_logseries(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_noncentral_f_float32(t):
+def test_noncentral_f_float32(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     d1 = 1.0
@@ -111,7 +113,7 @@ def test_noncentral_f_float32(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_noncentral_f_float64(t):
+def test_noncentral_f_float64(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     d1 = 1.0
@@ -138,7 +140,9 @@ FUNC_ARGS = (
 
 @pytest.mark.parametrize("func, args", FUNC_ARGS, ids=str)
 @pytest.mark.parametrize("size", ((2048 * 2048), (4096,), 25535), ids=str)
-def test_beta_sizes(func, args, size):
+def test_beta_sizes(
+    func: str, args: tuple[float, ...], size: int | tuple[int, ...]
+):
     seed = 42
     gen_np = np.random.Generator(np.random.PCG64(seed=seed))
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
@@ -149,7 +153,7 @@ def test_beta_sizes(func, args, size):
 
 @pytest.mark.xfail
 @pytest.mark.parametrize("func, args", FUNC_ARGS, ids=str)
-def test_beta_size_none(func, args):
+def test_beta_size_none(func: str, args: tuple[float, ...]):
     seed = 42
     gen_np = np.random.Generator(np.random.PCG64(seed=seed))
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))

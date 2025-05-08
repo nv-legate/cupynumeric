@@ -31,7 +31,7 @@ BITGENERATOR_ARGS = [
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_standard_t_float32(t):
+def test_standard_t_float32(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     nu = 3.1415
@@ -42,7 +42,7 @@ def test_standard_t_float32(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_standard_t_float64(t):
+def test_standard_t_float64(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     nu = 3.1415
@@ -53,7 +53,7 @@ def test_standard_t_float64(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_vonmises_float32(t):
+def test_vonmises_float32(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     mu = 1.414
@@ -66,7 +66,7 @@ def test_vonmises_float32(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_vonmises_float64(t):
+def test_vonmises_float64(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     mu = 1.414
@@ -79,20 +79,30 @@ def test_vonmises_float64(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-@pytest.mark.parametrize(
-    "ngood, nbad, nsample",
-    ((60, 440, 200), (20.0, 77, 1), ((3, 5, 7), 6, 22)),
-    ids=str,
-)
-def test_hypergeometric(t, ngood, nbad, nsample):
+@pytest.mark.parametrize("kappa", (1e-9, 1e-6), ids=str)
+def test_vonmises_edge_cases(t: object, kappa: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
-    N = 500
-    K = 60
-    n = 200
-    ngood = K
-    nbad = N - K
-    nsample = n
+    mu = 1.414
+    a = gen.vonmises(mu, kappa, size=(1024 * 1024,))
+    ref_a = np.random.vonmises(mu, kappa, 1024 * 1024)
+    theo_mean = np.average(ref_a)
+    theo_std = np.std(ref_a)
+    assert_distribution(a, theo_mean, theo_std)
+
+
+@pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
+@pytest.mark.parametrize(
+    "ngood, nbad, nsample",
+    ((60, 440, 200), (440, 60, 300), (20.0, 77, 1), (77, 20.0, 1)),
+    ids=str,
+)
+def test_hypergeometric(t: object, ngood: int, nbad: int, nsample: int):
+    bitgen = t(seed=42)
+    gen = num.random.Generator(bitgen)
+    N = ngood + nbad
+    K = ngood
+    n = nsample
     a = gen.hypergeometric(
         ngood, nbad, nsample, size=(1024 * 1024,), dtype=np.uint32
     )
@@ -102,10 +112,10 @@ def test_hypergeometric(t, ngood, nbad, nsample):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_geometric(t):
+@pytest.mark.parametrize("p", (0.707, 0.333))
+def test_geometric(t: object, p: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
-    p = 0.707
     a = gen.geometric(p, size=(1024 * 1024,), dtype=np.uint32)
     theo_mean = 1 / p
     theo_std = np.sqrt(1 - p) / p
@@ -127,7 +137,7 @@ def test_geometric(t):
     ),
     ids=str,
 )
-def test_zipf(t, s):
+def test_zipf(t: object, s: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     a = gen.zipf(a=s, size=(1024 * 1024,), dtype=np.uint32)
@@ -138,7 +148,7 @@ def test_zipf(t, s):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_wald_float32(t):
+def test_wald_float32(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     mu = 1.414
@@ -151,7 +161,7 @@ def test_wald_float32(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_wald_float64(t):
+def test_wald_float64(t: object):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
     mu = 1.414
@@ -164,11 +174,11 @@ def test_wald_float64(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_binomial(t):
+@pytest.mark.parametrize("n", (15, 200))
+@pytest.mark.parametrize("p", (0.444, 0.666))
+def test_binomial(t: object, n: int, p: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
-    n = 15
-    p = 0.666
     a = gen.binomial(ntrials=n, p=p, size=(1024 * 1024,), dtype=np.uint32)
     theo_mean = n * p
     theo_std = np.sqrt(n * p * (1 - p))
@@ -176,12 +186,14 @@ def test_binomial(t):
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
-def test_negative_binomial(t):
+@pytest.mark.parametrize("n", (15, 200))
+@pytest.mark.parametrize("p", (0.444, 0.666))
+def test_negative_binomial(t: object, n: int, p: float):
     bitgen = t(seed=42)
     gen = num.random.Generator(bitgen)
-    n = 15
-    p = 0.666
-    a = gen.negative_binomial(n, p, size=(1024 * 1024,), dtype=np.uint32)
+    a = gen.negative_binomial(
+        ntrials=n, p=p, size=(1024 * 1024,), dtype=np.uint32
+    )
     ref_a = np.random.negative_binomial(n, p, 1024 * 1024)
     theo_mean = np.average(ref_a)
     theo_std = np.std(ref_a)
@@ -202,7 +214,9 @@ FUNC_ARGS = (
 
 @pytest.mark.parametrize("func, args", FUNC_ARGS, ids=str)
 @pytest.mark.parametrize("size", ((2048 * 2048), (4096,), 25535), ids=str)
-def test_random_sizes(func, args, size):
+def test_random_sizes(
+    func: str, args: tuple[int | float, ...], size: int | tuple[int, ...]
+):
     seed = 42
     gen_np = np.random.Generator(np.random.PCG64(seed=seed))
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
@@ -213,7 +227,7 @@ def test_random_sizes(func, args, size):
 
 @pytest.mark.xfail
 @pytest.mark.parametrize("func, args", FUNC_ARGS, ids=str)
-def test_random_size_none(func, args):
+def test_random_size_none(func: str, args: tuple[int | float, ...]):
     seed = 42
     gen_np = np.random.Generator(np.random.PCG64(seed=seed))
     gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
@@ -237,7 +251,7 @@ class TestRandomErrors:
         ),
         ids=str,
     )
-    def test_zipf_invalid_dist(self, dist, expected_exc):
+    def test_zipf_invalid_dist(self, dist: float, expected_exc: Exception):
         seed = 42
         gen_np = np.random.Generator(np.random.PCG64(seed=seed))
         gen_num = num.random.Generator(num.random.XORWOW(seed=seed))
@@ -252,7 +266,9 @@ class TestRandomErrors:
         ((200, 60, 500), ((1, 5, 7), 6, 22)),
         ids=str,
     )
-    def test_hypergeometric_invalid_args(self, ngood, nbad, nsample):
+    def test_hypergeometric_invalid_args(
+        self, ngood: int, nbad: int, nsample: int
+    ):
         expected_exc = ValueError
         seed = 42
         gen_np = np.random.Generator(np.random.PCG64(seed=seed))
