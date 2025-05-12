@@ -20,7 +20,7 @@ jobs:
         target-device:
           - gpu
           - cpu
-        upload-enabled:
+        build-has-tests:
           - true
           - false
         python-version:
@@ -34,7 +34,7 @@ jobs:
       platform: ${{ matrix.platform }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
-      upload-enabled: ${{ matrix.upload-enabled }}
+      build-has-tests: ${{ matrix.build-has-tests }}
       refname: ${{ github.ref_name }}
       default-branch: ${{ github.event.repository.default_branch }}
     secrets: inherit

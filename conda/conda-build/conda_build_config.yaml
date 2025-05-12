@@ -2,7 +2,7 @@ gpu_enabled:
   - true
   - false
 
-upload_build:
+build_tests:
   - true
   - false
 

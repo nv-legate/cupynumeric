@@ -12,7 +12,11 @@ on:
         required: true
       upload-enabled:
         type: boolean
+        required: false
+        default: false
+      build-has-tests:
         required: true
+        type: boolean
       python-version:
         required: false
         type: string
@@ -51,7 +55,7 @@ jobs:
     uses:
       nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cleanup_download_artifact_code
     with:
-      build-has-tests: ${{ !inputs.upload-enabled }}
+      build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
@@ -67,33 +71,8 @@ jobs:
       setup-python-proxy-cache: true
     secrets: inherit
 
-  upload:
-    needs: build
-    if: ${{ github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.upload-enabled == true }}
-    name: Upload package to Server
-    uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cleanup_download_artifact_code
-    with:
-      build-has-tests: ${{ !inputs.upload-enabled }}
-      build-mode: ""
-      build-type: ${{ inputs.build-type }}
-      client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "cleanup_download_artifact_code"
-      name: Upload package to Server
-      network: "ucx"
-      pkgSubString: "cupynumeric-"
-      platform: ${{ inputs.platform }}
-      python-version: ${{ inputs.python-version }}
-      repos-Root: "cupynumeric"
-      target-device: ${{ inputs.target-device }}
-      upload-action: "upload-package-Anaconda"
-      upload-enabled: ${{ inputs.upload-enabled }}
-      refname: ${{ inputs.refname }}
-      default-branch: ${{ inputs.default-branch }}
-    secrets: inherit
-
   setup-test:
-    if: inputs.upload-enabled == false
+    if: inputs.build-has-tests == true
     name: Setup test
     needs:
       - build
@@ -211,27 +190,31 @@ jobs:
       setup-python-proxy-cache: ${{ matrix.runner.setup-python-proxy-cache }}
     secrets: inherit
 
-  updateTestStatus:
+  upload:
     needs: test
-    name: Update Test status on Server
-    if: ${{ false }}
+    # The use of always() below, ensures the step will run even on failure of the tests
+    # before if other conditionals are all true.
+    # We use the package 'with tests' to test and then upload corresponding package 'without test'.
+    if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == true }}
+    name: Upload package to Anaconda Server
     uses:
       nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cleanup_download_artifact_code
     with:
-      build-has-tests: ${{ !inputs.upload-enabled }}
+      build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       legate-gh-ci-tag: "cleanup_download_artifact_code"
-      name: UpdateTestStatus
+      name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
       repos-Root: "cupynumeric"
       target-device: ${{ inputs.target-device }}
-      upload-action: "update-test-status"
+      upload-action: ${{ needs.test.result == 'failure' && 'upload-package-Anaconda' || 'upload-package-Anaconda-tested' }}
       upload-enabled: true
       refname: ${{ inputs.refname }}
       default-branch: ${{ inputs.default-branch }}
     secrets: inherit
+

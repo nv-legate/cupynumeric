@@ -29,10 +29,7 @@ build_release_product() {
     GPU_ENABLED=true
     [ "${USE_CUDA:-}" = "OFF" ] && GPU_ENABLED=false
 
-    UPLOAD_BUILD=true
-    [ "${UPLOAD_ENABLED:-}" = "OFF" ] && UPLOAD_BUILD=false
-
-    variantOpts=$(printf "{\"gpu_enabled\": [$GPU_ENABLED], \"build_tests\": [$BUILD_TESTS], \"upload_build\": [$UPLOAD_BUILD], \"python\": [$PYTHON_VERSION]}")
+    variantOpts=$(printf "{\"gpu_enabled\": [$GPU_ENABLED], \"build_tests\": [$BUILD_TESTS], \"python\": [$PYTHON_VERSION]}")
 
     conda_build_args+=(--variants "$variantOpts")
 

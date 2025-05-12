@@ -11,13 +11,13 @@
   {% set cpu_gpu_tag='_cpu' %}
 {% endif %}
 
-{% if upload_build == "true" %}
-  {% set upload_build_bool = true %}
-{% elif upload_build == "false" %}
-  {% set upload_build_bool = false %}
+{% if build_tests == "true" %}
+  {% set build_tests_bool = true %}
+{% elif build_tests == "false" %}
+  {% set build_tests_bool = false %}
 {% else %}
   {# We need to have a default value for the initial pass over the recipe #}
-  {% set upload_build_bool = false %}
+  {% set build_tests_bool = false %}
 {% endif %}
 {% if build_tests == "true" %}
   {% set build_tests_bool = true %}
@@ -75,7 +75,7 @@ build:
   number: {{ build_number }}
   missing_dso_whitelist:
     -  '*libcuda.so*'
-{% set upload_tag='' if upload_build_bool else '_with_tests' %}
+{% set upload_tag='_with_tests' if build_tests_bool else '' %}
 {% if use_local_path is not defined %}
 # use git hash
   string: "cuda{{ cuda_major }}_py{{ py_version }}{{ cpu_gpu_tag }}{{ upload_tag }}_{{ GIT_DESCRIBE_HASH }}_{{ PKG_BUILDNUM }}"
