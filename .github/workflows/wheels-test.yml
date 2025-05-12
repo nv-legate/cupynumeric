@@ -13,12 +13,6 @@ on:
         type: string
       repo:
         type: string
-      node_type:
-        type: string
-        default: "cpu16"
-      cuda_ver:
-        type: string
-        default: "12.8.0"
       script:
         type: string
         default: "continuous_integration/scripts/test_wheel_linux.bash"
@@ -62,13 +56,13 @@ jobs:
           #
           export MATRIX="
           # amd64
-          - { ARCH: 'amd64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
-          - { ARCH: 'amd64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          - { ARCH: 'amd64', PY_VER: '3.13', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'rockylinux8' }
+          - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.9.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           # arm64 - disabled due to ARM GPU runner availability
-          # - { ARCH: 'arm64', PY_VER: '3.11', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
-          # - { ARCH: 'arm64', PY_VER: '3.12', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
-          # - { ARCH: 'arm64', PY_VER: '3.13', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.13', CUDA_VER: '12.9.0', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
           "
 
           MATRIX="$(
@@ -79,7 +73,7 @@ jobs:
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
 
   build:
-    name: ${{ matrix.ARCH }}, py${{ matrix.PY_VER }}, ${{ matrix.LINUX_VER }}, ${{ matrix.GPU }}
+    name: ${{ matrix.ARCH }}, py${{ matrix.PY_VER }}, ${{ matrix.CUDA_VER }}, ${{ matrix.LINUX_VER }}, ${{ matrix.GPU }}
     needs: compute-matrix
     timeout-minutes: 60
     strategy:
@@ -87,7 +81,7 @@ jobs:
       matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
     runs-on: ${{ matrix.ARCH == 'arm64' && 'linux-aarch64-2gpu' || format('linux-{0}-gpu-{1}-latest-1', matrix.ARCH, matrix.GPU) }}
     container:
-      image: rapidsai/citestwheel:cuda${{ inputs.cuda_ver }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}
+      image: rapidsai/citestwheel:cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}
       env:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
@@ -113,14 +107,14 @@ jobs:
         if: ${{ matrix.GPU != 'v100' && matrix.GPU != 'a100' }}
       - name: Download the legate wheel
         env:
-          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12-py${{ matrix.PY_VER }}
           GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
         run: |
           legate-gh-download-artifact ${{ inputs.legate-sha }} "legate-wheel-${{ env.BUILD_NAME }}" "wheel"
       - name: Download the wheel from the build job
         env:
           BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
-          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda${{ inputs.cuda_ver }}-py${{ matrix.PY_VER }}
+          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12-py${{ matrix.PY_VER }}
         uses: actions/download-artifact@v4
         with:
           path: final-dist
