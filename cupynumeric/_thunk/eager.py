@@ -1720,6 +1720,37 @@ class EagerArray(NumPyThunk):
                 raise LinAlgError(e) from e
             ew.array[:] = result_ew
 
+    def eigh(self, ew: Any, ev: Any, uplo_l: bool) -> None:
+        self.check_eager_args(ew, ev)
+        if self.deferred is not None:
+            self.deferred.eigh(ew, ev, uplo_l)
+        else:
+            try:
+                result_ew, result_ev = np.linalg.eigh(
+                    self.array, "L" if uplo_l else "U"
+                )
+            except np.linalg.LinAlgError as e:
+                from ..linalg import LinAlgError
+
+                raise LinAlgError(e) from e
+            ew.array[:] = result_ew
+            ev.array[:] = result_ev
+
+    def eigvalsh(self, ew: Any, uplo_l: bool) -> None:
+        self.check_eager_args(ew)
+        if self.deferred is not None:
+            self.deferred.eigvalsh(ew, uplo_l)
+        else:
+            try:
+                result_ew = np.linalg.eigvalsh(
+                    self.array, "L" if uplo_l else "U"
+                )
+            except np.linalg.LinAlgError as e:
+                from ..linalg import LinAlgError
+
+                raise LinAlgError(e) from e
+            ew.array[:] = result_ew
+
     def qr(self, q: Any, r: Any) -> None:
         self.check_eager_args(q, r)
         if self.deferred is not None:

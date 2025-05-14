@@ -213,6 +213,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_SOLVE: int
     CUPYNUMERIC_SORT: int
     CUPYNUMERIC_SVD: int
+    CUPYNUMERIC_SYEV: int
     CUPYNUMERIC_SYRK: int
     CUPYNUMERIC_TILE: int
     CUPYNUMERIC_TRANSPOSE_COPY_2D: int
@@ -414,6 +415,7 @@ class CuPyNumericOpCode(IntEnum):
     SORT = _cupynumeric.CUPYNUMERIC_SORT
     SVD = _cupynumeric.CUPYNUMERIC_SVD
     SYRK = _cupynumeric.CUPYNUMERIC_SYRK
+    SYEV = _cupynumeric.CUPYNUMERIC_SYEV
     TILE = _cupynumeric.CUPYNUMERIC_TILE
     TRANSPOSE_COPY_2D = _cupynumeric.CUPYNUMERIC_TRANSPOSE_COPY_2D
     TRILU = _cupynumeric.CUPYNUMERIC_TRILU

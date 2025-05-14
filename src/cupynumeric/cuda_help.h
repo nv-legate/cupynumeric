@@ -354,6 +354,40 @@ typedef cusolverStatus_t (*cusolverDnXgeev_handle)(cusolverDnHandle_t handle,
                                                    size_t workspaceInBytesOnHost,
                                                    int* info);
 
+typedef cusolverStatus_t (*cusolverDnXsyevBatched_bufferSize_handle)(
+  cusolverDnHandle_t handle,
+  cusolverDnParams_t params,
+  cusolverEigMode_t jobz,
+  cublasFillMode_t uplo,
+  int64_t n,
+  cudaDataType dataTypeA,
+  const void* A,
+  int64_t lda,
+  cudaDataType dataTypeW,
+  const void* W,
+  cudaDataType computeType,
+  size_t* workspaceInBytesOnDevice,
+  size_t* workspaceInBytesOnHost,
+  int64_t batchSize);
+
+typedef cusolverStatus_t (*cusolverDnXsyevBatched_handle)(cusolverDnHandle_t handle,
+                                                          cusolverDnParams_t params,
+                                                          cusolverEigMode_t jobz,
+                                                          cublasFillMode_t uplo,
+                                                          int64_t n,
+                                                          cudaDataType dataTypeA,
+                                                          void* A,
+                                                          int64_t lda,
+                                                          cudaDataType dataTypeW,
+                                                          void* W,
+                                                          cudaDataType computeType,
+                                                          void* bufferOnDevice,
+                                                          size_t workspaceInBytesOnDevice,
+                                                          void* bufferOnHost,
+                                                          size_t workspaceInBytesOnHost,
+                                                          int* info,
+                                                          int64_t batchSize);
+
 struct CuSolverExtraSymbols {
  private:
   void* cusolver_lib;
@@ -363,6 +397,10 @@ struct CuSolverExtraSymbols {
   cusolverDnXgeev_bufferSize_handle cusolver_geev_bufferSize;
   cusolverDnXgeev_handle cusolver_geev;
   bool has_geev;
+
+  cusolverDnXsyevBatched_bufferSize_handle cusolver_syev_batched_bufferSize;
+  cusolverDnXsyevBatched_handle cusolver_syev_batched;
+  bool has_syev_batched;
 
   CuSolverExtraSymbols();
   ~CuSolverExtraSymbols();

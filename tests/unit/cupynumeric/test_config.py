@@ -96,6 +96,7 @@ def test_CuPyNumericOpCode() -> None:
         "SORT",
         "SEARCHSORTED",
         "SVD",
+        "SYEV",
         "SYRK",
         "TILE",
         "TRANSPOSE_COPY_2D",

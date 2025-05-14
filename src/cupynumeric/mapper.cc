@@ -120,7 +120,8 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       }
       return mappings;
     }
-    case CUPYNUMERIC_GEEV: {
+    case CUPYNUMERIC_GEEV:
+    case CUPYNUMERIC_SYEV: {
       std::vector<StoreMapping> mappings;
       auto input_a   = task.input(0);
       auto output_ew = task.output(0);
@@ -309,7 +310,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     // only to finish up the first implementation quickly
     case CUPYNUMERIC_QR: [[fallthrough]];
     case CUPYNUMERIC_SOLVE: [[fallthrough]];
-    case CUPYNUMERIC_SVD: {
+    case CUPYNUMERIC_SVD: [[fallthrough]];
+    case CUPYNUMERIC_SYEV: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         return aligned_size(sizeof(std::int32_t), DEFAULT_ALIGNMENT);
       }

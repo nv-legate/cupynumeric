@@ -69,7 +69,7 @@ from ..config import (
     UnaryRedCode,
 )
 from ..linalg._cholesky import cholesky_deferred
-from ..linalg._eigen import eig_deferred
+from ..linalg._eigen import eig_deferred, eigh_deferred
 from ..linalg._qr import qr_deferred
 from ..linalg._solve import solve_deferred
 from ..linalg._svd import svd_deferred
@@ -3474,6 +3474,14 @@ class DeferredArray(NumPyThunk):
     @auto_convert("ew")
     def eigvals(self, ew: Any) -> None:
         eig_deferred(self, ew)
+
+    @auto_convert("ew", "ev")
+    def eigh(self, ew: Any, ev: Any, uplo_l: bool) -> None:
+        eigh_deferred(self, uplo_l, ew, ev)
+
+    @auto_convert("ew")
+    def eigvalsh(self, ew: Any, uplo_l: bool) -> None:
+        eigh_deferred(self, uplo_l, ew)
 
     @auto_convert("q", "r")
     def qr(self, q: Any, r: Any) -> None:

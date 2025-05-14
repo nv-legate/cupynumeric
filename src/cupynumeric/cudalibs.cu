@@ -274,21 +274,42 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params)
 CuSolverExtraSymbols::CuSolverExtraSymbols()
 {
   cusolver_lib = dlopen("libcusolver.so", RTLD_LAZY | RTLD_DEEPBIND);
-  void* fn1    = dlsym(cusolver_lib, "cusolverDnXgeev_bufferSize");
-  if (fn1 == nullptr) {
-    dlerror();
-  } else {
-    cusolver_geev_bufferSize = (cusolverDnXgeev_bufferSize_handle)fn1;
-    has_geev                 = true;
+  {
+    void* fn1 = dlsym(cusolver_lib, "cusolverDnXgeev_bufferSize");
+    if (fn1 == nullptr) {
+      dlerror();
+    } else {
+      cusolver_geev_bufferSize = (cusolverDnXgeev_bufferSize_handle)fn1;
+      has_geev                 = true;
+    }
+
+    void* fn2 = dlsym(cusolver_lib, "cusolverDnXgeev");
+    if (fn2 == nullptr) {
+      has_geev                 = false;
+      cusolver_geev_bufferSize = nullptr;
+      dlerror();
+    } else {
+      cusolver_geev = (cusolverDnXgeev_handle)fn2;
+    }
   }
 
-  void* fn2 = dlsym(cusolver_lib, "cusolverDnXgeev");
-  if (fn2 == nullptr) {
-    has_geev                 = false;
-    cusolver_geev_bufferSize = nullptr;
-    dlerror();
-  } else {
-    cusolver_geev = (cusolverDnXgeev_handle)fn2;
+  {
+    void* fn1 = dlsym(cusolver_lib, "cusolverDnXsyevBatched_bufferSize");
+    if (fn1 == nullptr) {
+      dlerror();
+    } else {
+      cusolver_syev_batched_bufferSize = (cusolverDnXsyevBatched_bufferSize_handle)fn1;
+      has_syev_batched                 = true;
+    }
+
+    void* fn2 = dlsym(cusolver_lib, "cusolverDnXsyevBatched");
+    if (fn2 == nullptr) {
+      has_syev_batched                 = false;
+      cusolver_syev_batched_bufferSize = nullptr;
+      dlerror();
+    } else {
+      cusolver_syev_batched = (cusolverDnXsyevBatched_handle)fn2;
+    }
   }
 }
 
@@ -297,6 +318,11 @@ void CuSolverExtraSymbols::finalize()
   cusolver_geev            = nullptr;
   cusolver_geev_bufferSize = nullptr;
   has_geev                 = false;
+
+  cusolver_syev_batched_bufferSize = nullptr;
+  cusolver_syev_batched            = nullptr;
+  has_syev_batched                 = false;
+
   if (cusolver_lib != nullptr) {
     dlclose(cusolver_lib);
   }

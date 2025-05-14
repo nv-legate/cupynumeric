@@ -131,7 +131,7 @@ def eig(a: ndarray) -> tuple[ndarray, ...]:
 
     Availability
     --------
-    Multiple GPU, Multiple CPU
+    Multiple GPUs, Multiple CPUs
     """
     shape = a.shape
     if len(shape) < 2:
@@ -180,7 +180,66 @@ def eigvals(a: ndarray) -> ndarray:
 
     Availability
     --------
-    Multiple GPU, Multiple CPU
+    Multiple GPUs, Multiple CPUs
+    """
+    shape = a.shape
+    if len(shape) < 2:
+        raise LinAlgError(
+            f"{len(shape)}-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+
+    if shape[-2] != shape[-1]:
+        raise LinAlgError("Last 2 dimensions of the array must be square")
+    if np.dtype("e") == a.dtype:
+        raise TypeError("array type float16 is unsupported in linalg")
+    return _thunk_eigvals(a)
+
+
+@add_boilerplate("a")
+def eigh(a: ndarray, UPLO: str = "L") -> tuple[ndarray, ...]:
+    """
+    Compute the eigenvalues and right eigenvectors of a square array.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Matrices for which the eigenvalues and right eigenvectors will be
+        computed, at least dimension 2.
+    UPLO {'L', 'U'}, optional
+        Specifies whether the calculation is done with the lower triangular
+        part of a ('L', default) or the upper triangular part ('U').
+        Irrespective of this value only the real parts of the diagonal will
+        be considered in the computation to preserve the notion of a Hermitian
+        matrix. It therefore follows that the imaginary part of the diagonal
+        will always be treated as zero.
+
+    Returns
+    -------
+    eigenvalues : (…, M) array_like
+        The eigenvalues in ascending order, each repeated according to its
+        multiplicity.
+    eigenvectors : (…, M, M) array
+        The normalized (unit “length”) eigenvectors, such that the column
+        eigenvectors[:,i] is the eigenvector corresponding to the eigenvalue
+        eigenvalues[i].
+
+    Raises
+    ------
+    LinAlgError
+        If the eigenvalue computation does not converge.
+
+    Notes
+    -----
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    numpy.linalg.eigh
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
     """
     shape = a.shape
     if len(shape) < 2:
@@ -192,7 +251,77 @@ def eigvals(a: ndarray) -> ndarray:
         raise LinAlgError("Last 2 dimensions of the array must be square")
     if np.dtype("e") == a.dtype:
         raise TypeError("array type float16 is unsupported in linalg")
-    return _thunk_eigvals(a)
+
+    if UPLO == "L":
+        uplo_l = True
+    elif UPLO == "U":
+        uplo_l = False
+    else:
+        raise ValueError(f"UPLO {UPLO} not supported.")
+
+    return _thunk_eigh(a, uplo_l)
+
+
+@add_boilerplate("a")
+def eigvalsh(a: ndarray, UPLO: str = "L") -> ndarray:
+    """
+    Compute the eigenvalues of a square array.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Matrices for which the eigenvalues will be computed, at least
+        dimension 2.
+    UPLO {'L', 'U'}, optional
+        Specifies whether the calculation is done with the lower triangular
+        part of a ('L', default) or the upper triangular part ('U').
+        Irrespective of this value only the real parts of the diagonal will
+        be considered in the computation to preserve the notion of a Hermitian
+        matrix. It therefore follows that the imaginary part of the diagonal
+        will always be treated as zero.
+
+    Returns
+    -------
+    w : (…, M) array_like
+        The eigenvalues in ascending order, each repeated according to its
+        multiplicity.
+
+    Raises
+    ------
+    LinAlgError
+        If the eigenvalue computation does not converge.
+
+    Notes
+    -----
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    numpy.linalg.eigvalsh
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    shape = a.shape
+    if len(shape) < 2:
+        raise LinAlgError(
+            f"{len(shape)}-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+    if shape[-2] != shape[-1]:
+        raise LinAlgError("Last 2 dimensions of the array must be square")
+    if np.dtype("e") == a.dtype:
+        raise TypeError("array type float16 is unsupported in linalg")
+
+    if UPLO == "L":
+        uplo_l = True
+    elif UPLO == "U":
+        uplo_l = False
+    else:
+        raise ValueError(f"UPLO {UPLO} not supported.")
+
+    return _thunk_eigvalsh(a, uplo_l)
 
 
 @add_boilerplate("a")
@@ -924,6 +1053,59 @@ def _thunk_eigvals(a: ndarray) -> ndarray:
 
     if a.shape[-1] > 0:
         a._thunk.eigvals(out_ew._thunk)
+    return out_ew
+
+
+def _thunk_eigh(a: ndarray, uplo_l: bool) -> tuple[ndarray, ...]:
+    if a.dtype.kind not in ("f", "c"):
+        a = a.astype("float64")
+
+    if a.dtype == np.complex64:
+        real_dtype = np.dtype(np.float32)
+    elif a.dtype == np.complex128:
+        real_dtype = np.dtype(np.float64)  # type: ignore
+    elif a.dtype.kind in ("f"):
+        real_dtype = a.dtype
+    else:
+        raise TypeError("Eigh input not supported (missing a conversion?)")
+
+    out_ew = ndarray(
+        shape=a.shape[:-1],
+        dtype=real_dtype,
+        inputs=(a,),
+    )
+    out_ev = ndarray(
+        shape=a.shape,
+        dtype=a.dtype,
+        inputs=(a,),
+    )
+
+    if a.shape[-1] > 0:
+        a._thunk.eigh(out_ew._thunk, out_ev._thunk, uplo_l)
+    return out_ew, out_ev
+
+
+def _thunk_eigvalsh(a: ndarray, uplo_l: bool) -> ndarray:
+    if a.dtype.kind not in ("f", "c"):
+        a = a.astype("float64")
+
+    if a.dtype == np.complex64:
+        real_dtype = np.dtype(np.float32)
+    elif a.dtype == np.complex128:
+        real_dtype = np.dtype(np.float64)  # type: ignore
+    elif a.dtype.kind in ("f"):
+        real_dtype = a.dtype
+    else:
+        raise TypeError("Eigvalsh input not supported (missing a conversion?)")
+
+    out_ew = ndarray(
+        shape=a.shape[:-1],
+        dtype=real_dtype,
+        inputs=(a,),
+    )
+
+    if a.shape[-1] > 0:
+        a._thunk.eigvalsh(out_ew._thunk, uplo_l)
     return out_ew
 
 

@@ -19,51 +19,53 @@
 #include <vector>
 
 // Useful for IDEs
-#include "cupynumeric/matrix/geev.h"
+#include "cupynumeric/matrix/syev.h"
 
 namespace cupynumeric {
 
 using namespace legate;
 
 template <VariantKind KIND, Type::Code CODE>
-struct GeevImplBody;
+struct SyevImplBody;
 
 template <Type::Code CODE>
-struct support_geev : std::false_type {};
+struct support_syev : std::false_type {};
 template <>
-struct support_geev<Type::Code::FLOAT64> : std::true_type {};
+struct support_syev<Type::Code::FLOAT64> : std::true_type {};
 template <>
-struct support_geev<Type::Code::FLOAT32> : std::true_type {};
+struct support_syev<Type::Code::FLOAT32> : std::true_type {};
 template <>
-struct support_geev<Type::Code::COMPLEX64> : std::true_type {};
+struct support_syev<Type::Code::COMPLEX64> : std::true_type {};
 template <>
-struct support_geev<Type::Code::COMPLEX128> : std::true_type {};
+struct support_syev<Type::Code::COMPLEX128> : std::true_type {};
 
 template <Type::Code CODE>
-struct complex_type {
-  using TYPE = complex<float>;
+struct real_type {
+  using TYPE = float;
 };
 template <>
-struct complex_type<Type::Code::FLOAT64> {
-  using TYPE = complex<double>;
+struct real_type<Type::Code::FLOAT64> {
+  using TYPE = double;
 };
 template <>
-struct complex_type<Type::Code::COMPLEX128> {
-  using TYPE = complex<double>;
+struct real_type<Type::Code::COMPLEX128> {
+  using TYPE = double;
 };
 
 template <VariantKind KIND>
-struct GeevImpl {
+struct SyevImpl {
   template <Type::Code CODE,
             int32_t DIM,
-            std::enable_if_t<support_geev<CODE>::value && DIM >= 2>* = nullptr>
+            std::enable_if_t<support_syev<CODE>::value && DIM >= 2>* = nullptr>
   void operator()(TaskContext& context) const
   {
-    using VAL         = type_of<CODE>;
-    using VAL_COMPLEX = typename complex_type<CODE>::TYPE;
+    using VAL      = type_of<CODE>;
+    using VAL_REAL = typename real_type<CODE>::TYPE;
 
     legate::PhysicalStore a_array  = context.input(0);
     legate::PhysicalStore ew_array = context.output(0);
+
+    bool uplo_l = context.scalar(0).value<bool>();
 
 #ifdef DEBUG_CUPYNUMERIC
     assert(a_array.dim() >= 2);
@@ -99,10 +101,9 @@ struct GeevImpl {
     size_t ew_strides[DIM - 1];
     size_t ev_strides[DIM];
 
-    auto* a_acc = a_array.read_accessor<VAL, DIM>(a_shape).ptr(a_shape, a_strides);
-    auto* ew_acc =
-      ew_array.write_accessor<VAL_COMPLEX, DIM - 1>(ew_shape).ptr(ew_shape, ew_strides);
-    VAL_COMPLEX* ev_acc = nullptr;
+    auto* a_acc  = a_array.read_accessor<VAL, DIM>(a_shape).ptr(a_shape, a_strides);
+    auto* ew_acc = ew_array.write_accessor<VAL_REAL, DIM - 1>(ew_shape).ptr(ew_shape, ew_strides);
+    VAL* ev_acc  = nullptr;
 
     // optional computation of eigenvectors
     bool compute_evs = context.outputs().size() > 1;
@@ -119,7 +120,7 @@ struct GeevImpl {
         assert(ev_shape.hi[i] - ev_shape.lo[i] + 1 == batchdims[i]);
       }
 #endif
-      ev_acc = ev_array.write_accessor<VAL_COMPLEX, DIM>(ev_shape).ptr(ev_shape, ev_strides);
+      ev_acc = ev_array.write_accessor<VAL, DIM>(ev_shape).ptr(ev_shape, ev_strides);
     }
 
 #ifdef DEBUG_CUPYNUMERIC
@@ -132,12 +133,12 @@ struct GeevImpl {
     }
 #endif
 
-    GeevImplBody<KIND, CODE>()(m, batchsize_total, m, m * m, a_acc, ew_acc, ev_acc);
+    SyevImplBody<KIND, CODE>()(uplo_l, m, batchsize_total, m, m * m, a_acc, ew_acc, ev_acc);
   }
 
   template <Type::Code CODE,
             int32_t DIM,
-            std::enable_if_t<!support_geev<CODE>::value || DIM<2>* = nullptr> void
+            std::enable_if_t<!support_syev<CODE>::value || DIM<2>* = nullptr> void
             operator()(TaskContext& context) const
   {
     assert(false);
@@ -145,10 +146,10 @@ struct GeevImpl {
 };
 
 template <VariantKind KIND>
-static void geev_template(TaskContext& context)
+static void syev_template(TaskContext& context)
 {
   auto a_array = context.input(0);
-  double_dispatch(a_array.dim(), a_array.type().code(), GeevImpl<KIND>{}, context);
+  double_dispatch(a_array.dim(), a_array.type().code(), SyevImpl<KIND>{}, context);
 }
 
 }  // namespace cupynumeric

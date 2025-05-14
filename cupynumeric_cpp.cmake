@@ -164,6 +164,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/matrix/qr.cc
   src/cupynumeric/matrix/solve.cc
   src/cupynumeric/matrix/svd.cc
+  src/cupynumeric/matrix/syev.cc
   src/cupynumeric/matrix/syrk.cc
   src/cupynumeric/matrix/tile.cc
   src/cupynumeric/matrix/transpose.cc
@@ -229,6 +230,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/matrix/qr_omp.cc
     src/cupynumeric/matrix/solve_omp.cc
     src/cupynumeric/matrix/svd_omp.cc
+    src/cupynumeric/matrix/syev_omp.cc
     src/cupynumeric/matrix/syrk_omp.cc
     src/cupynumeric/matrix/tile_omp.cc
     src/cupynumeric/matrix/transpose_omp.cc
@@ -284,6 +286,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/matrix/qr.cu
     src/cupynumeric/matrix/solve.cu
     src/cupynumeric/matrix/svd.cu
+    src/cupynumeric/matrix/syev.cu
     src/cupynumeric/matrix/syrk.cu
     src/cupynumeric/matrix/tile.cu
     src/cupynumeric/matrix/transpose.cu

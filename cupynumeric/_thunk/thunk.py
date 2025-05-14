@@ -716,6 +716,14 @@ class NumPyThunk(ABC):
         ...
 
     @abstractmethod
+    def eigh(self, ew: Any, ev: Any, uplo_l: bool) -> None:
+        ...
+
+    @abstractmethod
+    def eigvalsh(self, ew: Any, uplo_l: bool) -> None:
+        ...
+
+    @abstractmethod
     def qr(self, q: Any, r: Any) -> None:
         ...
 

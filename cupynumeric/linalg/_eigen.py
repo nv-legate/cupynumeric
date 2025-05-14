@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+import legate.core.types as ty
 from legate.core import dimension, get_legate_runtime
 
 from cupynumeric.config import CuPyNumericOpCode
@@ -27,16 +28,9 @@ if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray
 
 
-def eig_deferred(
-    a: DeferredArray, ew: DeferredArray, ev: Optional[DeferredArray] = None
-) -> None:
-    library = a.library
-
-    m = a.shape[-1]
-
-    if m == 0:
-        raise ValueError("Input shape dimension 0 not allowed!")
-
+def _prepare_manual_task_for_batched_matrices(
+    full_shape: tuple[int, ...]
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
     def choose_nd_color_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
         # start with 1D and re-balance by powers of 2
         # (don't worry about other primes)
@@ -64,11 +58,28 @@ def eig_deferred(
         return tuple(color_shape)
 
     # coloring via num_procs to get utilization
-    initial_color_shape = choose_nd_color_shape(a.shape)
+    initial_color_shape = choose_nd_color_shape(full_shape)
     tilesize = tuple(
-        map(lambda x, y: (x + y - 1) // y, a.shape, initial_color_shape)
+        map(lambda x, y: (x + y - 1) // y, full_shape, initial_color_shape)
     )
-    color_shape = tuple(map(lambda x, y: (x + y - 1) // y, a.shape, tilesize))
+    color_shape = tuple(
+        map(lambda x, y: (x + y - 1) // y, full_shape, tilesize)
+    )
+
+    return tilesize, color_shape
+
+
+def eig_deferred(
+    a: DeferredArray, ew: DeferredArray, ev: Optional[DeferredArray] = None
+) -> None:
+    library = a.library
+
+    m = a.shape[-1]
+
+    if m == 0:
+        raise ValueError("Input shape dimension 0 not allowed!")
+
+    tilesize, color_shape = _prepare_manual_task_for_batched_matrices(a.shape)
 
     # partition defined py local batchsize
     tiled_a = a.base.partition_by_tiling(tilesize)
@@ -84,4 +95,37 @@ def eig_deferred(
     if ev is not None:
         tiled_ev = ev.base.partition_by_tiling(tilesize)
         task.add_output(tiled_ev, partition)
+    task.execute()
+
+
+def eigh_deferred(
+    a: DeferredArray,
+    uplo_l: bool,
+    ew: DeferredArray,
+    ev: Optional[DeferredArray] = None,
+) -> None:
+    library = a.library
+
+    m = a.shape[-1]
+
+    if m == 0:
+        raise ValueError("Input shape dimension 0 not allowed!")
+
+    tilesize, color_shape = _prepare_manual_task_for_batched_matrices(a.shape)
+
+    # partition defined py local batchsize
+    tiled_a = a.base.partition_by_tiling(tilesize)
+    tiled_ew = ew.base.partition_by_tiling(tilesize[:-1])
+
+    task = get_legate_runtime().create_manual_task(
+        library, CuPyNumericOpCode.SYEV, color_shape
+    )
+    task.throws_exception(LinAlgError)
+    partition = tuple(dimension(i) for i in range(len(color_shape)))
+    task.add_input(tiled_a, partition)
+    task.add_output(tiled_ew, partition[:-1])
+    if ev is not None:
+        tiled_ev = ev.base.partition_by_tiling(tilesize)
+        task.add_output(tiled_ev, partition)
+    task.add_scalar_arg(uplo_l, ty.bool_)
     task.execute()
