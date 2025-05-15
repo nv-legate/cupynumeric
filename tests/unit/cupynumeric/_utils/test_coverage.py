@@ -514,6 +514,26 @@ def test_ufunc_methods_unary() -> None:
     assert not np.negative.accumulate._cupynumeric_metadata.implemented
 
 
+def test_implemented_decorator_actual() -> None:
+    settings.report_coverage = True
+    
+    def test_func():
+        return "test"
+        
+    decorated_func = m.implemented(
+        func=test_func,
+        prefix="test_module",
+        name="test_function",
+        reporting=True
+    )
+    
+    result = decorated_func()
+    assert result == "test"
+    
+    assert hasattr(decorated_func, "_cupynumeric_metadata")
+    assert decorated_func._cupynumeric_metadata.implemented
+
+
 if __name__ == "__main__":
     import sys
 
