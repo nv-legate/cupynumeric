@@ -16,26 +16,17 @@ from __future__ import annotations
 
 import atexit
 import io
-import os
 import traceback
+import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from typing import Any, Final, Type
 
 import numpy as np
 
-# We specifically want to import __file__ from cupynumeric not using a
-# relative path to make sure we get the correct __file__ value (e.g. if the
-# module layout changes, we'd still get some __file__ value, just not the
-# the correct one).
-from cupynumeric import __file__ as cn_file
-
 from ..settings import settings
-
-CN_PATH = str(Path(cn_file).parent.absolute())
-
+from .._utils.stack import find_last_user_frame
 
 def lookup_source(filename: str, lineno: int) -> str | None:
     """
@@ -185,32 +176,19 @@ class Checkup(ABC):
         self._locators.add(locator)
         return self.info(locator)
 
-    # !!Magic number alert!!
-    # The exact number of stack frames to back up from here is sensitive
-    # to any codebase changes that change the depth of the call stack from
-    # the user line of code to this point. This default value should be set
-    # to the specific value that works when called directly from Checkup.run
-    def locate(self, *, magic_stack_index: int = 5) -> CheckupLocator:
+    def locate(self) -> CheckupLocator | None:
         """
         Generate a ``CheckupLocator`` for the source location in the user's
         code that the checkup heuristic warned about.
 
-        Args:
-            magic_stack_index (int, optional):
-                How far up the stack to look to get the "user code" line
-                number. This depends explicitly on the immediate caller's
-                position in the stack. If locate() is called directly by the
-                Checkup.run method, then the value should normally be 5.
-                If the Checkup.run calls some other methods that call locate()
-                then the value will need to be adjusted accordingly.
-
         Returns:
-            CheckupLocator
+            CheckupLocator | None
 
         """
         import inspect
 
-        frame = inspect.stack()[magic_stack_index].frame
+        if (frame := find_last_user_frame()) is None:
+            return None
 
         info = inspect.getframeinfo(frame)
 
@@ -283,17 +261,11 @@ class RepeatedItemOps(Checkup):
         if func in {"__setitem__", "__getitem__"}:
             ndim: int = args[0].ndim
             if is_scalar_key(args[1], ndim):
-                locator = self.locate()
 
-                # Super hack: cupynumeric own internal code can trigger these
-                # diagnostics, so attempt to filter those occurrences out.
-                # Set CUPYNUMERIC_DOCTOR_INTERNAL=1 to override.
-                if (
-                    locator.filename
-                    and locator.filename.startswith(CN_PATH)
-                    and os.environ.get("CUPYNUMERIC_DOCTOR_INTERNAL", "0")
-                    != "1"
-                ):
+                # if we can't find a user frame, then it is probably due to a
+                # detection inside cupynumeric itself. Either way, there is no
+                # actionable information to provide users, so just punt here.
+                if (locator := self.locate()) is None:
                     return None
 
                 self._itemop_counts[locator.lineno] += 1
@@ -373,8 +345,6 @@ class Doctor:
                     self._write_csv(out)
             return out.getvalue()
         except Exception as e:
-            import warnings
-
             warnings.warn(
                 "cuPyNumeric Doctor detected issues, but an exception "
                 f"occurred generating output (no output was written): {e}"

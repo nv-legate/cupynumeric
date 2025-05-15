@@ -25,7 +25,7 @@ from legate.core.utils import OrderedSet
 
 from ..runtime import runtime
 from ..settings import settings
-from .stack import find_last_user_frames, find_last_user_stacklevel
+from .stack import find_last_user_line_numbers, find_last_user_stacklevel
 from .structure import deep_apply
 
 __all__ = ("clone_module", "clone_class")
@@ -87,7 +87,7 @@ def implemented(
         @wraps(func)
         @track_provenance()
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            location = find_last_user_frames(
+            location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
             )
             runtime.record_api_call(
@@ -150,7 +150,7 @@ def unimplemented(
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            location = find_last_user_frames(
+            location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
             )
             runtime.record_api_call(

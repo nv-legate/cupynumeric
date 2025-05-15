@@ -17,36 +17,54 @@ from __future__ import annotations
 import traceback
 from types import FrameType
 
+def _find_last_user_stacklevel_and_frame() -> tuple[int, FrameType | None]:
+    # We want the caller of the public API from this file to see itself as
+    # stacklevel 1. So discount the first two hops up the stack, for this
+    # helper function, and the public API frontend function.
+    stacklevel = -1
+    frame: FrameType | None = None
+    try:
+        raise Exception()
+    except Exception as exc:
+        if exc.__traceback__ is not None:
+            frame = exc.__traceback__.tb_frame
+        while frame is not None:
+            if (name := frame.f_globals.get("__name__")) is not None:
+                if not any(
+                    name.startswith(pkg + ".")
+                    for pkg in ("cupynumeric", "legate")
+                ):
+                    return stacklevel, frame
+            stacklevel += 1
+            frame = frame.f_back
+    return stacklevel, None
 
 def find_last_user_stacklevel() -> int:
-    stacklevel = 1
-    for frame, _ in traceback.walk_stack(None):
-        if not frame.f_globals["__name__"].startswith("cupynumeric"):
-            break
-        stacklevel += 1
+    stacklevel, _ = _find_last_user_stacklevel_and_frame()
     return stacklevel
-
 
 def get_line_number_from_frame(frame: FrameType) -> str:
     return f"{frame.f_code.co_filename}:{frame.f_lineno}"
 
+def find_last_user_frame() -> FrameType | None:
+    _, last = _find_last_user_stacklevel_and_frame()
+    return last
 
-def find_last_user_frames(top_only: bool = True) -> str:
-    for last, _ in traceback.walk_stack(None):
-        if "__name__" not in last.f_globals:
-            continue
-        name = last.f_globals["__name__"]
-        if not any(name.startswith(pkg) for pkg in ("cupynumeric", "legate")):
-            break
-
-    if top_only:
-        return get_line_number_from_frame(last)
+def find_last_user_frames() -> list[FrameType]:
+    _, last = _find_last_user_stacklevel_and_frame()
 
     frames: list[FrameType] = []
     curr: FrameType | None = last
     while curr is not None:
-        if "legion_top.py" in curr.f_code.co_filename:
-            break
         frames.append(curr)
         curr = curr.f_back
+
+    return frames
+
+def find_last_user_line_numbers(top_only: bool = True) -> str:
+    if top_only:
+        frame = find_last_user_frame()
+        return get_line_number_from_frame(frame) if frame else "unkown"
+
+    frames = find_last_user_frames()
     return "|".join(get_line_number_from_frame(f) for f in frames)

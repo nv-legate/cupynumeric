@@ -39,23 +39,23 @@ def test_get_line_number_from_frame() -> None:
     assert int(lineno) > 0
 
 
-class Test_find_last_user_frames:
+class Test_find_last_user_line_numbers:
     def test_default_top_only(self) -> None:
-        result = m.find_last_user_frames(top_only=True)
+        result = m.find_last_user_line_numbers(top_only=True)
         assert isinstance(result, str)
         assert "|" not in result
         assert "\n" not in result
         assert len(result.split(":")) == 2
 
     def test_top_only_True(self) -> None:
-        result = m.find_last_user_frames(top_only=True)
+        result = m.find_last_user_line_numbers(top_only=True)
         assert isinstance(result, str)
         assert "|" not in result
         assert "\n" not in result
         assert len(result.split(":")) == 2
 
     def test_top_only_False(self) -> None:
-        result = m.find_last_user_frames(top_only=False)
+        result = m.find_last_user_line_numbers(top_only=False)
         assert isinstance(result, str)
         assert "|" in result
 

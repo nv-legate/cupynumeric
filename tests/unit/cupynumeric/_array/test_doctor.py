@@ -222,8 +222,8 @@ class TestRepeatedItemOps:
     @pytest.mark.parametrize("func", ("__getitem__", "__setitem__"))
     def test_run_itemop_at_threshold(self, func: str) -> None:
         checkup = m.RepeatedItemOps()
-        for i in range(checkup.ITEMOP_THRESHOLD):
-            checkup.run(
+        for i in range(checkup.ITEMOP_THRESHOLD+1):
+            info = checkup.run(
                 func,
                 (
                     _Ndim(1),
@@ -231,22 +231,13 @@ class TestRepeatedItemOps:
                 ),
                 {},
             )
-
-        info = checkup.run(
-            func,
-            (
-                _Ndim(1),
-                10,
-            ),
-            {},
-        )
         assert info is not None
 
     @pytest.mark.parametrize("func", ("__getitem__", "__setitem__"))
     def test_run_itemop_over_threshold(self, func: str) -> None:
         checkup = m.RepeatedItemOps()
-        for i in range(checkup.ITEMOP_THRESHOLD + 1):
-            checkup.run(
+        for i in range(checkup.ITEMOP_THRESHOLD + 2):
+            info = checkup.run(
                 func,
                 (
                     _Ndim(1),
@@ -254,15 +245,6 @@ class TestRepeatedItemOps:
                 ),
                 {},
             )
-
-        info = checkup.run(
-            func,
-            (
-                _Ndim(1),
-                10,
-            ),
-            {},
-        )
         assert info is None
 
 
