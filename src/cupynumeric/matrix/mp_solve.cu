@@ -39,7 +39,13 @@ static inline void mp_solve_template(cal_comm_t comm,
   const auto trans = CUBLAS_OP_N;
 
   auto context = get_cusolvermp();
-  auto stream  = get_cached_stream();
+
+  // synchronize all previous copies on default stream
+  // cusolverMP has its unmodifiable stream to continue with
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(get_cached_stream()));
+
+  cudaStream_t stream;
+  CHECK_CUSOLVER(cusolverMpGetStream(context, &stream));
 
   cusolverMpGrid_t grid = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateDeviceGrid(

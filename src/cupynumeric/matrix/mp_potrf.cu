@@ -31,7 +31,13 @@ static inline void mp_potrf_template(
   const auto uplo = CUBLAS_FILL_MODE_LOWER;
 
   auto context = get_cusolvermp();
-  auto stream  = get_cached_stream();
+
+  // synchronize all previous copies on default stream
+  // cusolverMP has its unmodifiable stream to continue with
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(get_cached_stream()));
+
+  cudaStream_t stream;
+  CHECK_CUSOLVER(cusolverMpGetStream(context, &stream));
 
   cusolverMpGrid_t grid = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateDeviceGrid(
