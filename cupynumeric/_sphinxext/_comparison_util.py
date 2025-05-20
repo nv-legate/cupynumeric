@@ -18,14 +18,25 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
-from .._utils.coverage import is_implemented, is_multi, is_single, is_wrapped
+from .._utils.coverage import is_implemented, is_multi, is_single, is_wrapped, GPUSupport
 from ._comparison_config import MISSING_NP_REFS, SKIP
 
 if TYPE_CHECKING:
     from ._comparison_config import SectionConfig
 
-YES = "\u2713"
-NO = "\u274C"
+
+def _support_symbol(support: GPUSupport) -> str:
+    YES = "\u2713"
+    NO = "\u274C"
+    PARTIAL = "\U0001F7E1"
+
+    match support:
+        case GPUSupport.YES:
+            return YES
+        case GPUSupport.NO:
+            return NO
+        case GPUSupport.PARTIAL:
+            return PARTIAL
 
 
 @dataclass(frozen=True)
@@ -105,8 +116,8 @@ def get_item(name: str, np_obj: Any, lg_obj: Any) -> ItemDetail:
     lg_attr = getattr(lg_obj, name)
 
     if implemented := is_implemented(lg_attr):
-        single = YES if is_single(lg_attr) else NO
-        multi = YES if is_multi(lg_attr) else NO
+        single = _support_symbol(is_single(lg_attr))
+        multi = _support_symbol(is_multi(lg_attr))
     else:
         single = multi = ""
 

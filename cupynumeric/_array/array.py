@@ -2597,7 +2597,7 @@ class ndarray:
 
         Availability
         --------
-        Multiple GPUs
+        Multiple GPUs (partial)
 
         """
         # Type

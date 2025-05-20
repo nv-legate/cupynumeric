@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
+from enum import Enum
 from functools import WRAPPER_ASSIGNMENTS, wraps
 from types import BuiltinFunctionType, ModuleType
 from typing import Any, Callable, Container, Iterable, Mapping, Protocol, cast
@@ -28,7 +29,7 @@ from ..settings import settings
 from .stack import find_last_user_line_numbers, find_last_user_stacklevel
 from .structure import deep_apply
 
-__all__ = ("clone_module", "clone_class")
+__all__ = ("GPUSupport", "clone_module", "clone_class")
 
 FALLBACK_WARNING = (
     "cuPyNumeric has not implemented {what} "
@@ -61,11 +62,32 @@ class AnyCallable(Protocol):
         ...
 
 
+from enum import Enum
+
+class GPUSupport(Enum):
+    YES = 1
+    NO = 2
+    PARTIAL = 3
+
+def _scrape_docstring_support(doc: str) -> tuple[GPUSupport, GPUSupport]:
+    multi = GPUSupport.NO
+    if "Multiple GPUs (partial)" in doc:
+        multi = GPUSupport.PARTIAL
+    elif "Multiple GPUs" in doc:
+        multi = GPUSupport.YES
+
+    if "Single GPU" in doc:
+        single = GPUSupport.YES
+    else:
+        single = multi
+
+    return single, multi
+
 @dataclass(frozen=True)
 class CuWrapperMetadata:
     implemented: bool
-    single: bool = False
-    multi: bool = False
+    single: GPUSupport = GPUSupport.NO
+    multi: GPUSupport = GPUSupport.NO
 
 
 class CuWrapped(AnyCallable, Protocol):
@@ -113,8 +135,8 @@ def implemented(
 
     # TODO (bev) Scraping text to set flags seems a bit fragile. It would be
     # preferable to start with flags, and use those to update docstrings.
-    multi = "Multiple GPUs" in (getattr(func, "__doc__", None) or "")
-    single = "Single GPU" in (getattr(func, "__doc__", None) or "") or multi
+    doc = getattr(func, "__doc__", None) or ""
+    single, multi = _scrape_docstring_support(doc)
 
     wrapper._cupynumeric_metadata = CuWrapperMetadata(
         implemented=True, single=single, multi=multi
@@ -377,9 +399,13 @@ def is_implemented(obj: Any) -> bool:
     return is_wrapped(obj) and obj._cupynumeric_metadata.implemented
 
 
-def is_single(obj: Any) -> bool:
-    return is_wrapped(obj) and obj._cupynumeric_metadata.single
+def is_single(obj: Any) -> GPUSupport:
+    if not is_wrapped(obj):
+        return GPUSupport.NO
+    return obj._cupynumeric_metadata.single
 
 
-def is_multi(obj: Any) -> bool:
-    return is_wrapped(obj) and obj._cupynumeric_metadata.multi
+def is_multi(obj: Any) -> GPUSupport:
+    if not is_wrapped(obj):
+        return GPUSupport.NO
+    return obj._cupynumeric_metadata.multi
