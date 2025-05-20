@@ -18,7 +18,6 @@ build_release_product() {
     conda_build_args+=(-c conda-forge);
     conda_build_args+=(--override-channels);
     conda_build_args+=(--croot /tmp/conda-build/cupynumeric);
-    conda_build_args+=(--numpy 1.22);
     conda_build_args+=(--no-test);
     conda_build_args+=(--no-verify);
     conda_build_args+=(--no-build-id);

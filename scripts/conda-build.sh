@@ -11,7 +11,6 @@ PYTHON_VERSION="${PYTHON_VERSION:-3.11}"
 
 CUDA="$(nvcc --version | head -n4 | tail -n1 | cut -d' ' -f5 | cut -d',' -f1).*" \
 conda mambabuild \
-    --numpy 1.22 \
     --override-channels \
     -c conda-forge -c https://github.com/nv-legate/ucx-package/raw/main \
     -c file:///tmp/conda-build/legate_core \
