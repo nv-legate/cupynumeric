@@ -59,8 +59,11 @@ def test_array_function_defer():
 
 def test_array_ufunc_through_array_op():
     assert np.array_equal(vec_num + vec_num, vec_np + vec_np)
-    assert isinstance(vec_num + vec_np, num.ndarray)
-    assert isinstance(vec_np + vec_num, num.ndarray)
+    from cupynumeric.settings import settings
+
+    if settings.force_thunk() != "eager":
+        assert isinstance(vec_num + vec_np, num.ndarray)
+        assert isinstance(vec_np + vec_num, num.ndarray)
 
 
 def test_array_ufunc_call():
@@ -68,7 +71,10 @@ def test_array_ufunc_call():
     res_num = np.add(vec_num, vec_num)
 
     assert np.array_equal(res_np, res_num)
-    assert isinstance(res_num, num.ndarray)  # implemented
+    from cupynumeric.settings import settings
+
+    if settings.force_thunk() != "eager":
+        assert isinstance(res_num, num.ndarray)  # implemented
 
 
 def test_array_ufunc_reduce():

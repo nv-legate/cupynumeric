@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Sequence, cast
 
 import numpy as np
 
-from .._array.array import ndarray
+from .._array.array import _warn_and_convert, ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._utils import is_np2
 from ..runtime import runtime
@@ -223,7 +223,7 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
     # repeats is an array
     else:
         # repeats should be integer type
-        repeats = repeats._warn_and_convert(np.int64)
+        repeats = _warn_and_convert(repeats, np.dtype(np.int64))
         if repeats.shape[0] != array.shape[axis_int]:
             raise ValueError("incorrect shape of repeats array")
         result = array._thunk.repeat(

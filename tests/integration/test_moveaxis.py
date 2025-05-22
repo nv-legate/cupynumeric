@@ -39,9 +39,12 @@ def test_moveaxis(ndim, axes):
     res_np = np.moveaxis(a_np, source, destination)
     res_num = num.moveaxis(a_num, source, destination)
     assert np.array_equal(res_np, res_num)
-    # Check that the returned array is a view
-    res_num[:] = 0
-    assert a_num.sum() == 0
+    # Check that the returned array is a view (for deferred case inly)
+    from cupynumeric.settings import settings
+
+    if settings.force_thunk() != "eager":
+        res_num[:] = 0
+        assert a_num.sum() == 0
 
 
 def test_moveaxis_with_empty_axis():

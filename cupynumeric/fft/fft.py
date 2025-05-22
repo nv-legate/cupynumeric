@@ -14,16 +14,14 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import Sequence
 
 import numpy as np
 
-from .._array.util import add_boilerplate
+from .._array.array import ndarray
+from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module.array_rearrange import roll
 from ..config import FFT_C2C, FFT_Z2Z, FFTCode, FFTDirection, FFTNormalization
-
-if TYPE_CHECKING:
-    from .._array.array import ndarray
 
 
 def _sanitize_user_axes(
@@ -873,6 +871,8 @@ def irfftn(
                 direction=FFTDirection.INVERSE,
                 norm=norm,
             )
+            if not isinstance(c2r, ndarray):
+                c2r = convert_to_cupynumeric_ndarray(c2r)  # type: ignore [unreachable] # noqa: E501
         else:
             c2r = a
         return c2r.fft(

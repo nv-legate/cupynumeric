@@ -95,6 +95,17 @@ NDARRAY_INTERNAL = {
 }
 
 
+def _warn_and_convert(array: ndarray, dtype: np.dtype[Any]) -> ndarray:
+    if array.dtype != dtype:
+        runtime.warn(
+            f"converting array to {dtype} type",
+            category=RuntimeWarning,
+        )
+        return array.astype(dtype)
+    else:
+        return array
+
+
 @clone_class(np.ndarray, NDARRAY_INTERNAL, maybe_convert_to_np_ndarray)
 class ndarray:
     def __init__(
@@ -255,6 +266,11 @@ class ndarray:
 
         what = f"{ufunc.__name__}.{method}"
 
+        # special case for @ matmul
+        if what == "matmul.__call__":
+            x = convert_to_cupynumeric_ndarray(inputs[0])
+            return x._thunk._matmul(*inputs[1:], **kwargs)
+
         if hasattr(_ufunc, ufunc.__name__):
             cn_ufunc = getattr(_ufunc, ufunc.__name__)
             if hasattr(cn_ufunc, method):
@@ -266,12 +282,6 @@ class ndarray:
                     return cn_method(*inputs, **kwargs)
                 except NotImplementedError:
                     what = f"the requested combination of arguments to {what}"
-
-        # special case for @ matmul
-        if what == "matmul.__call__":
-            from .._module import matmul
-
-            return matmul(*inputs, **kwargs)
 
         # We cannot handle this ufunc call, so we will fall back to NumPy.
         warnings.warn(
@@ -611,7 +621,7 @@ class ndarray:
 
         """
         # Handle the nice case of it being unsigned
-        return _ufunc.absolute(self)
+        return self._thunk._absolute()
 
     def __add__(self, rhs: Any) -> ndarray:
         """a.__add__(value, /)
@@ -623,7 +633,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.add(self, rhs)
+        return self._thunk._add(rhs)
 
     def __and__(self, rhs: Any) -> ndarray:
         """a.__and__(value, /)
@@ -635,7 +645,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_and(self, rhs)
+        return self._thunk._bitwise_and(rhs)
 
     def __array__(
         self, dtype: np.dtype[Any] | None = None
@@ -766,7 +776,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.equal(self, rhs)
+        return self._thunk._equal(rhs)
 
     def __float__(self) -> float:
         """a.__float__(/)
@@ -786,7 +796,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.floor_divide(self, rhs)
+        return self._thunk._floor_divide(rhs)
 
     def __format__(self, *args: Any, **kwargs: Any) -> str:
         return self.__array__().__format__(*args, **kwargs)
@@ -801,7 +811,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.greater_equal(self, rhs)
+        return self._thunk._greater_equal(rhs)
 
     # __getattribute__
 
@@ -829,7 +839,7 @@ class ndarray:
             if key.dtype != bool and not np.issubdtype(key.dtype, np.integer):
                 raise TypeError("index arrays should be int or bool type")
             if key.dtype != bool:
-                key = key._warn_and_convert(np.dtype(np.int64))
+                key = _warn_and_convert(key, np.dtype(np.int64))
 
             return key._thunk
 
@@ -853,7 +863,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.greater(self, rhs)
+        return self._thunk._greater(rhs)
 
     def __hash__(self) -> int:
         raise TypeError("unhashable type: cupynumeric.ndarray")
@@ -868,7 +878,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.add(self, rhs, out=self)
+        return self._thunk._add(rhs, out=self)
 
     def __iand__(self, rhs: Any) -> ndarray:
         """a.__iand__(value, /)
@@ -880,7 +890,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_and(self, rhs, out=self)
+        return self._thunk._bitwise_and(rhs, out=self)
 
     def __idiv__(self, rhs: Any) -> ndarray:
         """a.__idiv__(value, /)
@@ -904,7 +914,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.floor_divide(self, rhs, out=self)
+        return self._thunk._floor_divide(rhs, out=self)
 
     def __ilshift__(self, rhs: Any) -> ndarray:
         """a.__ilshift__(value, /)
@@ -916,7 +926,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.left_shift(self, rhs, out=self)
+        return self._thunk._left_shift(rhs, out=self)
 
     def __imatmul__(self, rhs: Any) -> ndarray:
         """a.__imatmul__(value, /)
@@ -928,9 +938,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        from .._module.linalg_mvp import matmul
-
-        return matmul(self, rhs, out=self)
+        return self._thunk._matmul(rhs, out=self)
 
     def __imod__(self, rhs: Any) -> ndarray:
         """a.__imod__(value, /)
@@ -942,7 +950,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.remainder(self, rhs, out=self)
+        return self._thunk._remainder(rhs, out=self)
 
     def __imul__(self, rhs: Any) -> ndarray:
         """a.__imul__(value, /)
@@ -954,7 +962,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.multiply(self, rhs, out=self)
+        return self._thunk._multiply(rhs, out=self)
 
     def __index__(self) -> int:
         return self.__array__().__index__()
@@ -979,9 +987,9 @@ class ndarray:
         """
         if self.dtype == bool:
             # Boolean values are special, just do logical NOT
-            return _ufunc.logical_not(self)
+            return self._thunk._logical_not()
         else:
-            return _ufunc.invert(self)
+            return self._thunk._invert()
 
     def __ior__(self, rhs: Any) -> ndarray:
         """a.__ior__(/)
@@ -993,7 +1001,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_or(self, rhs, out=self)
+        return self._thunk._bitwise_or(rhs, out=self)
 
     def __ipow__(self, rhs: float) -> ndarray:
         """a.__ipow__(/)
@@ -1005,7 +1013,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.power(self, rhs, out=self)
+        return self._thunk._power(rhs, out=self)
 
     def __irshift__(self, rhs: Any) -> ndarray:
         """a.__irshift__(/)
@@ -1017,7 +1025,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.right_shift(self, rhs, out=self)
+        return self._thunk._right_shift(rhs, out=self)
 
     def __iter__(self) -> Any:
         """a.__iter__(/)"""
@@ -1033,7 +1041,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.subtract(self, rhs, out=self)
+        return self._thunk._subtract(rhs, out=self)
 
     def __itruediv__(self, rhs: Any) -> ndarray:
         """a.__itruediv__(/)
@@ -1045,7 +1053,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.true_divide(self, rhs, out=self)
+        return self._thunk._true_divide(rhs, out=self)
 
     def __ixor__(self, rhs: Any) -> ndarray:
         """a.__ixor__(/)
@@ -1057,7 +1065,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_xor(self, rhs, out=self)
+        return self._thunk._bitwise_xor(rhs, out=self)
 
     def __le__(self, rhs: Any) -> ndarray:
         """a.__le__(value, /)
@@ -1069,7 +1077,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.less_equal(self, rhs)
+        return self._thunk._less_equal(rhs)
 
     def __len__(self) -> int:
         """a.__len__(/)
@@ -1089,7 +1097,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.left_shift(self, rhs)
+        return self._thunk._left_shift(rhs)
 
     def __lt__(self, rhs: Any) -> ndarray:
         """a.__lt__(value, /)
@@ -1101,7 +1109,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.less(self, rhs)
+        return self._thunk._less(rhs)
 
     def __matmul__(self, value: Any) -> ndarray:
         """a.__matmul__(value, /)
@@ -1113,9 +1121,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        from .._module.linalg_mvp import matmul
-
-        return matmul(self, value)
+        return self._thunk._matmul(value)
 
     def __mod__(self, rhs: Any) -> ndarray:
         """a.__mod__(value, /)
@@ -1127,7 +1133,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.remainder(self, rhs)
+        return self._thunk._remainder(rhs)
 
     def __mul__(self, rhs: Any) -> ndarray:
         """a.__mul__(value, /)
@@ -1139,7 +1145,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.multiply(self, rhs)
+        return self._thunk._multiply(rhs)
 
     def __ne__(self, rhs: object) -> ndarray:  # type: ignore [override]
         """a.__ne__(value, /)
@@ -1151,7 +1157,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.not_equal(self, rhs)
+        return self._thunk._not_equal(rhs)
 
     def __neg__(self) -> ndarray:
         """a.__neg__(value, /)
@@ -1163,7 +1169,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.negative(self)
+        return self._thunk._negative()
 
     # __new__
 
@@ -1199,7 +1205,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_or(self, rhs)
+        return self._thunk._bitwise_or(rhs)
 
     def __pos__(self) -> ndarray:
         """a.__pos__(value, /)
@@ -1212,7 +1218,7 @@ class ndarray:
 
         """
         # the positive opeartor is equivalent to copy
-        return _ufunc.positive(self)
+        return self._thunk._positive()
 
     def __pow__(self, rhs: float) -> ndarray:
         """a.__pow__(value, /)
@@ -1224,7 +1230,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.power(self, rhs)
+        return self._thunk._power(rhs)
 
     def __radd__(self, lhs: Any) -> ndarray:
         """a.__radd__(value, /)
@@ -1236,7 +1242,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.add(lhs, self)
+        # order doesn't matter for add
+        return self._thunk._add(lhs)
 
     def __rand__(self, lhs: Any) -> ndarray:
         """a.__rand__(value, /)
@@ -1248,7 +1255,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_and(lhs, self)
+        # order doesn't matter for bitwise_and
+        return self._thunk._bitwise_and(lhs)
 
     def __rdiv__(self, lhs: Any) -> ndarray:
         """a.__rdiv__(value, /)
@@ -1260,6 +1268,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._true_divide(self)
         return _ufunc.true_divide(lhs, self)
 
     def __rdivmod__(self, lhs: Any) -> ndarray:
@@ -1311,6 +1321,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._floor_divide(self)
         return _ufunc.floor_divide(lhs, self)
 
     def __rmatmul__(self, lhs: Any) -> ndarray:
@@ -1325,6 +1337,8 @@ class ndarray:
         """
         from .._module.linalg_mvp import matmul
 
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._matmul(self)
         return matmul(lhs, self)
 
     def __rmod__(self, lhs: Any) -> ndarray:
@@ -1337,6 +1351,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._remainder(self)
         return _ufunc.remainder(lhs, self)
 
     def __rmul__(self, lhs: Any) -> ndarray:
@@ -1349,7 +1365,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.multiply(lhs, self)
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._multiply(self)
+        return self._thunk._multiply(lhs)
 
     def __ror__(self, lhs: Any) -> ndarray:
         """a.__ror__(value, /)
@@ -1361,7 +1379,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_or(lhs, self)
+        # order doesn't matter here
+        return self._thunk._bitwise_or(lhs)
 
     def __rpow__(self, lhs: Any) -> ndarray:
         """__rpow__(value, /)
@@ -1373,6 +1392,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._power(self)
         return _ufunc.power(lhs, self)
 
     def __rshift__(self, rhs: Any) -> ndarray:
@@ -1385,7 +1406,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.right_shift(self, rhs)
+        return self._thunk._right_shift(rhs)
 
     def __rsub__(self, lhs: Any) -> ndarray:
         """a.__rsub__(value, /)
@@ -1397,6 +1418,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._subtract(self)
         return _ufunc.subtract(lhs, self)
 
     def __rtruediv__(self, lhs: Any) -> ndarray:
@@ -1409,6 +1432,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._true_divide(self)
         return _ufunc.true_divide(lhs, self)
 
     def __rxor__(self, lhs: Any) -> ndarray:
@@ -1421,6 +1446,8 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
+        if hasattr(lhs, "_thunk"):
+            return lhs._thunk._bitwise_xor(self)
         return _ufunc.bitwise_xor(lhs, self)
 
     # __setattr__
@@ -1486,7 +1513,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.subtract(self, rhs)
+        return self._thunk._subtract(rhs)
 
     def __str__(self) -> str:
         """a.__str__(/)
@@ -1510,7 +1537,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.true_divide(self, rhs)
+        return self._thunk._true_divide(rhs)
 
     def __xor__(self, rhs: Any) -> ndarray:
         """a.__xor__(value, /)
@@ -1522,7 +1549,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return _ufunc.bitwise_xor(self, rhs)
+        return self._thunk._bitwise_xor(rhs)
 
     # scalar functions on 0d arrays
     def __round__(self, ndigits: int | None = None) -> Any:
@@ -1909,6 +1936,8 @@ class ndarray:
                 raise ValueError("invalid entry in choice array")
         elif mode == "wrap":
             a = a % n
+            if not isinstance(a, ndarray):
+                a = convert_to_cupynumeric_ndarray(a)  # type: ignore [unreachable] # noqa: E501
         elif mode == "clip":
             a = a.clip(0, n - 1)
         else:
@@ -1989,7 +2018,7 @@ class ndarray:
             raise ValueError(
                 "Dimension mismatch: condition must be a 1D array"
             )
-        condition = condition._warn_and_convert(np.dtype(bool))
+        condition = _warn_and_convert(condition, np.dtype(bool))
 
         if axis is None:
             axis = 0
@@ -2405,8 +2434,8 @@ class ndarray:
         elif mode == "clip":
             indices = indices.clip(0, self.size - 1)
 
-        indices = indices._warn_and_convert(np.dtype(np.int64))
-        values = values._warn_and_convert(self.dtype)
+        indices = _warn_and_convert(indices, np.dtype(np.int64))
+        values = _warn_and_convert(values, self.dtype)
 
         if indices.ndim > 1:
             indices = indices.ravel()
@@ -2421,6 +2450,9 @@ class ndarray:
                 v = values[0]
             self._thunk.copy(v._thunk, deep=False)
             return
+
+        # indices might have taken an eager path above
+        indices = convert_to_cupynumeric_ndarray(indices)
 
         # call _wrap on the values if they need to be wrapped
         if values.ndim != indices.ndim or values.size != indices.size:
@@ -2497,7 +2529,7 @@ class ndarray:
         from .._module.linalg_mvp import _contract
 
         if self.ndim == 0 or rhs.ndim == 0:
-            return _ufunc.multiply(self, rhs, out=out)
+            return self._thunk._multiply(rhs, out=out)
 
         (self_modes, rhs_modes, out_modes) = dot_modes(self.ndim, rhs.ndim)
         return _contract(
@@ -2918,9 +2950,15 @@ class ndarray:
         else:
             if where is not None:
                 divisor = where.sum(axis=axis, dtype=dtype, keepdims=keepdims)
+                if not isinstance(divisor, ndarray):
+                    divisor = convert_to_cupynumeric_ndarray(divisor)  # type: ignore [unreachable] # noqa: E501
                 if ddof != 0 and not np.isscalar(divisor):
                     mask = divisor != 0
+                    if not isinstance(mask, ndarray):
+                        mask = convert_to_cupynumeric_ndarray(mask)  # type: ignore [unreachable] # noqa: E501
                     values = divisor - ddof
+                    if not isinstance(values, ndarray):
+                        values = convert_to_cupynumeric_ndarray(values)  # type: ignore [unreachable] # noqa: E501
                     divisor._thunk.putmask(mask._thunk, values._thunk)
                 else:
                     divisor -= ddof
@@ -3955,16 +3993,6 @@ class ndarray:
         copy = ndarray(shape=self.shape, dtype=dtype, inputs=hints)
         copy._thunk.convert(self._thunk)
         return copy
-
-    def _warn_and_convert(self, dtype: np.dtype[Any]) -> ndarray:
-        if self.dtype != dtype:
-            runtime.warn(
-                f"converting array to {dtype} type",
-                category=RuntimeWarning,
-            )
-            return self.astype(dtype)
-        else:
-            return self
 
     def _wrap(self, new_len: int) -> ndarray:
         if new_len == 1:

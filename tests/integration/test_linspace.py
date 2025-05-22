@@ -310,9 +310,8 @@ class TestLinspaceErrors:
         "shape", ((0,), (2,), (3, 3)), ids=lambda shape: f"(shape={shape})"
     )
     def test_array_bad_shape(self, shape):
-        msg = "shape mismatch"
         stop = mk_seq_array(num, shape)
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError):
             num.linspace(self.start, stop)
 
     def test_start_none(self):

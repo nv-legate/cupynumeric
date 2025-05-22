@@ -87,7 +87,7 @@ sinh = create_unary_ufunc(
 
 cosh = create_unary_ufunc(
     "Hyperbolic cosine, element-wise.",
-    "cos",
+    "cosh",
     UnaryOpCode.COSH,
     float_and_complex,
 )

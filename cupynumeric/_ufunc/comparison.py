@@ -134,7 +134,7 @@ less = create_binary_ufunc(
 
 less_equal = create_binary_ufunc(
     "Return the truth value of (x1 =< x2) element-wise.",
-    "less",
+    "less_equal",
     BinaryOpCode.LESS_EQUAL,
     relation_types_of(all_dtypes),
     post_resolution_check=_post_resolution_check,
@@ -181,7 +181,7 @@ logical_xor = create_binary_ufunc(
 
 logical_not = create_unary_ufunc(
     "Compute bit-wise inversion, or bit-wise NOT, element-wise.",
-    "invert",
+    "logical_not",
     UnaryOpCode.LOGICAL_NOT,
     (
         ["??"]

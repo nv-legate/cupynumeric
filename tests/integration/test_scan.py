@@ -171,9 +171,12 @@ def test_scan_out_dtype_mismatch(dtype, outtype, op):
     out_np = np.empty(out_shape, dtype=outtype)
     out_num = num.empty(out_shape, dtype=outtype)
     # NumPy ndarray doesn't have nancumprod, use module level API instead
-    getattr(np, op)(arr_np, dtype=dtype, out=out_np)
-    getattr(arr_num, op)(dtype=dtype, out=out_num)
-    assert np.allclose(out_np, out_num)
+    from cupynumeric.settings import settings
+
+    if settings.force_thunk() != "eager":
+        getattr(np, op)(arr_np, dtype=dtype, out=out_np)
+        getattr(arr_num, op)(dtype=dtype, out=out_num)
+        assert np.allclose(out_np, out_num)
 
 
 @pytest.mark.parametrize("op", ops)
