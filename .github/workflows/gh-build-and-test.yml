@@ -10,10 +10,6 @@ on:
       build-type:
         type: string
         required: true
-      upload-enabled:
-        type: boolean
-        required: false
-        default: false
       build-has-tests:
         required: true
         type: boolean
@@ -53,20 +49,19 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cleanup_download_artifact_code
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.32
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: ""
-      legate-gh-ci-tag: "cleanup_download_artifact_code"
+      legate-gh-ci-tag: "v1.32"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
       runs-on: ${{ needs.setup-build.outputs.runner_type }}
       target-device: ${{ inputs.target-device }}
-      upload-enabled: ${{ inputs.upload-enabled }}
       use-container: ${{ inputs.platform == 'linux' || inputs.platform == 'linux-aarch64' }}
       setup-python-proxy-cache: true
     secrets: inherit
@@ -171,14 +166,14 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@cleanup_download_artifact_code
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.32
     with:
-      build-has-tests: ${{ !inputs.upload-enabled }}
+      build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "cleanup_download_artifact_code"
+      legate-gh-ci-tag: "v1.32"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -186,7 +181,6 @@ jobs:
       runs-on: ${{ matrix.runner.name }}
       target-device: ${{ inputs.target-device }}
       test-options: ${{ matrix.test-config.test-options }}
-      upload-enabled: ${{ inputs.upload-enabled }}
       setup-python-proxy-cache: ${{ matrix.runner.setup-python-proxy-cache }}
     secrets: inherit
 
@@ -198,13 +192,13 @@ jobs:
     if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == true }}
     name: Upload package to Anaconda Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@cleanup_download_artifact_code
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.32
     with:
       build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "cleanup_download_artifact_code"
+      legate-gh-ci-tag: "v1.32"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -213,7 +207,6 @@ jobs:
       repos-Root: "cupynumeric"
       target-device: ${{ inputs.target-device }}
       upload-action: ${{ needs.test.result == 'failure' && 'upload-package-Anaconda' || 'upload-package-Anaconda-tested' }}
-      upload-enabled: true
       refname: ${{ inputs.refname }}
       default-branch: ${{ inputs.default-branch }}
     secrets: inherit

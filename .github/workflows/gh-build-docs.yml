@@ -23,7 +23,7 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@cleanup_download_artifact_code
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.32
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
@@ -33,9 +33,8 @@ jobs:
       use-container: ${{ inputs.platform == 'linux' }}
       platform: ${{ inputs.platform }}
       dependencies-file: ""
-      legate-gh-ci-tag: "cleanup_download_artifact_code"
+      legate-gh-ci-tag: "v1.32"
       build-mode: ${{ inputs.build-mode }}
-      upload-enabled: false
       network: "ucx"
       setup-python-proxy-cache: true
     secrets: inherit
@@ -47,7 +46,7 @@ jobs:
     name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@cleanup_download_artifact_code
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.32
     with:
       build-has-tests: false
       build-mode: ${{ inputs.build-mode }}
@@ -55,7 +54,7 @@ jobs:
       output-build-type: docs
       client-repo: ${{ github.event.repository.name }}
       has-gpu: false
-      legate-gh-ci-tag: "cleanup_download_artifact_code"
+      legate-gh-ci-tag: "v1.32"
       name: Build documentation
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -63,7 +62,6 @@ jobs:
       runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-gpu-l4-latest-1') || (inputs.platform == 'mac' && 'macos-latest') }}
       target-device: ${{ inputs.target-device }}
       test-options: docs
-      upload-enabled: false
       setup-python-proxy-cache: true
     secrets: inherit
 
