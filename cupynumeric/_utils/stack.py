@@ -17,7 +17,7 @@ from __future__ import annotations
 import traceback
 from types import FrameType
 
-def _find_last_user_stacklevel_and_frame() -> tuple[int, FrameType | None]:
+def find_last_user_stacklevel_and_frame() -> tuple[int, FrameType | None]:
     # We want the caller of the public API from this file to see itself as
     # stacklevel 1. So discount the first two hops up the stack, for this
     # helper function, and the public API frontend function.
@@ -40,18 +40,18 @@ def _find_last_user_stacklevel_and_frame() -> tuple[int, FrameType | None]:
     return stacklevel, None
 
 def find_last_user_stacklevel() -> int:
-    stacklevel, _ = _find_last_user_stacklevel_and_frame()
+    stacklevel, _ = find_last_user_stacklevel_and_frame()
     return stacklevel
 
 def get_line_number_from_frame(frame: FrameType) -> str:
     return f"{frame.f_code.co_filename}:{frame.f_lineno}"
 
 def find_last_user_frame() -> FrameType | None:
-    _, last = _find_last_user_stacklevel_and_frame()
+    _, last = find_last_user_stacklevel_and_frame()
     return last
 
 def find_last_user_frames() -> list[FrameType]:
-    _, last = _find_last_user_stacklevel_and_frame()
+    _, last = find_last_user_stacklevel_and_frame()
 
     frames: list[FrameType] = []
     curr: FrameType | None = last

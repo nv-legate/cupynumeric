@@ -33,7 +33,7 @@ from .._utils.array import (
     min_identity,
     to_core_type,
 )
-from .._utils.coverage import FALLBACK_WARNING, clone_class, is_implemented
+from .._utils.coverage import issue_fallback_warning, clone_class, is_implemented
 from .._utils.linalg import dot_modes
 from .._utils.structure import deep_apply
 from ..config import (
@@ -233,11 +233,7 @@ class ndarray:
                 what = f"the requested combination of arguments to {what}"
 
         # We cannot handle this call, so we will fall back to NumPy.
-        warnings.warn(
-            FALLBACK_WARNING.format(what=what),
-            category=RuntimeWarning,
-            stacklevel=4,
-        )
+        issue_fallback_warning(what=what)
         args = deep_apply(args, maybe_convert_to_np_ndarray)
         kwargs = deep_apply(kwargs, maybe_convert_to_np_ndarray)
         return func(*args, **kwargs)
@@ -284,11 +280,7 @@ class ndarray:
                     what = f"the requested combination of arguments to {what}"
 
         # We cannot handle this ufunc call, so we will fall back to NumPy.
-        warnings.warn(
-            FALLBACK_WARNING.format(what=what),
-            category=RuntimeWarning,
-            stacklevel=3,
-        )
+        issue_fallback_warning(what=what)
         inputs = deep_apply(inputs, maybe_convert_to_np_ndarray)
         kwargs = deep_apply(kwargs, maybe_convert_to_np_ndarray)
         return getattr(ufunc, method)(*inputs, **kwargs)

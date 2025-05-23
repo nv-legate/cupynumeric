@@ -23,22 +23,23 @@ from legate.util.settings import EnvOnlySetting, PrioritizedSetting
 import cupynumeric.settings as m
 
 _expected_settings = (
-    "doctor",
-    "doctor_format",
     "doctor_filename",
+    "doctor_format",
     "doctor_traceback",
+    "doctor",
+    "fallback_stacktrace",
+    "fast_math",
+    "force_thunk",
+    "matmul_cache_size",
+    "min_cpu_chunk",
+    "min_gpu_chunk",
+    "min_omp_chunk",
+    "numpy_compat",
     "preload_cudalibs",
-    "warn",
     "report_coverage",
     "report_dump_callstack",
     "report_dump_csv",
-    "numpy_compat",
-    "fast_math",
-    "min_gpu_chunk",
-    "min_cpu_chunk",
-    "min_omp_chunk",
-    "force_thunk",
-    "matmul_cache_size",
+    "warn",
 )
 
 _settings_with_test_defaults = (
@@ -109,6 +110,7 @@ class TestSettings:
             == 'bool ("0" or "1")'
         )
         assert m.settings.report_dump_csv.convert_type == "str"
+        assert m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
         assert m.settings.numpy_compat.convert_type == 'bool ("0" or "1")'
 
 
@@ -139,6 +141,9 @@ class TestDefaults:
 
     def test_report_dump_csv(self) -> None:
         assert m.settings.report_dump_csv.default is None
+
+    def test_fallback_stacktrace(self) -> None:
+        assert m.settings.fallback_stacktrace.default is False
 
     def test_numpy_compat(self) -> None:
         assert m.settings.numpy_compat.default is False

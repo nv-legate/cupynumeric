@@ -26,22 +26,45 @@ from legate.core.utils import OrderedSet
 
 from ..runtime import runtime
 from ..settings import settings
-from .stack import find_last_user_line_numbers, find_last_user_stacklevel
+from .stack import find_last_user_line_numbers, find_last_user_stacklevel_and_frame
 from .structure import deep_apply
 
 __all__ = ("GPUSupport", "clone_module", "clone_class")
 
 FALLBACK_WARNING = (
     "cuPyNumeric has not implemented {what} "
-    + "and is falling back to canonical NumPy. "
-    + "You may notice significantly decreased performance "
-    + "for this function call."
+    "and is falling back to canonical NumPy. "
+    "You may notice significantly decreased performance "
+    "for this function call."
+
 )
 
 MOD_INTERNAL = {"__dir__", "__getattr__"}
 
 UFUNC_METHODS = ("at", "accumulate", "outer", "reduce", "reduceat")
 
+
+def issue_fallback_warning(what: str) -> None:
+    stacklevel, frame = find_last_user_stacklevel_and_frame()
+    msg = FALLBACK_WARNING.format(what=what)
+    if settings.fallback_stacktrace():
+        if frame:
+            import traceback
+            stacklist = traceback.extract_stack(frame)
+            stack = "".join(traceback.format_list(stacklist))
+            msg += f"\n\n{stack}"
+        else:
+            msg += " (could not extract stacktrace)"
+    else:
+        msg += (
+            "\n\nSet CUPYNUMERIC_FALLBACK_STACKTRACE=1 and re-run to include a "
+            "full stack trace with this warning."
+        )
+    warnings.warn(
+        msg,
+        stacklevel=stacklevel,
+        category=RuntimeWarning,
+    )
 
 def filter_namespace(
     ns: Mapping[str, Any],
@@ -189,12 +212,7 @@ def unimplemented(
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            stacklevel = find_last_user_stacklevel()
-            warnings.warn(
-                FALLBACK_WARNING.format(what=name),
-                stacklevel=stacklevel,
-                category=RuntimeWarning,
-            )
+            issue_fallback_warning(what=name)
             if fallback:
                 args = deep_apply(args, fallback)
                 kwargs = deep_apply(kwargs, fallback)

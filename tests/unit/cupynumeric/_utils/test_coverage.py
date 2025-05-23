@@ -32,6 +32,10 @@ def test_FALLBACK_WARNING() -> None:
         + "for this function call."
     )
 
+def test_issue_fallback_warning() -> None:
+    msg = m.FALLBACK_WARNING.format(what="foo")
+    with pytest.warns(RuntimeWarning, match=msg):
+        m.issue_fallback_warning(what="foo")
 
 def test_MOD_INTERNAL() -> None:
     assert m.MOD_INTERNAL == {"__dir__", "__getattr__"}
@@ -516,20 +520,20 @@ def test_ufunc_methods_unary() -> None:
 
 def test_implemented_decorator_actual() -> None:
     settings.report_coverage = True
-    
+
     def test_func():
         return "test"
-        
+
     decorated_func = m.implemented(
         func=test_func,
         prefix="test_module",
         name="test_function",
         reporting=True
     )
-    
+
     result = decorated_func()
     assert result == "test"
-    
+
     assert hasattr(decorated_func, "_cupynumeric_metadata")
     assert decorated_func._cupynumeric_metadata.implemented
 

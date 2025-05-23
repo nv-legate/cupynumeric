@@ -149,6 +149,19 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
+    fallback_stacktrace: EnvOnlySetting[int] = EnvOnlySetting(
+        "fallback_stacktrace",
+        "CUPYNUMERIC_FALLBACK_STACKTRACE",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Whether to dump a full stack trace whenever cuPyNumeric emits a
+        warning about falling back to Numpy routines.
+
+        This is a read-only environment variable setting used by the runtime.
+        """,
+    )
+
     fast_math: EnvOnlySetting[int] = EnvOnlySetting(
         "fast_math",
         "CUPYNUMERIC_FAST_MATH",
