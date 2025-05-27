@@ -15,7 +15,6 @@ requires = [
     "rich",
 ]
 build-backend = "scikit_build_core.build"
-python-requires = ">=3.11"
 
 [project]
 name = "nvidia-cupynumeric"
@@ -45,6 +44,7 @@ dependencies = [
     "nvidia-nvjitlink-cu12",
 ]
 dynamic = ["version"]
+requires-python = ">=3.11"
 
 [project.urls]
 homepage = "https://github.com/nv-legate/cupynumeric"
