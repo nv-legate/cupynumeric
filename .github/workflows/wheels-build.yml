@@ -18,7 +18,7 @@ on:
         default: "cpu16"
       cuda_ver:
         type: string
-        default: "12.8.0"
+        default: "12.9.0"
       linux_ver:
         type: string
         default: "rockylinux8"
