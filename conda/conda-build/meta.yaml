@@ -31,7 +31,7 @@
 ## It should not be used for any other purpose, and this is not a default version.
 {% set placeholder_version = '0.0.0.dev' %}
 {% set default_cuda_version = '12.2.2' %}
-{% set cuda_version='.'.join(environ.get('CUDA', default_cuda_version).split('.')[:2]) %}
+{% set cuda_version='.'.join(environ.get('CUDA_VERSION', default_cuda_version).split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0]|int %}
 {% set py_version=environ.get('CONDA_PY', '') %}
 {% if build_number is defined %}
@@ -109,11 +109,26 @@ build:
     - cpu_only
 {% endif %}
 
-ignore_run_exports_from:
-  # scikit-build should really be a part of the build env, but then it installs its own Python.  Conda build stacks
-  # the build environment on the host environment, and the build python takes over causing paths havoc.  So, we put
-  # scikit-build into the host env, but we ignore any exports it may bring.
-  - scikit-build
+  ignore_run_exports_from:
+    # scikit-build should really be a part of the build env, but then it installs its own Python.  Conda build stacks
+    # the build environment on the host environment, and the build python takes over causing paths havoc.  So, we put
+    # scikit-build into the host env, but we ignore any exports it may bring.
+    - scikit-build
+    # We want to ignore any cuda related exports and we will redefine them ourselves with looser pins.
+    - cuda-version
+    - cuda-cudart
+    - cuda-cudart-dev
+    - libcublas
+    - libcublas-dev
+    - libcurand-dev
+    - cuda-nvcc
+    - cuda-cccl
+    - libcusolver
+    - libcusolver-dev
+    - libcufile
+    - libcufile-dev
+    - libcufft
+    - libcufft-dev
 
 requirements:
   build:
@@ -158,14 +173,18 @@ requirements:
     # see https://github.com/nv-legate/cupynumeric.internal/issues/342
     - openblas <=0.3.23 =*openmp*
 {% if gpu_enabled_bool %}
+    - __cuda
+    - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x') }}
+    - {{ pin_compatible('cuda-cudart',  min_pin='x', max_pin='x') }}
+    - {{ pin_compatible('libcublas',    min_pin='x', max_pin='x') }}
+    - {{ pin_compatible('cuda-nvtx',    min_pin='x', max_pin='x') }}
+    - {{ pin_compatible('libcusolver',  min_pin='x', max_pin='x') }}
+    - {{ pin_compatible('libcufile',    min_pin='x', max_pin='x') }}
+    - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
+    - cutensor >=2.0 =*_*              # versioned independently of CUDA
+    - nccl >=2.0,<3
     - cupy
     - libnvjitlink
-    - libcusparse
-    - cutensor >=2.0 =*_*
-    # Pin to all minor versions of CUDA newer than the one built against, within the same major version.
-    # cuda-version constrains the CUDA runtime version and ensures a compatible driver is available
-    - {{ pin_compatible('cuda-version', min_pin='x.x', max_pin='x') }}
-    - __cuda >={{ cuda_version }}
 {% endif %}
 
   run_constrained:

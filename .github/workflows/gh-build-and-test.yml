@@ -49,14 +49,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.32
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.33
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       dependencies-file: ""
-      legate-gh-ci-tag: "v1.32"
+      legate-gh-ci-tag: "v1.33"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -166,14 +166,14 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.32
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.33
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "v1.32"
+      legate-gh-ci-tag: "v1.33"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -192,13 +192,13 @@ jobs:
     if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == true }}
     name: Upload package to Anaconda Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.32
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.33
     with:
       build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
-      legate-gh-ci-tag: "v1.32"
+      legate-gh-ci-tag: "v1.33"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
