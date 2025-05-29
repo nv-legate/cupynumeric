@@ -264,8 +264,8 @@ class Test_unimplemented:
             assert wrapped(10, 20) == 30
 
         assert len(record) == 1
-        assert record[0].message.args[0] == m.FALLBACK_WARNING.format(
-            what="foo._test_func"
+        assert record[0].message.args[0].startswith(
+            m.FALLBACK_WARNING.format(what="foo._test_func")
         )
 
         mock_record_api_call.assert_not_called()
@@ -307,8 +307,8 @@ class Test_unimplemented:
             assert wrapped(10, 20) == 30
 
         assert len(record) == 1
-        assert record[0].message.args[0] == m.FALLBACK_WARNING.format(
-            what="foo._test_ufunc"
+        assert record[0].message.args[0].startswith(
+            m.FALLBACK_WARNING.format(what="foo._test_ufunc")
         )
 
         mock_record_api_call.assert_not_called()

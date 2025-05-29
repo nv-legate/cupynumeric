@@ -676,9 +676,6 @@ class binary_ufunc(ufunc):
         for arr, orig_arg in zip(arrs, orig_args):
             if type(orig_arg) in (int, float, complex):
                 scalar_types.append(orig_arg)
-            elif arr.ndim == 0:
-                # NumPy 1.x needs a 0-D NumPy array for value-based promotion
-                scalar_types.append(np.asarray(orig_arg))
             else:
                 array_types.append(arr.dtype)
 
@@ -792,26 +789,14 @@ class binary_ufunc(ufunc):
         order: str = "K",
         dtype: np.dtype[Any] | None = None,
     ) -> ndarray:
-        if not np.isscalar(args[0]):
-            x1 = convert_to_cupynumeric_ndarray(args[0])
-            x2 = args[1]
-            return getattr(x1._thunk, f"_{self._name}")(
-                x2,
-                out=out,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-        else:
-            return self._call_full(
-                *args,
-                out=out,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
+        return self._call_full(
+            *args,
+            out=out,
+            where=where,
+            casting=casting,
+            order=order,
+            dtype=dtype,
+        )
 
     def _call_full(
         self,

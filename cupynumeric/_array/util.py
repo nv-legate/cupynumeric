@@ -208,14 +208,8 @@ def find_common_type(*args: ndarray) -> np.dtype[Any]:
         The type that results from applying the NumPy type promotion rules
         to the arguments.
     """
-    array_types = list()
-    scalars = list()
-    for array in args:
-        if array.ndim == 0:
-            scalars.append(array.dtype.type(0))
-        else:
-            array_types.append(array.dtype)
-    return np.result_type(*array_types, *scalars)
+    array_types = [array.dtype for array in args]
+    return np.result_type(*array_types)
 
 
 T = TypeVar("T")
