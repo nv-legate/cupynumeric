@@ -119,6 +119,17 @@ class CuWrapped(AnyCallable, Protocol):
     __name__: str
     __qualname__: str
 
+# This is in order to have less generically named wrapper functions in
+# profiles. This approach "was used in NumPy and Guido approved".
+def _fixup_co_name(func: Callable[[Any], Any], kind: str) -> Callable[[Any], Any]:
+    def decorator(wrapper: Callable[[Any], Any]) -> Callable[[Any], Any]:
+        if hasattr(func, "__name__"):
+            wrapper.__code__ = wrapper.__code__.replace(
+                co_name=f"{func.__name__}_{kind}_wrapper",
+                co_filename="<cupynumeric internals>",  # hide from TB
+            )
+        return wrapper
+    return decorator
 
 def implemented(
     func: AnyCallable, prefix: str, name: str, reporting: bool = True
@@ -131,6 +142,7 @@ def implemented(
 
         @wraps(func)
         @track_provenance()
+        @_fixup_co_name(func, "implemented")
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
@@ -146,6 +158,7 @@ def implemented(
 
         @wraps(func)
         @track_provenance()
+        @_fixup_co_name(func, "implemented")
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
@@ -194,6 +207,7 @@ def unimplemented(
     if reporting:
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
+        @_fixup_co_name(func, "unimplemented")
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
@@ -211,6 +225,7 @@ def unimplemented(
     else:
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
+        @_fixup_co_name(func, "unimplemented")
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             issue_fallback_warning(what=name)
             if fallback:
