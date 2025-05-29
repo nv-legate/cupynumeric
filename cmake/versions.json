@@ -11,7 +11,7 @@
       "git_shallow": false,
       "always_download": false,
       "git_tag" : "5a97dd4c66b7ff35702bbd90ff767f0c5e130c93",
-      "anaconda_label": "experimental"
+      "anaconda_label": "rc"
     }
   }
 }
