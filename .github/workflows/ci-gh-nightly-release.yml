@@ -6,6 +6,11 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      ref-sha:
+        description: 'The Full-commit SHA to checkout. Default=HEAD'
+        required: false
+        default: ''
   schedule:
     - cron: '0 23 * * *'  # Nightly at 11:00 PM
 
@@ -32,6 +37,7 @@ jobs:
     with:
       build-type: nightly
       platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
       build-has-tests: ${{ matrix.build-has-tests }}
@@ -54,6 +60,7 @@ jobs:
       ./.github/workflows/gh-build-docs.yml
     with:
       platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
       target-device: ${{ matrix.target-device }}
       build-mode: ${{ matrix.build-mode }}
       build-type: nightly
