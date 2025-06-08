@@ -662,6 +662,9 @@ void repartition_matrix_block(
       }
     }
 
+    assert(equals_r == target_p_c_valid);
+    assert(equals_c == target_p_r_valid);
+
     // edge-case -- empty in 2D
     // x x x x 0 0
     // x x x x 0 0
@@ -687,6 +690,12 @@ void repartition_matrix_block(
         }
       }
       assert(found_match);
+    } else {
+      // empty in at most 1D
+      assert(empty_p_r % equals_r == 0);
+      assert(empty_p_c % equals_c == 0);
+      empty_p_r /= equals_r;
+      empty_p_c /= equals_c;
     }
 
     target_p_r = target_p_r_valid + empty_p_r;

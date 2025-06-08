@@ -47,8 +47,8 @@ def solve_single(library: Library, a: LogicalStore, b: LogicalStore) -> None:
     task.execute()
 
 
-MIN_SOLVE_TILE_SIZE = 2 if settings.test() else 512
-MIN_SOLVE_MATRIX_SIZE = 4 if settings.test() else 2048
+MIN_SOLVE_TILE_SIZE = 16 if settings.test() else 512
+MIN_SOLVE_MATRIX_SIZE = 32 if settings.test() else 2048
 
 
 def mp_solve(
