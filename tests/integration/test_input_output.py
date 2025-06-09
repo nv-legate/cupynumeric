@@ -60,6 +60,17 @@ def test_ndarray_tostring(order):
     assert arr_np.tostring(order) == arr_num.tostring(order)
 
 
+@pytest.mark.skipif(
+    NumpyVersion(np.__version__) < "1.9.0", reason="tobytes is introduced in 1.9.0"
+)
+@pytest.mark.parametrize("order", ["C", "F", "A"], ids=str)
+def test_ndarray_tobytes(order):
+    shape = (3, 2, 4)
+    arr_np = mk_seq_array(np, shape)
+    arr_num = mk_seq_array(num, shape)
+    assert arr_np.tobytes(order) == arr_num.tobytes(order)
+
+
 def test_ndarray_dump():
     shape = (3, 2, 4)
     arr_np = mk_seq_array(np, shape)

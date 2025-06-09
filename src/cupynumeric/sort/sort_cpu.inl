@@ -60,9 +60,11 @@ void thrust_local_sort_inplace(VAL* inptr,
     // sort (in place)
     for (size_t start_idx = 0; start_idx < volume; start_idx += sort_dim_size) {
       if (stable_argsort) {
-        thrust::stable_sort(exec, inptr + start_idx, inptr + start_idx + sort_dim_size);
+        thrust::stable_sort(
+          exec, inptr + start_idx, inptr + start_idx + sort_dim_size, ::cuda::std::less{});
       } else {
-        thrust::sort(exec, inptr + start_idx, inptr + start_idx + sort_dim_size);
+        thrust::sort(
+          exec, inptr + start_idx, inptr + start_idx + sort_dim_size, ::cuda::std::less{});
       }
     }
   } else {
@@ -71,9 +73,11 @@ void thrust_local_sort_inplace(VAL* inptr,
       int64_t* segmentValues = argptr + start_idx;
       VAL* segmentKeys       = inptr + start_idx;
       if (stable_argsort) {
-        thrust::stable_sort_by_key(exec, segmentKeys, segmentKeys + sort_dim_size, segmentValues);
+        thrust::stable_sort_by_key(
+          exec, segmentKeys, segmentKeys + sort_dim_size, segmentValues, ::cuda::std::less{});
       } else {
-        thrust::sort_by_key(exec, segmentKeys, segmentKeys + sort_dim_size, segmentValues);
+        thrust::sort_by_key(
+          exec, segmentKeys, segmentKeys + sort_dim_size, segmentValues, ::cuda::std::less{});
       }
     }
   }
