@@ -259,6 +259,7 @@ def perform_binary_reduction(
 
     # Collapsing down to a single value in this case
     # Check to see if we need to broadcast between inputs
+    broadcast: NdShape | None
     if one.shape != two.shape:
         broadcast = np.broadcast_shapes(one.shape, two.shape)
     else:

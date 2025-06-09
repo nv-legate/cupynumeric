@@ -3668,7 +3668,7 @@ class DeferredArray(NumPyThunk):
                 swapped.shape, dtype=rhs.base.type, inputs=(rhs, swapped)
             )
             input.copy(swapped, deep=True)
-            output = input
+            output = cast(DeferredArray, input)
 
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.SCAN_LOCAL

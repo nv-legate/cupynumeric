@@ -18,6 +18,7 @@ from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pytest
+from numpy.lib import NumpyVersion
 from utils.generators import mk_0to1_array, mk_seq_array
 
 import cupynumeric as num
@@ -48,6 +49,9 @@ def test_ndarray_tolist(shape):
     assert arr_np.tolist() == arr_num.tolist()
 
 
+@pytest.mark.skipif(
+    NumpyVersion(np.__version__) >= "2.0.0", reason="tostring is deprecated"
+)
 @pytest.mark.parametrize("order", ["C", "F", "A"], ids=str)
 def test_ndarray_tostring(order):
     shape = (3, 2, 4)
