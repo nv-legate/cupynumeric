@@ -69,6 +69,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       use-container: ${{ inputs.platform == 'linux' || inputs.platform == 'linux-aarch64' }}
       setup-python-proxy-cache: true
+      timeout: 60
     secrets: inherit
 
   setup-test:
@@ -77,6 +78,7 @@ jobs:
     needs:
       - build
     runs-on: linux-amd64-cpu4
+    timeout-minutes: 20
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -188,6 +190,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       test-options: ${{ matrix.test-config.test-options }}
       setup-python-proxy-cache: ${{ matrix.runner.setup-python-proxy-cache }}
+      timeout: 150
     secrets: inherit
 
   upload:
@@ -216,5 +219,6 @@ jobs:
       upload-action: ${{ needs.test.result == 'failure' && 'upload-package-Anaconda' || 'upload-package-Anaconda-tested' }}
       refname: ${{ inputs.refname }}
       default-branch: ${{ inputs.default-branch }}
+      timeout: 15
     secrets: inherit
 

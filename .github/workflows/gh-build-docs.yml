@@ -42,6 +42,7 @@ jobs:
       build-mode: ${{ inputs.build-mode }}
       network: "ucx"
       setup-python-proxy-cache: true
+      timeout: 90
     secrets: inherit
 
 
@@ -69,6 +70,7 @@ jobs:
       target-device: ${{ inputs.target-device }}
       test-options: docs
       setup-python-proxy-cache: true
+      timeout: 30
     secrets: inherit
 
 
@@ -77,6 +79,7 @@ jobs:
     needs:
       - build-docs
     runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-cpu4') || (inputs.platform == 'mac' && 'macos-latest') }}
+    timeout-minutes: 15
     steps:
       - name: Set environment variables
         shell: bash --noprofile --norc -xeuo pipefail {0}
