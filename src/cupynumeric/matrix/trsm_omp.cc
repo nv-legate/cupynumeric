@@ -17,8 +17,7 @@
 #include "cupynumeric/matrix/trsm.h"
 #include "cupynumeric/matrix/trsm_template.inl"
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 #include <omp.h>
 
 namespace cupynumeric {
@@ -89,7 +88,7 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 
 /*static*/ void TrsmTask::omp_variant(TaskContext context)
 {
-  openblas_set_num_threads(omp_get_max_threads());
+  blas_set_num_threads(omp_get_max_threads());
   trsm_template<VariantKind::CPU>(context);
 }
 

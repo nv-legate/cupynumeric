@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 #include <cstring>
 
 namespace cupynumeric {
@@ -80,7 +79,7 @@ template <VariantKind KIND>
 struct QrImplBody<KIND, Type::Code::FLOAT32> {
   void operator()(int32_t m, int32_t n, int32_t k, const float* a, float* q, float* r)
   {
-    qr_template(LAPACK_sgeqrf, LAPACK_sorgqr, m, n, k, a, q, r);
+    qr_template(sgeqrf_, sorgqr_, m, n, k, a, q, r);
   }
 };
 
@@ -88,7 +87,7 @@ template <VariantKind KIND>
 struct QrImplBody<KIND, Type::Code::FLOAT64> {
   void operator()(int32_t m, int32_t n, int32_t k, const double* a, double* q, double* r)
   {
-    qr_template(LAPACK_dgeqrf, LAPACK_dorgqr, m, n, k, a, q, r);
+    qr_template(dgeqrf_, dorgqr_, m, n, k, a, q, r);
   }
 };
 
@@ -97,8 +96,8 @@ struct QrImplBody<KIND, Type::Code::COMPLEX64> {
   void operator()(
     int32_t m, int32_t n, int32_t k, const complex<float>* a, complex<float>* q, complex<float>* r)
   {
-    qr_template(LAPACK_cgeqrf,
-                LAPACK_cungqr,
+    qr_template(cgeqrf_,
+                cungqr_,
                 m,
                 n,
                 k,
@@ -117,8 +116,8 @@ struct QrImplBody<KIND, Type::Code::COMPLEX128> {
                   complex<double>* q,
                   complex<double>* r)
   {
-    qr_template(LAPACK_zgeqrf,
-                LAPACK_zungqr,
+    qr_template(zgeqrf_,
+                zungqr_,
                 m,
                 n,
                 k,

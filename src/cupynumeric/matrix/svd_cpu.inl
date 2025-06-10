@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 #include <cstring>
 
 namespace cupynumeric {
@@ -41,37 +40,37 @@ struct SvdImplBody<KIND, Type::Code::FLOAT32> {
     int32_t info  = 0;
     float wkopt   = 0;
     int32_t lwork = -1;
-    LAPACK_sgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  a_copy.ptr(0),
-                  &m,
-                  s,
-                  u,
-                  &m,
-                  vh,
-                  &n,
-                  &wkopt,
-                  &lwork,
-                  &info);
+    sgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            a_copy.ptr(0),
+            &m,
+            s,
+            u,
+            &m,
+            vh,
+            &n,
+            &wkopt,
+            &lwork,
+            &info);
     lwork = (int)wkopt;
 
     std::vector<float> work_tmp(lwork);
-    LAPACK_sgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  a_copy.ptr(0),
-                  &m,
-                  s,
-                  u,
-                  &m,
-                  vh,
-                  &n,
-                  work_tmp.data(),
-                  &lwork,
-                  &info);
+    sgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            a_copy.ptr(0),
+            &m,
+            s,
+            u,
+            &m,
+            vh,
+            &n,
+            work_tmp.data(),
+            &lwork,
+            &info);
 
     if (info != 0) {
       throw legate::TaskException(SvdTask::ERROR_MESSAGE);
@@ -97,37 +96,37 @@ struct SvdImplBody<KIND, Type::Code::FLOAT64> {
     double wkopt  = 0;
     int32_t lwork = -1;
 
-    LAPACK_dgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  a_copy.ptr(0),
-                  &m,
-                  s,
-                  u,
-                  &m,
-                  vh,
-                  &n,
-                  &wkopt,
-                  &lwork,
-                  &info);
+    dgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            a_copy.ptr(0),
+            &m,
+            s,
+            u,
+            &m,
+            vh,
+            &n,
+            &wkopt,
+            &lwork,
+            &info);
     lwork = (int)wkopt;
 
     std::vector<double> work_tmp(lwork);
-    LAPACK_dgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  a_copy.ptr(0),
-                  &m,
-                  s,
-                  u,
-                  &m,
-                  vh,
-                  &n,
-                  work_tmp.data(),
-                  &lwork,
-                  &info);
+    dgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            a_copy.ptr(0),
+            &m,
+            s,
+            u,
+            &m,
+            vh,
+            &n,
+            work_tmp.data(),
+            &lwork,
+            &info);
 
     if (info != 0) {
       throw legate::TaskException(SvdTask::ERROR_MESSAGE);
@@ -154,40 +153,40 @@ struct SvdImplBody<KIND, Type::Code::COMPLEX64> {
     __complex__ float wkopt = 0;
     std::vector<float> rwork(5 * k);
 
-    LAPACK_cgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
-                  &m,
-                  s,
-                  reinterpret_cast<__complex__ float*>(u),
-                  &m,
-                  reinterpret_cast<__complex__ float*>(vh),
-                  &n,
-                  &wkopt,
-                  &lwork,
-                  rwork.data(),
-                  &info);
+    cgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
+            &m,
+            s,
+            reinterpret_cast<__complex__ float*>(u),
+            &m,
+            reinterpret_cast<__complex__ float*>(vh),
+            &n,
+            &wkopt,
+            &lwork,
+            rwork.data(),
+            &info);
 
     lwork = (int)(*((float*)&(wkopt)));
 
     std::vector<__complex__ float> work_tmp(lwork);
-    LAPACK_cgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
-                  &m,
-                  s,
-                  reinterpret_cast<__complex__ float*>(u),
-                  &m,
-                  reinterpret_cast<__complex__ float*>(vh),
-                  &n,
-                  work_tmp.data(),
-                  &lwork,
-                  rwork.data(),
-                  &info);
+    cgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
+            &m,
+            s,
+            reinterpret_cast<__complex__ float*>(u),
+            &m,
+            reinterpret_cast<__complex__ float*>(vh),
+            &n,
+            work_tmp.data(),
+            &lwork,
+            rwork.data(),
+            &info);
 
     if (info != 0) {
       throw legate::TaskException(SvdTask::ERROR_MESSAGE);
@@ -213,40 +212,40 @@ struct SvdImplBody<KIND, Type::Code::COMPLEX128> {
     int32_t lwork            = -1;
     __complex__ double wkopt = 0;
     std::vector<double> rwork(5 * k);
-    LAPACK_zgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
-                  &m,
-                  s,
-                  reinterpret_cast<__complex__ double*>(u),
-                  &m,
-                  reinterpret_cast<__complex__ double*>(vh),
-                  &n,
-                  &wkopt,
-                  &lwork,
-                  rwork.data(),
-                  &info);
+    zgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
+            &m,
+            s,
+            reinterpret_cast<__complex__ double*>(u),
+            &m,
+            reinterpret_cast<__complex__ double*>(vh),
+            &n,
+            &wkopt,
+            &lwork,
+            rwork.data(),
+            &info);
 
     lwork = (int)(*((double*)&(wkopt)));
 
     std::vector<__complex__ double> work_tmp(lwork);
-    LAPACK_zgesvd(full_matrices ? "A" : "S",
-                  "A",
-                  &m,
-                  &n,
-                  reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
-                  &m,
-                  s,
-                  reinterpret_cast<__complex__ double*>(u),
-                  &m,
-                  reinterpret_cast<__complex__ double*>(vh),
-                  &n,
-                  work_tmp.data(),
-                  &lwork,
-                  rwork.data(),
-                  &info);
+    zgesvd_(full_matrices ? "A" : "S",
+            "A",
+            &m,
+            &n,
+            reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
+            &m,
+            s,
+            reinterpret_cast<__complex__ double*>(u),
+            &m,
+            reinterpret_cast<__complex__ double*>(vh),
+            &n,
+            work_tmp.data(),
+            &lwork,
+            rwork.data(),
+            &info);
 
     if (info != 0) {
       throw legate::TaskException(SvdTask::ERROR_MESSAGE);

@@ -18,9 +18,8 @@
 #include "cupynumeric/cupynumeric_task.h"
 #include "cupynumeric/matrix/batched_cholesky_template.inl"
 
-#include <cblas.h>
 #include <legate/type/types.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 
@@ -71,7 +70,7 @@ struct BatchedTransposeImplBody<VariantKind::CPU, CODE> {
 /*static*/ void BatchedCholeskyTask::cpu_variant(TaskContext context)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  openblas_set_num_threads(1);  // make sure this isn't overzealous
+  blas_set_num_threads(1);  // make sure this isn't overzealous
 #endif
   batched_cholesky_task_context_dispatch<VariantKind::CPU>(context);
 }

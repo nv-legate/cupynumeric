@@ -20,7 +20,7 @@
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
 #include "omp.h"
 #endif
-#include "cblas.h"
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 
@@ -52,7 +52,7 @@ struct TransposeImplBody<VariantKind::CPU, CODE> {
 /*static*/ void TransposeTask::cpu_variant(TaskContext context)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  openblas_set_num_threads(1);  // make sure this isn't overzealous
+  blas_set_num_threads(1);  // make sure this isn't overzealous
 #endif
   transpose_template<VariantKind::CPU>(context);
 }

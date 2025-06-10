@@ -19,8 +19,7 @@
 #include "cupynumeric/matrix/matvecmul.h"
 #include "cupynumeric/matrix/matvecmul_template.inl"
 #include "cupynumeric/matrix/util.h"
-
-#include <cblas.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 

@@ -20,6 +20,8 @@ project(cupynumeric-python VERSION 25.07.00 LANGUAGES CXX)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CUPYNUMERIC_BUILD_PIP_WHEELS ON)
+# We want to force the pip wheels to build and ship their own openblas
+set(BLA_VENDOR "OpenBLAS")
 
 add_subdirectory(../../../.. cupynumeric-all)
 

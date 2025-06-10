@@ -17,6 +17,7 @@
 #pragma once
 
 #include "cupynumeric/cupynumeric_task.h"
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 

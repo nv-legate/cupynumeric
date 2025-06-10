@@ -27,7 +27,7 @@ using namespace legate;
 /*static*/ void GeevTask::cpu_variant(TaskContext context)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  openblas_set_num_threads(1);  // make sure this isn't overzealous
+  blas_set_num_threads(1);  // make sure this isn't overzealous
 #endif
   geev_template<VariantKind::CPU>(context);
 }

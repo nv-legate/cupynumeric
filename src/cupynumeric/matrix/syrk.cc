@@ -17,8 +17,6 @@
 #include "cupynumeric/matrix/syrk.h"
 #include "cupynumeric/matrix/syrk_template.inl"
 
-#include <cblas.h>
-
 namespace cupynumeric {
 
 using namespace legate;
@@ -78,7 +76,7 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 /*static*/ void SyrkTask::cpu_variant(TaskContext context)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  openblas_set_num_threads(1);  // make sure this isn't overzealous
+  blas_set_num_threads(1);  // make sure this isn't overzealous
 #endif
   syrk_template<VariantKind::CPU>(context);
 }

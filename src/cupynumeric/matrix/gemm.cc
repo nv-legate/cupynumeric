@@ -17,8 +17,6 @@
 #include "cupynumeric/matrix/gemm.h"
 #include "cupynumeric/matrix/gemm_template.inl"
 
-#include <cblas.h>
-
 namespace cupynumeric {
 
 using namespace legate;
@@ -100,7 +98,7 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 /*static*/ void GemmTask::cpu_variant(TaskContext context)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  openblas_set_num_threads(1);  // make sure this isn't overzealous
+  blas_set_num_threads(1);  // make sure this isn't overzealous
 #endif
   gemm_template<VariantKind::CPU>(context);
 }

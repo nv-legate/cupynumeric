@@ -26,7 +26,7 @@ using namespace legate;
 
 /*static*/ void MatMulTask::omp_variant(TaskContext context)
 {
-  openblas_set_num_threads(omp_get_max_threads());
+  blas_set_num_threads(omp_get_max_threads());
   matmul_template<VariantKind::OMP>(context);
 }
 

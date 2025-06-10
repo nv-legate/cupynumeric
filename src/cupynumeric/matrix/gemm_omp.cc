@@ -17,7 +17,6 @@
 #include "cupynumeric/matrix/gemm.h"
 #include "cupynumeric/matrix/gemm_template.inl"
 
-#include <cblas.h>
 #include <omp.h>
 
 namespace cupynumeric {
@@ -100,7 +99,7 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 
 /*static*/ void GemmTask::omp_variant(TaskContext context)
 {
-  openblas_set_num_threads(omp_get_max_threads());
+  blas_set_num_threads(omp_get_max_threads());
   gemm_template<VariantKind::CPU>(context);
 }
 

@@ -132,28 +132,85 @@ function(find_or_configure_OpenBLAS)
   endif()
 endfunction()
 
-if(NOT DEFINED cupynumeric_OPENBLAS_VERSION)
-  # Before v0.3.18, OpenBLAS's throws CMake errors when configuring
-  # Versions after v0.3.23 conflict with Realm's OpenMP runtime
-  # see https://github.com/nv-legate/cupynumeric.internal/issues/342
-  set(cupynumeric_OPENBLAS_VERSION "0.3.23")
-endif()
+function(find_blas)
+  rapids_find_package(
+    BLAS
+    BUILD_EXPORT_SET cupynumeric-exports
+    INSTALL_EXPORT_SET cupynumeric-exports
+  )
 
-if(NOT DEFINED cupynumeric_OPENBLAS_BRANCH)
-  set(cupynumeric_OPENBLAS_BRANCH "")
-endif()
+  if(NOT BLAS_FOUND)
+    if(NOT DEFINED cupynumeric_OPENBLAS_VERSION)
+      # Before v0.3.18, OpenBLAS's throws CMake errors when configuring
+      # Versions after v0.3.23 conflict with Realm's OpenMP runtime
+      # see https://github.com/nv-legate/cupynumeric.internal/issues/342
+      set(cupynumeric_OPENBLAS_VERSION "0.3.23")
+    endif()
 
-if(NOT DEFINED cupynumeric_OPENBLAS_TAG)
-  set(cupynumeric_OPENBLAS_TAG v${cupynumeric_OPENBLAS_VERSION})
-endif()
+    if(NOT DEFINED cupynumeric_OPENBLAS_BRANCH)
+      set(cupynumeric_OPENBLAS_BRANCH "")
+    endif()
 
-if(NOT DEFINED cupynumeric_OPENBLAS_REPOSITORY)
-  set(cupynumeric_OPENBLAS_REPOSITORY https://github.com/xianyi/OpenBLAS.git)
-endif()
+    if(NOT DEFINED cupynumeric_OPENBLAS_TAG)
+      set(cupynumeric_OPENBLAS_TAG v${cupynumeric_OPENBLAS_VERSION})
+    endif()
 
-find_or_configure_OpenBLAS(VERSION          ${cupynumeric_OPENBLAS_VERSION}
-                           REPOSITORY       ${cupynumeric_OPENBLAS_REPOSITORY}
-                           BRANCH           ${cupynumeric_OPENBLAS_BRANCH}
-                           PINNED_TAG       ${cupynumeric_OPENBLAS_TAG}
-                           EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_OPENBLAS_FROM_ALL}
-)
+    if(NOT DEFINED cupynumeric_OPENBLAS_REPOSITORY)
+      set(cupynumeric_OPENBLAS_REPOSITORY https://github.com/xianyi/OpenBLAS.git)
+    endif()
+
+    find_or_configure_OpenBLAS(VERSION          ${cupynumeric_OPENBLAS_VERSION}
+      REPOSITORY       ${cupynumeric_OPENBLAS_REPOSITORY}
+      BRANCH           ${cupynumeric_OPENBLAS_BRANCH}
+      PINNED_TAG       ${cupynumeric_OPENBLAS_TAG}
+      EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_OPENBLAS_FROM_ALL}
+    )
+
+    set(CUPYNUMERIC_BLAS_VENDOR OPENBLAS PARENT_SCOPE)
+    return()
+  endif()
+
+  # We need to determine which vendor we have, because we want to be able to set the
+  # number of OpenMP threads for the library. And since that isn't standard API, each of
+  # them have a different way of saying it. For example, openblas_set_num_threads()
+  # (OpenBLAS), mkl_set_num_threads() (MKL), BlasSetThreading() (Apples Accelerate).
+  #
+  # Note also, these names are case-sensitive! These must match exactly what is set by
+  # cmake, and if any of them change, we are screwed.
+  set(BLAS_VENDORS Accelerate
+    acml
+    acml_mp
+    armpl_lp64
+    blas
+    blis
+    complib_sgimath
+    cxml
+    dxml
+    essl
+    f77blas
+    flexiblas
+    goto2
+    mkl
+    mkl_em64t
+    mkl_ia32
+    mkl_intel
+    mkl_intel_lp64
+    mkl_rt
+    openblas
+    scs
+    sunperf)
+
+  foreach(vendor IN LISTS BLAS_VENDORS)
+    if(BLAS_${vendor}_LIBRARY MATCHES ".*NOTFOUND")
+      continue()
+    endif()
+
+    string(TOUPPER "${vendor}" VENDOR)
+    set(CUPYNUMERIC_BLAS_VENDOR ${VENDOR} PARENT_SCOPE)
+    return()
+  endforeach()
+
+  message(FATAL_ERROR "Failed to detect which BLAS implementation CMake found")
+endfunction()
+
+find_blas()

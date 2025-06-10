@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 
@@ -30,7 +29,7 @@ struct SolveImplBody<KIND, Type::Code::FLOAT32> {
     auto ipiv = create_buffer<int32_t>(std::min(m, n));
 
     int32_t info = 0;
-    LAPACK_sgesv(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
+    sgesv_(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
 
     if (info != 0) {
       throw legate::TaskException(SolveTask::ERROR_MESSAGE);
@@ -45,7 +44,7 @@ struct SolveImplBody<KIND, Type::Code::FLOAT64> {
     auto ipiv = create_buffer<int32_t>(std::min(m, n));
 
     int32_t info = 0;
-    LAPACK_dgesv(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
+    dgesv_(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
 
     if (info != 0) {
       throw legate::TaskException(SolveTask::ERROR_MESSAGE);
@@ -63,7 +62,7 @@ struct SolveImplBody<KIND, Type::Code::COMPLEX64> {
     auto b = reinterpret_cast<__complex__ float*>(b_);
 
     int32_t info = 0;
-    LAPACK_cgesv(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
+    cgesv_(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
 
     if (info != 0) {
       throw legate::TaskException(SolveTask::ERROR_MESSAGE);
@@ -81,7 +80,7 @@ struct SolveImplBody<KIND, Type::Code::COMPLEX128> {
     auto b = reinterpret_cast<__complex__ double*>(b_);
 
     int32_t info = 0;
-    LAPACK_zgesv(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
+    zgesv_(&n, &nrhs, a, &m, ipiv.ptr(0), b, &n, &info);
 
     if (info != 0) {
       throw legate::TaskException(SolveTask::ERROR_MESSAGE);

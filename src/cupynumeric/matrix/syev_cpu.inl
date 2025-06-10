@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 #include <cstring>
 
 namespace cupynumeric {
@@ -55,27 +54,27 @@ struct SyevImplBody<KIND, Type::Code::FLOAT32> {
       int32_t info  = 0;
       float wkopt   = 0;
       int32_t lwork = -1;
-      LAPACK_ssyev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew,
-                   &wkopt,
-                   &lwork,
-                   &info);
+      ssyev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew,
+             &wkopt,
+             &lwork,
+             &info);
       lwork = (int)wkopt;
 
       std::vector<float> work_tmp(lwork);
-      LAPACK_ssyev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew,
-                   work_tmp.data(),
-                   &lwork,
-                   &info);
+      ssyev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew,
+             work_tmp.data(),
+             &lwork,
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(SyevTask::ERROR_MESSAGE);
@@ -112,27 +111,27 @@ struct SyevImplBody<KIND, Type::Code::FLOAT64> {
       double wkopt  = 0;
       int32_t lwork = -1;
 
-      LAPACK_dsyev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew,
-                   &wkopt,
-                   &lwork,
-                   &info);
+      dsyev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew,
+             &wkopt,
+             &lwork,
+             &info);
       lwork = (int)wkopt;
 
       std::vector<double> work_tmp(lwork);
-      LAPACK_dsyev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew,
-                   work_tmp.data(),
-                   &lwork,
-                   &info);
+      dsyev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew,
+             work_tmp.data(),
+             &lwork,
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(SyevTask::ERROR_MESSAGE);
@@ -172,30 +171,30 @@ struct SyevImplBody<KIND, Type::Code::COMPLEX64> {
       __complex__ float wkopt = 0;
       std::vector<float> rwork(3 * m - 2);
 
-      LAPACK_cheev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
-                   &m,
-                   ew,
-                   &wkopt,
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      cheev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
+             &m,
+             ew,
+             &wkopt,
+             &lwork,
+             rwork.data(),
+             &info);
 
       lwork = __real__ wkopt;
 
       std::vector<__complex__ float> work_tmp(lwork);
-      LAPACK_cheev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
-                   &m,
-                   ew,
-                   work_tmp.data(),
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      cheev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
+             &m,
+             ew,
+             work_tmp.data(),
+             &lwork,
+             rwork.data(),
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(SyevTask::ERROR_MESSAGE);
@@ -234,30 +233,30 @@ struct SyevImplBody<KIND, Type::Code::COMPLEX128> {
       int32_t lwork            = -1;
       __complex__ double wkopt = 0;
       std::vector<double> rwork(3 * m - 2);
-      LAPACK_zheev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
-                   &m,
-                   ew,
-                   &wkopt,
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      zheev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
+             &m,
+             ew,
+             &wkopt,
+             &lwork,
+             rwork.data(),
+             &info);
 
       lwork = __real__ wkopt;
 
       std::vector<__complex__ double> work_tmp(lwork);
-      LAPACK_zheev(compute_evs ? "V" : "N",
-                   uplo_l ? "L" : "U",
-                   &m,
-                   reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
-                   &m,
-                   ew,
-                   work_tmp.data(),
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      zheev_(compute_evs ? "V" : "N",
+             uplo_l ? "L" : "U",
+             &m,
+             reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
+             &m,
+             ew,
+             work_tmp.data(),
+             &lwork,
+             rwork.data(),
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(SyevTask::ERROR_MESSAGE);

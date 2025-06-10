@@ -109,7 +109,7 @@ if(Legion_USE_CUDA)
   include(thirdparty/get_cutensor)
 endif()
 
-include(thirdparty/get_openblas)
+include(thirdparty/get_blas)
 
 include(thirdparty/get_tblis)
 
@@ -118,6 +118,8 @@ include(thirdparty/get_tblis)
 
 add_library(cupynumeric)
 add_library(cupynumeric::cupynumeric ALIAS cupynumeric)
+
+target_compile_definitions(cupynumeric PUBLIC CUPYNUMERIC_BLAS_VENDOR_${CUPYNUMERIC_BLAS_VENDOR}=1)
 
 set(cupynumeric_CXX_OPTIONS "")
 set(cupynumeric_CUDA_OPTIONS "")

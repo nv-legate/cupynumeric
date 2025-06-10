@@ -18,8 +18,7 @@
 #include "cupynumeric/matrix/batched_cholesky.h"
 #include "cupynumeric/matrix/batched_cholesky_template.inl"
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 #include <omp.h>
 
 namespace cupynumeric {
@@ -78,7 +77,7 @@ struct BatchedTransposeImplBody<VariantKind::OMP, CODE> {
 
 /*static*/ void BatchedCholeskyTask::omp_variant(TaskContext context)
 {
-  openblas_set_num_threads(omp_get_max_threads());
+  blas_set_num_threads(omp_get_max_threads());
   batched_cholesky_task_context_dispatch<VariantKind::OMP>(context);
 }
 

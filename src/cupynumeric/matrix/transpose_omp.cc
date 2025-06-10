@@ -18,7 +18,7 @@
 #include "cupynumeric/matrix/transpose_template.inl"
 
 #include "omp.h"
-#include "cblas.h"
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 
@@ -50,7 +50,7 @@ struct TransposeImplBody<VariantKind::OMP, CODE> {
 
 /*static*/ void TransposeTask::omp_variant(TaskContext context)
 {
-  openblas_set_num_threads(omp_get_max_threads());
+  blas_set_num_threads(omp_get_max_threads());
   transpose_template<VariantKind::OMP>(context);
 }
 

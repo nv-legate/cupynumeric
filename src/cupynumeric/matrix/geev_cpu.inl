@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 #include <cstring>
 
 namespace cupynumeric {
@@ -84,37 +83,37 @@ struct GeevImplBody<KIND, Type::Code::FLOAT32> {
       int32_t info  = 0;
       float wkopt   = 0;
       int32_t lwork = -1;
-      LAPACK_sgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew_r.data(),
-                   ew_i.data(),
-                   nullptr,
-                   &m,
-                   ev_tmp_prt,
-                   &m,
-                   &wkopt,
-                   &lwork,
-                   &info);
+      sgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew_r.data(),
+             ew_i.data(),
+             nullptr,
+             &m,
+             ev_tmp_prt,
+             &m,
+             &wkopt,
+             &lwork,
+             &info);
       lwork = (int)wkopt;
 
       std::vector<float> work_tmp(lwork);
-      LAPACK_sgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew_r.data(),
-                   ew_i.data(),
-                   nullptr,
-                   &m,
-                   ev_tmp_prt,
-                   &m,
-                   work_tmp.data(),
-                   &lwork,
-                   &info);
+      sgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew_r.data(),
+             ew_i.data(),
+             nullptr,
+             &m,
+             ev_tmp_prt,
+             &m,
+             work_tmp.data(),
+             &lwork,
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(GeevTask::ERROR_MESSAGE);
@@ -158,37 +157,37 @@ struct GeevImplBody<KIND, Type::Code::FLOAT64> {
       double wkopt  = 0;
       int32_t lwork = -1;
 
-      LAPACK_dgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew_r.data(),
-                   ew_i.data(),
-                   nullptr,
-                   &m,
-                   ev_tmp_prt,
-                   &m,
-                   &wkopt,
-                   &lwork,
-                   &info);
+      dgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew_r.data(),
+             ew_i.data(),
+             nullptr,
+             &m,
+             ev_tmp_prt,
+             &m,
+             &wkopt,
+             &lwork,
+             &info);
       lwork = (int)wkopt;
 
       std::vector<double> work_tmp(lwork);
-      LAPACK_dgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   a_copy.ptr(0),
-                   &m,
-                   ew_r.data(),
-                   ew_i.data(),
-                   nullptr,
-                   &m,
-                   ev_tmp_prt,
-                   &m,
-                   work_tmp.data(),
-                   &lwork,
-                   &info);
+      dgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             a_copy.ptr(0),
+             &m,
+             ew_r.data(),
+             ew_i.data(),
+             nullptr,
+             &m,
+             ev_tmp_prt,
+             &m,
+             work_tmp.data(),
+             &lwork,
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(GeevTask::ERROR_MESSAGE);
@@ -226,38 +225,38 @@ struct GeevImplBody<KIND, Type::Code::COMPLEX64> {
       __complex__ float wkopt = 0;
       std::vector<float> rwork(2 * m);
 
-      LAPACK_cgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
-                   &m,
-                   reinterpret_cast<__complex__ float*>(ew),
-                   nullptr,
-                   &m,
-                   reinterpret_cast<__complex__ float*>(ev),
-                   &m,
-                   &wkopt,
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      cgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
+             &m,
+             reinterpret_cast<__complex__ float*>(ew),
+             nullptr,
+             &m,
+             reinterpret_cast<__complex__ float*>(ev),
+             &m,
+             &wkopt,
+             &lwork,
+             rwork.data(),
+             &info);
 
       lwork = __real__ wkopt;
 
       std::vector<__complex__ float> work_tmp(lwork);
-      LAPACK_cgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
-                   &m,
-                   reinterpret_cast<__complex__ float*>(ew),
-                   nullptr,
-                   &m,
-                   reinterpret_cast<__complex__ float*>(ev),
-                   &m,
-                   work_tmp.data(),
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      cgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             reinterpret_cast<__complex__ float*>(a_copy.ptr(0)),
+             &m,
+             reinterpret_cast<__complex__ float*>(ew),
+             nullptr,
+             &m,
+             reinterpret_cast<__complex__ float*>(ev),
+             &m,
+             work_tmp.data(),
+             &lwork,
+             rwork.data(),
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(GeevTask::ERROR_MESSAGE);
@@ -292,38 +291,38 @@ struct GeevImplBody<KIND, Type::Code::COMPLEX128> {
       int32_t lwork            = -1;
       __complex__ double wkopt = 0;
       std::vector<double> rwork(2 * m);
-      LAPACK_zgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
-                   &m,
-                   reinterpret_cast<__complex__ double*>(ew),
-                   nullptr,
-                   &m,
-                   reinterpret_cast<__complex__ double*>(ev),
-                   &m,
-                   &wkopt,
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      zgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
+             &m,
+             reinterpret_cast<__complex__ double*>(ew),
+             nullptr,
+             &m,
+             reinterpret_cast<__complex__ double*>(ev),
+             &m,
+             &wkopt,
+             &lwork,
+             rwork.data(),
+             &info);
 
       lwork = __real__ wkopt;
 
       std::vector<__complex__ double> work_tmp(lwork);
-      LAPACK_zgeev("N",
-                   compute_evs ? "V" : "N",
-                   &m,
-                   reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
-                   &m,
-                   reinterpret_cast<__complex__ double*>(ew),
-                   nullptr,
-                   &m,
-                   reinterpret_cast<__complex__ double*>(ev),
-                   &m,
-                   work_tmp.data(),
-                   &lwork,
-                   rwork.data(),
-                   &info);
+      zgeev_("N",
+             compute_evs ? "V" : "N",
+             &m,
+             reinterpret_cast<__complex__ double*>(a_copy.ptr(0)),
+             &m,
+             reinterpret_cast<__complex__ double*>(ew),
+             nullptr,
+             &m,
+             reinterpret_cast<__complex__ double*>(ev),
+             &m,
+             work_tmp.data(),
+             &lwork,
+             rwork.data(),
+             &info);
 
       if (info != 0) {
         throw legate::TaskException(GeevTask::ERROR_MESSAGE);

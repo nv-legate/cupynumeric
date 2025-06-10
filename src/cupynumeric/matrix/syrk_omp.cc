@@ -17,7 +17,6 @@
 #include "cupynumeric/matrix/syrk.h"
 #include "cupynumeric/matrix/syrk_template.inl"
 
-#include <cblas.h>
 #include <omp.h>
 
 namespace cupynumeric {
@@ -78,7 +77,7 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 
 /*static*/ void SyrkTask::omp_variant(TaskContext context)
 {
-  openblas_set_num_threads(omp_get_max_threads());
+  blas_set_num_threads(omp_get_max_threads());
   syrk_template<VariantKind::CPU>(context);
 }
 

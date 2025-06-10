@@ -17,8 +17,7 @@
 #include "cupynumeric/matrix/potrf.h"
 #include "cupynumeric/matrix/potrf_template.inl"
 
-#include <cblas.h>
-#include <lapack.h>
+#include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
 
@@ -31,7 +30,7 @@ void PotrfImplBody<VariantKind::CPU, Type::Code::FLOAT32>::operator()(float* arr
 {
   char uplo    = 'L';
   int32_t info = 0;
-  LAPACK_spotrf(&uplo, &n, array, &m, &info);
+  spotrf_(&uplo, &n, array, &m, &info);
   if (info != 0) {
     throw legate::TaskException("Matrix is not positive definite");
   }
@@ -44,7 +43,7 @@ void PotrfImplBody<VariantKind::CPU, Type::Code::FLOAT64>::operator()(double* ar
 {
   char uplo    = 'L';
   int32_t info = 0;
-  LAPACK_dpotrf(&uplo, &n, array, &m, &info);
+  dpotrf_(&uplo, &n, array, &m, &info);
   if (info != 0) {
     throw legate::TaskException("Matrix is not positive definite");
   }
@@ -57,7 +56,7 @@ void PotrfImplBody<VariantKind::CPU, Type::Code::COMPLEX64>::operator()(complex<
 {
   char uplo    = 'L';
   int32_t info = 0;
-  LAPACK_cpotrf(&uplo, &n, reinterpret_cast<__complex__ float*>(array), &m, &info);
+  cpotrf_(&uplo, &n, reinterpret_cast<__complex__ float*>(array), &m, &info);
   if (info != 0) {
     throw legate::TaskException("Matrix is not positive definite");
   }
@@ -70,7 +69,7 @@ void PotrfImplBody<VariantKind::CPU, Type::Code::COMPLEX128>::operator()(complex
 {
   char uplo    = 'L';
   int32_t info = 0;
-  LAPACK_zpotrf(&uplo, &n, reinterpret_cast<__complex__ double*>(array), &m, &info);
+  zpotrf_(&uplo, &n, reinterpret_cast<__complex__ double*>(array), &m, &info);
   if (info != 0) {
     throw legate::TaskException("Matrix is not positive definite");
   }
@@ -79,7 +78,7 @@ void PotrfImplBody<VariantKind::CPU, Type::Code::COMPLEX128>::operator()(complex
 /*static*/ void PotrfTask::cpu_variant(TaskContext context)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  openblas_set_num_threads(1);  // make sure this isn't overzealous
+  blas_set_num_threads(1);  // make sure this isn't overzealous
 #endif
   potrf_template<VariantKind::CPU>(context);
 }
