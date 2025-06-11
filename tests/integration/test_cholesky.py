@@ -140,6 +140,16 @@ def test_cholesky_bool_input() -> None:
     assert np.allclose(result_num, result_np)
 
 
+def test_cholesky_linalgerror() -> None:
+    arr_np = np.array([[0, 1], [1, 0]], dtype=np.float64)
+    arr_num = num.array(arr_np)
+    msg = r"Matrix is not positive definite"
+    with pytest.raises(num.linalg.LinAlgError, match=msg):
+        num.linalg.cholesky(arr_num)
+    with pytest.raises(np.linalg.LinAlgError, match=msg):
+        np.linalg.cholesky(arr_np)
+
+
 if __name__ == "__main__":
     import sys
 

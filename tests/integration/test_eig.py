@@ -181,6 +181,15 @@ class TestEig(object):
         ew, ev = num.linalg.eig(arr_num)
         assert_eig(arr_np, ew, ev)
 
+    def test_eig_linalgerror(self) -> None:
+        arr_np = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float64)
+        arr_num = num.array(arr_np)
+        msg = r"Last 2 dimensions of the array must be square"
+        with pytest.raises(num.linalg.LinAlgError, match=msg):
+            num.linalg.eig(arr_num)
+        with pytest.raises(np.linalg.LinAlgError, match=msg):
+            np.linalg.eig(arr_np)
+
 
 class TestEigh(object):
     @pytest.mark.xfail
@@ -288,6 +297,15 @@ class TestEigh(object):
             num.linalg.eig(arr)
         with pytest.raises(TypeError, match=msg):
             np.linalg.eig(arr)
+
+    def test_eigh_linalgerror(self) -> None:
+        arr_np = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float64)
+        arr_num = num.array(arr_np)
+        msg = r"Last 2 dimensions of the array must be square"
+        with pytest.raises(num.linalg.LinAlgError, match=msg):
+            num.linalg.eigh(arr_num)
+        with pytest.raises(np.linalg.LinAlgError, match=msg):
+            np.linalg.eigh(arr_np)
 
 
 if __name__ == "__main__":
