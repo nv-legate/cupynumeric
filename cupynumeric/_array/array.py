@@ -18,7 +18,7 @@ import operator
 import warnings
 from functools import reduce
 from math import prod as builtin_prod
-from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast, Union
 
 import legate.core.types as ty
 import numpy as np
