@@ -396,6 +396,40 @@ def test_select_zero_shape(size):
         num.select(cond_num, choice_num)
 
 
+@pytest.mark.parametrize(
+    "cond_shape, choice_shape",
+    [
+        pytest.param(
+            (4, 1), (4, 5), id="cond_shape=(4, 1), choice_shape=(4, 5)"
+        ),
+        pytest.param(
+            (4, 5), (4, 1), id="cond_shape=(4, 5), choice_shape=(4, 1)"
+        ),
+        pytest.param(
+            (4, 1), (4, 0), id="cond_shape=(4, 1), choice_shape=(4, 0)"
+        ),
+    ],
+)
+def test_select_different_shape(
+    cond_shape: tuple[int, ...], choice_shape: tuple[int, ...]
+):
+    cond_arr = np.random.randint(-15, 15, size=cond_shape)
+    choice_arr = np.random.randint(-15, 15, size=choice_shape)
+    cond_np = cond_arr > 1
+    cond_num = num.array(cond_np)
+    choice_np = choice_arr * 10
+    choice_num = num.array(choice_np)
+    res_np = np.select(
+        (cond_np,),
+        (choice_np,),
+    )
+    res_num = num.select(
+        (cond_num,),
+        (choice_num,),
+    )
+    assert np.array_equal(res_np, res_num)
+
+
 def test_diagonal():
     ad = np.arange(24).reshape(4, 3, 2)
     num_ad = num.array(ad)
