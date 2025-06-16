@@ -47,7 +47,6 @@ from legate.core import (
     scale,
 )
 from legate.core.utils import OrderedSet
-from legate.settings import settings as legate_settings
 
 from .. import _ufunc
 from .._ufunc.ufunc import binary_ufunc, unary_ufunc
@@ -76,6 +75,7 @@ from ..linalg._qr import qr_deferred
 from ..linalg._solve import solve_deferred
 from ..linalg._svd import svd_deferred
 from ..runtime import runtime
+from ..settings import settings
 from ._sort import sort_deferred
 from .thunk import NumPyThunk
 
@@ -1638,7 +1638,7 @@ class DeferredArray(NumPyThunk):
                     # 1M elements, we should probably even go larger
                     MIN_MATRIX_SIZE = 1 << 20
                     # If the matrix is too small don't partition it at all
-                    if (not legate_settings.test()) and shape[0] * shape[
+                    if (not settings.test()) and shape[0] * shape[
                         1
                     ] <= MIN_MATRIX_SIZE:
                         return (1, 1)

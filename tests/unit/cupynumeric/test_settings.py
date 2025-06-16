@@ -39,6 +39,7 @@ _expected_settings = (
     "report_coverage",
     "report_dump_callstack",
     "report_dump_csv",
+    "test",
     "warn",
 )
 
@@ -92,7 +93,10 @@ class TestSettings:
     @pytest.mark.parametrize("name", _expected_settings)
     def test_prefix(self, name: str) -> None:
         ps = getattr(m.settings, name)
-        assert ps.env_var.startswith("CUPYNUMERIC_")
+        assert (
+            ps.env_var.startswith("CUPYNUMERIC_")
+            or ps.env_var == "LEGATE_TEST"
+        )
 
     def test_types(self) -> None:
         assert m.settings.doctor.convert_type == 'bool ("0" or "1")'
@@ -110,7 +114,9 @@ class TestSettings:
             == 'bool ("0" or "1")'
         )
         assert m.settings.report_dump_csv.convert_type == "str"
-        assert m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
+        assert (
+            m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
+        )
         assert m.settings.numpy_compat.convert_type == 'bool ("0" or "1")'
 
 

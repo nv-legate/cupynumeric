@@ -23,10 +23,10 @@ from legate.core import (
     get_legate_runtime,
     types as ty,
 )
-from legate.settings import settings
 
 from ..config import CuPyNumericOpCode
 from ..runtime import runtime
+from ..settings import settings
 from ._exception import LinAlgError
 
 legate_runtime = get_legate_runtime()

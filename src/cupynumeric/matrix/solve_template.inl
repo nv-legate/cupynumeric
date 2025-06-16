@@ -84,7 +84,8 @@ struct SolveImpl {
       size_t b_strides[2];
       b = b_array.read_write_accessor<VAL, 2>(b_shape).ptr(b_shape, b_strides);
 #ifdef DEBUG_CUPYNUMERIC
-      assert(b_array.is_future() || (b_strides[0] == 1 && static_cast<int64_t>(b_strides[1]) == m));
+      assert(b_array.is_future() ||
+             (b_strides[0] == 1 && (nrhs == 1 || static_cast<int64_t>(b_strides[1]) == m)));
 #endif
     }
 

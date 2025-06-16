@@ -15,10 +15,9 @@
 from __future__ import annotations
 
 import operator
-import warnings
 from functools import reduce
 from math import prod as builtin_prod
-from typing import TYPE_CHECKING, Any, Literal, Sequence, cast, Union
+from typing import TYPE_CHECKING, Any, Literal, Sequence, Union, cast
 
 import legate.core.types as ty
 import numpy as np
@@ -33,7 +32,11 @@ from .._utils.array import (
     min_identity,
     to_core_type,
 )
-from .._utils.coverage import issue_fallback_warning, clone_class, is_implemented
+from .._utils.coverage import (
+    clone_class,
+    is_implemented,
+    issue_fallback_warning,
+)
 from .._utils.linalg import dot_modes
 from .._utils.structure import deep_apply
 from ..config import (
@@ -2065,18 +2068,18 @@ class ndarray:
         """
         min = max_identity(self.dtype) if min is None else min
         max = min_identity(self.dtype) if max is None else max
-        
-        def ensure_compatible(val: Any) -> Union[int, float, np.ndarray]:
+
+        def ensure_compatible(val: Any) -> Union[int, float, npt.NDArray[Any]]:
             if np.isscalar(val):
                 return np.array(val, dtype=self.dtype).item()
             arr = np.array(val)
             if arr.shape == ():
                 return arr.astype(self.dtype).item()
             return np.array(val, dtype=self.dtype)
-            
+
         min = ensure_compatible(min)
         max = ensure_compatible(max)
-            
+
         args = (
             np.array(min, dtype=self.dtype),
             np.array(max, dtype=self.dtype),

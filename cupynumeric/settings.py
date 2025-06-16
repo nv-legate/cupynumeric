@@ -149,7 +149,7 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
-    fallback_stacktrace: EnvOnlySetting[int] = EnvOnlySetting(
+    fallback_stacktrace: EnvOnlySetting[bool] = EnvOnlySetting(
         "fallback_stacktrace",
         "CUPYNUMERIC_FALLBACK_STACKTRACE",
         default=False,
@@ -162,7 +162,7 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
-    fast_math: EnvOnlySetting[int] = EnvOnlySetting(
+    fast_math: EnvOnlySetting[bool] = EnvOnlySetting(
         "fast_math",
         "CUPYNUMERIC_FAST_MATH",
         default=False,
@@ -254,6 +254,23 @@ class CupynumericRuntimeSettings(Settings):
         computations smaller than this threshold. Whenever the temporary
         space needed during computation would exceed this value the task
         will be batched over 'k' to fulfill the requirement.
+
+        This is a read-only environment variable setting used by the runtime.
+        """,
+    )
+
+    # TODO(mpapadakis): This should really be parsing the exported "test"
+    # setting from Legate (which can be set with LEGATE_TEST but also other
+    # methods, which we're not checking here). Or we should not be depending
+    # on that setting at all.
+    test: EnvOnlySetting[bool] = EnvOnlySetting(
+        "test",
+        "LEGATE_TEST",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Enable test mode. This sets alternative defaults for various other
+        settings.
 
         This is a read-only environment variable setting used by the runtime.
         """,

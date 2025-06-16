@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any, Literal, Sequence, TypeGuard
 import legate.core.types as ty
 import numpy as np
 from legate.core import LEGATE_MAX_DIM, Scalar, TaskTarget, get_legate_runtime
-from legate.settings import settings as legate_settings
 
 from ._utils.array import calculate_volume, is_supported_dtype, to_core_type
 from ._utils.stack import find_last_user_stacklevel
@@ -95,7 +94,7 @@ class Runtime(object):
 
         from .settings import settings
 
-        settings.warn = settings.warn() or legate_settings.test()
+        settings.warn = settings.warn() or settings.test()
 
         if self.num_gpus > 0 and settings.preload_cudalibs():
             self._load_cudalibs()
