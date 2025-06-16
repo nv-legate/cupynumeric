@@ -426,9 +426,7 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           return max_out_size;
         }
         case legate::mapping::StoreTarget::FBMEM: {
-          // The GPU task creates a buffer to keep offsets
-          return max_out_size + in_count * sizeof(std::int64_t) +
-                 aligned_size(sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+          return std::nullopt;
         }
         case legate::mapping::StoreTarget::ZCMEM: {
           // The doubling here shouldn't be necessary, but the memory fragmentation seems to be
