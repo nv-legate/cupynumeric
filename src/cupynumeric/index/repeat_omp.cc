@@ -21,6 +21,7 @@
 #include <omp.h>
 #include <thrust/scan.h>
 #include <thrust/execution_policy.h>
+#include <thrust/system/omp/execution_policy.h>
 
 namespace cupynumeric {
 
