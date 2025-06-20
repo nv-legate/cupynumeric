@@ -794,8 +794,8 @@ Main Function:
     
     print(f"\nTime elapsed for batched fft: {(end - start)/1000:.6f} milliseconds")
 
-For demonstration purposes, a default shape of (256, 512, 512) is used,
-representing a batch of 256 two dimensional matrices. Using this shape,
+For demonstration purposes, a default shape of (128, 256, 256) is used,
+representing a batch of 128 two dimensional matrices. Using this shape,
 cuPyNumeric arrays are generated, and cast to complex64. B_cpn contains
 random values, while A_cpn contains zeros. The fft2d_batched_gpu task is
 then launched, by using these two cuPyNumeric arrays. We can change the
@@ -912,16 +912,12 @@ In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
 specifically only on CPU, you must add the flag “--gpus 0”.
 
-Let’s set the shape of the array to (128, 256, 256). We’ll also include
-a warm-up run before measuring execution time to ensure that one-time
-setup costs such as memory allocation or kernel loading don’t affect the
-final performance results.
 
 **CPU** - To run with CPU, use the following command.
 
 .. code-block:: sh
 
-    legate --cpus 1 --gpus 0 ./fft.py --shape 128,256,256
+    legate --cpus 1 --gpus 0 ./fft.py
 
 Output:
 
@@ -933,7 +929,7 @@ Output:
 
 .. code-block:: sh
 
-    legate --gpus 2 ./fft.py --shape 128,256,256
+    legate --gpus 2 ./fft.py
 
 Output:
 
@@ -949,7 +945,7 @@ To run with Multi-Node, use the following command.
 
 .. code-block:: sh
 
-    legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./fft.py --shape 128,256,256
+    legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./fft.py
 
 Output:
 
