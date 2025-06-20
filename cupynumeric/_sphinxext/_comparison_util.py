@@ -18,7 +18,13 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
-from .._utils.coverage import is_implemented, is_multi, is_single, is_wrapped, GPUSupport
+from .._utils.coverage import (
+    GPUSupport,
+    is_implemented,
+    is_multi,
+    is_single,
+    is_wrapped,
+)
 from ._comparison_config import MISSING_NP_REFS, SKIP
 
 if TYPE_CHECKING:

@@ -16,10 +16,9 @@
 import pytest
 from mock import MagicMock
 from pytest_mock import MockerFixture
+from unit.util import powerset
 
 import cupynumeric._array.util as m  # module under test
-
-from unit.util import powerset
 
 
 @m.add_boilerplate()

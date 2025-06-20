@@ -26,7 +26,10 @@ from legate.core.utils import OrderedSet
 
 from ..runtime import runtime
 from ..settings import settings
-from .stack import find_last_user_line_numbers, find_last_user_stacklevel_and_frame
+from .stack import (
+    find_last_user_line_numbers,
+    find_last_user_stacklevel_and_frame,
+)
 from .structure import deep_apply
 
 __all__ = ("GPUSupport", "clone_module", "clone_class")
@@ -36,7 +39,6 @@ FALLBACK_WARNING = (
     "and is falling back to canonical NumPy. "
     "You may notice significantly decreased performance "
     "for this function call."
-
 )
 
 MOD_INTERNAL = {"__dir__", "__getattr__"}
@@ -50,6 +52,7 @@ def issue_fallback_warning(what: str) -> None:
     if settings.fallback_stacktrace():
         if frame:
             import traceback
+
             stacklist = traceback.extract_stack(frame)
             stack = "".join(traceback.format_list(stacklist))
             msg += f"\n\n{stack}"
@@ -65,6 +68,7 @@ def issue_fallback_warning(what: str) -> None:
         stacklevel=stacklevel,
         category=RuntimeWarning,
     )
+
 
 def filter_namespace(
     ns: Mapping[str, Any],
@@ -87,10 +91,12 @@ class AnyCallable(Protocol):
 
 from enum import Enum
 
+
 class GPUSupport(Enum):
     YES = 1
     NO = 2
     PARTIAL = 3
+
 
 def _scrape_docstring_support(doc: str) -> tuple[GPUSupport, GPUSupport]:
     multi = GPUSupport.NO
@@ -106,6 +112,7 @@ def _scrape_docstring_support(doc: str) -> tuple[GPUSupport, GPUSupport]:
 
     return single, multi
 
+
 @dataclass(frozen=True)
 class CuWrapperMetadata:
     implemented: bool
@@ -119,9 +126,12 @@ class CuWrapped(AnyCallable, Protocol):
     __name__: str
     __qualname__: str
 
+
 # This is in order to have less generically named wrapper functions in
 # profiles. This approach "was used in NumPy and Guido approved".
-def _fixup_co_name(func: Callable[[Any], Any], kind: str) -> Callable[[Any], Any]:
+def _fixup_co_name(
+    func: Callable[[Any], Any], kind: str
+) -> Callable[[Any], Any]:
     def decorator(wrapper: Callable[[Any], Any]) -> Callable[[Any], Any]:
         if hasattr(func, "__name__"):
             wrapper.__code__ = wrapper.__code__.replace(
@@ -129,7 +139,9 @@ def _fixup_co_name(func: Callable[[Any], Any], kind: str) -> Callable[[Any], Any
                 co_filename="<cupynumeric internals>",  # hide from TB
             )
         return wrapper
+
     return decorator
+
 
 def implemented(
     func: AnyCallable, prefix: str, name: str, reporting: bool = True

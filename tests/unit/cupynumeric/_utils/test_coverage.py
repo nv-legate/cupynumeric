@@ -32,10 +32,12 @@ def test_FALLBACK_WARNING() -> None:
         + "for this function call."
     )
 
+
 def test_issue_fallback_warning() -> None:
     msg = m.FALLBACK_WARNING.format(what="foo")
     with pytest.warns(RuntimeWarning, match=msg):
         m.issue_fallback_warning(what="foo")
+
 
 def test_MOD_INTERNAL() -> None:
     assert m.MOD_INTERNAL == {"__dir__", "__getattr__"}
@@ -264,8 +266,10 @@ class Test_unimplemented:
             assert wrapped(10, 20) == 30
 
         assert len(record) == 1
-        assert record[0].message.args[0].startswith(
-            m.FALLBACK_WARNING.format(what="foo._test_func")
+        assert (
+            record[0]
+            .message.args[0]
+            .startswith(m.FALLBACK_WARNING.format(what="foo._test_func"))
         )
 
         mock_record_api_call.assert_not_called()
@@ -307,8 +311,10 @@ class Test_unimplemented:
             assert wrapped(10, 20) == 30
 
         assert len(record) == 1
-        assert record[0].message.args[0].startswith(
-            m.FALLBACK_WARNING.format(what="foo._test_ufunc")
+        assert (
+            record[0]
+            .message.args[0]
+            .startswith(m.FALLBACK_WARNING.format(what="foo._test_ufunc"))
         )
 
         mock_record_api_call.assert_not_called()
@@ -528,7 +534,7 @@ def test_implemented_decorator_actual() -> None:
         func=test_func,
         prefix="test_module",
         name="test_function",
-        reporting=True
+        reporting=True,
     )
 
     result = decorated_func()

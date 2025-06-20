@@ -25,8 +25,9 @@ from typing import Any, Final, Type
 
 import numpy as np
 
-from ..settings import settings
 from .._utils.stack import find_last_user_frame
+from ..settings import settings
+
 
 def lookup_source(filename: str, lineno: int) -> str | None:
     """
@@ -261,7 +262,6 @@ class RepeatedItemOps(Checkup):
         if func in {"__setitem__", "__getitem__"}:
             ndim: int = args[0].ndim
             if is_scalar_key(args[1], ndim):
-
                 # if we can't find a user frame, then it is probably due to a
                 # detection inside cupynumeric itself. Either way, there is no
                 # actionable information to provide users, so just punt here.
