@@ -141,7 +141,7 @@ output arrays as either CuPy or NumPy arrays.
 ==============
 
 SAXPY is a fundamental linear algebra operation that computes the result
-of the expression *z = a·x + y*, where *x* and *y* are vectors and *a*
+of the expression z = a * x + y, where *x* and *y* are vectors and *a*
 is a scalar. It is a widely used example due to its simplicity and
 computational relevance. This example demonstrates how to implement
 SAXPY using Legate and cuPyNumeric, with emphasis on leveraging align
@@ -149,7 +149,7 @@ constraint for correct and efficient parallel execution. The align
 constraint ensures that the input arrays x and y, as well as the output
 z, are partitioned consistently. This means that matching elements from
 each array are processed together on the same device. As a result, the
-element-wise calculation a \* x + y can run in parallel correctly,
+element-wise calculation a * x + y can run in parallel correctly,
 without needing to move data between different parts of the system.
 
 Main function:
