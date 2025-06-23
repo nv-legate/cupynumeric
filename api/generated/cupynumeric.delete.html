@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cupynumeric.histogram &#8212; NVIDIA cuPyNumeric (25.07.00.dev+18.g0e793d97)</title>
+    <title>cupynumeric.delete &#8212; NVIDIA cuPyNumeric (25.07.00.dev+18.g0e793d97)</title>
   
   
   
@@ -48,7 +48,7 @@
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=4ea706d9"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/cupynumeric.histogram';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/cupynumeric.delete';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
@@ -59,8 +59,8 @@
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="cupynumeric.digitize" href="cupynumeric.digitize.html" />
-    <link rel="prev" title="cupynumeric.bincount" href="cupynumeric.bincount.html" />
+    <link rel="next" title="Binary operations" href="../binary.html" />
+    <link rel="prev" title="cupynumeric.rot90" href="cupynumeric.rot90.html" />
 
 <script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js"></script>
 
@@ -492,7 +492,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.triu.html">cupynumeric.triu</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="../manipulation.html">Array manipulation routines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../manipulation.html">Array manipulation routines</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.ndim.html">cupynumeric.ndim</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.shape.html">cupynumeric.shape</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.reshape.html">cupynumeric.reshape</a></li>
@@ -529,7 +529,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.flipud.html">cupynumeric.flipud</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.roll.html">cupynumeric.roll</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.rot90.html">cupynumeric.rot90</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cupynumeric.delete.html">cupynumeric.delete</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">cupynumeric.delete</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../binary.html">Binary operations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -812,7 +812,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.count_nonzero.html">cupynumeric.count_nonzero</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../statistics.html">Statistics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="../statistics.html">Statistics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.quantile.html">cupynumeric.quantile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.percentile.html">cupynumeric.percentile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.nanquantile.html">cupynumeric.nanquantile</a></li>
@@ -825,7 +825,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.nanmedian.html">cupynumeric.nanmedian</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.cov.html">cupynumeric.cov</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.bincount.html">cupynumeric.bincount</a></li>
-<li class="toctree-l4 current active"><a class="current reference internal" href="#">cupynumeric.histogram</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cupynumeric.histogram.html">cupynumeric.histogram</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.digitize.html">cupynumeric.digitize</a></li>
 </ul>
 </details></li>
@@ -891,9 +891,9 @@
     <li class="breadcrumb-item"><a href="../routines.html" class="nav-link">Routines</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../statistics.html" class="nav-link">Statistics</a></li>
+    <li class="breadcrumb-item"><a href="../manipulation.html" class="nav-link">Array manipulation routines</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cupynumeric.histogram</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cupynumeric.delete</span></li>
   </ul>
 </nav>
 </div>
@@ -910,58 +910,34 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="cupynumeric-histogram">
-<h1>cupynumeric.histogram<a class="headerlink" href="#cupynumeric-histogram" title="Link to this heading">#</a></h1>
+  <section id="cupynumeric-delete">
+<h1>cupynumeric.delete<a class="headerlink" href="#cupynumeric-delete" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="cupynumeric.histogram">
-<span class="sig-prename descclassname"><span class="pre">cupynumeric.</span></span><span class="sig-name descname"><span class="pre">histogram</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">npt.ArrayLike</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#cupynumeric.histogram" title="Link to this definition">#</a></dt>
-<dd><p>Compute the histogram of a dataset.</p>
+<dt class="sig sig-object py" id="cupynumeric.delete">
+<span class="sig-prename descclassname"><span class="pre">cupynumeric.</span></span><span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#cupynumeric.delete" title="Link to this definition">#</a></dt>
+<dd><p>Return a new array with sub-arrays along an axis deleted. For a one
+dimensional array, this returns those entries not returned by <cite>arr[obj]</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>a</strong> (<em>array_like</em>) – Input data. The histogram is computed over the flattened array.</p></li>
-<li><p><strong>bins</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> or </em><em>sequence</em><em> of </em><em>scalars</em><em>, </em><em>optional</em>) – If <cite>bins</cite> is an int, it defines the number of equal-width bins in the
-given range (10, by default). If <cite>bins</cite> is a sequence, it defines a
-monotonically increasing array of bin edges, including the rightmost
-edge, allowing for non-uniform bin widths.</p></li>
-<li><p><strong>range</strong> (<em>(</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>)</em><em>, </em><em>optional</em>) – The lower and upper range of the bins. If not provided, range is simply
-<code class="docutils literal notranslate"><span class="pre">(a.min(),</span> <span class="pre">a.max())</span></code>. Values outside the range are ignored. The first
-element of the range must be smaller than the second. This argument is
-ignored when bin edges are provided explicitly.</p></li>
-<li><p><strong>weights</strong> (<em>array_like</em><em>, </em><em>optional</em>) – An array of weights, of the same shape as <cite>a</cite>. Each value in <cite>a</cite> only
-contributes its associated weight towards the bin count (instead of 1).
-If <cite>density</cite> is True, the weights are normalized, so that the integral
-of the density over the range remains 1.</p></li>
-<li><p><strong>density</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the result will contain the number of samples in each
-bin. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the result is the value of the probability <em>density</em>
-function at the bin, normalized such that the <em>integral</em> over the range
-is 1. Note that the sum of the histogram values will not be equal to 1
-unless bins of unity width are chosen; it is not a probability <em>mass</em>
-function.</p></li>
+<li><p><strong>arr</strong> (<em>array_like</em>) – Input array.</p></li>
+<li><p><strong>obj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.13)"><em>slice</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>array-like</em><em> of </em><em>ints</em><em> or </em><em>bools</em>) – Indicate indices of sub-arrays to remove along the specified axis.</p></li>
+<li><p><strong>axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – The axis along which to delete the subarray defined by <cite>obj</cite>.
+If <cite>axis</cite> is None, <cite>obj</cite> is applied to the flattened array.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>hist</strong> (<em>array</em>) – The values of the histogram. See <cite>density</cite> and <cite>weights</cite> for a
-description of the possible semantics.</p></li>
-<li><p><strong>bin_edges</strong> (<em>array</em>) – Return the bin edges <code class="docutils literal notranslate"><span class="pre">(length(hist)+1)</span></code>.</p></li>
-</ul>
-</p>
+<dd class="field-even"><p><strong>out</strong> – A copy of <cite>arr</cite> with the elements specified by <cite>obj</cite> removed. Note
+that <cite>delete</cite> does not occur in-place. If <cite>axis</cite> is None, <cite>out</cite> is
+a flattened array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a></p>
 </dd>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.histogram.html#numpy.histogram" title="(in NumPy v2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.histogram</span></code></a></p>
+<p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.delete.html#numpy.delete" title="(in NumPy v2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.delete</span></code></a></p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Availability<span class="colon">:</span></dt>
@@ -983,20 +959,20 @@ description of the possible semantics.</p></li>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="cupynumeric.bincount.html"
+       href="cupynumeric.rot90.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">cupynumeric.bincount</p>
+        <p class="prev-next-title">cupynumeric.rot90</p>
       </div>
     </a>
     <a class="right-next"
-       href="cupynumeric.digitize.html"
+       href="../binary.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">cupynumeric.digitize</p>
+        <p class="prev-next-title">Binary operations</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1021,7 +997,7 @@ description of the possible semantics.</p></li>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric.histogram"><code class="docutils literal notranslate"><span class="pre">histogram()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric.delete"><code class="docutils literal notranslate"><span class="pre">delete()</span></code></a></li>
 </ul>
   </nav></div>
 

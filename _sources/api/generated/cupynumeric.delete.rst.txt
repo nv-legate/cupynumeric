@@ -1,0 +1,6 @@
+﻿cupynumeric.delete
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: delete
