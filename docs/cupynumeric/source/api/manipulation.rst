@@ -108,3 +108,10 @@ Rearranging elements
    flipud
    roll
    rot90
+
+Removing data from arrays
+-------------------------
+.. autosummary::
+   :toctree: generated/
+
+   delete

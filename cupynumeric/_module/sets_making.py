@@ -96,9 +96,11 @@ def unique(
     `axis` is also not handled currently.
 
     """
-    if _builtin_any((return_index, return_inverse, return_counts, axis)):
+    if (
+        _builtin_any((return_index, return_inverse, return_counts))
+        or axis is not None
+    ):
         raise NotImplementedError(
             "Keyword arguments for `unique` are not yet supported"
         )
-
     return ar.unique()

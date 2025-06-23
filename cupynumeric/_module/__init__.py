@@ -46,6 +46,7 @@ from .array_joining import *  # Joining arrays
 from .array_splitting import *  # Splitting arrays
 from .array_tiling import *  # Tiling arrays
 from .array_rearrange import *  # Rearranging elements
+from .array_delete import *  # Removing elements
 
 # --- Binary operations
 #  https://numpy.org/doc/stable/reference/routines.bitwise.html
