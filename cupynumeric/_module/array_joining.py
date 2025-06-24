@@ -360,6 +360,14 @@ def block(arrays: Sequence[Any]) -> ndarray:
     result = _block_slicing(arrays, depth)
     return result
 
+def _eager(x: Any) -> Any:
+    if not hasattr(x, "_thunk"):
+        return x
+    from .._thunk.eager import EagerArray
+    if isinstance(x._thunk, EagerArray):
+        return x._thunk.array
+    raise ValueError
+
 
 def concatenate(
     inputs: Sequence[ndarray],
@@ -406,6 +414,22 @@ def concatenate(
     --------
     Multiple GPUs, Multiple CPUs
     """
+
+    # special case for when all inputs are eager, i.e not DeferredArray,
+    # specifically -- fall back immediately to numpy instead
+    try:
+        eager_inputs = [_eager(x) for x in inputs]
+        eager_out = _eager(out)
+        return np.concatenate(
+            eager_inputs,
+            axis=axis,
+            out=eager_out,
+            dtype=dtype,
+            casting=casting
+        )
+    except Exception as e:
+        pass
+
     if dtype is not None and out is not None:
         raise TypeError(
             "concatenate() only takes `out` or `dtype` as an argument,"
