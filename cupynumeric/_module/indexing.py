@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
-from .._array.array import _warn_and_convert, ndarray
+from .._array.array import ndarray
 from .._array.util import (
     add_boilerplate,
     check_writeable,
@@ -1149,10 +1149,10 @@ def putmask(a: ndarray, mask: ndarray, values: ndarray) -> None:
 
     check_writeable(a)
 
-    mask = _warn_and_convert(mask, np.dtype(bool))
+    mask = mask._warn_and_convert(np.dtype(bool))
 
     if a.dtype != values.dtype:
-        values = _warn_and_convert(values, a.dtype)
+        values = values._warn_and_convert(a.dtype)
 
     try:
         np.broadcast_shapes(values.shape, a.shape)

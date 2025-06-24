@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence, cast
 import numpy as np
 from legate.core import Scalar
 
-from .. import _ufunc
 from .._utils import is_np2
 from .._utils.array import is_advanced_indexing
 from ..config import (
@@ -46,7 +45,6 @@ if TYPE_CHECKING:
     from ..config import BitGeneratorType, FFTType
     from ..types import (
         BitOrder,
-        CastingKind,
         ConvolveMethod,
         ConvolveMode,
         NdShape,
@@ -200,106 +198,6 @@ def diagonal_reference(a: npt.NDArray[Any], axes: NdShape) -> npt.NDArray[Any]:
     for ax in tuple(reversed(sorted(axes)))[:-1]:
         res = res.sum(axis=ax)
     return res
-
-
-def _make_eager_unary_ufunc(ufunc_name: str) -> Callable[..., Any]:
-    def method(
-        self: Any,
-        out: Any | None = None,
-        where: bool = True,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
-    ) -> Any:
-        """
-        Helper method to apply unary ufunc operations.
-        """
-        self.check_eager_args(out)
-        if self.deferred is not None:
-            from .._array.array import ndarray  # Lazy import
-
-            a = ndarray(self.shape, self.dtype, thunk=self.deferred)
-            deferred_ufunc = getattr(_ufunc, ufunc_name)
-            return deferred_ufunc._call_full(
-                a,
-                out=out,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-        else:
-            out_array = (
-                out._thunk.__numpy_array__()
-                if (out is not None and hasattr(out, "_thunk"))
-                else out
-            )
-            np_ufunc = getattr(np, ufunc_name)
-            return np_ufunc(
-                self.array,
-                out=out_array,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-
-    return method
-
-
-def _make_eager_binary_ufunc(ufunc_name: str) -> Callable[..., Any]:
-    def method(
-        self: Any,
-        rhs: Any,
-        out: Any | None = None,
-        where: bool = True,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
-    ) -> Any:
-        """
-        Helper method to apply binary ufunc operations.
-        """
-        self.check_eager_args(rhs, out)
-        if self.deferred is not None:
-            from .._array.array import ndarray  # Lazy import
-
-            a = ndarray(self.shape, self.dtype, thunk=self.deferred)
-            deferred_ufunc = getattr(_ufunc, ufunc_name)
-            return deferred_ufunc._call_full(
-                a,
-                rhs,
-                out=out,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-        else:
-            rhs_array = (
-                rhs._thunk.__numpy_array__()
-                if (rhs is not None and hasattr(rhs, "_thunk"))
-                else rhs
-            )
-
-            out_array = (
-                out._thunk.__numpy_array__()
-                if (out is not None and hasattr(out, "_thunk"))
-                else out
-            )
-            np_ufunc = getattr(np, ufunc_name)
-
-            return np_ufunc(
-                self.array,
-                rhs_array,
-                out=out_array,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-
-    return method
 
 
 class EagerArray(NumPyThunk):
@@ -1545,142 +1443,6 @@ class EagerArray(NumPyThunk):
                 self.array[:] = np.random.randint(
                     low, high, size=self.array.shape, dtype=self.array.dtype
                 )
-
-    # binary
-    def _matmul(
-        self,
-        rhs: Any,
-        out: Any | None = None,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
-        **kwargs: Any,
-    ) -> Any:
-        """
-        Helper method to apply binary ufunc operations.
-        """
-        if self.deferred is not None:
-            from .._array.array import ndarray
-            from .._module.linalg_mvp import matmul
-
-            if kwargs:
-                keys = ", ".join(str(k) for k in kwargs.keys())
-                raise NotImplementedError(
-                    f"matmul doesn't support kwargs: {keys}"
-                )
-
-            a = ndarray(self.shape, self.dtype, thunk=self.deferred)
-            return matmul(
-                a,
-                rhs,
-                out=out,
-                casting=casting,
-                dtype=dtype,
-            )
-        else:
-            rhs_array = (
-                rhs._thunk.__numpy_array__()
-                if (rhs is not None and hasattr(rhs, "_thunk"))
-                else rhs
-            )
-
-            out_array = (
-                out._thunk.__numpy_array__()
-                if (out is not None and hasattr(out, "_thunk"))
-                else out
-            )
-            return np.matmul(
-                self.array,
-                rhs_array,
-                out=out_array,
-                **kwargs,
-            )
-
-    _add = _make_eager_binary_ufunc("add")
-    _multiply = _make_eager_binary_ufunc("multiply")
-    _subtract = _make_eager_binary_ufunc("subtract")
-    _true_divide = _make_eager_binary_ufunc("true_divide")
-    _floor_divide = _make_eager_binary_ufunc("floor_divide")
-    _logaddexp = _make_eager_binary_ufunc("logaddexp")
-    _logaddexp2 = _make_eager_binary_ufunc("logaddexp2")
-    _power = _make_eager_binary_ufunc("power")
-    _float_power = _make_eager_binary_ufunc("float_power")
-    _remainder = _make_eager_binary_ufunc("remainder")
-    _gcd = _make_eager_binary_ufunc("gcd")
-    _lcm = _make_eager_binary_ufunc("lcm")
-
-    # unary
-    _negative = _make_eager_unary_ufunc("negative")
-    _positive = _make_eager_unary_ufunc("positive")
-    _absolute = _make_eager_unary_ufunc("absolute")
-    _rint = _make_eager_unary_ufunc("rint")
-    _sign = _make_eager_unary_ufunc("sign")
-    _conjugate = _make_eager_unary_ufunc("conjugate")
-    _exp = _make_eager_unary_ufunc("exp")
-    _exp2 = _make_eager_unary_ufunc("exp2")
-    _log = _make_eager_unary_ufunc("log")
-    _log2 = _make_eager_unary_ufunc("log2")
-    _log10 = _make_eager_unary_ufunc("log10")
-    _expm1 = _make_eager_unary_ufunc("expm1")
-    _log1p = _make_eager_unary_ufunc("log1p")
-    _square = _make_eager_unary_ufunc("square")
-    _sqrt = _make_eager_unary_ufunc("sqrt")
-    _cbrt = _make_eager_unary_ufunc("cbrt")
-    _reciprocal = _make_eager_unary_ufunc("reciprocal")
-
-    # logical
-    _greater_equal = _make_eager_binary_ufunc("greater_equal")
-    _equal = _make_eager_binary_ufunc("equal")
-    _greater = _make_eager_binary_ufunc("greater")
-    _less = _make_eager_binary_ufunc("less")
-    _less_equal = _make_eager_binary_ufunc("less_equal")
-    _not_equal = _make_eager_binary_ufunc("not_equal")
-    _logical_and = _make_eager_binary_ufunc("logical_and")
-    _logical_or = _make_eager_binary_ufunc("logical_or")
-    _logical_xor = _make_eager_binary_ufunc("logical_xor")
-    _logical_not = _make_eager_unary_ufunc("logical_not")
-    _maximum = _make_eager_binary_ufunc("maximum")
-    _minimum = _make_eager_binary_ufunc("minimum")
-
-    # bit_twiddling
-    _bitwise_and = _make_eager_binary_ufunc("bitwise_and")
-    _bitwise_or = _make_eager_binary_ufunc("bitwise_or")
-    _bitwise_xor = _make_eager_binary_ufunc("bitwise_xor")
-    _invert = _make_eager_unary_ufunc("invert")
-    _left_shift = _make_eager_binary_ufunc("left_shift")
-    _right_shift = _make_eager_binary_ufunc("right_shift")
-
-    # floating:
-    _isfinite = _make_eager_unary_ufunc("isfinite")
-    _isinf = _make_eager_unary_ufunc("isinf")
-    _isnan = _make_eager_unary_ufunc("isnan")
-    _fabs = _make_eager_unary_ufunc("fabs")
-    _signbit = _make_eager_unary_ufunc("signbit")
-    _copysign = _make_eager_binary_ufunc("copysign")
-    _nextafter = _make_eager_binary_ufunc("nextafter")
-    _ldexp = _make_eager_binary_ufunc("ldexp")
-    _fmod = _make_eager_binary_ufunc("fmod")
-    _floor = _make_eager_unary_ufunc("floor")
-    _ceil = _make_eager_unary_ufunc("ceil")
-    _trunc = _make_eager_unary_ufunc("trunc")
-
-    # trigonometric:
-    _sin = _make_eager_unary_ufunc("sin")
-    _cos = _make_eager_unary_ufunc("cos")
-    _tan = _make_eager_unary_ufunc("tan")
-    _arcsin = _make_eager_unary_ufunc("arcsin")
-    _arccos = _make_eager_unary_ufunc("arccos")
-    _arctan = _make_eager_unary_ufunc("arctan")
-    _arctan2 = _make_eager_binary_ufunc("arctan2")
-    _hypot = _make_eager_binary_ufunc("hypot")
-    _sinh = _make_eager_unary_ufunc("sinh")
-    _cosh = _make_eager_unary_ufunc("cosh")
-    _tanh = _make_eager_unary_ufunc("tanh")
-    _arcsinh = _make_eager_unary_ufunc("arcsinh")
-    _arccosh = _make_eager_unary_ufunc("arccosh")
-    _arctanh = _make_eager_unary_ufunc("arctanh")
-    _deg2rad = _make_eager_unary_ufunc("deg2rad")
-    _rad2deg = _make_eager_unary_ufunc("rad2deg")
 
     def unary_op(
         self,

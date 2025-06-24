@@ -49,8 +49,6 @@ from legate.core import (
 from legate.core.utils import OrderedSet
 from legate.settings import settings as legate_settings
 
-from .. import _ufunc
-from .._ufunc.ufunc import binary_ufunc, unary_ufunc
 from .._utils import is_np2
 from .._utils.array import (
     is_advanced_indexing,
@@ -91,7 +89,6 @@ if TYPE_CHECKING:
     from ..config import BitGeneratorType, FFTDirection, FFTType, WindowOpCode
     from ..types import (
         BitOrder,
-        CastingKind,
         ConvolveMethod as ConvolveMethodType,
         ConvolveMode,
         NdShape,
@@ -217,46 +214,6 @@ class BlasOperation(IntEnum):
     VV = 1
     MV = 2
     MM = 3
-
-
-def _make_deferred_binary_ufunc(ufunc: binary_ufunc) -> Callable[..., Any]:
-    """Factory that creates deferred ufunc methods.
-
-    Args:
-        ufunc: function from the ``_ufunc`` module
-        (e.g., ``_ufunc.add``)
-
-    Returns:
-        A fully-formed ufunc method with deferred execution support
-    """
-
-    def ufunc_method(self: Any, *args: Any, **kwargs: Any) -> Any:
-        from .._array.array import ndarray
-
-        a = ndarray(self.shape, self.dtype, thunk=self)
-        return ufunc._call_full(a, *args, **kwargs)
-
-    return ufunc_method
-
-
-def _make_deferred_unary_ufunc(ufunc: unary_ufunc) -> Callable[..., Any]:
-    """Factory that creates deferred ufunc methods.
-
-    Args:
-        ufunc: function from the ``_ufunc`` module
-        (e.g., ``_ufunc.negative``)
-
-    Returns:
-        A fully-formed ufunc method with deferred execution support
-    """
-
-    def ufunc_method(self: Any, *args: Any, **kwargs: Any) -> Any:
-        from .._array.array import ndarray  # Lazy import inside function
-
-        a = ndarray(self.shape, self.dtype, thunk=self)
-        return ufunc._call_full(a, *args, **kwargs)
-
-    return ufunc_method
 
 
 class DeferredArray(NumPyThunk):
@@ -3214,111 +3171,6 @@ class DeferredArray(NumPyThunk):
         args = (Scalar(low, self.base.type), Scalar(high, self.base.type))
         self.random(RandGenCode.INTEGER, args)
 
-    # Binary operations
-    def _matmul(
-        self,
-        rhs: Any,
-        out: Any | None = None,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
-        **kwargs: Any,
-    ) -> Any:
-        from .._array.array import ndarray
-        from .._module.linalg_mvp import matmul
-
-        if kwargs:
-            keys = ", ".join(str(k) for k in kwargs.keys())
-            raise NotImplementedError(f"matmul doesn't support kwargs: {keys}")
-        a = ndarray(self.shape, self.dtype, thunk=self)
-        return matmul(a, rhs, out=out, casting=casting, dtype=dtype)
-
-    _add = _make_deferred_binary_ufunc(_ufunc.add)
-    _subtract = _make_deferred_binary_ufunc(_ufunc.subtract)
-    _multiply = _make_deferred_binary_ufunc(_ufunc.multiply)
-    _true_divide = _make_deferred_binary_ufunc(_ufunc.true_divide)
-    _floor_divide = _make_deferred_binary_ufunc(_ufunc.floor_divide)
-    _logaddexp = _make_deferred_binary_ufunc(_ufunc.logaddexp)
-    _logaddexp2 = _make_deferred_binary_ufunc(_ufunc.logaddexp2)
-    _power = _make_deferred_binary_ufunc(_ufunc.power)
-    _float_power = _make_deferred_binary_ufunc(_ufunc.float_power)
-    _remainder = _make_deferred_binary_ufunc(_ufunc.remainder)
-    _gcd = _make_deferred_binary_ufunc(_ufunc.gcd)
-    _lcm = _make_deferred_binary_ufunc(_ufunc.lcm)
-
-    # Unary operations could be added similarly
-    _negative = _make_deferred_unary_ufunc(_ufunc.negative)
-    _positive = _make_deferred_unary_ufunc(_ufunc.positive)
-    _absolute = _make_deferred_unary_ufunc(_ufunc.absolute)
-    _rint = _make_deferred_unary_ufunc(_ufunc.rint)
-    _sign = _make_deferred_unary_ufunc(_ufunc.sign)
-    _conjugate = _make_deferred_unary_ufunc(_ufunc.conjugate)
-    _exp = _make_deferred_unary_ufunc(_ufunc.exp)
-    _exp2 = _make_deferred_unary_ufunc(_ufunc.exp2)
-    _log = _make_deferred_unary_ufunc(_ufunc.log)
-    _log2 = _make_deferred_unary_ufunc(_ufunc.log2)
-    _log10 = _make_deferred_unary_ufunc(_ufunc.log10)
-    _expm1 = _make_deferred_unary_ufunc(_ufunc.expm1)
-    _log1p = _make_deferred_unary_ufunc(_ufunc.log1p)
-    _square = _make_deferred_unary_ufunc(_ufunc.square)
-    _sqrt = _make_deferred_unary_ufunc(_ufunc.sqrt)
-    _cbrt = _make_deferred_unary_ufunc(_ufunc.cbrt)
-    _reciprocal = _make_deferred_unary_ufunc(_ufunc.reciprocal)
-
-    # logical ufuncs:
-    _greater_equal = _make_deferred_binary_ufunc(_ufunc.greater_equal)
-    _equal = _make_deferred_binary_ufunc(_ufunc.equal)
-    _greater = _make_deferred_binary_ufunc(_ufunc.greater)
-    _less = _make_deferred_binary_ufunc(_ufunc.less)
-    _less_equal = _make_deferred_binary_ufunc(_ufunc.less_equal)
-    _not_equal = _make_deferred_binary_ufunc(_ufunc.not_equal)
-    _logical_and = _make_deferred_binary_ufunc(_ufunc.logical_and)
-    _logical_or = _make_deferred_binary_ufunc(_ufunc.logical_or)
-    _logical_xor = _make_deferred_binary_ufunc(_ufunc.logical_xor)
-    _logical_not = _make_deferred_unary_ufunc(_ufunc.logical_not)
-    _maximum = _make_deferred_binary_ufunc(_ufunc.maximum)
-    _minimum = _make_deferred_binary_ufunc(_ufunc.minimum)
-
-    # bit twiddling
-    _bitwise_and = _make_deferred_binary_ufunc(_ufunc.bitwise_and)
-    _bitwise_or = _make_deferred_binary_ufunc(_ufunc.bitwise_or)
-    _bitwise_xor = _make_deferred_binary_ufunc(_ufunc.bitwise_xor)
-    _invert = _make_deferred_unary_ufunc(_ufunc.invert)
-    _left_shift = _make_deferred_binary_ufunc(_ufunc.left_shift)
-    _right_shift = _make_deferred_binary_ufunc(_ufunc.right_shift)
-
-    # floating:
-    _isfinite = _make_deferred_unary_ufunc(_ufunc.isfinite)
-    _isinf = _make_deferred_unary_ufunc(_ufunc.isinf)
-    _isnan = _make_deferred_unary_ufunc(_ufunc.isnan)
-    _fabs = _make_deferred_unary_ufunc(_ufunc.fabs)
-    _signbit = _make_deferred_unary_ufunc(_ufunc.signbit)
-    _copysign = _make_deferred_binary_ufunc(_ufunc.copysign)
-    _nextafter = _make_deferred_binary_ufunc(_ufunc.nextafter)
-    _ldexp = _make_deferred_binary_ufunc(_ufunc.ldexp)
-    _fmod = _make_deferred_binary_ufunc(_ufunc.fmod)
-    _floor = _make_deferred_unary_ufunc(_ufunc.floor)
-    _ceil = _make_deferred_unary_ufunc(_ufunc.ceil)
-    _trunc = _make_deferred_unary_ufunc(_ufunc.trunc)
-
-    # trigonometric:
-    _sin = _make_deferred_unary_ufunc(_ufunc.sin)
-    _cos = _make_deferred_unary_ufunc(_ufunc.cos)
-    _tan = _make_deferred_unary_ufunc(_ufunc.tan)
-    _arcsin = _make_deferred_unary_ufunc(_ufunc.arcsin)
-    _arccos = _make_deferred_unary_ufunc(_ufunc.arccos)
-    _arctan = _make_deferred_unary_ufunc(_ufunc.arctan)
-    _arctan2 = _make_deferred_binary_ufunc(_ufunc.arctan2)
-    _hypot = _make_deferred_binary_ufunc(_ufunc.hypot)
-    _sinh = _make_deferred_unary_ufunc(_ufunc.sinh)
-    _cosh = _make_deferred_unary_ufunc(_ufunc.cosh)
-    _tanh = _make_deferred_unary_ufunc(_ufunc.tanh)
-    _arcsinh = _make_deferred_unary_ufunc(_ufunc.arcsinh)
-    _arccosh = _make_deferred_unary_ufunc(_ufunc.arccosh)
-    _arctanh = _make_deferred_unary_ufunc(_ufunc.arctanh)
-    _deg2rad = _make_deferred_unary_ufunc(_ufunc.deg2rad)
-    _rad2deg = _make_deferred_unary_ufunc(_ufunc.rad2deg)
-
     # Perform the unary operation and put the result in the array
     @auto_convert("src")
     def unary_op(
@@ -3668,7 +3520,7 @@ class DeferredArray(NumPyThunk):
                 swapped.shape, dtype=rhs.base.type, inputs=(rhs, swapped)
             )
             input.copy(swapped, deep=True)
-            output = input
+            output = cast(DeferredArray, input)
 
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.SCAN_LOCAL

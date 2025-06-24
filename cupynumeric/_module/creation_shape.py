@@ -27,25 +27,6 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-def _uninitialized(
-    shape: NdShapeLike, dtype: npt.DTypeLike = np.float64
-) -> ndarray:
-    return ndarray(shape=shape, dtype=dtype)
-
-
-add_boilerplate("a")
-
-
-def _uninitialized_like(
-    a: ndarray,
-    dtype: npt.DTypeLike | None = None,
-    shape: NdShapeLike | None = None,
-) -> ndarray:
-    shape = a.shape if shape is None else shape
-    dtype = a.dtype if dtype is None else np.dtype(dtype)
-    return ndarray(shape, dtype=dtype, inputs=(a,))
-
-
 def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     """
     empty(shape, dtype=float)
@@ -73,13 +54,7 @@ def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
-    arr = _uninitialized(shape=shape, dtype=dtype)
-    # FIXME: we need to initialize this to 0 temporary until
-    # we can check if LogicalStore is initialized
-    # otherwise we get error when empty cupynumeric code is
-    # taking eager mode
-    arr.fill(0)
-    return arr
+    return ndarray(shape=shape, dtype=dtype)
 
 
 @add_boilerplate("a")
@@ -118,14 +93,12 @@ def empty_like(
     --------
     Multiple GPUs, Multiple CPUs
     """
-    arr = _uninitialized_like(a, dtype, shape)
-    # FIXME: we need to initialize this to 0 temporary until
-    # we can check if LogicalStore is initialized
-    # otherwise we get error when empty cupynumeric code is
-    # taking eager mode. Please see issue
-    # https://github.com/nv-legate/cupynumeric.internal/issues/751
-    arr.fill(0)
-    return arr
+    shape = a.shape if shape is None else shape
+    if dtype is not None:
+        dtype = np.dtype(dtype)
+    else:
+        dtype = a.dtype
+    return ndarray(shape, dtype=dtype, inputs=(a,))
 
 
 def eye(
@@ -381,7 +354,7 @@ def full(
         val = np.array(value, dtype=dtype)
     if np.dtype(dtype).itemsize == 1 and value > 255:
         raise OverflowError(f"Value {value} out of bounds for {dtype}")
-    result = _uninitialized(shape, dtype=val.dtype)
+    result = empty(shape, dtype=val.dtype)
     result._thunk.fill(val)
     return result
 
@@ -427,7 +400,7 @@ def full_like(
         dtype = a.dtype
     if np.dtype(dtype).itemsize == 1 and value > 255:
         raise OverflowError(f"Value {value} out of bounds for {dtype}")
-    result = _uninitialized_like(a, dtype=dtype, shape=shape)
+    result = empty_like(a, dtype=dtype, shape=shape)
     val = np.array(value).astype(dtype)
     result._thunk.fill(val)
     return result

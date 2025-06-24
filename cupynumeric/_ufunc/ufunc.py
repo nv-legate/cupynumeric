@@ -473,31 +473,7 @@ class unary_ufunc(ufunc):
         casting: CastingKind = "same_kind",
         order: str = "K",
         dtype: np.dtype[Any] | None = None,
-    ) -> ndarray:
-        x = convert_to_cupynumeric_ndarray(args[0])
-        if len(args) > self.nin:
-            if out is not None:
-                raise TypeError(
-                    "cannot specify 'out' as both a positional and keyword "
-                    "argument"
-                )
-            out = args[self.nin]
-        return getattr(x._thunk, f"_{self._name}")(
-            out=out,
-            where=where,
-            casting=casting,
-            order=order,
-            dtype=dtype,
-        )
-
-    def _call_full(
-        self,
-        *args: Any,
-        out: ndarray | None = None,
-        where: bool = True,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
+        **kwargs: Any,
     ) -> ndarray:
         (x,), (out,), out_shape, where = self._prepare_operands(
             *args, out=out, where=where
@@ -791,36 +767,7 @@ class binary_ufunc(ufunc):
         casting: CastingKind = "same_kind",
         order: str = "K",
         dtype: np.dtype[Any] | None = None,
-    ) -> ndarray:
-        if not np.isscalar(args[0]):
-            x1 = convert_to_cupynumeric_ndarray(args[0])
-            x2 = args[1]
-            return getattr(x1._thunk, f"_{self._name}")(
-                x2,
-                out=out,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-        else:
-            return self._call_full(
-                *args,
-                out=out,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
-
-    def _call_full(
-        self,
-        *args: Any,
-        out: ndarray | None = None,
-        where: bool = True,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
+        **kwargs: Any,
     ) -> ndarray:
         arrs, (out,), out_shape, where = self._prepare_operands(
             *args, out=out, where=where

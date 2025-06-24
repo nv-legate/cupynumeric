@@ -28,11 +28,7 @@ from ..config import (
     UnaryRedCode,
 )
 from ..types import NdShape
-from .util import (
-    broadcast_where,
-    convert_to_cupynumeric_ndarray,
-    find_common_type,
-)
+from .util import broadcast_where, find_common_type
 
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index  # type: ignore
@@ -220,11 +216,6 @@ def perform_unary_reduction(
     else:
         result = ndarray(shape=out_shape, dtype=res_dtype, inputs=(src, where))
 
-    # src might have taken eager path above:
-    if not isinstance(src, ndarray):
-        from .array import ndarray  # type: ignore [unreachable]
-
-        src = convert_to_cupynumeric_ndarray(src)
     where_array = broadcast_where(where, src.shape)
     result._thunk.unary_reduction(
         op,
@@ -259,6 +250,7 @@ def perform_binary_reduction(
 
     # Collapsing down to a single value in this case
     # Check to see if we need to broadcast between inputs
+    broadcast: NdShape | None
     if one.shape != two.shape:
         broadcast = np.broadcast_shapes(one.shape, two.shape)
     else:
