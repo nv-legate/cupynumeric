@@ -311,8 +311,6 @@ class Runtime(object):
                 obj = np.array(obj, dtype=dtype)
         elif dtype is not None and dtype != obj.dtype:
             obj = obj.astype(dtype)
-        elif not share:
-            obj = obj.copy()
         # We can't attach NumPy ndarrays in shared mode unless they are
         # writeable
         share = share and obj.flags["W"]
