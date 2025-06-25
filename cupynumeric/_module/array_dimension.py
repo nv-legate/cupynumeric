@@ -149,7 +149,9 @@ def atleast_3d(*arys: ndarray) -> list[ndarray] | ndarray:
 
 
 @add_boilerplate("a")
-def squeeze(a: ndarray, axis: NdShapeLike | None = None) -> ndarray:
+def squeeze(
+    a: ndarray | None, axis: NdShapeLike | None = None
+) -> ndarray | None:
     """
 
     Remove single-dimensional entries from the shape of an array.
@@ -183,6 +185,8 @@ def squeeze(a: ndarray, axis: NdShapeLike | None = None) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
+    if a is None:
+        return None
     return a.squeeze(axis=axis)
 
 
