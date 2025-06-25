@@ -8,7 +8,7 @@ This article assumes familiarity with the basic usage of cuPyNumeric.
 Certain scenarios may benefit from building custom functions to integrate with
 cuPyNumeric, for example: implementing novel research algorithms, or
 leveraging routines from other libraries while still taking advantage of 
-transparent scaling. In these cases, Legate Tasks can be used to extend
+transparent scaling. In these cases, Legate tasks can be used to extend
 cuPyNumeric by defining scale‑out functions that enable new algorithms
 to run seamlessly across distributed resources.
 
