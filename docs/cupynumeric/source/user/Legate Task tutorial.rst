@@ -111,7 +111,7 @@ Quick Example:
 
 **Understanding this example -**
 
-The code runs a simple function, which replaces the contents of the
+The code runs a function that replaces the contents of the
 output array with the contents of the input array. cuPyNumeric arrays,
 like in_arr and out_arr, are quite similar to NumPy arrays but are
 backed by Legate stores for parallel execution across GPUs and CPUs.
