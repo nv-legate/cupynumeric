@@ -1,0 +1,6 @@
+﻿cupynumeric.nan\_to\_num
+========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: nan_to_num

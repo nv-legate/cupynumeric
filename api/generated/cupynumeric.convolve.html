@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cupynumeric.convolve &#8212; NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef)</title>
+    <title>cupynumeric.convolve &#8212; NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=ef224457"></script>
+    <script src="../../_static/documentation_options.js?v=4404ae1e"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -130,11 +130,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</p>
   
 </a></div>
     
@@ -241,11 +241,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</p>
   
 </a>
 
@@ -711,6 +711,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.nanmax.html">cupynumeric.nanmax</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">cupynumeric.convolve</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.clip.html">cupynumeric.clip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cupynumeric.nan_to_num.html">cupynumeric.nan_to_num</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.sqrt.html">cupynumeric.sqrt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.cbrt.html">cupynumeric.cbrt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.square.html">cupynumeric.square</a></li>
@@ -926,7 +927,8 @@
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#cupynumeric.convolve" title="Link to this definition">#</a></dt>
 <dd><p>Returns the discrete, linear convolution of two ndarrays.</p>
 <p>If <cite>a</cite> and <cite>v</cite> are both 1-D and <cite>v</cite> is longer than <cite>a</cite>, the two are
-swapped before computation. For N-D cases, the arguments are never swapped.</p>
+swapped before computation. For N-D cases, the arguments are never
+swapped.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -946,8 +948,8 @@ must be at least as large as the other in every dimension.</p>
 </p></li>
 <li><p><strong>method</strong> (<code class="docutils literal notranslate"><span class="pre">{'auto',</span> <span class="pre">'direct',</span> <span class="pre">'fft'}</span></code>, optional) – <p>A string indicating which method to use to calculate the convolution.</p>
 <dl class="simple">
-<dt>’auto’:</dt><dd><p>Automatically chooses direct or Fourier method based on an estimate of
-which is faster (default)</p>
+<dt>’auto’:</dt><dd><p>Automatically chooses direct or Fourier method based on an estimate
+of which is faster (default)</p>
 </dd>
 <dt>’direct’:</dt><dd><p>The convolution is determined directly from sums, the definition of
 convolution</p>

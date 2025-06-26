@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Mathematical functions &#8212; NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef)</title>
+    <title>Mathematical functions &#8212; NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=ef224457"></script>
+    <script src="../_static/documentation_options.js?v=4404ae1e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -130,11 +130,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</p>
   
 </a></div>
     
@@ -241,11 +241,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+21.gaec06cef)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</p>
   
 </a>
 
@@ -711,6 +711,7 @@
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nanmax.html">cupynumeric.nanmax</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.convolve.html">cupynumeric.convolve</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.clip.html">cupynumeric.clip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.nan_to_num.html">cupynumeric.nan_to_num</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.sqrt.html">cupynumeric.sqrt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.cbrt.html">cupynumeric.cbrt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.square.html">cupynumeric.square</a></li>
@@ -1230,31 +1231,34 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.clip.html#cupynumeric.clip" title="cupynumeric.clip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip</span></code></a>(a, a_min, a_max[, out])</p></td>
 <td><p>Clip (limit) the values in an array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.sqrt.html#cupynumeric.sqrt" title="cupynumeric.sqrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sqrt</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.nan_to_num.html#cupynumeric.nan_to_num" title="cupynumeric.nan_to_num"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nan_to_num</span></code></a>(a[, copy, nan, posinf, neginf])</p></td>
+<td><p>Replace NaN with zero and infinity with large finite numbers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.sqrt.html#cupynumeric.sqrt" title="cupynumeric.sqrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sqrt</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
 <td><p>Return the non-negative square-root of an array, element-wise.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.cbrt.html#cupynumeric.cbrt" title="cupynumeric.cbrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cbrt</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.cbrt.html#cupynumeric.cbrt" title="cupynumeric.cbrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cbrt</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
 <td><p>Return the cube-root of an array, element-wise.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.square.html#cupynumeric.square" title="cupynumeric.square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">square</span></code></a>(*args[, out, where, casting, order, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.square.html#cupynumeric.square" title="cupynumeric.square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">square</span></code></a>(*args[, out, where, casting, order, ...])</p></td>
 <td><p>Return the element-wise square of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.absolute.html#cupynumeric.absolute" title="cupynumeric.absolute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">absolute</span></code></a>(*args[, out, where, casting, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.absolute.html#cupynumeric.absolute" title="cupynumeric.absolute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">absolute</span></code></a>(*args[, out, where, casting, ...])</p></td>
 <td><p>Calculate the absolute value element-wise.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.fabs.html#cupynumeric.fabs" title="cupynumeric.fabs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fabs</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.fabs.html#cupynumeric.fabs" title="cupynumeric.fabs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fabs</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
 <td><p>Compute the absolute values element-wise.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.sign.html#cupynumeric.sign" title="cupynumeric.sign"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sign</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.sign.html#cupynumeric.sign" title="cupynumeric.sign"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sign</span></code></a>(*args[, out, where, casting, order, dtype])</p></td>
 <td><p>Returns an element-wise indication of the sign of a number.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.inner.html#cupynumeric.inner" title="cupynumeric.inner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inner</span></code></a>(a, b[, out])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.inner.html#cupynumeric.inner" title="cupynumeric.inner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inner</span></code></a>(a, b[, out])</p></td>
 <td><p>Inner product of two arrays.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.outer.html#cupynumeric.outer" title="cupynumeric.outer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">outer</span></code></a>(a, b[, out])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.outer.html#cupynumeric.outer" title="cupynumeric.outer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">outer</span></code></a>(a, b[, out])</p></td>
 <td><p>Compute the outer product of two vectors.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.vdot.html#cupynumeric.vdot" title="cupynumeric.vdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vdot</span></code></a>(a, b[, out])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.vdot.html#cupynumeric.vdot" title="cupynumeric.vdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vdot</span></code></a>(a, b[, out])</p></td>
 <td><p>Return the dot product of two vectors.</p></td>
 </tr>
 </tbody>

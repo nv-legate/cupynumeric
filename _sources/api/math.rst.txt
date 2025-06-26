@@ -168,6 +168,7 @@ Miscellaneous
 
    convolve
    clip
+   nan_to_num
    sqrt
    cbrt
    square

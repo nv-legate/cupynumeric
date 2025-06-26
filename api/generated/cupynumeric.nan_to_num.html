@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cupynumeric.fmax &#8212; NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</title>
+    <title>cupynumeric.nan_to_num &#8212; NVIDIA cuPyNumeric (25.07.00.dev+22.g2ae96dde)</title>
   
   
   
@@ -48,7 +48,7 @@
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=4ea706d9"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/cupynumeric.fmax';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/cupynumeric.nan_to_num';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
@@ -59,8 +59,8 @@
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="cupynumeric.amax" href="cupynumeric.amax.html" />
-    <link rel="prev" title="cupynumeric.maximum" href="cupynumeric.maximum.html" />
+    <link rel="next" title="cupynumeric.sqrt" href="cupynumeric.sqrt.html" />
+    <link rel="prev" title="cupynumeric.clip" href="cupynumeric.clip.html" />
 
 <script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js"></script>
 
@@ -702,7 +702,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.conj.html">cupynumeric.conj</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.conjugate.html">cupynumeric.conjugate</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.maximum.html">cupynumeric.maximum</a></li>
-<li class="toctree-l4 current active"><a class="current reference internal" href="#">cupynumeric.fmax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cupynumeric.fmax.html">cupynumeric.fmax</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.amax.html">cupynumeric.amax</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.minimum.html">cupynumeric.minimum</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.fmin.html">cupynumeric.fmin</a></li>
@@ -711,7 +711,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.nanmax.html">cupynumeric.nanmax</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.convolve.html">cupynumeric.convolve</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.clip.html">cupynumeric.clip</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cupynumeric.nan_to_num.html">cupynumeric.nan_to_num</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">cupynumeric.nan_to_num</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.sqrt.html">cupynumeric.sqrt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.cbrt.html">cupynumeric.cbrt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cupynumeric.square.html">cupynumeric.square</a></li>
@@ -894,7 +894,7 @@
     
     <li class="breadcrumb-item"><a href="../math.html" class="nav-link">Mathematical functions</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cupynumeric.fmax</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cupynumeric.nan_to_num</span></li>
   </ul>
 </nav>
 </div>
@@ -911,55 +911,60 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="cupynumeric-fmax">
-<h1>cupynumeric.fmax<a class="headerlink" href="#cupynumeric-fmax" title="Link to this heading">#</a></h1>
+  <section id="cupynumeric-nan-to-num">
+<h1>cupynumeric.nan_to_num<a class="headerlink" href="#cupynumeric-nan-to-num" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="cupynumeric.fmax">
-<span class="sig-prename descclassname"><span class="pre">cupynumeric.</span></span><span class="sig-name descname"><span class="pre">fmax</span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object py" id="cupynumeric.nan_to_num">
+<span class="sig-prename descclassname"><span class="pre">cupynumeric.</span></span><span class="sig-name descname"><span class="pre">nan_to_num</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">casting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CastingKind</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'same_kind'</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'K'</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">np.dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">nan</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">posinf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">neginf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#cupynumeric.fmax" title="Link to this definition">#</a></dt>
-<dd><p>Element-wise maximum of array elements.</p>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#cupynumeric.nan_to_num" title="Link to this definition">#</a></dt>
+<dd><p>Replace NaN with zero and infinity with large finite numbers.</p>
+<p>If <cite>x</cite> is inexact, NaN is replaced by zero or by the user defined value in
+<cite>nan</cite> keyword, infinity is replaced by the largest finite floating point
+values representable by <code class="docutils literal notranslate"><span class="pre">x.dtype</span></code> or by the user defined value in
+<cite>posinf</cite> keyword and -infinity is replaced by the most negative finite
+floating point values representable by <code class="docutils literal notranslate"><span class="pre">x.dtype</span></code> or by the user defined
+value in <cite>neginf</cite> keyword.</p>
+<p>For complex dtypes, the above is applied to each of the real and
+imaginary components of <cite>x</cite> separately.</p>
+<p>If <cite>x</cite> is not inexact, then no replacements are made.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x1</strong> (<em>array_like</em>) – Input arrays. If <code class="docutils literal notranslate"><span class="pre">x1.shape</span> <span class="pre">!=</span> <span class="pre">x2.shape</span></code>, they must be broadcastable
-to a common shape (which becomes the shape of the output).</p></li>
-<li><p><strong>x2</strong> (<em>array_like</em>) – Input arrays. If <code class="docutils literal notranslate"><span class="pre">x1.shape</span> <span class="pre">!=</span> <span class="pre">x2.shape</span></code>, they must be broadcastable
-to a common shape (which becomes the shape of the output).</p></li>
-<li><p><strong>out</strong> (<a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a><em>, </em><em>None</em><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><em>tuple</em></a><em>[</em><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a><em> or </em><em>None</em><em>]</em><em>, </em><em>optional</em>) – A location into which the result is stored. If provided, it must have
-a shape that the inputs broadcast to. If not provided or None,
-a freshly-allocated array is returned. A tuple (possible only as a
-keyword argument) must have length equal to the number of outputs.</p></li>
-<li><p><strong>where</strong> (<em>array_like</em><em>, </em><em>optional</em>) – This condition is broadcast over the input. At locations where the
-condition is True, the <cite>out</cite> array will be set to the ufunc result.
-Elsewhere, the <cite>out</cite> array will retain its original value.
-Note that if an uninitialized <cite>out</cite> array is created via the default
-<code class="docutils literal notranslate"><span class="pre">out=None</span></code>, locations within it where the condition is False will
-remain uninitialized.</p></li>
-<li><p><strong>**kwargs</strong> – For other keyword-only arguments, see the
-<a class="reference external" href="https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs" title="(in NumPy v2.3)"><span class="xref std std-ref">ufunc docs</span></a>.</p></li>
+<li><p><strong>a</strong> (<em>array_like</em>) – Input data.</p></li>
+<li><p><strong>copy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to create a copy of <cite>x</cite> (True) or to replace values
+in-place (False). The in-place operation only occurs if
+casting to an array does not require a copy.
+Default is True.</p></li>
+<li><p><strong>nan</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>optional</em>) – Value to be used to fill NaN values. If no value is passed
+then NaN values will be replaced with 0.0.</p></li>
+<li><p><strong>posinf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>optional</em>) – Value to be used to fill positive infinity values. If no value is
+passed then positive infinity values will be replaced with a very
+large number.</p></li>
+<li><p><strong>neginf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>, </em><em>optional</em>) – Value to be used to fill negative infinity values. If no value is
+passed then negative infinity values will be replaced with a very
+small (or negative) number.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>y</strong> – Result.
-This is a scalar if both <cite>x1</cite> and <cite>x2</cite> are scalars.</p>
+<dd class="field-even"><p><strong>out</strong> – A copy of <cite>x</cite>, with the non-finite values replaced. If <cite>copy</cite> is False,
+this may be <cite>x</cite> itself.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a> or scalar</p>
+<dd class="field-odd"><p><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a></p>
 </dd>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.maximum.html#numpy.maximum" title="(in NumPy v2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.maximum</span></code></a></p>
+<p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.nan_to_num.html#numpy.nan_to_num" title="(in NumPy v2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.nan_to_num</span></code></a></p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Availability<span class="colon">:</span></dt>
@@ -981,20 +986,20 @@ This is a scalar if both <cite>x1</cite> and <cite>x2</cite> are scalars.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="cupynumeric.maximum.html"
+       href="cupynumeric.clip.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">cupynumeric.maximum</p>
+        <p class="prev-next-title">cupynumeric.clip</p>
       </div>
     </a>
     <a class="right-next"
-       href="cupynumeric.amax.html"
+       href="cupynumeric.sqrt.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">cupynumeric.amax</p>
+        <p class="prev-next-title">cupynumeric.sqrt</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1019,7 +1024,7 @@ This is a scalar if both <cite>x1</cite> and <cite>x2</cite> are scalars.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric.fmax"><code class="docutils literal notranslate"><span class="pre">fmax()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric.nan_to_num"><code class="docutils literal notranslate"><span class="pre">nan_to_num()</span></code></a></li>
 </ul>
   </nav></div>
 
