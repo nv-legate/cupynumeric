@@ -61,8 +61,8 @@ Usage:
   - *Broadcast* - Replicates data across all tasks instead of
     partitioning it.
 
-  - Legate supports more partitioning constraints such as Image and
-    Scale, see
+  - Other Legate-supported partitioning constraints such as Image and
+    Scale - See
     [`Constraints <https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html>`__]
     for more information.
 
