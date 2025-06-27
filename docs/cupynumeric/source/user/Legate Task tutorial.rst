@@ -40,7 +40,8 @@ Usage
     bool register: bool = True,
     )
 
-**Parameter:**
+Parameters
+----------
 
 - **func (UserFunction)** – The function to invoke in the task.
 
@@ -275,15 +276,15 @@ Saxpy.py file
 
 .. _section-2:
 
-Running on CPU and GPU - `Guide`_
-------------------------------------------------------------------------------------
-
-.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
-
+Running on CPU and GPU 
+----------------------
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpus, --gpus, and more. If you want to run
 specifically only on CPU, you must include the flag “--gpus 0”.
+For a complete guide and additional options, see the `Legate documentation`_.
+
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 The Legate runtime is used in the main function to control and
 synchronize task execution. The get_legate_runtime() function returns
@@ -508,15 +509,15 @@ Histogram.py file
 
 .. _running-on-cpu-and-gpu---guide-1:
 
-Running on CPU and GPU - `Guide`_
-------------------------------------------------------------------------------------
-
-.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
-
+Running on CPU and GPU
+-----------------------
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
 specifically only on CPU, you must add the flag “--gpus 0”.
+For a complete guide and additional options, see the `Legate documentation`_.
+
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 Let’s set the size of the input array to 10 million. We’ll also include
 a warm-up run before measuring execution time to ensure that one-time
@@ -738,15 +739,17 @@ Matmul.py File
 
 .. _running-on-cpu-and-gpu---guide-2:
 
-Running on CPU and GPU - `Guide`_
-----------------------------------
+Running on CPU and GPU 
+----------------------
 
-.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
 
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
 specifically only on CPU, you must add the flag “--gpus 0”.
+For a complete guide and additional options, see the `Legate documentation`_.
+
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 Let's increase the size of the matrix by setting m = 1000, k = 1000, and
 n = 1000. We’ll also include a warm-up run before measuring execution
@@ -944,15 +947,17 @@ FFT.py File
 
 .. _running-on-cpu-and-gpu---guide-3:
 
-Running on CPU and GPU - `Guide`_
----------------------------------
+Running on CPU and GPU 
+----------------------
 
-.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
 
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
 specifically only on CPU, you must add the flag “--gpus 0”.
+For a complete guide and additional options, see the `Legate documentation`_.
+
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 
 CPU Execution 
