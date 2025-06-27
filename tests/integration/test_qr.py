@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import re
+
 import numpy as np
 import pytest
 from utils.comparisons import allclose
@@ -101,7 +102,7 @@ class TestQrErrors:
         msg = "array type float16 is unsupported in linalg"
         with pytest.raises(TypeError, match=msg):
             num.linalg.qr(a)
-            
+
     def test_qr_linalgerror_1d(self) -> None:
         arr_np = np.array([1, 2, 3])
         arr_num = num.array(arr_np)

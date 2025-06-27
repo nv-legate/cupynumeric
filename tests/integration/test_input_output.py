@@ -61,7 +61,8 @@ def test_ndarray_tostring(order):
 
 
 @pytest.mark.skipif(
-    NumpyVersion(np.__version__) < "1.9.0", reason="tobytes is introduced in 1.9.0"
+    NumpyVersion(np.__version__) < "1.9.0",
+    reason="tobytes is introduced in 1.9.0",
 )
 @pytest.mark.parametrize("order", ["C", "F", "A"], ids=str)
 def test_ndarray_tobytes(order):
