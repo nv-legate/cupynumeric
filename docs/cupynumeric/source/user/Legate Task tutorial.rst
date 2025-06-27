@@ -1,7 +1,7 @@
-.. _Extend cuPyNumeric with Legate Tasks:
+.. _legate-tasks:
 
 ====================================
-Extend cuPyNumeric with Legate Tasks
+Extend cuPyNumeric with Legate-tasks
 ====================================
 
 This article assumes familiarity with the basic usage of cuPyNumeric.
@@ -12,19 +12,19 @@ transparent scaling. In these cases, Legate tasks can be used to extend
 cuPyNumeric by defining scale‑out functions that enable new algorithms
 to run seamlessly across distributed resources.
 
-**What is a Legate Task?**
+**What is a Legate task?**
 ==========================
 
-A Legate Task is a Python function annotated with the ``@task``
+A Legate task is a Python function annotated with the ``@task``
 decorator. This decorator informs the Legate runtime that a function
 represents a parallel task that can be distributed across multiple CPUs,
 GPUs, and nodes. This decorator enables high-performance parallelism
 with a simple Python syntax.
 
-Legate Tasks are available automatically when using cuPyNumeric. No
-additional components are needed after cuPyNumeric is installed. Please
-refer to `Distributed Computing with cuPyNumeric <https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_11_Distributed_Computing_cuPyNumeric.ipynb>`__
-for cuPyNumeric installation.
+Legate tasks are available automatically when using cuPyNumeric. No
+additional components are needed after cuPyNumeric is installed. Please refer to the `Distributed Computing with cuPyNumeric`_ for cuPyNumeric installation.
+
+.. _Distributed Computing with cuPyNumeric: https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_11_Distributed_Computing_cuPyNumeric.ipynb
 
 Usage:
 ------
@@ -63,8 +63,8 @@ Usage:
 
   - Other Legate-supported partitioning constraints such as Image and
     Scale - See
-    [`Constraints <https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html>`__]
-    for more information.
+    `Constraints`_ for more information.
+.. _Constraints: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html
 
 - **throws_exception (bool, False)** – True if any variant of func
   throws an exception, False otherwise.
@@ -76,11 +76,11 @@ Requirements:
 
 2. Arguments representing a piece of a Logical Store/Array must be given
    as either InputStore, OutputStore, InputArray, or OutputArray
-   (`Arguments <https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html>`__).
-   cuPyNumeric arrays are backed by Legate Stores, so they are made
+   (`Arguments`_) cuPyNumeric arrays are backed by Legate Stores, so they are made
    available inside tasks as InputStores or OutputStores. The return
    value of the function must be exactly None. In the future, this
    restriction may be lifted.
+.. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
 
 Quick Example:
 --------------
@@ -275,8 +275,11 @@ Saxpy.py file
 
 .. _section-2:
 
-Running on CPU and GPU - `Guide <https://docs.nvidia.com/legate/latest/usage.html>`__
--------------------------------------------------------------------------------------
+Running on CPU and GPU - `Guide`_
+------------------------------------------------------------------------------------
+
+.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
+
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpus, --gpus, and more. If you want to run
@@ -327,9 +330,10 @@ Output:
 
     Time elapsed for saxpy : 1.949000 milliseconds
 
-Multi-Node: Refer to the Legate documentation on how to run
-`multi-node <https://docs.nvidia.com/legate/latest/usage.html>`__. Here
-is an example performed on Perlmutter, a supercomputer.
+Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on Perlmutter, a supercomputer.
+
+.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
 
 To run on multi-node, use the following command.
 
@@ -494,8 +498,11 @@ Histogram.py file
 
 .. _running-on-cpu-and-gpu---guide-1:
 
-Running on CPU and GPU - `Guide <https://docs.nvidia.com/legate/latest/usage.html>`__
--------------------------------------------------------------------------------------
+Running on CPU and GPU - `Guide`_
+------------------------------------------------------------------------------------
+
+.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
+
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
@@ -530,9 +537,10 @@ Output:
 
     Time elapsed for histogram : 3.960000 milliseconds
 
-Multi-Node: Look here on how to use
-`multi-node <https://docs.nvidia.com/legate/latest/usage.html>`__. Here
-is an example performed on Perlmutter, a supercomputer:
+Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on Perlmutter, a supercomputer.
+
+.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
 
 To run with Multi-Node, use the following command.
 
@@ -711,8 +719,11 @@ Matmul.py File
 
 .. _running-on-cpu-and-gpu---guide-2:
 
-Running on CPU and GPU - `Guide <https://docs.nvidia.com/legate/latest/usage.html>`__
--------------------------------------------------------------------------------------
+Running on CPU and GPU - `Guide`_
+------------------------------------------------------------------------------------
+
+.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
+
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
@@ -747,9 +758,10 @@ Output:
 
     Time elapsed for matmul: 3.076000 milliseconds
 
-Multi-Node: Look here on how to use
-`multi-node <https://docs.nvidia.com/legate/latest/usage.html>`__. Here
-is an example performed on Perlmutter, a supercomputer:
+Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on Perlmutter, a supercomputer.
+
+.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
 
 To run with Multi-Node, use the following command.
 
@@ -905,8 +917,11 @@ FFT.py File
 
 .. _running-on-cpu-and-gpu---guide-3:
 
-Running on CPU and GPU - `Guide <https://docs.nvidia.com/legate/latest/usage.html>`__
--------------------------------------------------------------------------------------
+Running on CPU and GPU - `Guide`_
+------------------------------------------------------------------------------------
+
+.. _Guide: https://docs.nvidia.com/legate/latest/usage.html
+
 
 In order to run the program, use the legate launcher, and include any
 flags necessary like --cpu, --gpu, and more. If you want to run
@@ -937,9 +952,10 @@ Output:
 
     Time elapsed for fft: 16.153000 milliseconds
 
-Multi-Node: Look here on how to use
-`multi-node <https://docs.nvidia.com/legate/latest/usage.html>`__. Here
-is an example performed on Perlmutter, a supercomputer:.
+Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on Perlmutter, a supercomputer.
+
+.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
 
 To run with Multi-Node, use the following command.
 
