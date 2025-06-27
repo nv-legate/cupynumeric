@@ -26,8 +26,8 @@ additional components are needed after cuPyNumeric is installed. Please refer to
 
 .. _Distributed Computing with cuPyNumeric: https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_11_Distributed_Computing_cuPyNumeric.ipynb
 
-Usage:
-------
+Usage
+-----
 
 .. code-block:: python
 
@@ -69,8 +69,8 @@ Usage:
 - **throws_exception (bool, False)** – True if any variant of func
   throws an exception, False otherwise.
 
-Requirements:
--------------
+Requirements
+------------
 
 1. All arguments must have type-hints, without exception.
 
@@ -82,7 +82,7 @@ Requirements:
    restriction may be lifted.
 .. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
 
-Quick Example:
+Quick Example
 --------------
 
 .. code-block:: python
@@ -152,7 +152,7 @@ each array are processed together on the same device. As a result, the
 element-wise calculation a * x + y can run in parallel correctly,
 without needing to move data between different parts of the system.
 
-Main function:
+Main function
 --------------
 
 .. code-block:: python
@@ -177,7 +177,7 @@ saxpy_task function is then called to compute the operation z_global =
 Plus Y) operation in parallel. We can change the size of the arrays
 through the “--size” command-line argument when running the script.
 
-Saxpy_task function:
+Saxpy_task function
 --------------------
 
 .. code-block:: python
@@ -306,7 +306,11 @@ performance measurements, ensuring more reliable results.
 Let’s set the input array size to 100 million elements to better
 evaluate the speedup from distributed computing with GPUs.
 
-**CPU** - To run with CPU, use the following command.
+
+CPU Execution 
+~~~~~~~~~~~~~
+
+To run with CPU, use the following command.
 
 .. code-block:: sh
 
@@ -318,22 +322,28 @@ This produces the following output:
 
     Time elapsed for saxpy: 146.303000 milliseconds
 
-**GPU** - To run with GPU, use the following command.
+GPU Execution 
+~~~~~~~~~~~~~
+
+To run with GPU, use the following command.
 
 .. code-block:: sh
 
     legate --gpus 2 ./saxpy.py --size 100000000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for saxpy : 1.949000 milliseconds
 
-Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
-Here is an example performed on Perlmutter, a supercomputer.
+Multi-Node Execution 
+~~~~~~~~~~~~~
+Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on the `Perlmutter`_ supercomputer.
 
 .. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run on multi-node, use the following command.
 
@@ -341,7 +351,7 @@ To run on multi-node, use the following command.
 
     legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./saxpy.py --size 100000000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
@@ -362,7 +372,7 @@ parallel histogram computation.
 
 .. _main-function-1:
 
-Main function:
+Main function
 --------------
 
 .. code-block:: python
@@ -387,7 +397,7 @@ frequency of each integer in the data array and accumulate these counts
 into the hist array. We can change the size of the input array through
 the “--size” command-line argument when running the script
 
-Histogram_task function:
+Histogram_task function
 ------------------------
 
 .. code-block:: python
@@ -513,34 +523,43 @@ a warm-up run before measuring execution time to ensure that one-time
 setup costs (like memory allocation or kernel loading) don’t affect the
 final performance results.
 
-**CPU** - To run with CPU, use the following command.
+CPU Execution 
+~~~~~~~~~~~~~
+
+To run with CPU, use the following command.
 
 .. code-block:: sh
 
     legate --cpus 1 --gpus 0 ./histogram.py --size 10000000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for histogram: 123.041000 milliseconds
 
-**GPU** - To run with GPU, use the following command.
+GPU Execution 
+~~~~~~~~~~~~~
+
+To run with GPU, use the following command.
 
 .. code-block:: sh
 
     legate --gpus 2 ./histogram.py --size 10000000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for histogram : 3.960000 milliseconds
 
-Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
-Here is an example performed on Perlmutter, a supercomputer.
+Multi-Node Execution 
+~~~~~~~~~~~~~
+Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on the `Perlmutter`_ supercomputer.
 
 .. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run with Multi-Node, use the following command.
 
@@ -548,7 +567,7 @@ To run with Multi-Node, use the following command.
 
     legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./histogram.py --size 10000000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
@@ -567,8 +586,8 @@ the inputs and outputs, and then safely reducing partial results.
 
 .. _main-function-2:
 
-**Main Function:**
-------------------
+Main Function
+-------------
 
 .. code-block:: python
 
@@ -611,8 +630,8 @@ The important things that this code does are:
   be aligned along m, k, and n dimensions, producing the required
   alignment for performing matrix multiplication.
 
-Matmul_Task Function:
----------------------
+Matmul_Task Function
+--------------------
 
 .. code-block:: python
 
@@ -720,7 +739,7 @@ Matmul.py File
 .. _running-on-cpu-and-gpu---guide-2:
 
 Running on CPU and GPU - `Guide`_
-------------------------------------------------------------------------------------
+----------------------------------
 
 .. _Guide: https://docs.nvidia.com/legate/latest/usage.html
 
@@ -734,34 +753,42 @@ n = 1000. We’ll also include a warm-up run before measuring execution
 time to ensure that one-time setup costs (like memory allocation or
 kernel loading) don’t affect the final performance results.
 
-**CPU** - To run with CPU, use the following command.
+CPU Execution 
+~~~~~~~~~~~~~
+
+To run with CPU, use the following command.
 
 .. code-block:: sh
 
     legate --cpus 1 --gpus 0 ./matmul.py -m 1000 -k 1000 -n 1000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for matmul: 902.748000 milliseconds
 
-**GPU** - To run with GPU, use the following command.
+GPU Execution 
+~~~~~~~~~~~~~
+To run with GPU, use the following command.
 
 .. code-block:: sh
 
     legate --gpus 2 ./matmul.py -m 1000 -k 1000 -n 1000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for matmul: 3.076000 milliseconds
 
-Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
-Here is an example performed on Perlmutter, a supercomputer.
+Multi-Node Execution 
+~~~~~~~~~~~~~
+Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on the `Perlmutter`_ supercomputer.
 
 .. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run with Multi-Node, use the following command.
 
@@ -769,7 +796,7 @@ To run with Multi-Node, use the following command.
 
     legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./matmul.py -m 1000 -k 1000 -n 1000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
@@ -790,8 +817,8 @@ unpartitioned.
 
 .. _main-function-3:
 
-Main Function:
---------------
+Main Function
+-------------
 
 .. code-block:: python
 
@@ -814,8 +841,8 @@ then launched, by using these two cuPyNumeric arrays. We can change the
 shape of the input arrays using the "--shape" command-line argument when
 running the script
 
-FFT2D_batched_gpu Function:
----------------------------
+FFT2D_batched_gpu Function
+--------------------------
 
 .. code-block:: python
 
@@ -918,7 +945,7 @@ FFT.py File
 .. _running-on-cpu-and-gpu---guide-3:
 
 Running on CPU and GPU - `Guide`_
-------------------------------------------------------------------------------------
+---------------------------------
 
 .. _Guide: https://docs.nvidia.com/legate/latest/usage.html
 
@@ -928,34 +955,42 @@ flags necessary like --cpu, --gpu, and more. If you want to run
 specifically only on CPU, you must add the flag “--gpus 0”.
 
 
-**CPU** - To run with CPU, use the following command.
+CPU Execution 
+~~~~~~~~~~~~~
+To run with CPU, use the following command.
 
 .. code-block:: sh
 
     legate --cpus 1 --gpus 0 ./fft.py
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for fft: 173.655000 milliseconds
 
-**GPU** - To run with GPU, use the following command.
+GPU Execution 
+~~~~~~~~~~~~~
+To run with GPU, use the following command.
 
 .. code-block:: sh
 
     legate --gpus 2 ./fft.py
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
     Time elapsed for fft: 16.153000 milliseconds
 
-Multi-Node: Refer to the Legate documentation on how to run on `multi-node`_. 
-Here is an example performed on Perlmutter, a supercomputer.
+Multi-Node Execution 
+~~~~~~~~~~~~~
+Refer to the Legate documentation on how to run on `multi-node`_. 
+Here is an example performed on the `Perlmutter`_ supercomputer.
+
 
 .. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run with Multi-Node, use the following command.
 
@@ -963,7 +998,7 @@ To run with Multi-Node, use the following command.
 
     legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./fft.py
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
