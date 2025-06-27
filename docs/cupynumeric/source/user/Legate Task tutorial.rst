@@ -312,7 +312,7 @@ evaluate the speedup from distributed computing with GPUs.
 
     legate --cpus 1 --gpus 0 ./saxpy.py --size 100000000
 
-Output:
+This produces the following output:
 
 .. code-block:: text
 
