@@ -148,6 +148,22 @@ def test_out(size, out_dt):
         np.array_equal(out_np, out_num, equal_nan=True)
 
 
+def test_nanmean_integer_dtype() -> None:
+    arr_num = num.array([1, 2, 3, 4])
+    arr_np = np.array([1, 2, 3, 4])
+    res_num = num.nanmean(arr_num, dtype=np.int32)
+    res_np = np.nanmean(arr_np, dtype=np.int32)
+    assert res_num == res_np
+
+
+def test_nanmean_bool_dtype() -> None:
+    arr_np = np.array([True, False, True])
+    arr_num = num.array([True, False, True])
+    res_num = num.nanmean(arr_num)
+    res_np = np.mean(arr_np)
+    assert res_num == res_np
+
+
 if __name__ == "__main__":
     import sys
 

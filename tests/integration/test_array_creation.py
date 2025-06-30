@@ -301,6 +301,21 @@ def test_zero_with_0d_ndarray_shape():
     assert np.array_equal(x, y)
 
 
+def test_getitem_invalid_type_index() -> None:
+    arr = num.array([10, 20, 30])
+    idx = np.array([0.1, 1.5, 2.7], dtype=float)
+    with pytest.raises(
+        TypeError, match="index arrays should be int or bool type"
+    ):
+        arr[idx]
+
+
+def test_array_astype_str_promote_raises() -> None:
+    arr = num.array([1, 2, 3])
+    with pytest.raises(TypeError, match="cuPyNumeric does not support dtype="):
+        arr.astype("str")
+
+
 if __name__ == "__main__":
     import sys
 

@@ -525,10 +525,14 @@ class TestDiagonalErrors:
         shape = (3, 4, 5)
         self.a = mk_seq_array(num, shape)
 
-    def test_0d_array(self):
-        a = num.array(3)
-        with pytest.raises(ValueError):
-            num.diagonal(a)
+    def test_0d_array(self) -> None:
+        array_num = num.array(3)
+        array_np = np.array(3)
+        msg = r"diag requires an array of at least two dimensions"
+        with pytest.raises(ValueError, match=msg):
+            np.diagonal(array_np)
+        with pytest.raises(ValueError, match=msg):
+            num.diagonal(array_num)
 
     def test_1d_array(self):
         shape = (3,)
@@ -536,13 +540,11 @@ class TestDiagonalErrors:
         with pytest.raises(ValueError):
             num.diagonal(a)
 
-    @pytest.mark.xfail
-    def test_array_none(self):
-        # In cuPyNumeric, it raises AttributeError:
-        # 'NoneType' object has no attribute 'diagonal'
-        # In Numpy, it raises ValueError:
-        # diag requires an array of at least two dimensions.
-        with pytest.raises(ValueError):
+    def test_array_none(self) -> None:
+        msg = r"diag requires an array of at least two dimensions"
+        with pytest.raises(ValueError, match=msg):
+            np.diagonal(None)
+        with pytest.raises(ValueError, match=msg):
             num.diagonal(None)
 
     @pytest.mark.parametrize(
@@ -614,6 +616,37 @@ class TestDiagonalErrors:
     def test_k_none(self):
         with pytest.raises(TypeError):
             num.diagonal(self.a, None)
+
+    def test_diag_helper_out_but_not_trace(self) -> None:
+        a = num.arange(9).reshape(3, 3)
+        out = num.empty_like(a)
+        with pytest.raises(ValueError, match="out only for trace=True"):
+            a._diag_helper(axes=(0, 1), out=out, trace=False)
+
+    def test_diag_helper_dtype_but_not_trace(self) -> None:
+        a = num.arange(9).reshape(3, 3)
+        with pytest.raises(ValueError, match="dtype only for trace=True"):
+            a._diag_helper(axes=(0, 1), dtype=np.float32, trace=False)
+
+    def test_diag_helper_axes_too_few(self) -> None:
+        a = num.arange(12).reshape(3, 4)
+        msg = (
+            r"number of axes passed to the _diag_helper should be more than 1"
+        )
+        with pytest.raises(ValueError, match=msg):
+            a._diag_helper(axes=(0,))
+
+    def test_diag_helper_trace_axes_not_two(self) -> None:
+        a = num.arange(24).reshape(2, 3, 4)
+        msg = r"exactly 2 axes should be passed to trace"
+        with pytest.raises(ValueError, match=msg):
+            a._diag_helper(axes=(0, 1, 2), trace=True)
+
+    def test_diag_helper_trace_dim_lt_2(self) -> None:
+        a = num.arange(3)
+        msg = r"Axes shouldn't be specified when getting diagonal for 1D array"
+        with pytest.raises(ValueError, match=msg):
+            a._diag_helper(axes=(0, 0), trace=True)
 
 
 @pytest.mark.parametrize("k", KS, ids=lambda k: f"(k={k})")

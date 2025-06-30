@@ -2786,6 +2786,10 @@ class ndarray:
             return (0,) * self.ndim
         if len(args) == 1 and isinstance(args[0], int):
             flat_idx = args[0]
+            if flat_idx >= self.size:
+                raise IndexError(
+                    f"index {flat_idx} is out of bounds for size {self.size}"
+                )
             result: tuple[int, ...] = ()
             for dim_size in reversed(self.shape):
                 result = (flat_idx % dim_size,) + result

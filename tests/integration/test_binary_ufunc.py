@@ -15,12 +15,16 @@
 
 import argparse
 import operator
+import os
+import sys
 
 import numpy as np
 import pytest
 from utils.comparisons import allclose
 
 import cupynumeric as num
+
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 def check_result(op, in_np, out_np, out_num):
@@ -364,9 +368,114 @@ def parse_inputs(in_str, dtype_str):
     return inputs
 
 
-if __name__ == "__main__":
-    import sys
+def test_rxor() -> None:
+    a = num.array([1, 2, 3])
+    result = 7 ^ a
+    assert all(result == (7 ^ a.__array__()))
 
+
+def test_ror() -> None:
+    a = num.array([1, 2, 3])
+    result = 7 | a
+    assert all(result == (7 | a.__array__()))
+
+
+def test_rand() -> None:
+    a = num.array([1, 2, 3])
+    result = 7 & a
+    assert all(result == (7 & a.__array__()))
+
+
+def test_contains_with_ndarray_scalar() -> None:
+    arr = num.array([1, 2, 3])
+    item = np.array(2)
+    assert 2 in arr
+    assert item in arr
+
+
+def test_contains_with_ndarray_multi_element() -> None:
+    arr = num.array([1, 2, 3])
+    item = np.array([2, 3])
+    with pytest.raises(ValueError, match="contains needs scalar item"):
+        item in arr
+
+
+def test_array_complex() -> None:
+    a = num.array(3 + 4j)
+    result = complex(a)
+    assert result == 3 + 4j
+
+    b = num.array([2.5 + 0.5j])
+    result_b = complex(b)
+    assert result_b == 2.5 + 0.5j
+
+    c = num.array(7)
+    result_c = complex(c)
+    assert result_c == 7 + 0j
+
+
+def test_array_div() -> None:
+    a = num.array([4, 8, 12], dtype=float)
+    result = a.__div__(2)
+    assert (result == [2.0, 4.0, 6.0]).all()
+
+
+def test_array_idiv() -> None:
+    a = num.array([2, 4, 8], dtype=float)
+    result = a.__idiv__(2)
+    assert all(result == [1.0, 2.0, 4.0])
+
+
+def test_array_rdiv() -> None:
+    a = num.array([1, 2, 4])
+    result = a.__rdiv__(8)
+    assert all(result == (8 / a.__array__()))
+
+
+def test_array_reduce() -> None:
+    a = num.array([1, 2, 3])
+    state = a.__reduce__()
+    assert isinstance(state, tuple)
+
+
+def test_array_reduce_ex() -> None:
+    a = num.array([1, 2, 3])
+    state = a.__reduce_ex__(2)
+    assert isinstance(state, tuple)
+
+
+@pytest.mark.skipif(
+    EAGER_TEST,
+    reason="Eager mode did not raise TypeError",
+)
+def test_rmatmul_typeerror() -> None:
+    a = num.array([[1, 2], [3, 4]])
+    b = np.array([[1, 0], [0, 1]])
+    with pytest.raises(TypeError):
+        a.__rmatmul__(b)
+
+
+def test_ndarray_array_dtype_casting() -> None:
+    a = num.array([1, 2, 3], dtype=np.int32)
+    arr = a.__array__(dtype=np.float64)
+    assert isinstance(arr, np.ndarray)
+    assert arr.dtype == np.float64
+    np.testing.assert_array_equal(arr, np.array([1, 2, 3], dtype=np.float64))
+
+
+def test_array_sizeof() -> None:
+    a = num.array([1, 2, 3])
+    size = sys.getsizeof(a)
+    assert isinstance(size, int)
+
+
+def test_array_hash() -> None:
+    a = num.array([1, 2, 3])
+    with pytest.raises(TypeError):
+        hash(a)
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--opname",

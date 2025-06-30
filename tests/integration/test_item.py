@@ -20,34 +20,31 @@ from utils.utils import MAX_DIM_RANGE
 import cupynumeric as num
 
 
-@pytest.mark.xfail
-def test_no_item():
+def test_no_item() -> None:
     shape = (3, 3)
     arr_num = num.random.randint(0, 3, size=shape)
     arr_np = np.array(arr_num)
 
-    expected_exc = KeyError
-    with pytest.raises(expected_exc):
+    np_error = ValueError
+    np_msg = r"can only convert an array of size 1 to a Python scalar"
+    with pytest.raises(np_error, match=np_msg):
         arr_np.item()
-        # Numpy raises KeyError: 'invalid key'
-    with pytest.raises(expected_exc):
+
+    num_error = KeyError
+    num_msg = "invalid key"
+    with pytest.raises(num_error, match=num_msg):
         arr_num.item()
-        # cuPyNumeric raises ValueError: can only convert an array
-        # of size 1 to a Python scalar
 
 
-@pytest.mark.xfail
-def test_out_of_bound():
+def test_out_of_bound() -> None:
     shape = (3, 3)
     arr_num = num.random.randint(0, 3, size=shape)
     arr_np = np.array(arr_num)
     expected_exc = IndexError
     with pytest.raises(expected_exc):
         arr_np.item(10)
-        # Numpy raises IndexError: index 10 is out of bounds for size 9
     with pytest.raises(expected_exc):
         arr_num.item(10)
-        # cuPyNumeric returns some value
 
 
 @pytest.mark.xfail

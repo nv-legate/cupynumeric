@@ -1076,6 +1076,8 @@ def diagonal(
     Multiple GPUs, Multiple CPUs
 
     """
+    if a is None or a.ndim < 1:
+        raise ValueError("diag requires an array of at least two dimensions")
     return a.diagonal(offset=offset, axis1=axis1, axis2=axis2, extract=extract)
 
 
