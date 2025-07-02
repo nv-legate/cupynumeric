@@ -43,7 +43,7 @@ Usage
 Parameters
 ----------
 
-- **func (UserFunction)** – The function to invoke in the task.
+- **func (UserFunction)**, The function to invoke in the task.
 
 - **variants (VariantList, optional)** – The list of variants for which
   func is applicable. Defaults to (VariantCode.CPU,), which means the
@@ -84,7 +84,7 @@ Requirements
 .. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
 
 Quick Example
---------------
+-------------
 
 .. code-block:: python
 
@@ -138,12 +138,12 @@ output arrays as either CuPy or NumPy arrays.
 
 .. _section-1:
 
-**SAXPY Task**
-==============
+SAXPY problem
+=============
 
-SAXPY is a fundamental linear algebra operation that computes the result
-of the expression z = a * x + y, where *x* and *y* are vectors and *a*
-is a scalar. It is a widely used example due to its simplicity and
+SAXPY(Single-Precision A·X Plus Y) is a fundamental linear algebra operation that computes the result
+of the expression :math:`z = a * x + y`, where :math:`x` and :math:`y` are vectors and :math:`a` is a scalar.
+It is a widely used example due to its simplicity and
 computational relevance. This example demonstrates how to implement
 SAXPY using Legate and cuPyNumeric, with emphasis on leveraging align
 constraint for correct and efficient parallel execution. The align
@@ -174,12 +174,11 @@ For this example, three one-dimensional arrays of default size 1000 are
 created. x_global contains values from 0 to 999, y_global is filled with
 ones, and z_global is initialized with zeros to store the result. The
 saxpy_task function is then called to compute the operation z_global =
-2.0 \* x_global + y_global, performing the SAXPY (Single-Precision A·X
-Plus Y) operation in parallel. We can change the size of the arrays
-through the “--size” command-line argument when running the script.
+2.0 \* x_global + y_global. We can change the size of the arrays
+through the ``--size`` command-line argument when running the script.
 
-Saxpy_task function
---------------------
+Task function
+-------------
 
 .. code-block:: python
 
@@ -223,8 +222,11 @@ create views of the task-local data as NumPy or CuPy arrays. It then performs th
 z_local[:] = a \* x_local + y_local. This task runs in parallel on the
 available hardware (CPU or GPU), enabling efficient computation.
 
-Saxpy.py file
--------------
+Complete module
+---------------
+
+Putting the pieces above together, here is a complete module that
+can be run with the ``legate`` command line launcher:
 
 .. code-block:: python
 
@@ -280,8 +282,8 @@ Running on CPU and GPU
 ----------------------
 
 In order to run the program, use the legate launcher, and include any
-flags necessary like --cpus, --gpus, and more. If you want to run
-specifically only on CPU, you must include the flag “--gpus 0”.
+flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
+specifically only on CPU, you must include the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
 .. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
@@ -308,7 +310,7 @@ Let’s set the input array size to 100 million elements to better
 evaluate the speedup from distributed computing with GPUs.
 
 
-CPU Execution 
+CPU execution 
 ~~~~~~~~~~~~~
 
 To run with CPU, use the following command.
@@ -323,7 +325,7 @@ This produces the following output:
 
     Time elapsed for saxpy: 146.303000 milliseconds
 
-GPU Execution 
+GPU execution 
 ~~~~~~~~~~~~~
 
 To run with GPU, use the following command.
@@ -338,8 +340,8 @@ This produces the following output:
 
     Time elapsed for saxpy : 1.949000 milliseconds
 
-Multi-Node Execution 
-~~~~~~~~~~~~~
+Multi-Node execution 
+~~~~~~~~~~~~~~~~~~~~
 Refer to the Legate documentation on how to run on `multi-node`_. 
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
@@ -358,8 +360,8 @@ This produces the following output:
 
     Time elapsed for saxpy : 2.052000 milliseconds
 
-**Histogram Task**
-==================
+Histogram problem
+=================
 
 Histogram computation involves counting how many data points fall into
 specific bins, which is useful in tasks like statistical analysis and
@@ -396,10 +398,10 @@ Alongside that, an empty hist array of length 10 is prepared to store
 counts. The histogram_task function is then called to count the
 frequency of each integer in the data array and accumulate these counts
 into the hist array. We can change the size of the input array through
-the “--size” command-line argument when running the script
+the ``--size`` command-line argument when running the script
 
-Histogram_task function
-------------------------
+Task function
+-------------
 
 .. code-block:: python
 
@@ -456,8 +458,11 @@ In short, broadcast makes sure that the full hist array is available on
 all devices, and the reduction mechanism handles merging the partial
 results into a correct final output.
 
-Histogram.py file
------------------
+Complete module
+---------------
+
+Putting the pieces above together, here is a complete module that
+can be run with the ``legate`` command line launcher:
 
 .. code-block:: python
 
@@ -513,8 +518,8 @@ Running on CPU and GPU
 -----------------------
 
 In order to run the program, use the legate launcher, and include any
-flags necessary like --cpu, --gpu, and more. If you want to run
-specifically only on CPU, you must add the flag “--gpus 0”.
+flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
+specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
 .. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
@@ -524,7 +529,7 @@ a warm-up run before measuring execution time to ensure that one-time
 setup costs (like memory allocation or kernel loading) don’t affect the
 final performance results.
 
-CPU Execution 
+CPU execution 
 ~~~~~~~~~~~~~
 
 To run with CPU, use the following command.
@@ -539,7 +544,7 @@ This produces the following output:
 
     Time elapsed for histogram: 123.041000 milliseconds
 
-GPU Execution 
+GPU execution 
 ~~~~~~~~~~~~~
 
 To run with GPU, use the following command.
@@ -554,7 +559,7 @@ This produces the following output:
 
     Time elapsed for histogram : 3.960000 milliseconds
 
-Multi-Node Execution 
+Multi-Node execution 
 ~~~~~~~~~~~~~
 Refer to the Legate documentation on how to run on `multi-node`_. 
 Here is an example performed on the `Perlmutter`_ supercomputer.
@@ -574,8 +579,8 @@ This produces the following output:
 
     Time elapsed for histogram : 4.266000 milliseconds
 
-**Simple Matrix Multiplication Problem**
-========================================
+Simple Matrix Multiplication problem
+====================================
 
 We multiply two matrices A (shape (m, k)) and B (shape (k, n)) to
 produce C (shape (m, n)), using 3D tiling to enable parallel execution
@@ -587,7 +592,7 @@ the inputs and outputs, and then safely reducing partial results.
 
 .. _main-function-2:
 
-Main Function
+Main function
 -------------
 
 .. code-block:: python
@@ -631,8 +636,8 @@ The important things that this code does are:
   be aligned along m, k, and n dimensions, producing the required
   alignment for performing matrix multiplication.
 
-Matmul_Task Function
---------------------
+Task function
+-------------
 
 .. code-block:: python
 
@@ -674,8 +679,11 @@ The extra broadcasted dimension introduced earlier is then sliced away
 to recover the original 2D shapes of the matrices. Finally performs the
 matrix multiplication and accumulates the result into C.
 
-Matmul.py File
---------------
+Complete module
+---------------
+
+Putting the pieces above together, here is a complete module that
+can be run with the ``legate`` command line launcher:
 
 .. code-block:: python
 
@@ -745,8 +753,8 @@ Running on CPU and GPU
 
 
 In order to run the program, use the legate launcher, and include any
-flags necessary like --cpu, --gpu, and more. If you want to run
-specifically only on CPU, you must add the flag “--gpus 0”.
+flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
+specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
 .. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
@@ -756,7 +764,7 @@ n = 1000. We’ll also include a warm-up run before measuring execution
 time to ensure that one-time setup costs (like memory allocation or
 kernel loading) don’t affect the final performance results.
 
-CPU Execution 
+CPU execution 
 ~~~~~~~~~~~~~
 
 To run with CPU, use the following command.
@@ -771,7 +779,7 @@ This produces the following output:
 
     Time elapsed for matmul: 902.748000 milliseconds
 
-GPU Execution 
+GPU execution 
 ~~~~~~~~~~~~~
 To run with GPU, use the following command.
 
@@ -785,7 +793,7 @@ This produces the following output:
 
     Time elapsed for matmul: 3.076000 milliseconds
 
-Multi-Node Execution 
+Multi-Node execution 
 ~~~~~~~~~~~~~
 Refer to the Legate documentation on how to run on `multi-node`_. 
 Here is an example performed on the `Perlmutter`_ supercomputer.
@@ -805,8 +813,8 @@ This produces the following output:
 
     Time elapsed for matmul: 3.226000 milliseconds
 
-**Fast Fourier Transform Problem**
-==================================
+Fast Fourier Transform problem
+==============================
 
 The Fast Fourier Transform (FFT) is an algorithm which is used to
 compute the discrete fourier transform of a sequence. It is used to help
@@ -820,7 +828,7 @@ unpartitioned.
 
 .. _main-function-3:
 
-Main Function
+Main function
 -------------
 
 .. code-block:: python
@@ -841,11 +849,11 @@ representing a batch of 128 two dimensional matrices. Using this shape,
 cuPyNumeric arrays are generated, and cast to complex64. B_cpn contains
 random values, while A_cpn contains zeros. The fft2d_batched_gpu task is
 then launched, by using these two cuPyNumeric arrays. We can change the
-shape of the input arrays using the "--shape" command-line argument when
+shape of the input arrays using the ``--shape`` command-line argument when
 running the script
 
-FFT2D_batched_gpu Function
---------------------------
+Task function
+-------------
 
 .. code-block:: python
 
@@ -893,8 +901,11 @@ only along axis 0, so each GPU gets a full 2D matrix per batch.
 
 - GPU 1: src[64:128, :, :] → remaining 64 full images
 
-FFT.py File
------------
+Complete module
+---------------
+
+Putting the pieces above together, here is a complete module that
+can be run with the ``legate`` command line launcher:
 
 .. code-block:: python
 
@@ -950,17 +961,15 @@ FFT.py File
 Running on CPU and GPU 
 ----------------------
 
-
-
 In order to run the program, use the legate launcher, and include any
-flags necessary like --cpu, --gpu, and more. If you want to run
-specifically only on CPU, you must add the flag “--gpus 0”.
+flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
+specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
 .. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 
-CPU Execution 
+CPU execution 
 ~~~~~~~~~~~~~
 To run with CPU, use the following command.
 
@@ -974,7 +983,7 @@ This produces the following output:
 
     Time elapsed for fft: 173.655000 milliseconds
 
-GPU Execution 
+GPU execution 
 ~~~~~~~~~~~~~
 To run with GPU, use the following command.
 
@@ -988,8 +997,8 @@ This produces the following output:
 
     Time elapsed for fft: 16.153000 milliseconds
 
-Multi-Node Execution 
-~~~~~~~~~~~~~
+Multi-Node execution 
+~~~~~~~~~~~~~~~~~~~~
 Refer to the Legate documentation on how to run on `multi-node`_. 
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
