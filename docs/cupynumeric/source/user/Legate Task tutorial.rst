@@ -46,12 +46,12 @@ Parameters
 - **func (UserFunction)**, The function to invoke in the task.
 
 - **variants (VariantList, optional)** – The list of variants for which
-  func is applicable. Defaults to (VariantCode.CPU,), which means the
+  ``func`` is applicable. Defaults to (VariantCode.CPU,), which means the
   task will run only on the CPU by default. To enable GPU execution, you
-  must explicitly include VariantCode.GPU in the list of variants.
+  must explicitly include ``VariantCode.GPU`` in the list of variants.
 
 - **constraints (Sequence[ConstraintProxy], optional)** – The list of
-  constraints which are to be applied to the arguments of func, if any.
+  constraints which are to be applied to the arguments of ``func``, if any.
   Controls how distributed-memory containers (Legate Logical
   Store/Array) are divided, aligned, or replicated for parallel
   execution across CPUs/GPUs. Defaults to no constraints.
@@ -67,7 +67,7 @@ Parameters
     `Constraints`_ for more information.
 .. _Constraints: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html
 
-- **throws_exception (bool, False)** – True if any variant of func
+- **throws_exception (bool, False)** – True if any variant of ``func``
   throws an exception, False otherwise.
 
 Requirements
@@ -75,7 +75,7 @@ Requirements
 
 1. All arguments must have type-hints, without exception.
 
-2. Arguments representing a piece of a Logical Store/Array must be given
+2. Arguments representing a piece of a logical store or array must be given
    as either InputStore, OutputStore, InputArray, or OutputArray
    (`Arguments`_) cuPyNumeric arrays are backed by Legate Stores, so they are made
    available inside tasks as InputStores or OutputStores. The return
@@ -126,7 +126,7 @@ represent a dense array. This is sufficient to back a cuPyNumeric
 ndarray.
 
 The @task decorator specifies both CPU and GPU variants using
-VariantCode.CPU and VariantCode.GPU, indicating that the task can be
+``VariantCode.CPU`` and ``VariantCode.GPU``, indicating that the task can be
 executed on either device depending on the available resources. Inside
 the task, TaskContext provides access to the execution environment,
 including inputs, outputs, and the execution target (CPU or GPU). The
@@ -427,7 +427,7 @@ computes a local histogram on the partitioned chunk of data using the
 specified number of bins and adds this local histogram results to the
 global hist array using a reduction mechanism.
 
-The task decorator specifies GPU execution via VariantCode.GPU. The
+The task decorator specifies GPU execution via ``VariantCode.GPU``. The
 broadcast constraint on hist ensures that each GPU receives the full
 hist array rather than a partitioned slice. This means each local hist
 array has the same size as the global hist array. This allows every GPU
@@ -875,7 +875,7 @@ The fft2d_batched_gpu function uses TaskContext to detect execution on
 GPU and sets xp to CuPy accordingly. It then converts the src and dst
 arrays into CuPy arrays as views without copying. Afterwards, it applies
 2D FFT for each batch independently. As for the task decorator, it has a
-VariantCode.GPU, which means this task is implemented for GPU execution.
+``VariantCode.GPU``, which means this task is implemented for GPU execution.
 As for the align constraint, it ensures that the output and input arrays
 are partitioned the same way. This ensures that the corresponding chunks
 are processed together. The other constraint broadcast makes sure the
