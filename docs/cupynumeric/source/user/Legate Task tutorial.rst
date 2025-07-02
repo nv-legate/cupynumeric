@@ -112,7 +112,7 @@ Quick Example
 
 The code runs a function that replaces the contents of the
 output array with the contents of the input array. cuPyNumeric arrays,
-like in_arr and out_arr, are quite similar to NumPy arrays but are
+like ``in_arr`` and ``out_arr`` are similar to NumPy arrays but are
 backed by Legate stores for parallel execution across GPUs and CPUs.
 When these arrays are passed into the foo_in_out task, they are
 automatically converted into Legate-compatible objects such as
