@@ -57,7 +57,7 @@ jobs:
           export MATRIX="
           # amd64
           - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
-          - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'rockylinux8' }
+          - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
           - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.9.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           # arm64 - disabled due to ARM GPU runner availability
           # - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
