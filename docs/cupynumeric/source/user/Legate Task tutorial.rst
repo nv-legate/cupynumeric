@@ -12,8 +12,8 @@ transparent scaling. In these cases, Legate tasks can be used to extend
 cuPyNumeric by defining scale‑out functions that enable new algorithms
 to run seamlessly across distributed resources.
 
-**What is a Legate task?**
-==========================
+What is a Legate task?
+======================
 
 A Legate task is a Python function annotated with the ``@task``
 decorator. This decorator informs the Legate runtime that a function
@@ -46,14 +46,14 @@ Parameters
 - **func (UserFunction)**, The function to invoke in the task.
 
 - **variants (VariantList, optional)** – The list of variants for which
-  ``func`` is applicable. Defaults to (VariantCode.CPU,), which means the
+  ``func`` is applicable. Defaults to ``(VariantCode.CPU,)``, which means the
   task will run only on the CPU by default. To enable GPU execution, you
   must explicitly include ``VariantCode.GPU`` in the list of variants.
 
 - **constraints (Sequence[ConstraintProxy], optional)** – The list of
   constraints which are to be applied to the arguments of ``func``, if any.
   Controls how distributed-memory containers (Legate logical
-  store or arrays) are divided, aligned, or replicated for parallel
+  stores or arrays) are divided, aligned, or replicated for parallel
   execution across CPUs/GPUs. Defaults to no constraints.
 
   - *Align* - Ensures that the partitions of multiple arrays/stores are
@@ -63,8 +63,7 @@ Parameters
     partitioning it.
 
   - Other Legate-supported partitioning constraints such as Image and
-    Scale - See
-    `Constraints`_ for more information.
+    Scale - See `Constraints`_ for more information.
 .. _Constraints: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html
 
 - **throws_exception (bool, False)** – True if any variant of ``func``
@@ -77,8 +76,8 @@ Requirements
 
 2. Arguments representing a piece of a logical store or array must be given
    as either ``InputStore``, ``OutputStore``, ``InputArray``, or ``OutputArray``
-   (`Arguments`_) cuPyNumeric arrays are backed by Legate Stores, so they are made
-   available inside tasks as InputStores or OutputStores. The return
+   (`Arguments`_). cuPyNumeric arrays are backed by Legate stores, so they are made
+   available inside tasks as ``InputStores`` or ``OutputStores``. The return
    value of the function must be exactly None. In the future, this
    restriction may be lifted.
 .. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
@@ -108,27 +107,28 @@ Quick Example
         print(out_arr)
 
 
-**Understanding this example -**
+Understanding this example
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The code runs a function that replaces the contents of the
 output array with the contents of the input array. cuPyNumeric arrays,
 like ``in_arr`` and ``out_arr`` are similar to NumPy arrays but are
 backed by Legate stores for parallel execution across GPUs and CPUs.
-When these arrays are passed into the foo_in_out task, they are
+When these arrays are passed into the ``foo_in_out`` task, they are
 automatically converted into Legate-compatible objects such as
-InputStore or OutputStore, depending on how they are used in the task.
+``InputStore`` or ``OutputStore``, depending on how they are used in the task.
 Legate has built-in datatypes suitable for building richer
 distributed data structures, e.g. nullable arrays, but in this tutorial
 we exclusively use the simpler Legate Store class, which can only
 represent a dense array. This is sufficient to back a cuPyNumeric
 ndarray.
 
-The @task decorator specifies both CPU and GPU variants using
+The ``@task`` decorator specifies both CPU and GPU variants using
 ``VariantCode.CPU`` and ``VariantCode.GPU``, indicating that the task can be
 executed on either device depending on the available resources. Inside
-the task, TaskContext provides access to the execution environment,
+the task, ``TaskContext`` provides access to the execution environment,
 including inputs, outputs, and the execution target (CPU or GPU). The
-method ctx.get_variant_kind() is used to determine the target device,
+method ``ctx.get_variant_kind()`` is used to determine the target device,
 and based on this, the variable xp is set to either the CuPy for GPU
 execution or NumPy for CPU execution. Using xp, the task creates views
 of the task-local partitions of the Legate-backed global input and
@@ -143,12 +143,12 @@ SAXPY(Single-Precision A·X Plus Y) is a fundamental linear algebra operation th
 of the expression :math:`z = a * x + y`, where :math:`x` and :math:`y` are vectors and :math:`a` is a scalar.
 It is a widely used example due to its simplicity and
 computational relevance. This example demonstrates how to implement
-SAXPY using Legate and cuPyNumeric, with emphasis on leveraging align
-constraint for correct and efficient parallel execution. The align
-constraint ensures that the input arrays x and y, as well as the output
-z, are partitioned consistently. This means that matching elements from
+SAXPY using Legate and cuPyNumeric, with emphasis on leveraging ``align``
+constraint for correct and efficient parallel execution. The ``align``
+constraint ensures that the input arrays ``x`` and ``y``, as well as the output
+``z``, are partitioned consistently. This means that matching elements from
 each array are processed together on the same device. As a result, the
-element-wise calculation a * x + y can run in parallel correctly,
+element-wise calculation ``a * x + y`` can run in parallel correctly,
 without needing to move data between different parts of the system.
 
 Main function
@@ -169,10 +169,9 @@ Main function
     print(f"\nTime elapsed for saxpy: {(end - start)/1000:.6f} milliseconds")
 
 For this example, three one-dimensional arrays of default size 1000 are
-created. x_global contains values from 0 to 999, y_global is filled with
-ones, and z_global is initialized with zeros to store the result. The
-saxpy_task function is then called to compute the operation z_global =
-2.0 \* x_global + y_global. We can change the size of the arrays
+created. ``x_global`` contains values from 0 to 999, ``y_global`` is filled with
+ones, and ``z_global`` is initialized with zeros to store the result. The
+saxpy_task function is then called to compute the operation ``z_global = 2.0 \* x_global + y_global``. We can change the size of the arrays
 through the ``--size`` command-line argument when running the script.
 
 Task function
@@ -180,13 +179,9 @@ Task function
 
 .. code-block:: python
 
-    @task(
-       variants = (VariantCode.CPU, VariantCode.GPU,),
-       constraints = (
-           align("x", "y"),
-           align("y", "z"),
-       )
-    )
+    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
+          constraints = (align("x", "y"),
+                         align("y", "z")))
     def saxpy_task(ctx: TaskContext, x: InputArray, y: InputArray, z: OutputArray, a: float) -> None:
        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
        x_local = xp.asarray(x)
@@ -194,7 +189,7 @@ Task function
        z_local = xp.asarray(z)
        z_local[:] = a * x_local + y_local
 
-The constraint used is align. Align is used to ensure that X, Y , and Z
+The constraint used is ``align``, it is used to ensure that ``x``, ``y`` , and ``z``
 are partitioned in the same way. This is so that corresponding elements
 live together on the same device. For example, imagine there are 4 GPUs,
 and the problem size is 1000.
@@ -207,17 +202,17 @@ and the problem size is 1000.
 
 - GPU 4 gets the range 750–999
 
-With the usage of align(“x”, “y”) and align(“y”, “z”) constraints, we
-make sure that x[i], y[i], and z[i] are all assigned to the same gpu. If
-we want to compute z[2], and GPU 1 handles the calculation for it, x[2]
-and y[2] need to be handled in the same GPU in order to get the correct
-answer. Given the align constraint, Legate will handle co-location of
+With the usage of ``align(“x”, “y”)`` and ``align(“y”, “z”)`` constraints, we
+make sure that ``x[i]``, ``y[i]``, and ``z[i]`` are all assigned to the same gpu. If
+we want to compute ``z[2]``, and GPU 1 handles the calculation for it, ``x[2]``
+and ``y[2]`` need to be handled in the same GPU in order to get the correct
+answer. Given the ``align`` constraint, Legate will handle co-location of
 corresponding elements across arrays, ensuring correctness.
 
-The saxpy_task function uses TaskContext and its get_variant_kind()
+The ``saxpy_task`` function uses ``TaskContext`` and its ``get_variant_kind()``
 method to determine the execution target (GPU or CPU) and accordingly
 create views of the task-local data as NumPy or CuPy arrays. It then performs the SAXPY operation element-wise by computing
-z_local[:] = a \* x_local + y_local. This task runs in parallel on the
+``z_local[:] = a \* x_local + y_local``. This task runs in parallel on the
 available hardware (CPU or GPU), enabling efficient computation.
 
 Complete module
@@ -237,13 +232,9 @@ can be run with the ``legate`` command line launcher:
     from legate.core.task import InputArray, OutputArray, task
     from legate.timing import time
     
-    @task(
-       variants = (VariantCode.CPU, VariantCode.GPU,),
-       constraints = (
-           align("x", "y"),
-           align("y", "z"),
-       )
-    )
+    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
+          constraints = (align("x", "y"),
+                         align("y", "z")))
     def saxpy_task(ctx: TaskContext, x: InputArray, y: InputArray, z: OutputArray, a: float) -> None:
        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
        x_local = xp.asarray(x)
@@ -274,23 +265,12 @@ can be run with the ``legate`` command line launcher:
     
     print(f"\nTime elapsed for saxpy: {(end - start)/1000:.6f} milliseconds")
 
-.. _section-2:
-
-Running on CPU and GPU 
-----------------------
-
-In order to run the program, use the legate launcher, and include any
-flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
-specifically only on CPU, you must include the flag ``--gpus 0``.
-For a complete guide and additional options, see the `Legate documentation`_.
-
-.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 The Legate runtime is used in the main function to control and
-synchronize task execution. The get_legate_runtime() function returns
+synchronize task execution. The ``get_legate_runtime()`` function returns
 this runtime, which is used to issue commands like execution fences. In
-this example, issue_execution_fence() is called before and after the
-saxpy_task to ensure accurate time measurement. Since Legate tasks run
+this example, ``issue_execution_fence()`` is called before and after the
+``saxpy_task`` to ensure accurate time measurement. Since Legate tasks run
 asynchronously by default, these fences make the program wait until all
 previous tasks have finished, so the measured time reflects only the
 actual task execution. This is a common pattern when precise timing,
@@ -303,6 +283,18 @@ startup overhead, giving more realistic timing results. Since the first
 GPU run may include the setup overhead like compilation or memory
 allocation, a warm-up pass helps eliminate these one-time costs from
 performance measurements, ensuring more reliable results.
+
+.. _section-2:
+
+Running on CPU and GPU 
+----------------------
+
+In order to run the program, use the legate launcher, and include any
+flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
+specifically only on CPU, you must include the flag ``--gpus 0``.
+For a complete guide and additional options, see the `Legate documentation`_.
+
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
 Let’s set the input array size to 100 million elements to better
 evaluate the speedup from distributed computing with GPUs.
@@ -362,9 +354,9 @@ Histogram problem
 =================
 
 Histogram computation involves counting how many data points fall into
-specific bins, which is useful in tasks like statistical analysis and
-image processing. In this example, Legate and CuPy are used to compute a
-histogram in parallel, with a key focus on the broadcast constraint.
+specific bins, This is useful in tasks like statistical analysis and
+image processing. In this example, Legate and cuPyNumeric are used to compute a
+histogram in parallel, with a key focus on the ``broadcast`` constraint.
 Broadcasting ensures that the histogram array is not split across
 devices, allowing each GPU to access the full array and update it
 safely. This prevents partial updates and ensures correct aggregation
@@ -392,10 +384,10 @@ Main function
 
 For this example, a one-dimensional array with a default size of 1000
 elements is created, filled with random integers ranging from 0 to 9.
-Alongside that, an empty hist array of length 10 is prepared to store
-counts. The histogram_task function is then called to count the
-frequency of each integer in the data array and accumulate these counts
-into the hist array. We can change the size of the input array through
+Alongside that, an empty ``hist`` array of length 10 is prepared to store
+counts. The ``histogram_task`` function is then called to count the
+frequency of each integer in the ``data`` array and accumulate these counts
+into the ``hist`` array. We can change the size of the input array through
 the ``--size`` command-line argument when running the script
 
 Task function
@@ -403,12 +395,8 @@ Task function
 
 .. code-block:: python
 
-    @task(
-        variants = (VariantCode.CPU, VariantCode.GPU,),
-        constraints = (
-             broadcast("hist"),
-        ),
-    )
+    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
+          constraints = (broadcast("hist")))
     def histogram_task(ctx: TaskContext, data: InputArray, hist: ReductionArray[ADD], N_bins: int):
         xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
         data_local = xp.asarray(data)
@@ -418,22 +406,22 @@ Task function
         hist_local[:] = hist_local + local_hist
     
 
-The histogram_task function uses TaskContext and its get_variant_kind()
+The ``histogram_task`` function uses ``TaskContext`` and its ``get_variant_kind()``
 method to determine the execution target (GPU or CPU) and accordingly
 create views of the task-local data as NumPy or CuPy arrays. It then
 computes a local histogram on the partitioned chunk of data using the
 specified number of bins and adds this local histogram results to the
-global hist array using a reduction mechanism.
+global ``hist`` array using a reduction mechanism.
 
 The task decorator specifies GPU execution via ``VariantCode.GPU``. The
-broadcast constraint on hist ensures that each GPU receives the full
-hist array rather than a partitioned slice. This means each local hist
-array has the same size as the global hist array. This allows every GPU
+``broadcast`` constraint on ``hist`` ensures that each GPU receives the full
+``hist`` array rather than a partitioned slice. This means each local ``hist``
+array has the same size as the global ``hist`` array. This allows every GPU
 task to compute a local histogram on its data chunk and safely add its
-results to the global hist array, ensuring correct accumulation of
-counts from all distributed data partitions.
+results to the global ``hist`` array, ensuring correct accumulation of
+counts from all distributed ``data`` partitions.
 
-In this example, Legate will partition the data array automatically and
+In this example, Legate will partition the ``data`` array automatically and
 distribute chunks of it to different GPUs.
 
 For example, imagine we have 4 GPUs, and the input data size is 1000.
@@ -447,12 +435,12 @@ Then:
 
 - GPU 4 might get data[750–999]
 
-Since hist is declared as a ReductionArray[ADD], Legate automatically
+Since hist is declared as a ``ReductionArray[ADD]``, Legate automatically
 merges all the local histograms from all the GPUs by summing them
 together at the end of the task execution. This produces the correct
 global histogram as the final output.
 
-In short, broadcast makes sure that the full hist array is available on
+In short, ``broadcast`` makes sure that the full ``hist`` array is available on
 all devices, and the reduction mechanism handles merging the partial
 results into a correct final output.
 
@@ -473,12 +461,8 @@ can be run with the ``legate`` command line launcher:
     from legate.core.task import task, InputArray, ReductionArray, ADD
     from legate.timing import time   
     
-    @task(
-        variants = (VariantCode.CPU, VariantCode.GPU,),
-        constraints = (
-             broadcast("hist"),
-        ),
-    )
+    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
+          constraints = (broadcast("hist")))
     def histogram_task(ctx: TaskContext, data: InputArray, hist: ReductionArray[ADD], N_bins: int):
         xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
         data_local = xp.asarray(data)
@@ -558,7 +542,7 @@ This produces the following output:
     Time elapsed for histogram : 3.960000 milliseconds
 
 Multi-Node execution 
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 Refer to the Legate documentation on how to run on `multi-node`_. 
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
@@ -577,13 +561,13 @@ This produces the following output:
 
     Time elapsed for histogram : 4.266000 milliseconds
 
-Simple Matrix Multiplication problem
+Simple matrix multiplication problem
 ====================================
 
-We multiply two matrices A (shape (m, k)) and B (shape (k, n)) to
-produce C (shape (m, n)), using 3D tiling to enable parallel execution
+We multiply two matrices ``A (shape (m, k))`` and ``B (shape (k, n))`` to
+produce ``C (shape (m, n))``, using 3D tiling to enable parallel execution
 over blocks of the matrix. This example will introduce basic matrix
-multiplication using Legate and CuPy. It emphasizes 3D tiling and
+multiplication using Legate and cuPyNumeric. It emphasizes 3D tiling and
 reduction privileges, teaching how to structure tasks for parallel
 execution by promoting arrays for consistent partitioning and aligning
 the inputs and outputs, and then safely reducing partial results.
@@ -626,12 +610,12 @@ The important things that this code does are:
   for valid matrix multiplication.
 
 - Each matrix is promoted to 3D by adding an extra dimension. Because,
-  in order to correctly partition the computation, matrices A, B, and C
+  in order to correctly partition the computation, matrices ``A``, ``B``, and ``C``
   should be partitioned in an aligned way. Given the dimension of these
-  matrices are A[m,k], B[k,n], and C[m,n], they cannot be aligned
+  matrices are ``A[m,k]``, ``B[k,n]``, and ``C[m,n]``, they cannot be aligned
   directly. By adding one dimension to each of them, the dimensions
-  become A[m, k, n], B[m, k, n] and C[m, k, n]. The three arrays can now
-  be aligned along m, k, and n dimensions, producing the required
+  become ``A[m, k, n]``, ``B[m, k, n]`` and ``C[m, k, n]``. The three arrays can now
+  be aligned along ``m``, ``k``, and ``n`` dimensions, producing the required
   alignment for performing matrix multiplication.
 
 Task function
@@ -639,28 +623,9 @@ Task function
 
 .. code-block:: python
 
-    @task(
-       variants = (VariantCode.CPU,VariantCode.GPU,),
-       constraints = (
-          align("C", "A"),
-          align("C", "B"),
-          ),
-       )
-
-- **Variants**: The task can run on either CPU or GPU, depending on the
-  available resources at runtime.
-
-- **align(“C”, “A”) / align(“C”, “B”)** : Aligns partitions of A,B, and
-  C so that each task instance gets matching chunks of data. If align is
-  not used, partitions could be mismatched, leading to errors or even
-  incorrect results. For example, if GPU 0 is given block (0:25, 0:38)
-  of A and block (0:38, 0:50) of B, then it should be given the correct
-  block (0:25, 0:50) of C to update. For example, after promotion to A(m,k,n), B(m,k,n), C(m,k,n), the
-  align constraint could produce the partitioning A(0:m/2, 0:k/2,
-  0:n/2), B(0:m/2, 0:k/2, 0:n/2), C(0:m/2, 0:k/2, 0:n/2).
-
-.. code-block:: python
-
+    @task(variants = (VariantCode.CPU,VariantCode.GPU,),
+          constraints = (align("C", "A"),
+                         align("C", "B")))
     def matmul_task(ctx: TaskContext, C: ReductionArray[ADD], A: InputArray, B: InputArray) -> None:
        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
        C = xp.asarray(C)[:, 0, :]
@@ -669,13 +634,23 @@ Task function
     
        C += xp.matmul(A,B)
 
+The task can run on either CPU or GPU, depending on the available resources at runtime.
+The alignment constraints ``align(“C”, “A”)`` and ``align(“C”, “B”)`` ensures that partitions of ``A``, ``B``, and
+``C`` so that each task instance gets matching chunks of data. If ``align`` is
+not used, partitions could be mismatched, leading to errors or even
+incorrect results. For example, if GPU 0 is given block (0:25, 0:38)
+of ``A`` and block (0:38, 0:50) of ``B``, then it should be given the correct
+block (0:25, 0:50) of ``C`` to update. For example, after promotion to ``A(m,k,n)``, ``B(m,k,n)``, ``C(m,k,n)``, the
+``align`` constraint could produce the partitioning ``A(0:m/2, 0:k/2,
+0:n/2)``, ``B(0:m/2, 0:k/2, 0:n/2)``, ``C(0:m/2, 0:k/2, 0:n/2)``.
 
-The matmul_task function uses TaskContext to determine if it’s running
-on a CPU or GPU, setting xp to NumPy or CuPy accordingly. It then
-converts the received task-local data to array views using xp.asarray().
+
+The ``matmul_task`` function uses ``TaskContext`` to determine if it’s running
+on a CPU or GPU, setting ``xp`` to NumPy or CuPy accordingly. It then
+converts the received task-local data to array views using ``xp.asarray()``.
 The extra broadcasted dimension introduced earlier is then sliced away
 to recover the original 2D shapes of the matrices. Finally performs the
-matrix multiplication and accumulates the result into C.
+matrix multiplication and accumulates the result into ``C``.
 
 Complete module
 ---------------
@@ -694,13 +669,9 @@ can be run with the ``legate`` command line launcher:
     from legate.core.task import task, InputArray, ReductionArray, ADD
     from legate.timing import time
     
-    @task(
-       variants = (VariantCode.CPU,VariantCode.GPU,),
-       constraints = (
-          align("C", "A"),
-          align("C", "B"),
-          ),
-       )
+    @task(variants = (VariantCode.CPU,VariantCode.GPU,),
+          constraints = (align("C", "A"),
+                         align("C", "B")))
     def matmul_task(ctx: TaskContext, C: ReductionArray[ADD], A: InputArray, B: InputArray) -> None:
        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
        C = xp.asarray(C)[:, 0, :]
@@ -748,8 +719,6 @@ can be run with the ``legate`` command line launcher:
 Running on CPU and GPU 
 ----------------------
 
-
-
 In order to run the program, use the legate launcher, and include any
 flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
@@ -757,8 +726,8 @@ For a complete guide and additional options, see the `Legate documentation`_.
 
 .. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
-Let's increase the size of the matrix by setting m = 1000, k = 1000, and
-n = 1000. We’ll also include a warm-up run before measuring execution
+Let's increase the size of the matrix by setting ``m`` = 1000, ``k`` = 1000, and
+``n`` = 1000. We’ll also include a warm-up run before measuring execution
 time to ensure that one-time setup costs (like memory allocation or
 kernel loading) don’t affect the final performance results.
 
@@ -792,7 +761,7 @@ This produces the following output:
     Time elapsed for matmul: 3.076000 milliseconds
 
 Multi-Node execution 
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 Refer to the Legate documentation on how to run on `multi-node`_. 
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
@@ -818,8 +787,8 @@ The Fast Fourier Transform (FFT) is an algorithm which is used to
 compute the discrete fourier transform of a sequence. It is used to help
 break down a complex signal like sound and images, which is instrumental
 in image processing, medical imaging, and more. This example
-demonstrates how to use Legate and CuPy to perform a batched 2D Fast
-Fourier Transform. It highlights how to use align and broadcasting
+demonstrates how to use Legate and cuPyNumeric to perform a batched 2D Fast
+Fourier Transform. It highlights how to use ``align`` and ``broadcast``
 constraints to control partitioning. Alignment makes sure the input and
 output chunks line up correctly while broadcasting keeps part of data
 unpartitioned.
@@ -844,8 +813,8 @@ Main function
 
 For demonstration purposes, a default shape of (128, 256, 256) is used,
 representing a batch of 128 two dimensional matrices. Using this shape,
-cuPyNumeric arrays are generated, and cast to complex64. B_cpn contains
-random values, while A_cpn contains zeros. The fft2d_batched_gpu task is
+cuPyNumeric arrays are generated, and cast to complex64. ``B_cpn`` contains
+random values, while ``A_cpn`` contains zeros. The ``fft2d_batched_gpu`` task is
 then launched, by using these two cuPyNumeric arrays. We can change the
 shape of the input arrays using the ``--shape`` command-line argument when
 running the script
@@ -855,13 +824,9 @@ Task function
 
 .. code-block:: python
 
-    @task(
-       variants = (VariantCode.CPU, VariantCode.GPU,),
-       constraints = (
-           align("dst", "src"),
-           broadcast("src", (1, 2)),
-       ),
-    )
+    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
+          constraints = (align("dst", "src"),
+                         broadcast("src", (1, 2))))
     def fft2d_batched_gpu(ctx: TaskContext, dst: OutputStore, src: InputStore):
        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
        cp_src = xp.asarray(src)
@@ -869,21 +834,21 @@ Task function
        # Apply 2D FFT across axes 1 and 2 for each batch
        cp_dst[:] = xp.fft.fftn(cp_src, axes=(1, 2))
 
-The fft2d_batched_gpu function uses TaskContext to detect execution on
-GPU and sets xp to CuPy accordingly. It then converts the src and dst
+The ``fft2d_batched_gpu`` function uses ``TaskContext`` to detect execution on
+GPU and sets ``xp`` to CuPy accordingly. It then converts the ``src`` and ``dst``
 arrays into CuPy arrays as views without copying. Afterwards, it applies
 2D FFT for each batch independently. As for the task decorator, it has a
 ``VariantCode.GPU``, which means this task is implemented for GPU execution.
-As for the align constraint, it ensures that the output and input arrays
+As for the ``align`` constraint, it ensures that the output and input arrays
 are partitioned the same way. This ensures that the corresponding chunks
-are processed together. The other constraint broadcast makes sure the
+are processed together. The other constraint ``broadcast`` makes sure the
 source array is not partitioned along axes 1 and 2. This is important as
-this allows each GPU to get full slices along these axes, and makes sure
+it allows each GPU to get full slices along these axes, and makes sure
 that you are able to split work along the batch dimension (axis 0).
 
-For example, let's imagine the shape of src is (128, 256, 256). This
+For example, let's imagine the shape of ``src`` is (128, 256, 256). This
 means there are 128 independent 2D images, each of size 256×256. If
-broadcast is not used, then it might get partitioned like this.
+``broadcast`` is not used, then it might get partitioned like this.
 
 - GPU 0: slices src[0:64, 0:128, :]
 
@@ -892,7 +857,7 @@ broadcast is not used, then it might get partitioned like this.
 Now each GPU has partial rows from multiple images, which may lead to
 incorrect FFT computations.
 
-But with broadcast("src", (1, 2)), this ensures Legate will partition
+But with ``broadcast("src", (1, 2))``, this ensures Legate will partition
 only along axis 0, so each GPU gets a full 2D matrix per batch.
 
 - GPU 0: src[0:64, :, :] → 64 full images
@@ -917,13 +882,9 @@ can be run with the ``legate`` command line launcher:
     from legate.core.types import complex64
     from legate.timing import time
     
-    @task(
-       variants = (VariantCode.CPU, VariantCode.GPU,),
-       constraints = (
-           align("dst", "src"),
-           broadcast("src", (1, 2)),
-       ),
-    )
+    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
+          constraints = (align("dst", "src"),
+                         broadcast("src", (1, 2))))
     def fft2d_batched_gpu(ctx: TaskContext, dst: OutputStore, src: InputStore):
        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
        cp_src = xp.asarray(src)
