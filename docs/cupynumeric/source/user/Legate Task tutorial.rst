@@ -122,7 +122,7 @@ InputStore or OutputStore, depending on how they are used in the task.
 Legate has built-in datatypes suitable for building richer
 distributed data structures, e.g. nullable arrays, but in this tutorial
 we exclusively use the simpler Legate Store class, which can only
-represent a dense array, but is sufficient to back a cuPyNumeric
+represent a dense array. This is sufficient to back a cuPyNumeric
 ndarray.
 
 The @task decorator specifies both CPU and GPU variants using
