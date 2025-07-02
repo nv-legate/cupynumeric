@@ -169,8 +169,8 @@ def gemm(
     task.execute()
 
 
-MIN_CHOLESKY_TILE_SIZE = 2 if settings.test() else 2048
-MIN_CHOLESKY_MATRIX_SIZE = 4 if settings.test() else 8192
+MIN_CHOLESKY_TILE_SIZE = 16 if settings.test() else 2048
+MIN_CHOLESKY_MATRIX_SIZE = 32 if settings.test() else 8192
 
 
 # TODO: We need a better cost model
