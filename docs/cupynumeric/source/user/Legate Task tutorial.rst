@@ -94,9 +94,7 @@ Quick Example
         from legate.core import StoreTarget, PhysicalArray, PhysicalStore, TaskContext, VariantCode
         from legate.core.task import task, InputArray, OutputArray
         
-        @task( 
-              variants = (VariantCode.CPU, VariantCode.GPU),
-             )
+        @task(variants = (VariantCode.CPU, VariantCode.GPU))
         def foo_in_out(ctx: TaskContext, in_store: InputArray, out_store: OutputArray) -> None:
             xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy    
             in_store = xp.asarray(in_store)
