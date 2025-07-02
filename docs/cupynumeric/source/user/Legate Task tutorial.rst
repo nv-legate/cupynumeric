@@ -52,8 +52,8 @@ Parameters
 
 - **constraints (Sequence[ConstraintProxy], optional)** – The list of
   constraints which are to be applied to the arguments of ``func``, if any.
-  Controls how distributed-memory containers (Legate Logical
-  Store/Array) are divided, aligned, or replicated for parallel
+  Controls how distributed-memory containers (Legate logical
+  store or arrays) are divided, aligned, or replicated for parallel
   execution across CPUs/GPUs. Defaults to no constraints.
 
   - *Align* - Ensures that the partitions of multiple arrays/stores are
