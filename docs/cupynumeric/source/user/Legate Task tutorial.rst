@@ -76,7 +76,7 @@ Requirements
 1. All arguments must have type-hints, without exception.
 
 2. Arguments representing a piece of a logical store or array must be given
-   as either InputStore, OutputStore, InputArray, or OutputArray
+   as either ``InputStore``, ``OutputStore``, ``InputArray``, or ``OutputArray``
    (`Arguments`_) cuPyNumeric arrays are backed by Legate Stores, so they are made
    available inside tasks as InputStores or OutputStores. The return
    value of the function must be exactly None. In the future, this
