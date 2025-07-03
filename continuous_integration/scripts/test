@@ -16,7 +16,7 @@ setup_env() {
     legate-conda-retry search --override-channels -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" --info cupynumeric
 
     # This requires strict channel priority to work (prioritize local channel)
-    legate-conda-retry create -y -n legate -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c conda-forge -c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} legate cupynumeric
+    legate-conda-retry create -y -n legate -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} -c conda-forge legate cupynumeric
 }
 
 setup_test_env() {
