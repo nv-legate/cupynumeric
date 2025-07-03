@@ -446,7 +446,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         const auto in_domain = task.input(0).domain();
         const auto lo        = in_domain.lo();
         const auto hi        = in_domain.hi();
-        return aligned_size((hi[axis] - lo[axis] + 1) * sizeof(std::int64_t), DEFAULT_ALIGNMENT);
+        const auto extent    = std::max(hi[axis] - lo[axis] + 1, legate::coord_t{0});
+        return aligned_size(extent * sizeof(std::int64_t), DEFAULT_ALIGNMENT);
       }
       return std::nullopt;
     }
