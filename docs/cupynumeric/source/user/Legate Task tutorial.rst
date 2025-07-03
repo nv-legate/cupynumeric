@@ -28,6 +28,7 @@ additional components are needed after cuPyNumeric is installed. Please refer to
 
 Usage
 -----
+Here is the annotated function signature for the task decorator, with all the supported parameters and their types.
 
 .. code-block:: python
 
@@ -41,36 +42,39 @@ Usage
     )
 
 Parameters
-----------
+~~~~~~~~~~
 
-- **func (UserFunction)**, The function to invoke in the task.
+func (UserFunction)
+    The function to invoke in the task.
 
-- **variants (VariantList, optional)** – The list of variants for which
-  ``func`` is applicable. Defaults to ``(VariantCode.CPU,)``, which means the
-  task will run only on the CPU by default. To enable GPU execution, you
-  must explicitly include ``VariantCode.GPU`` in the list of variants.
+variants (VariantList, optional)
+    The list of variants for which ``func`` is applicable. Defaults to
+    ``(VariantCode.CPU,)``, which means the task will run only on the CPU
+    by default. To enable GPU execution, you must explicitly include
+    ``VariantCode.GPU`` in the list of variants.
 
-- **constraints (Sequence[ConstraintProxy], optional)** – The list of
-  constraints which are to be applied to the arguments of ``func``, if any.
-  Controls how distributed-memory containers (Legate logical
-  stores or arrays) are divided, aligned, or replicated for parallel
-  execution across CPUs/GPUs. Defaults to no constraints.
+constraints (Sequence[ConstraintProxy], optional)
+    The list of constraints which are to be applied to the arguments of
+    ``func``, if any. Controls how distributed-memory containers (Legate logical
+    stores or arrays) are divided, aligned, or replicated for parallel
+    execution across CPUs/GPUs. Defaults to no constraints.
 
-  - *Align* - Ensures that the partitions of multiple arrays/stores are
-    aligned along a given dimension.
+    - *Align*  
+      Ensures that the partitions of multiple arrays/stores are aligned along a given dimension.
 
-  - *Broadcast* - Replicates data across all tasks instead of
-    partitioning it.
+    - *Broadcast*  
+      Replicates data across all tasks instead of partitioning it.
 
-  - Other Legate-supported partitioning constraints such as Image and
-    Scale - See `Constraints`_ for more information.
+    - Other Legate-supported partitioning constraints such as Image and Scale — see
+      `Constraints`_ for more information.
+
 .. _Constraints: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html
 
-- **throws_exception (bool, False)** – True if any variant of ``func``
-  throws an exception, False otherwise.
+throws_exception (bool, False)
+    True if any variant of ``func`` throws an exception, False otherwise.
 
 Requirements
-------------
+~~~~~~~~~~~~
 
 1. All arguments must have type-hints, without exception.
 
@@ -82,8 +86,9 @@ Requirements
    restriction may be lifted.
 .. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
 
-Quick Example
--------------
+Quick example
+~~~~~~~~~~~~~
+Here is a Python example of defining and invoking a Legate task with a custom function to copy array contents.
 
 .. code-block:: python
 
@@ -95,7 +100,7 @@ Quick Example
         
         @task(variants = (VariantCode.CPU, VariantCode.GPU))
         def foo_in_out(ctx: TaskContext, in_store: InputArray, out_store: OutputArray) -> None:
-            xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy    
+            xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy  # select CuPy or NumPy depending on variant.   
             in_store = xp.asarray(in_store)
             out_store = xp.asarray(out_store)
             out_store[:] = in_store[:]
@@ -138,7 +143,7 @@ output arrays as either CuPy or NumPy arrays.
 SAXPY problem
 =============
 
-SAXPY(Single-Precision A·X Plus Y) is a fundamental linear algebra operation that computes the result
+SAXPY (Single-Precision A·X Plus Y) is a fundamental linear algebra operation that computes the result
 of the expression :math:`z = a * x + y`, where :math:`x` and :math:`y` are vectors and :math:`a` is a scalar.
 It is a widely used example due to its simplicity and
 computational relevance. This example demonstrates how to implement
@@ -152,7 +157,7 @@ without needing to move data between different parts of the system.
 
 Main function
 --------------
-The following example sets up input data, runs the SAXPY task, and prints the elapsed time for the computation.
+Let’s take a look at the input and output parameters for this SAXPY example.
 
 .. code-block:: python
 
@@ -171,7 +176,7 @@ The following example sets up input data, runs the SAXPY task, and prints the el
 For this example, three one-dimensional arrays of default size 1000 are
 created. ``x_global`` contains values from 0 to 999, ``y_global`` is filled with
 ones, and ``z_global`` is initialized with zeros to store the result. The
-saxpy_task function is then called to compute the operation ``z_global = 2.0 \* x_global + y_global``. We can change the size of the arrays
+saxpy_task function is then called to compute the operation ``z_global = 2.0 * x_global + y_global``. We can change the size of the arrays
 through the ``--size`` command-line argument when running the script.
 
 Task function
@@ -213,7 +218,7 @@ corresponding elements across arrays, ensuring correctness.
 The ``saxpy_task`` function uses ``TaskContext`` and its ``get_variant_kind()``
 method to determine the execution target (GPU or CPU) and accordingly
 create views of the task-local data as NumPy or CuPy arrays. It then performs the SAXPY operation element-wise by computing
-``z_local[:] = a \* x_local + y_local``. This task runs in parallel on the
+``z_local[:] = a * x_local + y_local``. This task runs in parallel on the
 available hardware (CPU or GPU), enabling efficient computation.
 
 Complete module
@@ -366,7 +371,7 @@ parallel histogram computation.
 
 Main function
 --------------
-This main function generates random input data, runs the histogram task, and reports the execution time.
+Let’s take a quick look at the input and output parameters for this histogram example.
 
 .. code-block:: python
 
@@ -794,7 +799,8 @@ unpartitioned.
 
 Main function
 -------------
-This example demonstrates initializing inputs, executing a GPU-accelerated batched 2D FFT, and timing the operation.
+
+The following code block initializes inputs and performs a GPU-accelerated batched 2D Fast Fourier Transform.
 
 .. code-block:: python
 
@@ -819,7 +825,7 @@ running the script
 
 Task function
 -------------
-The following example defines a task that computes a batched 2D FFT over input data.
+The following example defines a task that computes a batched 2D FFT over input data using ``align`` and ``broadcast`` constraints.
 
 .. code-block:: python
 
