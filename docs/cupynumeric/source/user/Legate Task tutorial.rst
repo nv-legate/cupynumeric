@@ -129,12 +129,11 @@ executed on either device depending on the available resources. Inside
 the task, ``TaskContext`` provides access to the execution environment,
 including inputs, outputs, and the execution target (CPU or GPU). The
 method ``ctx.get_variant_kind()`` is used to determine the target device,
-and based on this, the variable xp is set to either the CuPy for GPU
-execution or NumPy for CPU execution. Using xp, the task creates views
+and based on this, the variable ``xp`` is set to either the CuPy for GPU
+execution or NumPy for CPU execution. Using ``xp``, the task creates views
 of the task-local partitions of the Legate-backed global input and
 output arrays as either CuPy or NumPy arrays.
 
-.. _section-1:
 
 SAXPY problem
 =============
@@ -153,6 +152,7 @@ without needing to move data between different parts of the system.
 
 Main function
 --------------
+The following example sets up input data, runs the SAXPY task, and prints the elapsed time for the computation.
 
 .. code-block:: python
 
@@ -176,6 +176,7 @@ through the ``--size`` command-line argument when running the script.
 
 Task function
 -------------
+The following example shows how to define a task function that performs the SAXPY operation.
 
 .. code-block:: python
 
@@ -217,7 +218,6 @@ available hardware (CPU or GPU), enabling efficient computation.
 
 Complete module
 ---------------
-
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
@@ -284,7 +284,6 @@ GPU run may include the setup overhead like compilation or memory
 allocation, a warm-up pass helps eliminate these one-time costs from
 performance measurements, ensuring more reliable results.
 
-.. _section-2:
 
 Running on CPU and GPU 
 ----------------------
@@ -367,6 +366,7 @@ parallel histogram computation.
 
 Main function
 --------------
+This main function generates random input data, runs the histogram task, and reports the execution time.
 
 .. code-block:: python
 
@@ -392,6 +392,7 @@ the ``--size`` command-line argument when running the script
 
 Task function
 -------------
+The following example defines a histogram task function that computes a local histogram and accumulates the results into a global ``hist`` array using a reduction.
 
 .. code-block:: python
 
@@ -494,7 +495,6 @@ can be run with the ``legate`` command line launcher:
     
     print(f"\nTime elapsed for histogram : {(end - start)/1000:.6f} milliseconds")
 
-.. _running-on-cpu-and-gpu---guide-1:
 
 Running on CPU and GPU
 -----------------------
@@ -572,10 +572,10 @@ reduction privileges, teaching how to structure tasks for parallel
 execution by promoting arrays for consistent partitioning and aligning
 the inputs and outputs, and then safely reducing partial results.
 
-.. _main-function-2:
 
 Main function
 -------------
+The following main function prepares input matrices with proper broadcasting, executes the matrix multiplication task, and measures the computation time.
 
 .. code-block:: python
 
@@ -620,6 +620,7 @@ The important things that this code does are:
 
 Task function
 -------------
+The following example shows a task function that performs matrix multiplication with aligned partitions across input and output arrays.
 
 .. code-block:: python
 
@@ -712,9 +713,6 @@ can be run with the ``legate`` command line launcher:
     
     print(f"\nTime elapsed for matmul: {(end - start)/1000:.6f} seconds")
 
-.. _section-3:
-
-.. _running-on-cpu-and-gpu---guide-2:
 
 Running on CPU and GPU 
 ----------------------
@@ -793,10 +791,10 @@ constraints to control partitioning. Alignment makes sure the input and
 output chunks line up correctly while broadcasting keeps part of data
 unpartitioned.
 
-.. _main-function-3:
 
 Main function
 -------------
+This example demonstrates initializing inputs, executing a GPU-accelerated batched 2D FFT, and timing the operation.
 
 .. code-block:: python
 
@@ -821,6 +819,7 @@ running the script
 
 Task function
 -------------
+The following example defines a task that computes a batched 2D FFT over input data.
 
 .. code-block:: python
 
@@ -914,8 +913,6 @@ can be run with the ``legate`` command line launcher:
     
     print(f"\nTime elapsed for batched fft: {(end - start)/1000:.6f} milliseconds")
 
-
-.. _running-on-cpu-and-gpu---guide-3:
 
 Running on CPU and GPU 
 ----------------------
