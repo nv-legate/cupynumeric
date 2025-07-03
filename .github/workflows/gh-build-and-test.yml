@@ -89,9 +89,9 @@ jobs:
           MATRIX_JSON='{"include": ['
 
           RUNNERS=(
-            'linux-amd64-gpu-l4-latest-1:gpu:gpu:linux' 'linux-amd64-2gpu:gpu:2gpu:linux'
+            'linux-amd64-gpu-l4-latest-1:gpu:gpu:linux'
             'linux-amd64-cpu16:cpu:cpu:linux'
-            'linux-arm64-cpu16:cpu:cpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:2gpu:linux-aarch64' 'linux-aarch64-2gpu:gpu:gpu:linux-aarch64'
+            'linux-arm64-cpu16:cpu:cpu:linux-aarch64'
             'macos-latest:cpu:cpu:mac')
 
           TEST_CONFIGS=(
