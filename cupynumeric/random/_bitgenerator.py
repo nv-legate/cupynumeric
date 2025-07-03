@@ -56,6 +56,9 @@ class BitGenerator:
         ------------
         Multiple GPUs, Multiple CPUs
         """
+        # make sure handle is always initialized
+        self.handle = 0
+
         if type(self) is BitGenerator:
             raise NotImplementedError(
                 "BitGenerator is a base class and cannot be instantized"
