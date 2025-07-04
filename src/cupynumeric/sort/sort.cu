@@ -797,7 +797,8 @@ SegmentMergePiece<type_of<CODE>> merge_all_buffers(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename VAL>
-void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
+void rebalance_data(TaskContext& context,
+                    SegmentMergePiece<VAL>& merge_buffer,
                     void* output_ptr,
                     /* global domain information */
                     size_t my_rank,  // global NCCL rank
@@ -859,6 +860,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
       num_segments_l_aligned * num_sort_ranks, legate::Memory::GPU_FB_MEM);
 
     // communicate segment diffs
+    context.concurrent_task_barrier();
     CHECK_NCCL(ncclGroupStart());
     for (size_t r = 0; r < num_sort_ranks; r++) {
       CHECK_NCCL(ncclSend(
@@ -871,6 +873,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
                           stream));
     }
     CHECK_NCCL(ncclGroupEnd());
+    context.concurrent_task_barrier();
 
     // copy to transpose structure [segments][ranks]
     auto segment_diff_2d = create_non_empty_buffer<int64_t>(num_segments_l_aligned * num_sort_ranks,
@@ -1001,12 +1004,11 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
         create_non_empty_buffer<VAL>(recv_right_size, legate::Memory::GPU_FB_MEM);
     }
 
-    Buffer<int64_t> segment_diff_pos;
+    Buffer<int64_t> segment_diff_pos =
+      create_non_empty_buffer<int64_t>(num_segments_l, legate::Memory::GPU_FB_MEM);
     {
       // need scan of segment_diff
       // need scan of (positive!) send_left, send_right
-      segment_diff_pos =
-        create_non_empty_buffer<int64_t>(num_segments_l, legate::Memory::GPU_FB_MEM);
       auto send_left_pos =
         create_non_empty_buffer<int64_t>(num_segments_l, legate::Memory::GPU_FB_MEM);
       auto send_right_pos =
@@ -1076,6 +1078,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
     assert(send_right_data.size == send_right_size);
 
     // send/receive overlapping data
+    context.concurrent_task_barrier();
     if (send_left_size + recv_left_size + send_right_size + recv_right_size > 0) {
       if (argsort) {
         CHECK_NCCL(ncclGroupStart());
@@ -1149,6 +1152,7 @@ void rebalance_data(SegmentMergePiece<VAL>& merge_buffer,
         CHECK_NCCL(ncclGroupEnd());
       }
     }
+    context.concurrent_task_barrier();
 
     if (argsort) {
       send_left_data.indices.destroy();
@@ -1361,6 +1365,7 @@ void sample_sort_nccl_nd(
     auto recv_buffer = create_non_empty_buffer<SegmentSample<VAL>>(aligned_count * num_sort_ranks,
                                                                    legate::Memory::GPU_FB_MEM);
 
+    context.concurrent_task_barrier();
     CHECK_NCCL(ncclGroupStart());
     for (size_t r = 0; r < num_sort_ranks; r++) {
       if (r != my_sort_rank) {
@@ -1379,6 +1384,7 @@ void sample_sort_nccl_nd(
       }
     }
     CHECK_NCCL(ncclGroupEnd());
+    context.concurrent_task_barrier();
 
     // copy back
     for (size_t r = 0; r < num_sort_ranks; r++) {
@@ -1475,6 +1481,7 @@ void sample_sort_nccl_nd(
   // all2all exchange send/receive sizes
   Buffer<size_t> size_recv = create_non_empty_buffer<size_t>(
     num_segments_l_aligned * num_sort_ranks, legate::Memory::GPU_FB_MEM);
+  context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (size_t r = 0; r < num_sort_ranks; r++) {
     CHECK_NCCL(ncclSend(size_send.ptr(r * num_segments_l_aligned),
@@ -1491,6 +1498,7 @@ void sample_sort_nccl_nd(
                         stream));
   }
   CHECK_NCCL(ncclGroupEnd());
+  context.concurrent_task_barrier();
 
   // we need the amount of data to transfer on the host --> get it
   Buffer<size_t> size_send_total =
@@ -1520,69 +1528,75 @@ void sample_sort_nccl_nd(
   }
 
   // copy values into aligned send buffer
-  std::vector<Buffer<VAL>> val_send_buffers(num_sort_ranks);
-  std::vector<Buffer<int64_t>> idc_send_buffers(num_sort_ranks);
+  std::vector<int64_t> send_buffer_pos(num_sort_ranks + 1);
   {
+    int64_t total_size = 0;
     for (size_t r = 0; r < num_sort_ranks; r++) {
-      val_send_buffers[r] =
-        create_non_empty_buffer<VAL>(size_send_total[r], legate::Memory::GPU_FB_MEM);
+      size_t size_aligned = get_16b_aligned_count(size_send_total[r], sizeof(VAL));
       if (argsort) {
-        idc_send_buffers[r] =
-          create_non_empty_buffer<int64_t>(size_send_total[r], legate::Memory::GPU_FB_MEM);
+        size_aligned =
+          std::max(size_aligned, get_16b_aligned_count(size_send_total[r], sizeof(int64_t)));
       }
+      send_buffer_pos[r] = total_size;
+      total_size += size_aligned;
+    }
+    send_buffer_pos[num_sort_ranks] = total_size;
+  }
+
+  Buffer<VAL> val_send_buffers =
+    create_non_empty_buffer<VAL>(send_buffer_pos[num_sort_ranks], legate::Memory::GPU_FB_MEM);
+  Buffer<int64_t> idc_send_buffers = create_non_empty_buffer<int64_t>(
+    argsort ? send_buffer_pos[num_sort_ranks] : 0, legate::Memory::GPU_FB_MEM);
+  {
+    Buffer<VAL*> val_send_buffers_ptr =
+      create_non_empty_buffer<VAL*>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
+    for (size_t r = 0; r < num_sort_ranks; r++) {
+      val_send_buffers_ptr[r] = val_send_buffers.ptr(send_buffer_pos[r]);
     }
 
-    {
-      Buffer<VAL*> val_send_buffers_ptr =
-        create_non_empty_buffer<VAL*>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
+    auto [grid_shape, block_shape] =
+      generate_launchconfig_for_2d_copy(segment_size_l, num_segments_l);
+
+    copy_data_to_merge_buffers<<<grid_shape, block_shape, 0, stream>>>(segment_blocks,
+                                                                       size_send,
+                                                                       local_sorted.values,
+                                                                       val_send_buffers_ptr,
+                                                                       num_segments_l,
+                                                                       num_segments_l_aligned,
+                                                                       segment_size_l,
+                                                                       my_rank,
+                                                                       num_sort_ranks);
+
+    if (argsort) {
+      Buffer<int64_t*> idc_send_buffers_ptr =
+        create_non_empty_buffer<int64_t*>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
       for (size_t r = 0; r < num_sort_ranks; r++) {
-        val_send_buffers_ptr[r] = val_send_buffers[r].ptr(0);
+        idc_send_buffers_ptr[r] = idc_send_buffers.ptr(send_buffer_pos[r]);
       }
-
-      auto [grid_shape, block_shape] =
-        generate_launchconfig_for_2d_copy(segment_size_l, num_segments_l);
-
+      // need to sync as we share values in between host/device
       copy_data_to_merge_buffers<<<grid_shape, block_shape, 0, stream>>>(segment_blocks,
                                                                          size_send,
-                                                                         local_sorted.values,
-                                                                         val_send_buffers_ptr,
+                                                                         local_sorted.indices,
+                                                                         idc_send_buffers_ptr,
                                                                          num_segments_l,
                                                                          num_segments_l_aligned,
                                                                          segment_size_l,
                                                                          my_rank,
                                                                          num_sort_ranks);
-
-      if (argsort) {
-        Buffer<int64_t*> idc_send_buffers_ptr =
-          create_non_empty_buffer<int64_t*>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
-        for (size_t r = 0; r < num_sort_ranks; r++) {
-          idc_send_buffers_ptr[r] = idc_send_buffers[r].ptr(0);
-        }
-        // need to sync as we share values in between host/device
-        copy_data_to_merge_buffers<<<grid_shape, block_shape, 0, stream>>>(segment_blocks,
-                                                                           size_send,
-                                                                           local_sorted.indices,
-                                                                           idc_send_buffers_ptr,
-                                                                           num_segments_l,
-                                                                           num_segments_l_aligned,
-                                                                           segment_size_l,
-                                                                           my_rank,
-                                                                           num_sort_ranks);
-        CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));  // needed before Z-copy destroy()
-        idc_send_buffers_ptr.destroy();
-      } else {
-        CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));  // needed before Z-copy destroy()
-      }
-      val_send_buffers_ptr.destroy();
-      CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
+      CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));  // needed before Z-copy destroy()
+      idc_send_buffers_ptr.destroy();
+    } else {
+      CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));  // needed before Z-copy destroy()
     }
-
-    local_sorted.values.destroy();
-    if (argsort) {
-      local_sorted.indices.destroy();
-    }
-    segment_blocks.destroy();
+    val_send_buffers_ptr.destroy();
+    CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }
+
+  local_sorted.values.destroy();
+  if (argsort) {
+    local_sorted.indices.destroy();
+  }
+  segment_blocks.destroy();
 
   // allocate target buffers
   std::vector<SegmentMergePiece<VAL>> merge_buffers(num_sort_ranks);
@@ -1634,10 +1648,11 @@ void sample_sort_nccl_nd(
   }
 
   // communicate all2all (in sort dimension)
+  context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (size_t r = 0; r < num_sort_ranks; r++) {
     if (size_send_total[r] > 0) {
-      CHECK_NCCL(ncclSend(val_send_buffers[r].ptr(0),
+      CHECK_NCCL(ncclSend(val_send_buffers.ptr(send_buffer_pos[r]),
                           size_send_total[r] * sizeof(VAL),
                           ncclInt8,
                           sort_ranks[r],
@@ -1659,8 +1674,12 @@ void sample_sort_nccl_nd(
     CHECK_NCCL(ncclGroupStart());
     for (size_t r = 0; r < num_sort_ranks; r++) {
       if (size_send_total[r] > 0) {
-        CHECK_NCCL(ncclSend(
-          idc_send_buffers[r].ptr(0), size_send_total[r], ncclInt64, sort_ranks[r], *comm, stream));
+        CHECK_NCCL(ncclSend(idc_send_buffers.ptr(send_buffer_pos[r]),
+                            size_send_total[r],
+                            ncclInt64,
+                            sort_ranks[r],
+                            *comm,
+                            stream));
       }
       if (merge_buffers[r].size > 0) {
         CHECK_NCCL(ncclRecv(merge_buffers[r].indices.ptr(0),
@@ -1673,17 +1692,16 @@ void sample_sort_nccl_nd(
     }
     CHECK_NCCL(ncclGroupEnd());
   }
+  context.concurrent_task_barrier();
 
   // cleanup remaining buffers
   size_send.destroy();
   size_recv.destroy();
   size_send_total.destroy();
   size_recv_total.destroy();
-  for (size_t r = 0; r < num_sort_ranks; r++) {
-    val_send_buffers[r].destroy();
-    if (argsort) {
-      idc_send_buffers[r].destroy();
-    }
+  val_send_buffers.destroy();
+  if (argsort) {
+    idc_send_buffers.destroy();
   }
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
@@ -1701,7 +1719,8 @@ void sample_sort_nccl_nd(
 
   if (rebalance) {
     assert(!is_unbound_1d_storage);
-    rebalance_data(merged_result,
+    rebalance_data(context,
+                   merged_result,
                    output_ptr,
                    my_rank,
                    my_sort_rank,
@@ -1835,7 +1854,6 @@ struct SortImplBody<VariantKind::GPU, CODE, DIM> {
 
     if (need_distributed_sort) {
       if (is_index_space) {
-        assert(is_index_space || is_unbound_1d_storage);
         std::vector<size_t> sort_ranks(num_sort_ranks);
         size_t rank_group = local_rank / num_sort_ranks;
         for (size_t r = 0; r < num_sort_ranks; ++r) {
