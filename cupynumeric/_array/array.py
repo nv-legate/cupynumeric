@@ -18,7 +18,7 @@ import operator
 import warnings
 from functools import reduce
 from math import prod as builtin_prod
-from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast, Union
 
 import legate.core.types as ty
 import numpy as np
@@ -2036,7 +2036,18 @@ class ndarray:
         """
         min = max_identity(self.dtype) if min is None else min
         max = min_identity(self.dtype) if max is None else max
-
+        
+        def ensure_compatible(val: Any) -> Union[int, float, np.ndarray]:
+            if np.isscalar(val):
+                return np.array(val, dtype=self.dtype).item()
+            arr = np.array(val)
+            if arr.shape == ():
+                return arr.astype(self.dtype).item()
+            return np.array(val, dtype=self.dtype)
+            
+        min = ensure_compatible(min)
+        max = ensure_compatible(max)
+            
         args = (
             np.array(min, dtype=self.dtype),
             np.array(max, dtype=self.dtype),

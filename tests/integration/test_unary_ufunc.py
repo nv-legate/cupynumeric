@@ -14,6 +14,7 @@
 #
 
 import argparse
+import platform
 
 import numpy as np
 import pytest
@@ -21,6 +22,28 @@ from packaging.version import Version
 from utils.comparisons import allclose
 
 import cupynumeric as num
+
+
+# These operations showed 1-ULP fp16 mismatches on x86 with NumPy ≥ 2.3.0
+# TODO(marcinz): adjust this as necessary when #793 is resolved
+_NEEDS_F16_ATOL = {"arcsin", "arccos", "arctanh", "sinh", "tanh"}
+_F16_ATOL       = 1e-3       # explicit, only for those ops
+
+
+def _maybe_loose_atol(op, dtype):
+    """
+    Return {'atol': 1e-3} iff this (op, dtype) needs the looser tolerance.
+    Otherwise returns an empty dict.
+    """
+    if (
+        dtype == "e"
+        and op in _NEEDS_F16_ATOL
+        and Version(np.__version__) >= Version("2.3.0")
+        and platform.machine().lower() in {"x86_64", "amd64", "i386", "i686"}
+    ):
+        return {"atol": _F16_ATOL}
+    return {}
+
 
 complex_data = [
     1 + 1j,
@@ -67,6 +90,7 @@ def check_result(op, in_np, out_np, out_num, **isclose_kwargs):
         print("cuPyNumeric output:")
         print(out_num)
         print(f"dtype: {out_num.dtype}")
+        print(f"Used rtol={isclose_kwargs.get('rtol')}, atol={isclose_kwargs.get('atol')}")
     return result
 
 
@@ -306,7 +330,8 @@ trig_ops = (
 @deterministic_op_test
 def test_trig_ops(op):
     check_op(op, np.random.uniform(low=-1, high=1, size=(4, 5)))
-    check_op(op, np.random.uniform(low=-1, high=1, size=(4, 5)).astype("e"))
+    fp16_in  = np.random.uniform(low=-1, high=1, size=(4, 5)).astype("e")
+    check_op(op, fp16_in, **_maybe_loose_atol(op, "e"))
     check_op(op, np.array(np.random.uniform(low=-1, high=1)))
     # check with complex data type
     if op not in (
@@ -326,7 +351,8 @@ arc_hyp_trig_ops = (
 @deterministic_op_test
 def test_arc_hyp_trig_ops(op):
     check_op(op, np.random.uniform(low=1, high=5, size=(4, 5)))
-    check_op(op, np.random.uniform(low=1, high=5, size=(4, 5)).astype("e"))
+    fp16_in  = np.random.uniform(low=1, high=5, size=(4, 5)).astype("e")
+    check_op(op, fp16_in, **_maybe_loose_atol(op, "e"))
     check_op(op, np.array(np.random.uniform(low=1, high=5)))
     # check with complex data type
     check_op_input(op, complex_type=True, out_dtype=np.complex128)

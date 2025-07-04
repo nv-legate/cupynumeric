@@ -75,12 +75,9 @@ def test_empty_array():
 
 
 def test_bool() -> None:
-    np.clip(True, a_min=1, a_max=1)
-    # Numpy returns 1
-    # See https://github.com/nv-legate/cunumeric.internal/issues/491
-    msg = r"Expected bytes or NumPy ndarray, but got <class 'int'>"
-    with pytest.raises(ValueError, match=msg):
-        num.clip(True, a_min=1, a_max=1)
+    res_np = np.clip(True, a_min=1, a_max=1)
+    res_num = num.clip(True, a_min=1, a_max=1)
+    assert np.array_equal(res_np, res_num)
 
 
 @pytest.mark.parametrize("v", (True, False))
