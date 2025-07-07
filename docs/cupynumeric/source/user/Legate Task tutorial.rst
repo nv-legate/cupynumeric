@@ -15,7 +15,7 @@ to run seamlessly across distributed resources.
 What is a Legate task?
 ======================
 
-A Legate task is a Python function annotated with the ``@task``
+A Legate task is a Python function annotated with the ``@legate.core.task.task``
 decorator. This decorator informs the Legate runtime that a function
 represents a parallel task that can be distributed across multiple CPUs,
 GPUs, and nodes. This decorator enables high-performance parallelism
