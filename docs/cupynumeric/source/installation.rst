@@ -29,6 +29,17 @@ on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
    Packages are only offered for Linux (x86_64 and aarch64) supporting Python
    versions 3.11 to 3.13.
 
+Nightly top-of-tree builds of cuPyNumeric are available under the "experimental" label:
+
+.. code-block:: bash
+   $ conda install -c conda-forge -c legate/label/experimental cupynumeric
+
+Refer to the `nightly docs <https://nv-legate.github.io/cupynumeric>`_ when using these.
+
+.. important::
+
+  These builds are only lightly validated. Use them at your own risk.
+
 Installing PyPI Packages
 ------------------------
 
