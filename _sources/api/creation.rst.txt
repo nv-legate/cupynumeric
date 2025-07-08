@@ -30,6 +30,7 @@ From existing data
    array
    asarray
    copy
+   copyto
    repeat
 
 
@@ -51,6 +52,7 @@ Building matrices
    :toctree: generated/
 
    diag
+   diagflat
    tri
    tril
    triu

@@ -1,0 +1,6 @@
+﻿cupynumeric.diagflat
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: diagflat

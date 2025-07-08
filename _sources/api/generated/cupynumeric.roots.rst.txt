@@ -1,0 +1,6 @@
+﻿cupynumeric.roots
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: roots

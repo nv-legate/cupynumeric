@@ -1,0 +1,6 @@
+﻿cupynumeric.copyto
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: copyto

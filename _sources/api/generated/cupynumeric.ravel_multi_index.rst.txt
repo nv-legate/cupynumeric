@@ -1,0 +1,6 @@
+﻿cupynumeric.ravel\_multi\_index
+===============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: ravel_multi_index

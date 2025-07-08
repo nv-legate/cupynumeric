@@ -138,6 +138,7 @@ Handling complex numbers
    :toctree: generated/
 
    real
+   real_if_close
    imag
    angle
    conj
@@ -172,6 +173,7 @@ Miscellaneous
    sqrt
    cbrt
    square
+   roots
    absolute
    fabs
    sign
