@@ -29,15 +29,19 @@ from legate.util.types import EnvDict
 class CPNProject(Project):
     def custom_files(self) -> list[CustomTest]:
         return [
+            CustomTest("examples/cholesky.py"),
             CustomTest("examples/quantiles.py"),
+            CustomTest("examples/solve.py"),
             CustomTest("examples/sort.py"),
             CustomTest("tests/integration/test_argsort.py"),
+            CustomTest("tests/integration/test_cholesky.py"),
             CustomTest("tests/integration/test_msort.py"),
             CustomTest("tests/integration/test_nanpercentiles.py"),
             CustomTest("tests/integration/test_nanquantiles.py"),
             CustomTest("tests/integration/test_partition.py"),
             CustomTest("tests/integration/test_percentiles.py"),
             CustomTest("tests/integration/test_quantiles.py"),
+            CustomTest("tests/integration/test_solve.py"),
             CustomTest("tests/integration/test_sort_complex.py"),
             CustomTest("tests/integration/test_sort.py"),
             CustomTest("tests/integration/test_unique.py"),
