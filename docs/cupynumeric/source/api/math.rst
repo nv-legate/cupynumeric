@@ -172,6 +172,7 @@ Miscellaneous
    sqrt
    cbrt
    square
+   roots
    absolute
    fabs
    sign

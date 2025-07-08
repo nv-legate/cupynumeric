@@ -16,13 +16,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .._array.array import ndarray
+from .._array.array import _warn_and_convert, ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._ufunc.comparison import greater, less
 from .._ufunc.floating import isinf, isnan
 from .._utils.array import max_identity, min_identity
 from ..config import ConvolveMethod
+from .array_dimension import atleast_1d
+from .array_joining import hstack
+from .array_shape import ravel
+from .creation_matrices import diag
+from .creation_shape import ones, zeros
 from .indexing import putmask
+from .logic_array_type import isreal
+from .logic_truth import all as all_func, any
+from .ssc_searching import nonzero
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -293,3 +301,93 @@ def nan_to_num(
         replace_special(out)
 
     return out
+
+
+@add_boilerplate("p")
+def roots(p: ndarray) -> ndarray:
+    """
+    Return the roots of a polynomial with coefficients given in p.
+
+    The values in the rank-1 array `p` are coefficients of a polynomial.
+    If the length of `p` is n+1 then the polynomial is described by::
+
+      p[0] * x**n + p[1] * x**(n-1) + ... + p[n-1]*x + p[n]
+
+    Parameters
+    ----------
+    p : array_like
+        Rank-1 array of polynomial coefficients.
+
+    Returns
+    -------
+    out : ndarray
+        An array containing the roots of the polynomial.
+
+    Raises
+    ------
+    ValueError
+        When `p` cannot be converted to a rank-1 array.
+
+    See also
+    --------
+    numpy.roots
+
+    Notes
+    -----
+    The algorithm relies on computing the eigenvalues of the
+    companion matrix [1]_. The eigenvalue computation itself is performed
+    on a single GPU, even though other functions in this module may support
+    multiple GPUs.
+
+    Availability
+    --------
+    Single GPU, Multiple CPUs
+    """
+    # Import here to avoid circular import
+    from ..linalg import LinAlgError, eigvals
+
+    # If input is scalar, this makes it a 1D array
+    p = atleast_1d(p)  # type: ignore[assignment]
+    if p.ndim != 1:
+        raise ValueError("Input must be a rank-1 array.")
+
+    if any(isnan(p)) or any(isinf(p)):
+        raise LinAlgError("Array must not contain infs or NaNs")
+
+    non_zero = nonzero(ravel(p))[0]
+
+    # Return an empty array if polynomial is all zeros
+    if len(non_zero) == 0:
+        # Always return float64 to match NumPy's behavior
+        return zeros(0, dtype=np.float64)
+
+    # find the number of trailing zeros -- this is the number of roots at 0.
+    trailing_zeros = int(len(p) - non_zero[-1] - 1)
+
+    # strip leading and trailing zeros
+    p = p[int(non_zero[0]) : int(non_zero[-1]) + 1]
+
+    # casting: if incoming array isn't floating point, make it floating point.
+    if not issubclass(p.dtype.type, (np.floating, np.complexfloating)):
+        p = _warn_and_convert(p, np.dtype(float))
+
+    N = len(p)
+    if N > 1:
+        # build companion matrix and find its eigenvalues (the roots)
+        A = diag(ones((N - 2,), p.dtype), -1)
+        A[0, :] = -p[1:] / p[0]
+        roots_result = eigvals(A)
+    else:
+        roots_result = zeros(0, dtype=p.dtype)
+
+    # tack any zeros onto the back of the array
+    if trailing_zeros > 0:
+        roots_result = hstack(
+            (roots_result, zeros(trailing_zeros, roots_result.dtype))
+        )
+
+    if all_func(isreal(roots_result)):
+        # Convert to real float64 to match NumPy's behavior
+        roots_result = roots_result.real.astype(np.float64)
+
+    return roots_result
