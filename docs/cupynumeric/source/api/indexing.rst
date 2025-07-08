@@ -22,6 +22,7 @@ Generating index arrays
    nonzero
    flatnonzero
    where
+   ravel_multi_index
 
 
 Indexing-like operations

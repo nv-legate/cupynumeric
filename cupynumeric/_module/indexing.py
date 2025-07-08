@@ -24,6 +24,7 @@ from .._array.util import (
     check_writeable,
     convert_to_cupynumeric_ndarray,
 )
+from .._module.array_dimension import broadcast_arrays
 from .._utils import is_np2
 from .._utils.array import calculate_volume
 from .._utils.coverage import is_implemented
@@ -35,7 +36,7 @@ from .array_tiling import tile
 from .creation_data import asarray
 from .creation_matrices import tri
 from .creation_ranges import arange
-from .creation_shape import empty, ones
+from .creation_shape import empty, ones, zeros_like
 from .ssc_counting import count_nonzero
 from .ssc_searching import nonzero
 
@@ -544,7 +545,7 @@ def take(
 ) -> ndarray:
     """
     Take elements from an array along an axis.
-    When axis is not None, this function does the same thing as “fancy”
+    When axis is not None, this function does the same thing as "fancy"
     indexing (indexing arrays using arrays); however, it can be easier
     to use if you need elements along a given axis. A call such as
     `np.take(arr, indices, axis=3)` is equivalent to `arr[:,:,:,indices,...]`.
@@ -1040,8 +1041,8 @@ def diagonal(
         Offset of the diagonal from the main diagonal.  Can be positive or
         negative.  Defaults to main diagonal (0).
     axis1 : int, optional
-        Axis to be used as the first axis of the 2-D sub-arrays from which
-        the diagonals should be taken.  Defaults to first axis (0).
+        Axis to be used as the first axis of the 2-D sub-arrays from
+        which the diagonals should be taken.  Defaults to first axis (0).
     axis2 : int, optional
         Axis to be used as the second axis of the 2-D sub-arrays from
         which the diagonals should be taken. Defaults to second axis (1).
@@ -1243,3 +1244,128 @@ def fill_diagonal(a: ndarray, val: ndarray, wrap: bool = False) -> None:
         indices = (idx,) * a.ndim
 
         a[indices] = val
+
+
+def ravel_multi_index(
+    multi_index: tuple[ndarray, ...] | ndarray,
+    dims: NdShape,
+    mode: BoundsMode | tuple[BoundsMode, ...] = "raise",
+    order: OrderType = "C",
+) -> ndarray:
+    from .math_misc import clip
+
+    """
+    Converts a tuple of index arrays into an array of flat indices, applying
+    boundary modes to the multi-index.
+
+    Parameters
+    ----------
+    multi_index : tuple of array_like
+        A tuple of integer arrays, one array for each dimension.
+    dims : tuple of ints
+        The shape of array into which the indices from `multi_index` apply.
+    mode : {'raise', 'wrap', 'clip'} or tuple of {'raise', 'wrap', 'clip'},
+    optional
+        Specifies how out-of-bounds indices are handled. Can specify either
+        one mode or a tuple of modes, one mode per index.
+        * 'raise' - raise an error (default)
+        * 'wrap' - wrap around
+        * 'clip' - clip to the range
+        In 'clip' mode, a negative index which would normally wrap will clip
+        to 0 instead.
+    order : {'C', 'F'}, optional
+        Determines whether the multi-index should be viewed as indexing in
+        row-major (C-style) or column-major (Fortran-style) order.
+
+    Returns
+    -------
+    raveled_indices : ndarray
+        An array of indices into the flattened version of an array of
+        dimensions `dims`.
+
+    See Also
+    --------
+    nump.ravel_multi_index
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+
+    """
+
+    if isinstance(multi_index, tuple):
+        multi_index = tuple(
+            convert_to_cupynumeric_ndarray(a) for a in multi_index
+        )
+    else:
+        multi_index = (convert_to_cupynumeric_ndarray(multi_index),)
+
+    dims = tuple(dims)
+    ndim = len(dims)
+
+    for d in dims:
+        if d == 0:
+            raise ValueError(
+                "cannot unravel if shape has zero entries (is empty)."
+            )
+        if not np.issubdtype(type(d), int):
+            raise TypeError(
+                f"'{type(d).__name__}' object cannot be interpreted as an "
+                f"integer"
+            )
+
+    if all(i == 0 for i in dims):
+        return convert_to_cupynumeric_ndarray(0)
+
+    for arr in multi_index:
+        if not np.issubdtype(arr.dtype, np.integer):
+            raise TypeError("only int indices permitted")
+
+    if len(multi_index) != ndim:
+        raise ValueError(
+            f"parameter multi_index must be a sequence of length {ndim}"
+        )
+
+    # Convert mode to tuple if it's a single string
+    if isinstance(mode, str):
+        mode = (mode,) * ndim
+    elif len(mode) != ndim:
+        raise ValueError(
+            f"mode length ({len(mode)}) does not match dimensionality of "
+            f"target array ({ndim})"
+        )
+
+    multi_index = tuple(broadcast_arrays(*multi_index))
+
+    # Handle each index according to its mode
+    indices = []
+    for idx, dim, m in zip(multi_index, dims, mode):
+        if m == "raise":
+            if ((idx < 0) | (idx >= dim)).any():
+                raise ValueError("invalid entry in coordinates array")
+        elif m == "wrap":
+            idx = idx % dim
+        elif m == "clip":
+            idx = clip(idx, 0, dim - 1)
+        else:
+            raise ValueError(f"invalid mode: {m}")
+        indices.append(idx)
+
+    # Calculate strides based on order
+    if order == "C":
+        strides = [1]
+        for i in range(ndim - 1, 0, -1):
+            strides.insert(0, strides[0] * dims[i])
+    elif order == "F":
+        strides = [1]
+        for i in range(0, ndim - 1):
+            strides.append(strides[-1] * dims[i])
+    else:
+        raise ValueError(f"only 'C' or 'F' order is permitted, not {order}")
+
+    # Calculate raveled indices
+    raveled = zeros_like(indices[0])
+    for idx, stride in zip(indices, strides):
+        raveled = raveled + idx * stride
+
+    return raveled
