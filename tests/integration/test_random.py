@@ -199,14 +199,14 @@ class TestRandomSeed:
             np.random.seed("123")
         with pytest.raises(TypeError, match=msg):
             np.random.seed("abc")
-            
+
         msg = re.escape(
             "Cannot cast scalar from dtype('float64') to dtype('int64') "
             "according to the rule 'safe'"
         )
         with pytest.raises(TypeError, match=msg):
             np.random.seed(10.5)
-            
+
         msg_num = re.escape("seed must be an integer or None")
         with pytest.raises(TypeError, match=msg_num):
             num.random.seed("123")
@@ -220,11 +220,11 @@ class TestRandomSeed:
         with pytest.raises(ValueError, match=msg):
             np.random.seed(-10)
         with pytest.raises(ValueError, match=msg):
-            np.random.seed(2 ** 32)
+            np.random.seed(2**32)
         with pytest.raises(ValueError, match=msg):
             num.random.seed(-10)
         with pytest.raises(ValueError, match=msg):
-            num.random.seed(2 ** 32)
+            num.random.seed(2**32)
 
 
 def test_RandomState() -> None:
