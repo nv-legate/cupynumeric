@@ -26,8 +26,9 @@ on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
 
 .. important::
 
-   Packages are only offered for Linux (x86_64 and aarch64) supporting Python
-   versions 3.11 to 3.13.
+   Packages are offered for Linux (x86_64 and aarch64) and macOS (aarch64,
+   pip wheels only), supporting Python versions 3.11 to 3.13. Windows is only
+   supported through WSL.
 
 Nightly top-of-tree builds of cuPyNumeric are available under the "experimental" label:
 
@@ -68,8 +69,9 @@ documentation to find more details about running on multiple nodes.
 
 .. important::
 
-   Packages are only offered for Linux (x86_64 and aarch64) supporting Python
-   versions 3.11 to 3.13.
+   Packages are offered for Linux (x86_64 and aarch64) and macOS (aarch64,
+   pip wheels only), supporting Python versions 3.11 to 3.13. Windows is only
+   supported through WSL.
 
 Verify your Installation
 ------------------------

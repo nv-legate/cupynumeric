@@ -53,8 +53,9 @@ different install configurations, or building cuPyNumeric from source.
 
 📌 **Note**
 
-Packages are only offered for Linux (x86_64 and aarch64) supporting Python
-versions 3.11 to 3.13.
+Packages are offered for Linux (x86_64 and aarch64) and macOS (aarch64, pip
+wheels only), supporting Python versions 3.11 to 3.13. Windows is only supported
+through WSL.
 
 ## Documentation
 
