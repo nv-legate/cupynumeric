@@ -34,14 +34,6 @@ def test_ndarray_dumps():
     assert np.allclose(pickle.loads(dump_num), arr_num)
 
 
-@pytest.mark.parametrize("order", ["C", "F", "A"], ids=str)
-def test_ndarray_tobytes(order):
-    shape = (3, 2, 4)
-    arr_np = mk_seq_array(np, shape)
-    arr_num = mk_seq_array(num, shape)
-    assert arr_np.tobytes(order) == arr_num.tobytes(order)
-
-
 @pytest.mark.parametrize("shape", [(3, 2, 4), []], ids=str)
 def test_ndarray_tolist(shape):
     arr_np = mk_0to1_array(np, shape)
@@ -61,7 +53,8 @@ def test_ndarray_tostring(order):
 
 
 @pytest.mark.skipif(
-    NumpyVersion(np.__version__) < "1.9.0", reason="tobytes is introduced in 1.9.0"
+    NumpyVersion(np.__version__) < "1.9.0",
+    reason="tobytes is introduced in 1.9.0",
 )
 @pytest.mark.parametrize("order", ["C", "F", "A"], ids=str)
 def test_ndarray_tobytes(order):

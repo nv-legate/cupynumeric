@@ -25,7 +25,8 @@ class MpPotrfTask : public CuPyNumericTask<MpPotrfTask> {
   static inline const auto TASK_CONFIG =
     legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_MP_POTRF}};
 
-  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true).with_concurrent(true);
+  static constexpr auto GPU_VARIANT_OPTIONS =
+    legate::VariantOptions{}.with_has_allocations(true).with_concurrent(true);
 
  public:
 #if LEGATE_DEFINED(LEGATE_USE_CUDA)

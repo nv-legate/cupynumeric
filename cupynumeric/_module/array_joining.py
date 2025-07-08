@@ -360,10 +360,12 @@ def block(arrays: Sequence[Any]) -> ndarray:
     result = _block_slicing(arrays, depth)
     return result
 
+
 def _eager(x: Any) -> Any:
     if not hasattr(x, "_thunk"):
         return x
     from .._thunk.eager import EagerArray
+
     if isinstance(x._thunk, EagerArray):
         return x._thunk.array
     raise ValueError
@@ -425,9 +427,9 @@ def concatenate(
             axis=axis,
             out=eager_out,
             dtype=dtype,
-            casting=casting
+            casting=casting,
         )
-    except Exception as e:
+    except Exception:
         pass
 
     if dtype is not None and out is not None:

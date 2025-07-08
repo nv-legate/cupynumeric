@@ -43,14 +43,14 @@ def seed(init: int | None = None) -> None:
     if init is None:
         runtime.set_next_random_epoch(0)
         return
-    
+
     if not isinstance(init, int):
-        raise TypeError('seed must be an integer or None')
+        raise TypeError("seed must be an integer or None")
     try:
         init = int(init)
     except TypeError as te:
-        raise TypeError('seed must be an integer or None') from te
-    if not (0 <= init <= 2 ** 32 - 1):
+        raise TypeError("seed must be an integer or None") from te
+    if not (0 <= init <= 2**32 - 1):
         raise ValueError("Seed must be between 0 and 2**32 - 1")
     runtime.set_next_random_epoch(init)
 

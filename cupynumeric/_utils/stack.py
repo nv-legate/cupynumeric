@@ -14,8 +14,8 @@
 #
 from __future__ import annotations
 
-import traceback
 from types import FrameType
+
 
 def find_last_user_stacklevel_and_frame() -> tuple[int, FrameType | None]:
     # We want the caller of the public API from this file to see itself as
@@ -39,16 +39,20 @@ def find_last_user_stacklevel_and_frame() -> tuple[int, FrameType | None]:
             frame = frame.f_back
     return stacklevel, None
 
+
 def find_last_user_stacklevel() -> int:
     stacklevel, _ = find_last_user_stacklevel_and_frame()
     return stacklevel
 
+
 def get_line_number_from_frame(frame: FrameType) -> str:
     return f"{frame.f_code.co_filename}:{frame.f_lineno}"
+
 
 def find_last_user_frame() -> FrameType | None:
     _, last = find_last_user_stacklevel_and_frame()
     return last
+
 
 def find_last_user_frames() -> list[FrameType]:
     _, last = find_last_user_stacklevel_and_frame()
@@ -60,6 +64,7 @@ def find_last_user_frames() -> list[FrameType]:
         curr = curr.f_back
 
     return frames
+
 
 def find_last_user_line_numbers(top_only: bool = True) -> str:
     if top_only:

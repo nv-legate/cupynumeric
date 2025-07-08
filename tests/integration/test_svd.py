@@ -14,6 +14,7 @@
 #
 
 import re
+
 import numpy as np
 import pytest
 from utils.comparisons import allclose
@@ -124,7 +125,7 @@ class TestSvdErrors:
         msg = "array type float16 is unsupported in linalg"
         with pytest.raises(TypeError, match=msg):
             num.linalg.svd(a)
-    
+
     def test_linalgerror_1d(self) -> None:
         arr_np = np.array([1, 2, 3])
         arr_num = num.array(arr_np)
