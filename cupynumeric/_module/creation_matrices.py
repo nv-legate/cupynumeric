@@ -190,3 +190,35 @@ def triu(m: ndarray, k: int = 0) -> ndarray:
     Multiple GPUs, Multiple CPUs
     """
     return trilu(m, k, False)
+
+
+@add_boilerplate("v")
+def diagflat(v: ndarray, k: int = 0) -> ndarray:
+    """
+    Create a two-dimensional array with the flattened input as a diagonal.
+
+    Parameters
+    ----------
+    v : array_like
+        Input data, which is flattened and set as the k-th diagonal of the
+        output.
+    k : int, optional
+        Diagonal to set; 0, the default, corresponds to the "main" diagonal,
+        a positive (negative) k giving the number of the diagonal above (below)
+        the main.
+
+    Returns
+    -------
+    out : ndarray
+        The 2-D output array.
+
+    See Also
+    --------
+    numpy.diagflat
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    # Flatten the input array and use diag to create the output
+    return diag(v.ravel(), k=k)
