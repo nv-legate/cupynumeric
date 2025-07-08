@@ -970,7 +970,7 @@ class DeferredArray(NumPyThunk):
         else:
             result = self._get_view(key)
 
-            if result.shape == ():
+            if ... not in key and result.shape == ():
                 input = result
                 result = runtime.create_empty_thunk(
                     (), self.base.type, inputs=[self]
