@@ -138,6 +138,7 @@ Handling complex numbers
    :toctree: generated/
 
    real
+   real_if_close
    imag
    angle
    conj

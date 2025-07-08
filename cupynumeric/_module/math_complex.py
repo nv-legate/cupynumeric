@@ -16,11 +16,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 from legate.core import Scalar
 
 from .._array.thunk import perform_unary_op
 from .._array.util import add_boilerplate
 from ..config import UnaryOpCode
+from .logic_truth import all
 
 if TYPE_CHECKING:
     from .._array.array import ndarray
@@ -120,3 +122,58 @@ def angle(z: ndarray, deg: bool = False) -> ndarray:
         raise TypeError("can't compute 'angle' for None")
     extra_args = (Scalar(deg),)
     return perform_unary_op(UnaryOpCode.ANGLE, z, extra_args=extra_args)
+
+
+@add_boilerplate("a")
+def real_if_close(a: ndarray, tol: float = 100) -> ndarray:
+    """
+    If input is complex with all imaginary parts close to zero, return real
+    parts.
+
+    "Close to zero" is defined as tol * (machine epsilon of the type for a).
+
+    Parameters
+    ----------
+    a : array_like
+        Input array.
+    tol : float, optional
+        Tolerance in machine epsilons for the complex part of the elements
+        in the array. If the tolerance is <=1, then the absolute tolerance
+        is used. Default is 100.
+
+    Returns
+    -------
+    out : ndarray
+        If a is real, the type of a is used for the output. If a has complex
+        elements, the returned type is float.
+
+    See Also
+    --------
+    real, imag, angle
+    numpy.real_if_close
+
+    Notes
+    -----
+    Machine epsilon varies from machine to machine and between data types but
+    Python floats on most platforms have a machine epsilon equal to
+    2.2204460492503131e-16. You can use 'np.finfo(float).eps' to print out
+    the machine epsilon for floats.
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+
+    # If the array is already real, return it as-is
+    if not issubclass(a.dtype.type, np.complexfloating):
+        return a
+
+    # Calculate tolerance threshold
+    if tol > 1:
+        tol = float(np.finfo(a.real.dtype).eps * tol)
+
+    # Check if all imaginary parts are within tolerance
+    if all(abs(a.imag) < tol):
+        a = a.real
+
+    return a
