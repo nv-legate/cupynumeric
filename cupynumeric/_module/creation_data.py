@@ -14,14 +14,24 @@
 #
 from __future__ import annotations
 
+from itertools import zip_longest
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
-from .._array.array import ndarray
-from .._array.util import add_boilerplate
+from .._array.array import _warn_and_convert, ndarray
+from .._array.util import add_boilerplate, broadcast_where, check_writeable
 from ..runtime import runtime
+from ..types import CastingKind
 from .creation_shape import empty_like
+
+casting_kinds: tuple[CastingKind, ...] = (
+    "no",
+    "equiv",
+    "safe",
+    "same_kind",
+    "unsafe",
+)
 
 if TYPE_CHECKING:
     from ..types import OrderType
@@ -175,3 +185,112 @@ def copy(a: ndarray) -> ndarray:
     result = empty_like(a, dtype=a.dtype)
     result._thunk.copy(a._thunk, deep=True)
     return result
+
+
+@add_boilerplate("dst", "src")
+def copyto(
+    dst: ndarray,
+    src: ndarray,
+    casting: CastingKind = "same_kind",
+    where: ndarray | None = None,
+) -> None:
+    """
+    Copies values from one array to another, broadcasting as necessary.
+
+    Raises a TypeError if the casting rule is violated, and if
+    where is provided, it selects which elements to copy.
+
+    Parameters
+    ----------
+    dst : ndarray
+        The array into which values are copied.
+    src : array_like
+        The array from which values are copied.
+    casting : {'no', 'equiv', 'safe', 'same_kind', 'unsafe'}, optional
+        Controls what kind of data casting may occur when copying.
+
+        * 'no' means the data types should not be cast at all.
+        * 'equiv' means only byte-order changes are allowed.
+        * 'safe' means only casts which can preserve values are allowed.
+        * 'same_kind' means only safe casts or casts within a kind,
+          like float64 to float32, are allowed.
+        * 'unsafe' means any data conversions may be done.
+    where : array_like of bool, optional
+        A boolean array which is broadcasted to match the dimensions
+        of `dst`, and selects elements to copy from `src` to `dst`
+        wherever it contains the value True.
+
+    Notes
+    -----
+    This function modifies the destination array in-place. If you need
+    to preserve the original array, make a copy first.
+
+    See Also
+    --------
+    numpy.copyto
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+
+    # Circular imports
+    from .array_dimension import broadcast_to
+    from .indexing import putmask
+
+    check_writeable(dst)
+
+    # Validate casting parameter
+    if casting not in casting_kinds:
+        raise ValueError(
+            "casting must be one of 'no', 'equiv', "
+            "'safe', 'same_kind', or 'unsafe'"
+        )
+
+    # Check casting compatibility
+    if not np.can_cast(src.dtype, dst.dtype, casting=casting):
+        raise TypeError(
+            f"Cannot cast array data from dtype('{src.dtype}') to dtype("
+            f"according to the rule '{casting}'"
+        )
+
+    # Broadcast src to match dst shape
+    if src.shape != dst.shape:
+        if not _is_broadcastable_to(src.shape, dst.shape):
+            raise ValueError(
+                f"could not broadcast input array from shape "
+                f"{src.shape} into shape {dst.shape}"
+            )
+        else:
+            src = broadcast_to(src, dst.shape)
+
+    # Handle the where parameter
+    if where is not None:
+        where = broadcast_where(where, dst.shape)
+    if where is not None and where.dtype != bool:
+        raise TypeError(
+            f"Cannot cast array data from dtype('{where.dtype}') to "
+            f"dtype('bool') according to the rule '{casting}'"
+        )
+
+    # Convert src to dst dtype if needed
+    if src.dtype != dst.dtype:
+        src = _warn_and_convert(src, dtype=dst.dtype)
+
+    # Perform the copy operation
+    if where is None:
+        # Copy all elements
+        dst._thunk.copy(src._thunk, deep=True)
+    else:
+        putmask(dst, where, src)
+
+
+def _is_broadcastable_to(
+    src_shape: tuple[int, ...], dst_shape: tuple[int, ...]
+) -> bool:
+    for s_dim, d_dim in zip_longest(
+        reversed(src_shape), reversed(dst_shape), fillvalue=1
+    ):
+        if s_dim != 1 and s_dim != d_dim:
+            return False
+    return True
