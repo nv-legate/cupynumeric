@@ -814,13 +814,16 @@ void rebalance_data(TaskContext& context,
                     cudaStream_t stream,
                     ncclComm_t* comm)
 {
+  bool non_empty_rank = (output_ptr != nullptr);
   // output is either values or indices
   VAL* output_values      = nullptr;
   int64_t* output_indices = nullptr;
-  if (argsort) {
-    output_indices = static_cast<int64_t*>(output_ptr);
-  } else {
-    output_values = static_cast<VAL*>(output_ptr);
+  if (non_empty_rank) {
+    if (argsort) {
+      output_indices = static_cast<int64_t*>(output_ptr);
+    } else {
+      output_values = static_cast<VAL*>(output_ptr);
+    }
   }
 
   auto exec_policy = DEFAULT_POLICY(alloc).on(stream);
@@ -830,7 +833,7 @@ void rebalance_data(TaskContext& context,
     const size_t num_segments_l_aligned = get_16b_aligned_count(num_segments_l, sizeof(size_t));
     auto segment_diff =
       create_non_empty_buffer<int64_t>(num_segments_l_aligned, legate::Memory::GPU_FB_MEM);
-    {
+    if (non_empty_rank) {
       // start kernel to search from merge_buffer.segments
       const size_t num_blocks = (num_segments_l + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
       extract_segment_sizes<<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(
@@ -847,7 +850,7 @@ void rebalance_data(TaskContext& context,
     }
 
 #ifdef DEBUG_CUPYNUMERIC
-    {
+    if (non_empty_rank) {
       size_t reduce =
         thrust::reduce(exec_policy, segment_diff.ptr(0), segment_diff.ptr(0) + num_segments_l, 0);
       size_t volume = segment_size_l * num_segments_l;
@@ -862,15 +865,17 @@ void rebalance_data(TaskContext& context,
     // communicate segment diffs
     context.concurrent_task_barrier();
     CHECK_NCCL(ncclGroupStart());
-    for (size_t r = 0; r < num_sort_ranks; r++) {
-      CHECK_NCCL(ncclSend(
-        segment_diff.ptr(0), num_segments_l_aligned, ncclInt64, sort_ranks[r], *comm, stream));
-      CHECK_NCCL(ncclRecv(segment_diff_buffers.ptr(r * num_segments_l_aligned),
-                          num_segments_l_aligned,
-                          ncclInt64,
-                          sort_ranks[r],
-                          *comm,
-                          stream));
+    if (non_empty_rank) {
+      for (size_t r = 0; r < num_sort_ranks; r++) {
+        CHECK_NCCL(ncclSend(
+          segment_diff.ptr(0), num_segments_l_aligned, ncclInt64, sort_ranks[r], *comm, stream));
+        CHECK_NCCL(ncclRecv(segment_diff_buffers.ptr(r * num_segments_l_aligned),
+                            num_segments_l_aligned,
+                            ncclInt64,
+                            sort_ranks[r],
+                            *comm,
+                            stream));
+      }
     }
     CHECK_NCCL(ncclGroupEnd());
     context.concurrent_task_barrier();
@@ -880,7 +885,7 @@ void rebalance_data(TaskContext& context,
                                                             legate::Memory::GPU_FB_MEM);
 
     // Transpose
-    {
+    if (non_empty_rank) {
       dim3 grid((num_segments_l_aligned + BLOCK_DIM - 1) / BLOCK_DIM,
                 (num_sort_ranks + BLOCK_DIM - 1) / BLOCK_DIM);
       dim3 block(BLOCK_DIM, BLOCK_DIM);
@@ -891,7 +896,7 @@ void rebalance_data(TaskContext& context,
     }
 
 #ifdef DEBUG_CUPYNUMERIC
-    {
+    if (non_empty_rank) {
       for (size_t segment = 0; segment < num_segments_l; ++segment) {
         assert(0 == thrust::reduce(exec_policy,
                                    segment_diff_2d.ptr(segment * num_sort_ranks),
@@ -922,63 +927,73 @@ void rebalance_data(TaskContext& context,
     // compute data to send....
     auto segment_diff_2d_scan =
       create_non_empty_buffer<int64_t>(num_segments_l * num_sort_ranks, legate::Memory::GPU_FB_MEM);
-    thrust::device_ptr<int64_t> segment_diff_2d_ptr(segment_diff_2d.ptr(0));
-    thrust::device_ptr<int64_t> segment_diff_2d_scan_ptr(segment_diff_2d_scan.ptr(0));
-    thrust::inclusive_scan(exec_policy,
-                           segment_diff_2d_ptr,
-                           segment_diff_2d_ptr + num_segments_l * num_sort_ranks,
-                           segment_diff_2d_scan_ptr);
-    CUPYNUMERIC_CHECK_CUDA(cudaMemcpy2DAsync(send_right.ptr(0),
-                                             sizeof(int64_t),
-                                             segment_diff_2d_scan.ptr(0) + my_sort_rank,
-                                             num_sort_ranks * sizeof(int64_t),
-                                             sizeof(int64_t),
-                                             num_segments_l,
-                                             cudaMemcpyDeviceToDevice,
-                                             stream));
-    thrust::reverse_iterator<thrust::device_vector<int64_t>::iterator> iter_in(
-      segment_diff_2d_ptr + num_segments_l * num_sort_ranks);
-    thrust::reverse_iterator<thrust::device_vector<int64_t>::iterator> iter_out(
-      segment_diff_2d_scan_ptr + num_segments_l * num_sort_ranks);
-    thrust::inclusive_scan(
-      exec_policy, iter_in, iter_in + num_segments_l * num_sort_ranks, iter_out);
-    CUPYNUMERIC_CHECK_CUDA(cudaMemcpy2DAsync(send_left.ptr(0),
-                                             sizeof(int64_t),
-                                             segment_diff_2d_scan.ptr(0) + my_sort_rank,
-                                             num_sort_ranks * sizeof(int64_t),
-                                             sizeof(int64_t),
-                                             num_segments_l,
-                                             cudaMemcpyDeviceToDevice,
-                                             stream));
 
-    segment_diff_2d.destroy();
+    if (non_empty_rank) {
+      thrust::device_ptr<int64_t> segment_diff_2d_ptr(segment_diff_2d.ptr(0));
+      thrust::device_ptr<int64_t> segment_diff_2d_scan_ptr(segment_diff_2d_scan.ptr(0));
+      thrust::inclusive_scan(exec_policy,
+                             segment_diff_2d_ptr,
+                             segment_diff_2d_ptr + num_segments_l * num_sort_ranks,
+                             segment_diff_2d_scan_ptr);
+      CUPYNUMERIC_CHECK_CUDA(cudaMemcpy2DAsync(send_right.ptr(0),
+                                               sizeof(int64_t),
+                                               segment_diff_2d_scan.ptr(0) + my_sort_rank,
+                                               num_sort_ranks * sizeof(int64_t),
+                                               sizeof(int64_t),
+                                               num_segments_l,
+                                               cudaMemcpyDeviceToDevice,
+                                               stream));
+      thrust::reverse_iterator<thrust::device_vector<int64_t>::iterator> iter_in(
+        segment_diff_2d_ptr + num_segments_l * num_sort_ranks);
+      thrust::reverse_iterator<thrust::device_vector<int64_t>::iterator> iter_out(
+        segment_diff_2d_scan_ptr + num_segments_l * num_sort_ranks);
+      thrust::inclusive_scan(
+        exec_policy, iter_in, iter_in + num_segments_l * num_sort_ranks, iter_out);
+      CUPYNUMERIC_CHECK_CUDA(cudaMemcpy2DAsync(send_left.ptr(0),
+                                               sizeof(int64_t),
+                                               segment_diff_2d_scan.ptr(0) + my_sort_rank,
+                                               num_sort_ranks * sizeof(int64_t),
+                                               sizeof(int64_t),
+                                               num_segments_l,
+                                               cudaMemcpyDeviceToDevice,
+                                               stream));
+    }
+
     segment_diff_2d_scan.destroy();
+    segment_diff_2d.destroy();
 
     // package data to send
-    size_t send_left_size  = thrust::transform_reduce(exec_policy,
-                                                     send_left.ptr(0),
-                                                     send_left.ptr(0) + num_segments_l,
-                                                     positive_value(),
-                                                     0,
-                                                     thrust::plus<int64_t>());
-    size_t recv_left_size  = thrust::transform_reduce(exec_policy,
-                                                     send_left.ptr(0),
-                                                     send_left.ptr(0) + num_segments_l,
-                                                     negative_value(),
-                                                     0,
-                                                     thrust::plus<int64_t>());
-    size_t send_right_size = thrust::transform_reduce(exec_policy,
-                                                      send_right.ptr(0),
-                                                      send_right.ptr(0) + num_segments_l,
-                                                      positive_value(),
-                                                      0,
-                                                      thrust::plus<int64_t>());
-    size_t recv_right_size = thrust::transform_reduce(exec_policy,
-                                                      send_right.ptr(0),
-                                                      send_right.ptr(0) + num_segments_l,
-                                                      negative_value(),
-                                                      0,
-                                                      thrust::plus<int64_t>());
+    size_t send_left_size  = 0;
+    size_t recv_left_size  = 0;
+    size_t send_right_size = 0;
+    size_t recv_right_size = 0;
+    if (non_empty_rank) {
+      send_left_size  = thrust::transform_reduce(exec_policy,
+                                                send_left.ptr(0),
+                                                send_left.ptr(0) + num_segments_l,
+                                                positive_value(),
+                                                0,
+                                                thrust::plus<int64_t>());
+      recv_left_size  = thrust::transform_reduce(exec_policy,
+                                                send_left.ptr(0),
+                                                send_left.ptr(0) + num_segments_l,
+                                                negative_value(),
+                                                0,
+                                                thrust::plus<int64_t>());
+      send_right_size = thrust::transform_reduce(exec_policy,
+                                                 send_right.ptr(0),
+                                                 send_right.ptr(0) + num_segments_l,
+                                                 positive_value(),
+                                                 0,
+                                                 thrust::plus<int64_t>());
+      recv_right_size = thrust::transform_reduce(exec_policy,
+                                                 send_right.ptr(0),
+                                                 send_right.ptr(0) + num_segments_l,
+                                                 negative_value(),
+                                                 0,
+                                                 thrust::plus<int64_t>());
+    }
+
     SortPiece<VAL> send_left_data, recv_left_data, send_right_data, recv_right_data;
     send_left_data.size  = send_left_size;
     recv_left_data.size  = recv_left_size;
@@ -1006,7 +1021,7 @@ void rebalance_data(TaskContext& context,
 
     Buffer<int64_t> segment_diff_pos =
       create_non_empty_buffer<int64_t>(num_segments_l, legate::Memory::GPU_FB_MEM);
-    {
+    if (non_empty_rank) {
       // need scan of segment_diff
       // need scan of (positive!) send_left, send_right
       auto send_left_pos =
@@ -1073,9 +1088,9 @@ void rebalance_data(TaskContext& context,
 
       send_left_pos.destroy();
       send_right_pos.destroy();
+      assert(send_left_data.size == send_left_size);
+      assert(send_right_data.size == send_right_size);
     }
-    assert(send_left_data.size == send_left_size);
-    assert(send_right_data.size == send_right_size);
 
     // send/receive overlapping data
     context.concurrent_task_barrier();
@@ -1163,7 +1178,7 @@ void rebalance_data(TaskContext& context,
     }
 
     // merge data into target
-    {
+    if (non_empty_rank) {
       // need scan of (negative!) send_left, send_right
       auto recv_left_pos =
         create_non_empty_buffer<int64_t>(num_segments_l, legate::Memory::GPU_FB_MEM);
@@ -1223,12 +1238,12 @@ void rebalance_data(TaskContext& context,
                                                                          num_sort_ranks);
       }
 
-      segment_diff_pos.destroy();
       recv_left_pos.destroy();
       recv_right_pos.destroy();
     }
 
     // remove segment_sizes, all buffers should be destroyed...
+    segment_diff_pos.destroy();
     segment_diff.destroy();
     send_left.destroy();
     send_right.destroy();
@@ -1303,22 +1318,9 @@ void sample_sort_nccl_nd(
       num_sort_ranks                  = worker_count / number_sort_groups;
     }
     worker_count_d.destroy();
-
-    // early out
-    if (volume == 0) {
-      if (is_unbound_1d_storage) {
-        // we need to return an empty buffer here
-        if (argsort) {
-          auto buffer = create_non_empty_buffer<int64_t>(0, legate::Memory::GPU_FB_MEM);
-          output_array_unbound.bind_data(buffer, Point<1>(0));
-        } else {
-          auto buffer = create_non_empty_buffer<VAL>(0, legate::Memory::GPU_FB_MEM);
-          output_array_unbound.bind_data(buffer, Point<1>(0));
-        }
-      }
-      return;
-    }
   }
+
+  // NOTE: ranks with volume==0 will continue in order to allow concurrent barrier synchronization
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////// Part 1: select and share samples accross sort domain
@@ -1326,7 +1328,7 @@ void sample_sort_nccl_nd(
 
   // collect local samples - for now we take num_sort_ranks samples for every node/line
   // worst case this leads to imbalance of x2
-  size_t num_segments_l            = volume / segment_size_l;
+  size_t num_segments_l            = segment_size_l > 0 ? volume / segment_size_l : 0;
   size_t num_samples_per_segment_l = num_sort_ranks;
   size_t num_samples_l             = num_samples_per_segment_l * num_segments_l;
   size_t num_samples_per_segment_g = num_samples_per_segment_l * num_sort_ranks;
@@ -1335,7 +1337,7 @@ void sample_sort_nccl_nd(
     create_non_empty_buffer<SegmentSample<VAL>>(num_samples_g, legate::Memory::GPU_FB_MEM);
 
   size_t offset = num_samples_l * my_sort_rank;
-  {
+  if (volume > 0) {
     const size_t num_blocks = (num_samples_l + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     extract_samples_segment<<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(
       local_sorted.values.ptr(0),
@@ -1356,11 +1358,14 @@ void sample_sort_nccl_nd(
     const size_t aligned_count = get_16b_aligned_count(num_samples_l, sizeof(SegmentSample<VAL>));
     auto send_buffer =
       create_non_empty_buffer<SegmentSample<VAL>>(aligned_count, legate::Memory::GPU_FB_MEM);
-    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(send_buffer.ptr(0),
-                                           samples.ptr(offset),
-                                           sizeof(SegmentSample<VAL>) * num_samples_l,
-                                           cudaMemcpyDeviceToDevice,
-                                           stream));
+
+    if (volume > 0) {
+      CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(send_buffer.ptr(0),
+                                             samples.ptr(offset),
+                                             sizeof(SegmentSample<VAL>) * num_samples_l,
+                                             cudaMemcpyDeviceToDevice,
+                                             stream));
+    }
 
     auto recv_buffer = create_non_empty_buffer<SegmentSample<VAL>>(aligned_count * num_sort_ranks,
                                                                    legate::Memory::GPU_FB_MEM);
@@ -1368,7 +1373,7 @@ void sample_sort_nccl_nd(
     context.concurrent_task_barrier();
     CHECK_NCCL(ncclGroupStart());
     for (size_t r = 0; r < num_sort_ranks; r++) {
-      if (r != my_sort_rank) {
+      if (volume > 0 && r != my_sort_rank) {
         CHECK_NCCL(ncclSend(send_buffer.ptr(0),
                             aligned_count * sizeof(SegmentSample<VAL>),
                             ncclInt8,
@@ -1388,7 +1393,7 @@ void sample_sort_nccl_nd(
 
     // copy back
     for (size_t r = 0; r < num_sort_ranks; r++) {
-      if (r != my_sort_rank) {
+      if (volume > 0 && r != my_sort_rank) {
         CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(samples.ptr(num_samples_l * r),
                                                recv_buffer.ptr(aligned_count * r),
                                                sizeof(SegmentSample<VAL>) * num_samples_l,
@@ -1409,27 +1414,29 @@ void sample_sort_nccl_nd(
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
   // sort samples on device
-  auto alloc       = ThrustAllocator(legate::Memory::GPU_FB_MEM);
-  auto exec_policy = DEFAULT_POLICY(alloc).on(stream);
-  thrust::stable_sort(
-    exec_policy, samples.ptr(0), samples.ptr(0) + num_samples_g, SegmentSampleComparator<VAL>());
-
-  // check whether we have invalid samples (in case one participant did not have enough)
-  SegmentSample<VAL> invalid_sample;
-  invalid_sample.segment                = 0;
-  invalid_sample.rank                   = -1;
-  auto lower_bound                      = thrust::lower_bound(exec_policy,
-                                         samples.ptr(0),
-                                         samples.ptr(0) + num_samples_per_segment_g,
-                                         invalid_sample,
-                                         SegmentSampleComparator<VAL>());
-  size_t num_usable_samples_per_segment = lower_bound - samples.ptr(0);
+  auto alloc                            = ThrustAllocator(legate::Memory::GPU_FB_MEM);
+  auto exec_policy                      = DEFAULT_POLICY(alloc).on(stream);
+  size_t num_usable_samples_per_segment = 0;
+  if (volume > 0) {
+    thrust::stable_sort(
+      exec_policy, samples.ptr(0), samples.ptr(0) + num_samples_g, SegmentSampleComparator<VAL>());
+    // check whether we have invalid samples (in case one participant did not have enough)
+    SegmentSample<VAL> invalid_sample;
+    invalid_sample.segment         = 0;
+    invalid_sample.rank            = -1;
+    auto lower_bound               = thrust::lower_bound(exec_policy,
+                                           samples.ptr(0),
+                                           samples.ptr(0) + num_samples_per_segment_g,
+                                           invalid_sample,
+                                           SegmentSampleComparator<VAL>());
+    num_usable_samples_per_segment = lower_bound - samples.ptr(0);
+  }
 
   // select splitters / positions based on samples (on device)
   // the indexing is split_positions[segments][positions]
   const size_t num_splitters = (num_sort_ranks - 1) * num_segments_l;
   auto split_positions = create_non_empty_buffer<size_t>(num_splitters, legate::Memory::GPU_FB_MEM);
-  {
+  if (volume > 0) {
     const size_t num_blocks = (num_splitters + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     extract_split_positions_segments<<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(
       local_sorted.values.ptr(0),
@@ -1453,7 +1460,7 @@ void sample_sort_nccl_nd(
   Buffer<size_t> size_send            = create_non_empty_buffer<size_t>(
     num_segments_l_aligned * num_sort_ranks, legate::Memory::GPU_FB_MEM);
 
-  {
+  if (volume > 0) {
     const size_t num_send_parts = num_sort_ranks * num_segments_l;
     const size_t num_blocks     = (num_send_parts + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     compute_send_dimensions<<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(segment_size_l,
@@ -1483,19 +1490,21 @@ void sample_sort_nccl_nd(
     num_segments_l_aligned * num_sort_ranks, legate::Memory::GPU_FB_MEM);
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
-  for (size_t r = 0; r < num_sort_ranks; r++) {
-    CHECK_NCCL(ncclSend(size_send.ptr(r * num_segments_l_aligned),
-                        num_segments_l_aligned,
-                        ncclUint64,
-                        sort_ranks[r],
-                        *comm,
-                        stream));
-    CHECK_NCCL(ncclRecv(size_recv.ptr(r * num_segments_l_aligned),
-                        num_segments_l_aligned,
-                        ncclUint64,
-                        sort_ranks[r],
-                        *comm,
-                        stream));
+  if (volume > 0) {
+    for (size_t r = 0; r < num_sort_ranks; r++) {
+      CHECK_NCCL(ncclSend(size_send.ptr(r * num_segments_l_aligned),
+                          num_segments_l_aligned,
+                          ncclUint64,
+                          sort_ranks[r],
+                          *comm,
+                          stream));
+      CHECK_NCCL(ncclRecv(size_recv.ptr(r * num_segments_l_aligned),
+                          num_segments_l_aligned,
+                          ncclUint64,
+                          sort_ranks[r],
+                          *comm,
+                          stream));
+    }
   }
   CHECK_NCCL(ncclGroupEnd());
   context.concurrent_task_barrier();
@@ -1505,7 +1514,7 @@ void sample_sort_nccl_nd(
     create_non_empty_buffer<size_t>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
   Buffer<size_t> size_recv_total =
     create_non_empty_buffer<size_t>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
-  {
+  if (volume > 0) {
     CUPYNUMERIC_CHECK_CUDA(cudaMemcpy2DAsync(size_send_total.ptr(0),
                                              1 * sizeof(size_t),
                                              size_send.ptr(num_segments_l),
@@ -1528,8 +1537,8 @@ void sample_sort_nccl_nd(
   }
 
   // copy values into aligned send buffer
-  std::vector<int64_t> send_buffer_pos(num_sort_ranks + 1);
-  {
+  std::vector<int64_t> send_buffer_pos(num_sort_ranks + 1, 0);
+  if (volume > 0) {
     int64_t total_size = 0;
     for (size_t r = 0; r < num_sort_ranks; r++) {
       size_t size_aligned = get_16b_aligned_count(size_send_total[r], sizeof(VAL));
@@ -1547,7 +1556,7 @@ void sample_sort_nccl_nd(
     create_non_empty_buffer<VAL>(send_buffer_pos[num_sort_ranks], legate::Memory::GPU_FB_MEM);
   Buffer<int64_t> idc_send_buffers = create_non_empty_buffer<int64_t>(
     argsort ? send_buffer_pos[num_sort_ranks] : 0, legate::Memory::GPU_FB_MEM);
-  {
+  if (volume > 0) {
     Buffer<VAL*> val_send_buffers_ptr =
       create_non_empty_buffer<VAL*>(num_sort_ranks, legate::Memory::Z_COPY_MEM);
     for (size_t r = 0; r < num_sort_ranks; r++) {
@@ -1599,8 +1608,8 @@ void sample_sort_nccl_nd(
   segment_blocks.destroy();
 
   // allocate target buffers
-  std::vector<SegmentMergePiece<VAL>> merge_buffers(num_sort_ranks);
-  {
+  std::vector<SegmentMergePiece<VAL>> merge_buffers(volume > 0 ? num_sort_ranks : 1);
+  if (volume > 0) {
     for (size_t r = 0; r < num_sort_ranks; ++r) {
       auto size = size_recv_total[r];
 
@@ -1645,49 +1654,59 @@ void sample_sort_nccl_nd(
     }
 
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
+  } else {
+    // empty buffer
+    merge_buffers[0].size     = 0;
+    merge_buffers[0].values   = create_non_empty_buffer<VAL>(0, legate::Memory::GPU_FB_MEM);
+    merge_buffers[0].indices  = create_non_empty_buffer<int64_t>(0, legate::Memory::GPU_FB_MEM);
+    merge_buffers[0].segments = create_non_empty_buffer<size_t>(0, legate::Memory::GPU_FB_MEM);
   }
 
   // communicate all2all (in sort dimension)
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
-  for (size_t r = 0; r < num_sort_ranks; r++) {
-    if (size_send_total[r] > 0) {
-      CHECK_NCCL(ncclSend(val_send_buffers.ptr(send_buffer_pos[r]),
-                          size_send_total[r] * sizeof(VAL),
-                          ncclInt8,
-                          sort_ranks[r],
-                          *comm,
-                          stream));
-    }
-    if (merge_buffers[r].size > 0) {
-      CHECK_NCCL(ncclRecv(merge_buffers[r].values.ptr(0),
-                          merge_buffers[r].size * sizeof(VAL),
-                          ncclInt8,
-                          sort_ranks[r],
-                          *comm,
-                          stream));
+  if (volume > 0) {
+    for (size_t r = 0; r < num_sort_ranks; r++) {
+      if (size_send_total[r] > 0) {
+        CHECK_NCCL(ncclSend(val_send_buffers.ptr(send_buffer_pos[r]),
+                            size_send_total[r] * sizeof(VAL),
+                            ncclInt8,
+                            sort_ranks[r],
+                            *comm,
+                            stream));
+      }
+      if (merge_buffers[r].size > 0) {
+        CHECK_NCCL(ncclRecv(merge_buffers[r].values.ptr(0),
+                            merge_buffers[r].size * sizeof(VAL),
+                            ncclInt8,
+                            sort_ranks[r],
+                            *comm,
+                            stream));
+      }
     }
   }
   CHECK_NCCL(ncclGroupEnd());
 
   if (argsort) {
     CHECK_NCCL(ncclGroupStart());
-    for (size_t r = 0; r < num_sort_ranks; r++) {
-      if (size_send_total[r] > 0) {
-        CHECK_NCCL(ncclSend(idc_send_buffers.ptr(send_buffer_pos[r]),
-                            size_send_total[r],
-                            ncclInt64,
-                            sort_ranks[r],
-                            *comm,
-                            stream));
-      }
-      if (merge_buffers[r].size > 0) {
-        CHECK_NCCL(ncclRecv(merge_buffers[r].indices.ptr(0),
-                            merge_buffers[r].size,
-                            ncclInt64,
-                            sort_ranks[r],
-                            *comm,
-                            stream));
+    if (volume > 0) {
+      for (size_t r = 0; r < num_sort_ranks; r++) {
+        if (size_send_total[r] > 0) {
+          CHECK_NCCL(ncclSend(idc_send_buffers.ptr(send_buffer_pos[r]),
+                              size_send_total[r],
+                              ncclInt64,
+                              sort_ranks[r],
+                              *comm,
+                              stream));
+        }
+        if (merge_buffers[r].size > 0) {
+          CHECK_NCCL(ncclRecv(merge_buffers[r].indices.ptr(0),
+                              merge_buffers[r].size,
+                              ncclInt64,
+                              sort_ranks[r],
+                              *comm,
+                              stream));
+        }
       }
     }
     CHECK_NCCL(ncclGroupEnd());
