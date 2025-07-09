@@ -15,15 +15,15 @@
       "url": "https://docs.nvidia.com/cupynumeric/25.03/"
     },
     {
-      "name": "25.05",
-      "version": "25.05",
-      "url": "https://docs.nvidia.com/cupynumeric/25.05/"
-    },
-    {
       "name": "25.07",
       "version": "25.07",
-      "preferred": true,
       "url": "https://docs.nvidia.com/cupynumeric/25.07/"
+    },
+    {
+      "name": "25.08",
+      "version": "25.08",
+      "preferred": true,
+      "url": "https://docs.nvidia.com/cupynumeric/25.08/"
     },
     {
       "name": "dev",
