@@ -27,7 +27,7 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.36
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.38
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
@@ -38,7 +38,7 @@ jobs:
       use-container: ${{ inputs.platform == 'linux' }}
       platform: ${{ inputs.platform }}
       dependencies-file: ""
-      legate-gh-ci-tag: "v1.36"
+      legate-gh-ci-tag: "v1.38"
       build-mode: ${{ inputs.build-mode }}
       network: "ucx"
       setup-python-proxy-cache: true
@@ -52,7 +52,7 @@ jobs:
     name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.36
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.38
     with:
       build-has-tests: false
       build-mode: ${{ inputs.build-mode }}
@@ -61,7 +61,7 @@ jobs:
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
       has-gpu: false
-      legate-gh-ci-tag: "v1.36"
+      legate-gh-ci-tag: "v1.38"
       name: Build documentation
       network: "ucx"
       platform: ${{ inputs.platform }}
