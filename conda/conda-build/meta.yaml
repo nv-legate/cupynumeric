@@ -55,7 +55,7 @@
     {% set version = environ.get('GIT_DESCRIBE_TAG', placeholder_version).lstrip('v') %}
     {% set legate_version = os.environ.get("LEGATE_VERSION", version) %}
 {% endif %}
-{% set legate_buildstr = "_".join(["cuda" ~ cuda_major, "py" ~ py_version, "*" ~ cpu_gpu_tag.strip('_'), os.environ.get("LEGATE_BUILDSTR", "") ]) %}
+{% set legate_buildstr = "_".join(["py" ~ py_version, "*" ~ cpu_gpu_tag.strip('_'), os.environ.get("LEGATE_BUILDSTR", "") ]) %}
 
 package:
   name: {{ name|lower }}
@@ -150,7 +150,7 @@ requirements:
     # Versions after v0.3.23 conflict with Realm's OpenMP runtime
     # see https://github.com/nv-legate/cupynumeric.internal/issues/342
     - openblas <=0.3.23 =*openmp*
-    - legate ={{ legate_version }}={{ legate_buildstr }}
+    - legate ={{ legate_version }}=*{{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cuda-cccl
     - cutensor >=2.0 =*_*
