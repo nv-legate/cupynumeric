@@ -1043,6 +1043,9 @@ class DeferredArray(NumPyThunk):
         else:
             view = self._get_view(key)
 
+            if view.size == 0:
+                return
+
             if view.shape == ():
                 # We're just writing a single value
                 assert rhs.size == 1
