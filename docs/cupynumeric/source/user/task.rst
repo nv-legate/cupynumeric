@@ -208,12 +208,14 @@ and the problem size is 1000.
 
 - GPU 4 gets the range 750–999
 
-With the usage of ``align(“x”, “y”)`` and ``align(“y”, “z”)`` constraints, we
-make sure that ``x[i]``, ``y[i]``, and ``z[i]`` are all assigned to the same gpu. If
-we want to compute ``z[2]``, and GPU 1 handles the calculation for it, ``x[2]``
-and ``y[2]`` need to be handled in the same GPU in order to get the correct
-answer. Given the ``align`` constraint, Legate will handle co-location of
-corresponding elements across arrays, ensuring correctness.
+With the usage of ``align(“x”, “y”)`` and ``align(“y”, “z”)`` constraints, we ensure that 
+the chunks of ``x``, ``y``, and ``z`` are partitioned in the same way across devices. 
+This means that each chunk (or window) of data is assigned to the same task, so corresponding 
+elements within each chunk are colocated on the same GPU during execution. For example, 
+if a chunk covering indices 0–9 is assigned to GPU 1, all data for x[0:10], y[0:10], and z[0:10] 
+will be processed together on that device. For further details, see the `Legate alignment constraints documentation`_.
+
+.. _Legate alignment constraints documentation: https://docs.nvidia.com/legate/25.07/api/python/generated/legate.core.task.task.html
 
 The ``saxpy_task`` function uses ``TaskContext`` and its ``get_variant_kind()``
 method to determine the execution target (GPU or CPU) and accordingly
