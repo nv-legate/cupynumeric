@@ -19,21 +19,35 @@ cmake_minimum_required(VERSION 3.26.4)
 project(cupynumeric-python VERSION 25.08.00 LANGUAGES CXX)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_INSTALL_LIBDIR lib64)
+
+if(APPLE)
+  # Workaround the way CCCL uses CMake variables to configure the default Thrust.
+  set(CCCL_THRUST_DEVICE_SYSTEM "CPP" CACHE STRING "Use CPP")
+  # Using native toolchain, no OpenMP there.
+  set(Legion_USE_OpenMP OFF)
+else()
+  # We want to force the pip wheels to build and ship their own openblas
+  set(BLA_VENDOR "OpenBLAS")
+endif()
+
 set(CUPYNUMERIC_BUILD_PIP_WHEELS ON)
-# We want to force the pip wheels to build and ship their own openblas
-set(BLA_VENDOR "OpenBLAS")
 
 add_subdirectory(../../../.. cupynumeric-all)
 
-set(rpaths
-  "$ORIGIN/../../legate/lib64"
-  "$ORIGIN/../../cutensor/lib"
-  "$ORIGIN/../../nvidia/cublas/lib"
-  "$ORIGIN/../../nvidia/cufft/lib"
-  "$ORIGIN/../../nvidia/cusolver/lib"
-  "$ORIGIN/../../nvidia/cusparse/lib"
-  "$ORIGIN/../../nvidia/nvjitlink/lib"
-)
+if(APPLE)
+  set(rpaths "@loader_path/../../legate/lib64")
+else()
+  set(rpaths
+    "$ORIGIN/../../legate/lib64"
+    "$ORIGIN/../../cutensor/lib"
+    "$ORIGIN/../../nvidia/cublas/lib"
+    "$ORIGIN/../../nvidia/cufft/lib"
+    "$ORIGIN/../../nvidia/cusolver/lib"
+    "$ORIGIN/../../nvidia/cusparse/lib"
+    "$ORIGIN/../../nvidia/nvjitlink/lib"
+  )
+endif()
 set_property(
   TARGET cupynumeric
   PROPERTY INSTALL_RPATH ${rpaths}
