@@ -20,9 +20,13 @@ from typing import TYPE_CHECKING, Any, Sequence
 import numpy as np
 
 from .._array.array import ndarray
-from .._array.util import convert_to_cupynumeric_ndarray
+from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._utils import is_np2
 from .array_dimension import _atleast_nd
+from .array_transpose import moveaxis
+from .creation_ranges import arange
+from .creation_shape import empty, ones, zeros
+from .ssc_searching import flatnonzero
 
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index  # type: ignore
@@ -726,3 +730,136 @@ def column_stack(tup: Sequence[ndarray]) -> ndarray:
 
 
 row_stack = vstack
+
+
+@add_boilerplate("arr", "values")
+def insert(
+    arr: ndarray,
+    obj: int | slice | Sequence[int] | ndarray,
+    values: ndarray,
+    axis: int | None = None,
+) -> ndarray:
+    """
+    Insert values along the given axis before the given indices.
+
+    Parameters
+    ----------
+    arr : array_like
+        Input array.
+    obj : int, slice or sequence of ints
+        Object that defines the index or indices before which `values` is
+        inserted.
+    values : array_like
+        Values to insert into `arr`. If the type of `values` is different from
+        that of `arr`, `values` is converted to the type of `arr`.
+        `values` should be shaped so that `arr[...,obj,...] = values` is legal.
+    axis : int, optional
+        Axis along which to insert `values`. If `axis` is None then `arr`
+        is flattened first.
+
+    Returns
+    -------
+    out : ndarray
+        A copy of `arr` with `values` inserted. Note that `insert` does not
+        occur in-place: a new array is returned. If `axis` is None, `out` is
+        a flattened array.
+
+    See Also
+    --------
+    np.append
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    ndim = arr.ndim
+
+    if axis is None:
+        arr = arr.ravel()
+        ndim = 1
+        axis = 0
+    else:
+        axis = normalize_axis_index(axis, ndim)
+    slobj = [slice(None)] * ndim
+    N = arr.shape[axis]
+    newshape = list(arr.shape)
+
+    if isinstance(obj, slice):
+        indices = arange(*obj.indices(N), dtype=np.intp)
+    else:
+        if isinstance(obj, ndarray) and obj.dtype == bool:
+            if obj.ndim != 1:
+                raise ValueError(
+                    "boolean array argument obj to insert "
+                    "must be one dimensional"
+                )
+            indices = flatnonzero(obj)
+        else:
+            indices = convert_to_cupynumeric_ndarray(obj)
+            if indices.ndim > 1:
+                raise ValueError(
+                    "index array argument obj to insert must be one "
+                    "dimensional or scalar"
+                )
+    if indices.size == 1:
+        index = indices.item()
+        if index < -N or index > N:
+            raise IndexError(
+                f"index {obj} is out of bounds for axis {axis} "
+                f"with size {N}"
+            )
+        if index < 0:
+            index += N
+
+        values = convert_to_cupynumeric_ndarray(
+            np.array(values, copy=None, ndmin=arr.ndim, dtype=arr.dtype)
+        )
+        if indices.ndim == 0:
+            # Convert values to numpy for moveaxis, then back to cupynumeric
+            values_np = moveaxis(
+                convert_to_cupynumeric_ndarray(values), [0], [axis]
+            )
+            values = convert_to_cupynumeric_ndarray(values_np)
+        numnew = values.shape[axis]
+        newshape[axis] += numnew
+        new = empty(tuple(newshape), arr.dtype)
+
+        slobj[axis] = slice(None, index)
+        new[tuple(slobj)] = arr[tuple(slobj)]
+        slobj[axis] = slice(index, index + numnew)
+        new[tuple(slobj)] = values
+        slobj[axis] = slice(index + numnew, None)
+        slobj2 = [slice(None)] * ndim
+        slobj2[axis] = slice(index, None)
+        new[tuple(slobj)] = arr[tuple(slobj2)]
+
+        return new
+
+    elif indices.size == 0 and not isinstance(obj, ndarray):
+        indices = indices.astype(np.intp)
+
+    indices[indices < 0] += N
+
+    numnew = len(indices)
+    order = indices.argsort(kind="mergesort")
+    indices[order] += arange(numnew)
+
+    newshape[axis] += numnew
+    old_mask = ones(newshape[axis], dtype=bool)
+    false_mask = zeros(indices.shape, dtype=bool)
+    old_mask[indices] = false_mask
+
+    new = empty(tuple(newshape), arr.dtype)
+    values_index_tuple = (
+        (slice(None),) * axis + (indices,) + (slice(None),) * (ndim - axis - 1)
+    )
+    arr_index_tuple = (
+        (slice(None),) * axis
+        + (old_mask,)
+        + (slice(None),) * (ndim - axis - 1)
+    )
+
+    new[values_index_tuple] = values
+    new[arr_index_tuple] = arr
+
+    return new

@@ -66,6 +66,7 @@ Joining arrays
 
    append
    concatenate
+   insert
    stack
    block
    vstack
