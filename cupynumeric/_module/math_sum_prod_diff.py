@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import collections.abc
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -23,13 +24,14 @@ from .._array.thunk import perform_scan, perform_unary_reduction
 from .._array.util import add_boilerplate
 from .._ufunc.comparison import not_equal
 from .._ufunc.floating import isnan
-from .._ufunc.math import add, multiply, subtract
+from .._ufunc.math import add, multiply, negative, subtract
 from .._utils import is_np2
 from ..config import ScanCode, UnaryRedCode
 from ..settings import settings as cupynumeric_settings
 from ._unary_red_utils import get_non_nan_unary_red_code
-from .array_dimension import broadcast_to
+from .array_dimension import broadcast_shapes, broadcast_to
 from .array_joining import concatenate
+from .array_transpose import moveaxis
 from .creation_data import asarray
 from .creation_shape import empty, empty_like
 from .indexing import putmask
@@ -1336,3 +1338,157 @@ def gradient(
         return outvals[0]
     else:
         return outvals
+
+
+@add_boilerplate("a", "b")
+def cross(
+    a: ndarray,
+    b: ndarray,
+    axisa: int = -1,
+    axisb: int = -1,
+    axisc: int = -1,
+    axis: int | None = None,
+) -> ndarray:
+    """
+    Return the cross product of two (arrays of) vectors.
+
+    The cross product of `a` and `b` in R^3 is a vector perpendicular to both
+    `a` and `b`. If `a` and `b` are arrays of vectors, the vectors are defined
+    by the last axis of `a` and `b` by default, and these axes can have
+    dimensions 2 or 3. Where the dimension of either `a` or `b` is 2, the
+    third component of the input vector is assumed to be zero and the cross
+    product calculated accordingly. In cases where both input vectors have
+    dimension 2, the z-component of the cross product is returned.
+
+    Parameters
+    ----------
+    a : array_like
+        Components of the first vector(s).
+    b : array_like
+        Components of the second vector(s).
+    axisa : int, optional
+        Axis of `a` that defines the vector(s). By default, the last axis.
+    axisb : int, optional
+        Axis of `b` that defines the vector(s). By default, the last axis.
+    axisc : int, optional
+        Axis of `c` containing the cross product vector(s). Ignored if both
+        input vectors have dimension 2, as the return is scalar. By default,
+        the last axis.
+    axis : int, optional
+        If defined, the axis of `a`, `b` and `c` that defines the vector(s)
+        and cross product(s). Overrides `axisa`, `axisb` and `axisc`.
+
+    Returns
+    -------
+    c : ndarray
+        Vector cross product(s).
+
+    Raises
+    ------
+    ValueError
+        When the dimension of the vector(s) in `a` and/or `b` does not equal
+        2 or 3.
+
+    See Also
+    --------
+    numpy.cross
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    # If axis is provided, it overrides axisa, axisb, axisc
+    if axis is not None:
+        axisa, axisb, axisc = (axis,) * 3
+
+    if (a.ndim < 1) or (b.ndim < 1):
+        raise ValueError("At least one array has zero dimension")
+
+    axisa = normalize_axis_index(axisa, a.ndim, msg_prefix="axisa")
+    axisb = normalize_axis_index(axisb, b.ndim, msg_prefix="axisb")
+
+    # Move working axis to the end of the shape
+    a = moveaxis(a, (axisa,), (-1,))
+    b = moveaxis(b, (axisb,), (-1,))
+    msg = (
+        "incompatible dimensions for cross product\n"
+        "(dimension must be 2 or 3)"
+    )
+    if a.shape[-1] not in (2, 3) or b.shape[-1] not in (2, 3):
+        raise ValueError(msg)
+    if a.shape[-1] == 2 or b.shape[-1] == 2:
+        warnings.warn(
+            "Arrays of 2-dimensional vectors are deprecated. Use arrays of "
+            "3-dimensional vectors instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    # Create the output array
+    shape = broadcast_shapes(a[..., 0].shape, b[..., 0].shape)
+    if a.shape[-1] == 3 or b.shape[-1] == 3:
+        shape += (3,)
+        # Check axisc is within bounds
+        axisc = normalize_axis_index(axisc, len(shape), msg_prefix="axisc")
+    dtype = np.promote_types(a.dtype, b.dtype)
+    cp = empty(shape, dtype)
+
+    # create local aliases for readability
+    a0 = a[..., 0]
+    a1 = a[..., 1]
+    if a.shape[-1] == 3:
+        a2 = a[..., 2]
+    b0 = b[..., 0]
+    b1 = b[..., 1]
+    if b.shape[-1] == 3:
+        b2 = b[..., 2]
+    if cp.ndim != 0 and cp.shape[-1] == 3:
+        cp0 = cp[..., 0]
+        cp1 = cp[..., 1]
+        cp2 = cp[..., 2]
+
+    if a.shape[-1] == 2:
+        if b.shape[-1] == 2:
+            # a0 * b1 - a1 * b0
+            multiply(a0, b1, out=cp)
+            cp -= a1 * b0
+            return cp
+        else:
+            assert b.shape[-1] == 3
+            # cp0 = a1 * b2 - 0  (a2 = 0)
+            # cp1 = 0 - a0 * b2  (a2 = 0)
+            # cp2 = a0 * b1 - a1 * b0
+
+            multiply(a1, b2, out=cp0)
+            multiply(a0, b2, out=cp1)
+            negative(cp1, out=cp1)
+            multiply(a0, b1, out=cp2)
+            cp2 -= a1 * b0
+    else:
+        assert a.shape[-1] == 3
+        if b.shape[-1] == 3:
+            # cp0 = a1 * b2 - a2 * b1
+            # cp1 = a2 * b0 - a0 * b2
+            # cp2 = a0 * b1 - a1 * b0
+
+            multiply(a1, b2, out=cp0)
+            tmp = multiply(a2, b1)
+            cp0 -= tmp
+            multiply(a2, b0, out=cp1)
+            multiply(a0, b2, out=tmp)
+            cp1 -= tmp
+            multiply(a0, b1, out=cp2)
+            multiply(a1, b0, out=tmp)
+            cp2 -= tmp
+        else:
+            assert b.shape[-1] == 2
+            # cp0 = 0 - a2 * b1  (b2 = 0)
+            # cp1 = a2 * b0 - 0  (b2 = 0)
+            # cp2 = a0 * b1 - a1 * b0
+            multiply(a2, b1, out=cp0)
+            negative(cp0, out=cp0)
+            multiply(a2, b0, out=cp1)
+            multiply(a0, b1, out=cp2)
+            cp2 -= a1 * b0
+
+    return moveaxis(cp, (-1,), (axisc,))

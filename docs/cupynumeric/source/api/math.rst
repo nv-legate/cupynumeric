@@ -66,6 +66,7 @@ Sums, products, differences
    nanprod
    nansum
    gradient
+   cross
 
 
 Exponents and logarithms
