@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from types import EllipsisType
 from typing import TYPE_CHECKING
 
@@ -24,11 +25,19 @@ from .._array.array import ndarray
 from .._array.util import add_boilerplate
 from .._module.array_dimension import broadcast_arrays
 from .._module.creation_data import asarray
-from .._ufunc.floating import floor
+from .._ufunc.floating import floor, isfinite, isinf
+from .._ufunc.math import power
+from .._utils import is_np2
+from .array_dimension import expand_dims
+from .logic_truth import any
 
 if TYPE_CHECKING:
     import numpy.typing as npt
 
+if is_np2:
+    from numpy.exceptions import AxisError  # type: ignore
+else:
+    from numpy import AxisError  # type: ignore
 
 _builtin_max = max
 
@@ -354,3 +363,97 @@ def meshgrid(
         output = [x.copy() for x in output]
 
     return tuple(output)
+
+
+@add_boilerplate("start", "stop", "base")
+def logspace(
+    start: ndarray,
+    stop: ndarray,
+    num: int = 50,
+    endpoint: bool = True,
+    base: ndarray | None = None,
+    dtype: npt.DTypeLike | None = None,
+    axis: int = 0,
+) -> ndarray:
+    """
+    Return numbers spaced evenly on a log scale.
+    In linear space, the sequence starts at ``base ** start``
+    (`base` to the power of `start`) and ends with ``base ** stop``
+    (see `endpoint` below).
+    Parameters
+    ----------
+    start : array_like
+        ``base ** start`` is the starting value of the sequence.
+    stop : array_like
+        ``base ** stop`` is the final value of the sequence, unless `endpoint`
+        is False.  In that case, ``num + 1`` values are spaced over the
+        interval in log-space, of which all but the last (a sequence of
+        length `num`) are returned.
+    num : int, optional
+        Number of samples to generate.  Default is 50.
+    endpoint : bool, optional
+        If true, `stop` is the last sample. Otherwise, it is not included.
+        Default is True.
+    base : array_like, optional
+        The base of the log space. The step size between the elements in
+        ``ln(samples) / ln(base)`` (or ``log_base(samples)``) is uniform.
+        Default is 10.0.
+    dtype : data-type, optional
+        The type of the output array.  If `dtype` is not given, infer the data
+        type from the other input arguments.
+    axis : int, optional
+        The axis in the result to store the samples.  Relevant only if start
+        or stop are array-like.  By default (0), the samples will be along a
+        new axis inserted at the beginning. Use -1 to get an axis at the end.
+    Returns
+    -------
+    samples : ndarray
+        `num` samples, equally spaced on a log scale.
+    See Also
+    --------
+    numpy.logspace
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    if base is None:
+        base = asarray(10.0)
+
+    # Input validation
+    if not isinstance(num, int):
+        raise TypeError("'num' must be an integer")
+
+    if any(base < 0):
+        warnings.warn(
+            "invalid value encountered in power",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    # Validate axis parameter for scalar inputs
+    max_ndim = max(np.ndim(start), np.ndim(stop))
+    if max_ndim == 0:
+        if axis != 0:
+            raise AxisError(
+                f"axis {axis} is out of bounds for array of dimension 1"
+            )
+
+    # Handle non-scalar base
+    if base.ndim > 0:
+        start, stop, base = broadcast_arrays(start, stop, base)
+        base = expand_dims(base, axis=axis)
+
+    y = linspace(start, stop, num=num, endpoint=endpoint, axis=axis)
+    result = power(base, y)
+
+    if np.any(isfinite(base) & isfinite(y) & isinf(result)):
+        warnings.warn(
+            "overflow encountered in power",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    # Handle dtype conversion
+    if dtype is None:
+        return result
+    return result.astype(dtype, copy=False)
