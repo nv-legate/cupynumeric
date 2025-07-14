@@ -1,0 +1,6 @@
+﻿cupynumeric.logspace
+====================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: logspace

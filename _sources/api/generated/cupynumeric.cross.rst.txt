@@ -1,0 +1,6 @@
+﻿cupynumeric.cross
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: cross

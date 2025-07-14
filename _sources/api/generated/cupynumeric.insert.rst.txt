@@ -1,0 +1,6 @@
+﻿cupynumeric.insert
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: insert
