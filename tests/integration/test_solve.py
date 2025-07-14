@@ -43,8 +43,8 @@ ATOL = {
 @pytest.mark.parametrize(
     "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
 )
-def test_solve_1d(n, a_dtype, b_dtype):
-    a = np.random.rand(n, n).astype(a_dtype) + np.eye(n) * n
+def test_solve_1d(n: int, a_dtype: np.dtype, b_dtype: np.dtype):
+    a = np.random.rand(n, n).astype(a_dtype) + np.eye(n, dtype=a_dtype) * n
     b = np.random.rand(n).astype(b_dtype)
 
     out = num.linalg.solve(a, b)
@@ -66,8 +66,8 @@ def test_solve_1d(n, a_dtype, b_dtype):
 @pytest.mark.parametrize(
     "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
 )
-def test_solve_2d(n, a_dtype, b_dtype):
-    a = np.random.rand(n, n).astype(a_dtype) + np.eye(n) * n
+def test_solve_2d(n: int, a_dtype: np.dtype, b_dtype: np.dtype):
+    a = np.random.rand(n, n).astype(a_dtype) + np.eye(n, dtype=a_dtype) * n
     b = np.random.rand(n, n + 2).astype(b_dtype)
 
     out = num.linalg.solve(a, b)
@@ -103,7 +103,7 @@ def test_solve_b_is_empty():
 
 
 @pytest.mark.parametrize("dtype", (np.int32, np.int64))
-def test_solve_dtype_int(dtype):
+def test_solve_dtype_int(dtype: np.dtype):
     a = [[1, 4, 5], [2, 3, 1], [9, 5, 2]]
     b = [1, 2, 3]
     a_num = num.array(a).astype(dtype)
@@ -209,11 +209,15 @@ class TestSolveErrors:
         with pytest.raises(TypeError, match=msg):
             num.linalg.solve(self.a, self.b, out=output)
 
-    def test_a_singular_matrix(self):
-        a = num.zeros((self.n, self.n)).astype(np.float64)
+    @pytest.mark.parametrize(
+        "dtype", (np.float32, np.float64, np.complex64, np.complex128)
+    )
+    def test_a_singular_matrix(self, dtype: np.dtype):
+        a = num.zeros((self.n, self.n)).astype(dtype)
+        b = num.random.rand(self.n).astype(dtype)
         msg = "Singular matrix"
         with pytest.raises(num.linalg.LinAlgError, match=msg):
-            num.linalg.solve(a, self.b)
+            num.linalg.solve(a, b)
 
 
 if __name__ == "__main__":
