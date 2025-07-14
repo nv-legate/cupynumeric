@@ -25,14 +25,11 @@ def test_no_item() -> None:
     arr_num = num.random.randint(0, 3, size=shape)
     arr_np = np.array(arr_num)
 
-    np_error = ValueError
-    np_msg = r"can only convert an array of size 1 to a Python scalar"
-    with pytest.raises(np_error, match=np_msg):
+    msg = r"can only convert an array of size 1 to a Python scalar"
+    with pytest.raises(ValueError, match=msg):
         arr_np.item()
 
-    num_error = KeyError
-    num_msg = "invalid key"
-    with pytest.raises(num_error, match=num_msg):
+    with pytest.raises(ValueError, match=msg):
         arr_num.item()
 
 

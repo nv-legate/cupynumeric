@@ -2798,7 +2798,9 @@ class ndarray:
         if len(args) == 1 and isinstance(args[0], tuple):
             args = args[0]
         if len(args) != self.ndim or any(not isinstance(x, int) for x in args):
-            raise KeyError("invalid key")
+            raise ValueError(
+                "can only convert an array of size 1 to a Python scalar"
+            )
         return args
 
     def item(self, *args: Any) -> Any:

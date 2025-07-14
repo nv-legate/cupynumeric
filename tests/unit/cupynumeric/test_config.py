@@ -13,9 +13,14 @@
 # limitations under the License.
 #
 
+import os
+import sys
+from unittest import mock
+
 import pytest
 
 import cupynumeric.config as m  # module under test
+from cupynumeric.install_info import get_libpath
 
 
 class TestCuPyNumericLib:
@@ -35,6 +40,44 @@ class TestCuPyNumericLib:
         assert "libcupynumeric" in result
 
         assert result.endswith(lib.get_library_extension())
+
+    def test_get_libpath_return(self) -> None:
+        def fake_exists(path):
+            return "cupynumeric/lib" in path or "cupynumeric/lib64" in path
+
+        with mock.patch("os.path.exists", side_effect=fake_exists):
+            result = get_libpath()
+            assert "cupynumeric/lib" in result or "cupynumeric/lib64" in result
+
+    def test_get_libpath_return2(self):
+        def fake_exists(path):
+            return (
+                "lib" in path
+                and "cupynumeric/lib" not in path
+                and "build/lib" not in path
+            )
+
+        with mock.patch("os.path.exists", side_effect=fake_exists):
+            result = get_libpath()
+            assert result.endswith("lib") or result.endswith("lib64")
+
+    def test_get_libpath_return3(self):
+        def fake_exists(path):
+            expected = os.path.join(
+                os.path.dirname(os.path.dirname(sys.executable)), "lib"
+            )
+            expected64 = os.path.join(
+                os.path.dirname(os.path.dirname(sys.executable)), "lib64"
+            )
+            return expected in path or expected64 in path
+
+        with mock.patch("os.path.exists", side_effect=fake_exists):
+            result = get_libpath()
+            assert result.endswith("lib") or result.endswith("lib64")
+
+    def test_get_libpath_all_fail(self):
+        with mock.patch("os.path.exists", return_value=False):
+            assert get_libpath() == ""
 
     def test_get_c_header(self) -> None:
         lib = m.CuPyNumericLib("foo")
@@ -179,6 +222,4 @@ def test_ScanCode() -> None:
 
 
 if __name__ == "__main__":
-    import sys
-
     sys.exit(pytest.main(sys.argv))
