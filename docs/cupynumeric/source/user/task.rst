@@ -26,66 +26,6 @@ additional components are needed after cuPyNumeric is installed. Please refer to
 
 .. _Distributed Computing with cuPyNumeric: https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_11_Distributed_Computing_cuPyNumeric.ipynb
 
-Usage
------
-Here is the annotated function signature for the task decorator, with all the supported parameters and their types.
-
-.. code-block:: python
-
-    @task(
-    func: UserFunction | None = None,
-    *,
-    VariantList variants: VariantList = DEFAULT_VARIANT_LIST,
-    constraints: Sequence[ConstraintProxy] | None = None,
-    bool throws_exception: bool = False,
-    bool register: bool = True,
-    )
-
-Parameters
-~~~~~~~~~~
-
-func (UserFunction)
-    The function to invoke in the task.
-
-variants (VariantList, optional)
-    The list of variants for which ``func`` is applicable. Defaults to
-    ``(VariantCode.CPU,)``, which means the task will run only on the CPU
-    by default. To enable GPU execution, you must explicitly include
-    ``VariantCode.GPU`` in the list of variants.
-
-constraints (Sequence[ConstraintProxy], optional)
-    The list of constraints which are to be applied to the arguments of
-    ``func``, if any. Controls how distributed-memory containers (Legate logical
-    stores or arrays) are divided, aligned, or replicated for parallel
-    execution across CPUs/GPUs. Defaults to no constraints.
-
-    - *Align*  
-      Ensures that the partitions of multiple arrays/stores are aligned along a given dimension.
-
-    - *Broadcast*  
-      Replicates data across all tasks instead of partitioning it.
-
-    - Other Legate-supported partitioning constraints such as Image and Scale — see
-      `Constraints`_ for more information.
-
-.. _Constraints: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html
-
-throws_exception (bool, False)
-    True if any variant of ``func`` throws an exception, False otherwise.
-
-Requirements
-~~~~~~~~~~~~
-
-1. All arguments must have type-hints, without exception.
-
-2. Arguments representing a piece of a logical store or array must be given
-   as either ``InputStore``, ``OutputStore``, ``InputArray``, or ``OutputArray``
-   (`Arguments`_). cuPyNumeric arrays are backed by Legate stores, so they are made
-   available inside tasks as ``InputStores`` or ``OutputStores``. The return
-   value of the function must be exactly None. In the future, this
-   restriction may be lifted.
-.. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
-
 Quick example
 ~~~~~~~~~~~~~
 Here is a Python example of defining and invoking a Legate task with a custom function to copy array contents.
@@ -118,10 +58,13 @@ Understanding this example
 The code runs a function that replaces the contents of the
 output array with the contents of the input array. cuPyNumeric arrays,
 like ``in_arr`` and ``out_arr`` are similar to NumPy arrays but are
-backed by Legate stores for parallel execution across GPUs and CPUs.
+backed by Legate stores for parallel execution across CPUs and GPUs.
 When these arrays are passed into the ``foo_in_out`` task, they are
 automatically converted into Legate-compatible objects such as
 ``InputStore`` or ``OutputStore``, depending on how they are used in the task.
+In Legate, arguments representing a portion of a logical store or array must be
+specified as one of the following types: ``InputStore``, ``OutputStore``, ``InputArray``, or
+``OutputArray`` (see Arguments_).
 Legate has built-in datatypes suitable for building richer
 distributed data structures, e.g. nullable arrays, but in this tutorial
 we exclusively use the simpler Legate Store class, which can only
@@ -138,6 +81,8 @@ and based on this, the variable ``xp`` is set to either the CuPy for GPU
 execution or NumPy for CPU execution. Using ``xp``, the task creates views
 of the task-local partitions of the Legate-backed global input and
 output arrays as either CuPy or NumPy arrays.
+
+.. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
 
 
 SAXPY problem
