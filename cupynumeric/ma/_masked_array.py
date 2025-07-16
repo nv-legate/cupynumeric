@@ -86,3 +86,7 @@ class MaskedArray:
     @property
     def shape(self) -> NdShape:
         return self._internal_ma.shape
+
+    @property
+    def dtype(self) -> _np.dtype[Any]:
+        return self._internal_ma.dtype
