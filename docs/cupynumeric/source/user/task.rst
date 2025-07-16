@@ -22,35 +22,17 @@ GPUs, and nodes. This decorator enables high-performance parallelism
 with a simple Python syntax.
 
 Legate tasks are available automatically when using cuPyNumeric. No
-additional components are needed after cuPyNumeric is installed. Please refer to the `Distributed Computing with cuPyNumeric`_ for cuPyNumeric installation.
+additional components are needed after cuPyNumeric is installed.
+Please refer to the `Distributed Computing with cuPyNumeric`_ for cuPyNumeric installation.
 
 .. _Distributed Computing with cuPyNumeric: https://github.com/NVIDIA/accelerated-computing-hub/blob/main/Accelerated_Python_User_Guide/notebooks/Chapter_11_Distributed_Computing_cuPyNumeric.ipynb
 
 Quick example
-~~~~~~~~~~~~~
-Here is a Python example of defining and invoking a Legate task with a custom function to copy array contents.
+-------------
+Here is an example of defining and invoking a Legate task with a custom function.
 
-.. code-block:: python
-
-        import cupy
-        import numpy
-        import cupynumeric as cpn
-        from legate.core import StoreTarget, PhysicalArray, PhysicalStore, TaskContext, VariantCode
-        from legate.core.task import task, InputArray, OutputArray
-        
-        @task(variants = (VariantCode.CPU, VariantCode.GPU))
-        def foo_in_out(ctx: TaskContext, in_store: InputArray, out_store: OutputArray) -> None:
-            xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy  # select CuPy or NumPy depending on variant.   
-            in_store = xp.asarray(in_store)
-            out_store = xp.asarray(out_store)
-            out_store[:] = in_store[:]
-        
-        in_arr = cpn.array([1, 2, 3], dtype=cpn.int64)
-        out_arr = cpn.zeros((3,), dtype=cpn.int64)
-        foo_in_out(in_arr, out_arr)
-        
-        print(out_arr)
-
+.. literalinclude:: examples/quick.py
+   :language: python
 
 Understanding this example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,19 +86,9 @@ Main function
 --------------
 Let’s take a look at the input and output parameters for this SAXPY example.
 
-.. code-block:: python
-
-    size = args.size
-    
-    x_global = cpn.arange(size, dtype=cpn.float32)
-    y_global = cpn.ones(size, dtype=cpn.float32)
-    z_global = cpn.zeros(size, dtype=cpn.float32)
-      
-    start = time()
-    saxpy_task(x_global, y_global, z_global, 2.0)
-    end = time()
-    
-    print(f"\nTime elapsed for saxpy: {(end - start)/1000:.6f} milliseconds")
+.. literalinclude:: examples/saxpy.py
+   :language: python
+   :lines: 24-29,36,37,39-41
 
 For this example, three one-dimensional arrays of default size 1000 are
 created. ``x_global`` contains values from 0 to 999, ``y_global`` is filled with
@@ -128,17 +100,9 @@ Task function
 -------------
 The following example shows how to define a task function that performs the SAXPY operation.
 
-.. code-block:: python
-
-    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
-          constraints = (align("x", "y"),
-                         align("y", "z")))
-    def saxpy_task(ctx: TaskContext, x: InputArray, y: InputArray, z: OutputArray, a: float) -> None:
-       xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-       x_local = xp.asarray(x)
-       y_local = xp.asarray(y)
-       z_local = xp.asarray(z)
-       z_local[:] = a * x_local + y_local
+.. literalinclude:: examples/saxpy.py
+   :language: python
+   :lines: 9-19
 
 The constraint used is ``align``, it is used to ensure that ``x``, ``y`` , and ``z``
 are partitioned in the same way. This is so that corresponding elements
@@ -205,7 +169,7 @@ For a complete guide and additional options, see the `Legate documentation`_.
 
 .. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
 
-Let’s set the input array size to 100 million elements to better
+Let’s set the input array size to 10 million elements to better
 evaluate the speedup from distributed computing with GPUs.
 
 
@@ -216,13 +180,13 @@ To run with CPU, use the following command.
 
 .. code-block:: sh
 
-    legate --cpus 1 --gpus 0 ./saxpy.py --size 100000000
+    legate --cpus 1 --gpus 0 ./saxpy.py --size 10000000
 
 This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for saxpy: 146.303000 milliseconds
+    Time elapsed for saxpy: 14.303000 milliseconds
 
 GPU execution 
 ~~~~~~~~~~~~~
@@ -231,13 +195,13 @@ To run with GPU, use the following command.
 
 .. code-block:: sh
 
-    legate --gpus 2 ./saxpy.py --size 100000000
+    legate --gpus 2 ./saxpy.py --size 10000000
 
 This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for saxpy : 1.949000 milliseconds
+    Time elapsed for saxpy : 1.769000 milliseconds
 
 Multi-Node execution 
 ~~~~~~~~~~~~~~~~~~~~
@@ -251,7 +215,7 @@ To run on multi-node, use the following command.
 
 .. code-block:: sh
 
-    legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./saxpy.py --size 100000000
+    legate --nodes 2 --launcher srun --gpus 4 --ranks-per-node 1 ./saxpy.py --size 10000000
 
 This produces the following output:
 
@@ -278,19 +242,9 @@ Main function
 --------------
 Let’s take a quick look at the input and output parameters for this histogram example.
 
-.. code-block:: python
-
-    size = args.size
-    NUM_BINS = 10
-    
-    data = cpn.random.randint(0, NUM_BINS, size=(size,), dtype=cpn.int32)
-    hist = cpn.zeros((NUM_BINS,), dtype=cpn.int32)
-        
-    start = time()
-    histogram_task(data, hist, NUM_BINS)
-    end = time()    
-    
-    print(f"\nTime elapsed: {(end - start)/1000:.6f} milliseconds")
+.. literalinclude:: examples/histogram.py
+   :language: python
+   :lines: 24-29,36,37,39-41
 
 For this example, a one-dimensional array with a default size of 1000
 elements is created, filled with random integers ranging from 0 to 9.
@@ -304,18 +258,9 @@ Task function
 -------------
 The following example defines a histogram task function that computes a local histogram and accumulates the results into a global ``hist`` array using a reduction.
 
-.. code-block:: python
-
-    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
-          constraints = (broadcast("hist")))
-    def histogram_task(ctx: TaskContext, data: InputArray, hist: ReductionArray[ADD], N_bins: int):
-        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-        data_local = xp.asarray(data)
-        hist_local = xp.asarray(hist)    
-    
-        local_hist,_ = xp.histogram(data_local, bins= N_bins)
-        hist_local[:] = hist_local + local_hist
-    
+.. literalinclude:: examples/histogram.py
+   :language: python
+   :lines: 9-19
 
 The ``histogram_task`` function uses ``TaskContext`` and its ``get_variant_kind()``
 method to determine the execution target (GPU or CPU) and accordingly
@@ -361,50 +306,8 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. code-block:: python
-
-    import cupy
-    import numpy
-    import argparse
-    import cupynumeric as cpn
-    import legate.core as lg
-    from legate.core import broadcast, VariantCode, TaskContext
-    from legate.core.task import task, InputArray, ReductionArray, ADD
-    from legate.timing import time   
-    
-    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
-          constraints = (broadcast("hist")))
-    def histogram_task(ctx: TaskContext, data: InputArray, hist: ReductionArray[ADD], N_bins: int):
-        xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-        data_local = xp.asarray(data)
-        hist_local = xp.asarray(hist)
-        
-        local_hist,_ = xp.histogram(data_local, bins= N_bins)
-        hist_local[:] = hist_local + local_hist   
-    
-    parser = argparse.ArgumentParser(description="Run Histogram operation.")
-    parser.add_argument("--size", type=int, default=1000, help="Size of input arrays")
-    args = parser.parse_args() 
-    
-    size = args.size
-    NUM_BINS = 10
-      
-    data = cpn.random.randint(0, NUM_BINS, size=(size,), dtype=cpn.int32)
-    hist = cpn.zeros((NUM_BINS,), dtype=cpn.int32)    
-    
-    rt = lg.get_legate_runtime()    
-    
-    #warm-up run
-    histogram_task(data, hist, NUM_BINS)    
-    
-    rt.issue_execution_fence()
-    start = time()
-    histogram_task(data, hist, NUM_BINS)
-    rt.issue_execution_fence()
-    end = time()   
-    
-    print(f"\nTime elapsed for histogram : {(end - start)/1000:.6f} milliseconds")
-
+.. literalinclude:: examples/histogram.py
+   :language: python
 
 Running on CPU and GPU
 -----------------------
@@ -449,7 +352,7 @@ This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for histogram : 3.960000 milliseconds
+    Time elapsed for histogram : 3.790000 milliseconds
 
 Multi-Node execution 
 ~~~~~~~~~~~~~~~~~~~~
@@ -469,7 +372,7 @@ This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for histogram : 4.266000 milliseconds
+    Time elapsed for histogram : 3.716000 milliseconds
 
 Simple matrix multiplication problem
 ====================================
@@ -487,26 +390,9 @@ Main function
 -------------
 The following main function prepares input matrices with proper broadcasting, executes the matrix multiplication task, and measures the computation time.
 
-.. code-block:: python
-
-    m = args.m
-    k = args.k
-    n = args.n
-    
-    A_cpn = cpn.random.randint(1, 101, size=(m, k))
-    B_cpn = cpn.random.randint(1, 101, size=(k, n))
-    C_cpn = cpn.zeros((m, n))
-    
-    A_cpn = cpn.broadcast_to(A_cpn[:, :, cpn.newaxis], (m, k, n)) # (m,k,1) -> (m,k,n)
-    # The (m, k, n) allows legate to align these stores, so we need the same dimensions
-    B_cpn = cpn.broadcast_to(B_cpn[cpn.newaxis, :, :], (m, k, n))
-    C_cpn = cpn.broadcast_to(C_cpn[:, cpn.newaxis, :], (m, k, n))
-    
-    start = time()
-    matmul_task(C_cpn, A_cpn, B_cpn)
-    end = time()
-    
-    print(f"\nTime elapsed for matmul: {(end - start)/1000:.6f} seconds")
+.. literalinclude:: examples/matmul.py
+   :language: python
+   :lines: 26-39,46,47,49-51
 
 The important things that this code does are:
 
@@ -531,6 +417,10 @@ The important things that this code does are:
 Task function
 -------------
 The following example shows a task function that performs matrix multiplication with aligned partitions across input and output arrays.
+
+.. literalinclude:: examples/matmul.py
+   :language: python
+   :lines: 9-20
 
 .. code-block:: python
 
@@ -569,60 +459,8 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. code-block:: python
-
-    import cupy
-    import numpy
-    import argparse
-    import cupynumeric as cpn
-    import legate.core as lg
-    from legate.core import VariantCode, align, TaskContext
-    from legate.core.task import task, InputArray, ReductionArray, ADD
-    from legate.timing import time
-    
-    @task(variants = (VariantCode.CPU,VariantCode.GPU,),
-          constraints = (align("C", "A"),
-                         align("C", "B")))
-    def matmul_task(ctx: TaskContext, C: ReductionArray[ADD], A: InputArray, B: InputArray) -> None:
-       xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-       C = xp.asarray(C)[:, 0, :]
-       A = xp.asarray(A)[:, :, 0]
-       B = xp.asarray(B)[0, :, :]
-    
-       C += xp.matmul(A,B)
-    
-    parser= argparse.ArgumentParser(description ="Run Matrix multiplication operation")
-    parser.add_argument("-m", type=int, default=50, help="Number of rows in matrix A and C")
-    parser.add_argument("-k", type=int, default=75, help="Number of columns in A / rows in B")
-    parser.add_argument("-n", type=int, default=100, help="Number of columns in matrix B and C")
-    args=parser.parse_args()
-    
-    m = args.m
-    k = args.k
-    n = args.n
-    
-    A_cpn = cpn.random.randint(1, 101, size=(m, k))
-    B_cpn = cpn.random.randint(1, 101, size=(k, n))
-    C_cpn = cpn.zeros((m, n))
-    
-    A_cpn = cpn.broadcast_to(A_cpn[:, :, cpn.newaxis], (m, k, n)) #(m,k,1) -> (m,k,n)
-    # The (m, k, n) allows legate to align these stores, so we need the same dimensions
-    B_cpn = cpn.broadcast_to(B_cpn[cpn.newaxis, :, :], (m, k, n))
-    C_cpn = cpn.broadcast_to(C_cpn[:, cpn.newaxis, :], (m, k, n))
-    
-    rt = lg.get_legate_runtime()
-    
-    #warm-up run
-    matmul_task(C_cpn, A_cpn, B_cpn)
-    
-    rt.issue_execution_fence()
-    start = time()
-    matmul_task(C_cpn, A_cpn, B_cpn)
-    rt.issue_execution_fence()
-    end = time()
-    
-    print(f"\nTime elapsed for matmul: {(end - start)/1000:.6f} seconds")
-
+.. literalinclude:: examples/matmul.py
+   :language: python
 
 Running on CPU and GPU 
 ----------------------
@@ -666,7 +504,7 @@ This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for matmul: 3.076000 milliseconds
+    Time elapsed for matmul: 2.776000 milliseconds
 
 Multi-Node execution 
 ~~~~~~~~~~~~~~~~~~~~
@@ -686,7 +524,7 @@ This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for matmul: 3.226000 milliseconds
+    Time elapsed for matmul: 2.926000 milliseconds
 
 Fast Fourier Transform problem
 ==============================
@@ -707,18 +545,9 @@ Main function
 
 The following code block initializes inputs and performs a GPU-accelerated batched 2D Fast Fourier Transform.
 
-.. code-block:: python
-
-    shape = tuple(map(int, args.shape.split(","))) 
-    
-    A_cpn = cpn.zeros(shape, dtype=cpn.complex64)
-    B_cpn = cpn.random.randint(1, 101, size=shape).astype(cpn.complex64)
-    
-    start = time()
-    fft2d_batched_gpu(A_cpn, B_cpn)
-    end = time()
-    
-    print(f"\nTime elapsed for batched fft: {(end - start)/1000:.6f} milliseconds")
+.. literalinclude:: examples/fft.py
+   :language: python
+   :lines: 25-29,36,37,39-41
 
 For demonstration purposes, a default shape of (128, 256, 256) is used,
 representing a batch of 128 two dimensional matrices. Using this shape,
@@ -732,17 +561,9 @@ Task function
 -------------
 The following example defines a task that computes a batched 2D FFT over input data using ``align`` and ``broadcast`` constraints.
 
-.. code-block:: python
-
-    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
-          constraints = (align("dst", "src"),
-                         broadcast("src", (1, 2))))
-    def fft2d_batched_gpu(ctx: TaskContext, dst: OutputStore, src: InputStore):
-       xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-       cp_src = xp.asarray(src)
-       cp_dst = xp.asarray(dst)
-       # Apply 2D FFT across axes 1 and 2 for each batch
-       cp_dst[:] = xp.fft.fftn(cp_src, axes=(1, 2))
+.. literalinclude:: examples/fft.py
+   :language: python
+   :lines: 10-20
 
 The ``fft2d_batched_gpu`` function uses ``TaskContext`` to detect execution on
 GPU and sets ``xp`` to CuPy accordingly. It then converts the ``src`` and ``dst``
@@ -780,50 +601,8 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. code-block:: python
-
-    import cupy
-    import numpy
-    import argparse
-    import cupynumeric as cpn
-    import legate.core as lg
-    from legate.core import align, broadcast, VariantCode, TaskContext
-    from legate.core.task import InputStore, OutputStore, task
-    from legate.core.types import complex64
-    from legate.timing import time
-    
-    @task(variants = (VariantCode.CPU, VariantCode.GPU,),
-          constraints = (align("dst", "src"),
-                         broadcast("src", (1, 2))))
-    def fft2d_batched_gpu(ctx: TaskContext, dst: OutputStore, src: InputStore):
-       xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-       cp_src = xp.asarray(src)
-       cp_dst = xp.asarray(dst)
-       # Apply 2D FFT across axes 1 and 2 for each batch
-       cp_dst[:] = xp.fft.fftn(cp_src, axes=(1, 2))
-    
-    parser = argparse.ArgumentParser(description = "Run FFT operation" )
-    parser.add_argument("--shape", type=str, default="128,256,256",
-                        help="Shape of the array in the format D1,D2,D3")
-    args = parser.parse_args()
-    shape = tuple(map(int, args.shape.split(","))) 
-    
-    A_cpn = cpn.zeros(shape, dtype=cpn.complex64)
-    B_cpn = cpn.random.randint(1, 101, size=shape).astype(cpn.complex64)
-    
-    rt = lg.get_legate_runtime()
-    
-    #warm-up run
-    fft2d_batched_gpu(A_cpn, B_cpn)
-    
-    rt.issue_execution_fence()
-    start = time()
-    fft2d_batched_gpu(A_cpn, B_cpn)
-    rt.issue_execution_fence()
-    end = time()
-    
-    print(f"\nTime elapsed for batched fft: {(end - start)/1000:.6f} milliseconds")
-
+.. literalinclude:: examples/fft.py
+   :language: python
 
 Running on CPU and GPU 
 ----------------------
@@ -862,7 +641,7 @@ This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for fft: 16.153000 milliseconds
+    Time elapsed for fft: 0.573000 milliseconds
 
 Multi-Node execution 
 ~~~~~~~~~~~~~~~~~~~~
@@ -883,4 +662,4 @@ This produces the following output:
 
 .. code-block:: text
 
-    Time elapsed for fft: 16.443000 milliseconds
+    Time elapsed for fft: 0.613000 milliseconds
