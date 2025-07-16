@@ -53,9 +53,10 @@ we exclusively use the simpler Legate Store class, which can only
 represent a dense array. This is sufficient to back a cuPyNumeric
 ndarray.
 
-The ``@task`` decorator specifies both CPU and GPU variants using
-``VariantCode.CPU`` and ``VariantCode.GPU``, indicating that the task can be
-executed on either device depending on the available resources. Inside
+The ``@task`` decorator declares that this task has two variants: ``VariantCode.CPU`` for CPU execution
+and ``VariantCode.GPU`` for GPU execution. This means the task can run
+on either device, depending on which resources the user selects at runtime.
+For more details about Legate task behavior, see legate_task_. Inside
 the task, ``TaskContext`` provides access to the execution environment,
 including inputs, outputs, and the execution target (CPU or GPU). The
 method ``ctx.get_variant_kind()`` is used to determine the target device,
@@ -65,7 +66,7 @@ of the task-local partitions of the Legate-backed global input and
 output arrays as either CuPy or NumPy arrays.
 
 .. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
-
+.. _legate_task: https://docs.nvidia.com/legate/25.07/api/python/generated/legate.core.task.task.html
 
 SAXPY problem
 =============
