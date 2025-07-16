@@ -48,7 +48,7 @@ struct SolveImpl {
 
 #ifdef DEBUG_CUPYNUMERIC
     assert(a_array.dim() == 2);
-    assert(b_array.dim() == 1 || b_array.dim() == 2);
+    assert(b_array.dim() == 2);
 #endif
     const auto a_shape = a_array.shape<2>();
 
@@ -67,27 +67,17 @@ struct SolveImpl {
 #endif
     VAL* b = nullptr;
 
-    int64_t nrhs = 1;
-    if (b_array.dim() == 1) {
-      const auto b_shape = b_array.shape<1>();
+    const auto b_shape = b_array.shape<2>();
 #ifdef DEBUG_CUPYNUMERIC
-      assert(m == b_shape.hi[0] - b_shape.lo[0] + 1);
+    assert(m == b_shape.hi[0] - b_shape.lo[0] + 1);
 #endif
-      size_t b_strides;
-      b = b_array.read_write_accessor<VAL, 1>(b_shape).ptr(b_shape, &b_strides);
-    } else {
-      const auto b_shape = b_array.shape<2>();
+    int64_t nrhs = b_shape.hi[1] - b_shape.lo[1] + 1;
+    size_t b_strides[2];
+    b = b_array.read_write_accessor<VAL, 2>(b_shape).ptr(b_shape, b_strides);
 #ifdef DEBUG_CUPYNUMERIC
-      assert(m == b_shape.hi[0] - b_shape.lo[0] + 1);
+    assert(b_array.is_future() ||
+           (b_strides[0] == 1 && (nrhs == 1 || static_cast<int64_t>(b_strides[1]) == m)));
 #endif
-      nrhs = b_shape.hi[1] - b_shape.lo[1] + 1;
-      size_t b_strides[2];
-      b = b_array.read_write_accessor<VAL, 2>(b_shape).ptr(b_shape, b_strides);
-#ifdef DEBUG_CUPYNUMERIC
-      assert(b_array.is_future() ||
-             (b_strides[0] == 1 && (nrhs == 1 || static_cast<int64_t>(b_strides[1]) == m)));
-#endif
-    }
 
 #ifdef DEBUG_CUPYNUMERIC
     assert(m > 0 && n > 0 && nrhs > 0);
