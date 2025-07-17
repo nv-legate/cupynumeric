@@ -35,6 +35,10 @@ NDARRAY_INTERNAL = {
     "__array_struct__",
     "__array_ufunc__",
     "__array_wrap__",
+    # Avoid auto-wrapping Array API specifics:
+    "__array_namespace__",
+    "device",
+    "to_device",
 }
 
 MaskType = bool
