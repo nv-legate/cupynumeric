@@ -423,19 +423,6 @@ The following example shows a task function that performs matrix multiplication 
    :language: python
    :lines: 9-20
 
-.. code-block:: python
-
-    @task(variants = (VariantCode.CPU,VariantCode.GPU,),
-          constraints = (align("C", "A"),
-                         align("C", "B")))
-    def matmul_task(ctx: TaskContext, C: ReductionArray[ADD], A: InputArray, B: InputArray) -> None:
-       xp = cupy if ctx.get_variant_kind() == VariantCode.GPU else numpy
-       C = xp.asarray(C)[:, 0, :]
-       A = xp.asarray(A)[:, :, 0]
-       B = xp.asarray(B)[0, :, :]
-    
-       C += xp.matmul(A,B)
-
 The task can run on either CPU or GPU, depending on the available resources at runtime.
 The alignment constraints ``align(“C”, “A”)`` and ``align(“C”, “B”)`` ensures that partitions of ``A``, ``B``, and
 ``C`` so that each task instance gets matching chunks of data. If ``align`` is
