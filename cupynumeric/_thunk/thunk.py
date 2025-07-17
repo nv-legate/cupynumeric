@@ -1651,3 +1651,11 @@ class NumPyThunk(ABC):
         high_offsets: tuple[int, ...],
     ) -> None:
         ...
+
+    @abstractmethod
+    def ts_matmul(
+        self,
+        rhs1_thunk: Any,
+        rhs2_thunk: Any
+    ) -> Any:
+        ...

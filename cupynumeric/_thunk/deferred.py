@@ -3916,3 +3916,52 @@ class DeferredArray(NumPyThunk):
         legate_runtime.prefetch_bloated_instances(
             self.base, low_offsets, high_offsets, False
         )
+
+    @auto_convert("rhs1_thunk", "rhs2_thunk")
+    def ts_matmul(
+        self,
+        rhs1_thunk: Any,
+        rhs2_thunk: Any) -> Any:
+
+        lhs_thunk: NumPyThunk = self
+
+        # Clear output array
+        lhs_thunk.fill(np.array(0, dtype=lhs_thunk.dtype))
+        lhs = lhs_thunk.base # type: ignore
+
+        rhs1 = rhs1_thunk.base
+        rhs2 = rhs2_thunk.base
+
+        m = lhs.shape[0]
+        n = lhs.shape[1]
+        k = rhs1.shape[1]
+        unbatched = 1
+
+        assert m == rhs1.shape[0]
+        assert n == rhs2.shape[1]
+        assert k == rhs2.shape[0]
+        lhs = lhs.promote(1, k)
+        rhs1 = rhs1.promote(2, n)
+        rhs2 = rhs2.promote(0, m)
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.MATMUL
+        )
+        p_lhs = task.add_reduction(lhs, ReductionOpKind.ADD)
+        p_rhs1 = task.add_input(rhs1)
+        p_rhs2 = task.add_input(rhs2)
+        #
+        # specify unbatched matrix multiplication:
+        #
+        task.add_scalar_arg(unbatched, ty.uint32)
+
+        task.add_constraint(align(p_lhs, p_rhs1))
+        task.add_constraint(align(p_lhs, p_rhs2))
+        #
+        # additional constraints:
+        #
+        # task.add_constraint(broadcast(p_rhs1, (0,)))
+        # task.add_constraint(broadcast(p_rhs2, (1,)))
+        task.add_constraint(broadcast(p_lhs))
+        #
+        task.execute()

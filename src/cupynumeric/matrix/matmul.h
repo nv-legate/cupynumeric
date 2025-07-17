@@ -20,10 +20,13 @@
 
 namespace cupynumeric {
 
+enum class PartitionStrategy : int { Batched = 0, Unbatched };
+
 struct MatMulArgs {
   legate::PhysicalStore lhs;
   legate::PhysicalStore rhs1;
   legate::PhysicalStore rhs2;
+  PartitionStrategy partition_type;
 };
 
 class MatMulTask : public CuPyNumericTask<MatMulTask> {

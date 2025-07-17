@@ -63,21 +63,48 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
     }
     case CUPYNUMERIC_MATMUL: {
       std::vector<StoreMapping> mappings;
-      auto inputA = task.input(1);
-      auto inputB = task.input(2);
+      auto scalars = task.scalars();
 
-      mappings.push_back(
-        StoreMapping::default_mapping(inputA.data(), options.front(), true /*exact*/));
-      mappings.back().policy().redundant = true;
-      mappings.push_back(
-        StoreMapping::default_mapping(inputB.data(), options.front(), true /*exact*/));
-      mappings.back().policy().redundant = true;
+      // if scalar parameter is passed _and_ it is 1
+      // then use unbatched matmul mapping;
+      // otherwise use batched matmul;
+      //
+      assert(scalars.size() == 0 || scalars[0].value<int>() == 0 || scalars[0].value<int>() == 1);
+      if (scalars.size() == 0 || scalars[0].value<int>() == 0) {
+        //
+        // batched matmul:
+        //
+        auto inputA = task.input(1);
+        auto inputB = task.input(2);
 
-      auto outputC = task.output(0);
-      mappings.push_back(
-        StoreMapping::default_mapping(outputC.data(), options.front(), true /*exact*/));
+        mappings.push_back(
+          StoreMapping::default_mapping(inputA.data(), options.front(), true /*exact*/));
+        mappings.back().policy().redundant = true;
+        mappings.push_back(
+          StoreMapping::default_mapping(inputB.data(), options.front(), true /*exact*/));
+        mappings.back().policy().redundant = true;
 
-      return mappings;
+        auto outputC = task.output(0);
+        mappings.push_back(
+          StoreMapping::default_mapping(outputC.data(), options.front(), true /*exact*/));
+
+        return mappings;
+      } else {
+        //
+        // unbatched matmul:
+        //
+        auto inputs     = task.inputs();
+        auto reductions = task.reductions();
+        for (auto& input : inputs) {
+          mappings.push_back(
+            StoreMapping::default_mapping(input.data(), options.front(), true /*exact*/));
+        }
+        for (auto& reduction : reductions) {
+          mappings.push_back(
+            StoreMapping::default_mapping(reduction.data(), options.front(), true /*exact*/));
+        }
+        return mappings;
+      }
     }
     case CUPYNUMERIC_MATVECMUL:
     case CUPYNUMERIC_UNIQUE_REDUCE: {

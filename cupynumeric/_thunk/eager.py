@@ -2128,3 +2128,9 @@ class EagerArray(NumPyThunk):
     ) -> None:
         if self.deferred is not None:
             self.deferred.stencil_hint(low_offsets, high_offsets)
+
+    def ts_matmul(
+        self,
+        rhs1_thunk: Any,
+        rhs2_thunk: Any) -> Any:
+        np.matmul(rhs1_thunk.array, rhs2_thunk.array, out=self.array)

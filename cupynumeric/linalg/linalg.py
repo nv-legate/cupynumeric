@@ -32,11 +32,21 @@ else:
         normalize_axis_tuple,
     )
 
-from legate.core import get_machine
+from cupynumeric.config import CuPyNumericOpCode
+from legate.core import (
+    get_machine,
+    get_legate_runtime,
+    ReductionOpKind,
+    align,
+    broadcast,
+)
 
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module import dot, empty_like, eye, matmul, ndarray
-from .._module.creation_shape import zeros, zeros_like
+from .._module.array_rearrange import flip
+from .._module.creation_shape import empty, zeros, zeros_like
+from .._module.creation_matrices import diag
+from .._module.ssc_sorting import argsort
 from .._ufunc.math import add, sqrt as _sqrt
 from ._exception import LinAlgError
 
@@ -1571,3 +1581,134 @@ def expm(a: ndarray, method: str = "pade") -> ndarray:
                 mdeg, s = expm_func(a[idx], output[idx])
 
     return output
+
+
+@add_boilerplate("a")
+def tssvd(a: ndarray) -> tuple[ndarray, ...]:
+    """
+    Tall-skinny (TS) Singular Value Decomposition.
+
+    Parameters
+    ----------
+    a : (M, N) array_like
+        Array like, dimension 2.
+
+    Returns
+    -------
+    u : (M, N) array_like
+        Unitary array(s).
+    s : (N) array_like
+        The singular values, sorted in descending order
+    vh : (N, N) array_like
+        Unitary array(s).
+
+    Raises
+    ------
+    LinAlgError
+        If TS-SVD computation does not converge.
+
+    Notes
+    -----
+    This routine is only efficient if ``M >> N``. In particular, it assumes that
+    an ``(N, N)`` matrix can fit within a single processor memory.
+            
+    Implements the algorithm described in [1]_.
+    
+    Requires ``a.T @ a`` to not be singular.
+    Input matrix must be non-singular.
+
+    See Also
+    --------
+    numpy.linalg.svd
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    
+    
+    References
+    ----------
+    .. [1] https://stanford.edu/~rezab/classes/cme323/S22/notes/L17/cme323_lec17.pdf
+    """
+    if a.ndim != 2 or a.size <= 1:
+        raise ValueError(f"Invalid input shape for tssvd: {a.shape}")
+
+    m_info = get_machine()
+    num_PEs = m_info.count()
+
+    # A.T*A:
+    #
+    # unbatched way (there's a bug resulting in 0-matrix, it seems):
+    #{
+    m = a.shape[0]
+    n = a.shape[1]
+
+    # TODO: Grammian API:
+    #
+    a2 = empty(shape=(n, n), dtype=a.dtype)
+    ah = a.transpose().conj()
+    a2._thunk.ts_matmul(ah._thunk, a._thunk)
+    #}
+    #
+    # batched way (slower, but passes):
+    #
+    # a2 = matmul(a.transpose().conj(), a)
+
+    # eigen-vals, eigen-vecs of A.T*A:
+    #
+    ew, ev = eigh(a2)
+
+    if any(abs(ew) <= np.finfo(a.dtype).eps):
+        raise LinAlgError("Singular matrix. Method cannot be applied.")
+
+    # svals = map sqrt ew
+    #
+    svals = _sqrt(ew)
+
+    # bring to standard form;
+    # i.e., decreasing singular values
+    #
+    # generate index permutation, pi
+    # via sort-by-key decreasingly:
+    #
+    d_indices = zeros(shape=(n, ), dtype=np.int64)
+    with m_info[0]: # !
+        d_indices = argsort(svals)
+        #
+        # reverse:
+        #
+        # d_indices = d_indices[::-1] # Error: not implemented
+        d_indices = flip(d_indices)
+
+    # V.T:
+    #
+    vt = ev.transpose().conj()
+
+    reciprocal_svals = 1.0/svals
+    Sinv = diag(reciprocal_svals)
+
+    # U = A*V*inv(S):
+    #
+    # B = matmul(ev, Sinv)
+    # u = matmul(a, B)
+
+    B = empty(shape=(n, n), dtype=a.dtype)
+    B._thunk.ts_matmul(ev._thunk, Sinv._thunk)
+
+    u  = empty(shape=(m, n), dtype=a.dtype)
+    u._thunk.ts_matmul(a._thunk, B._thunk)
+    
+    # re-arrange svals decreasingly:
+    #
+    svals = svals[d_indices]
+
+    # permute columns of U with pi:
+    #
+    # u = u[:, d_indices]
+    u = matmul(u, eye(u.shape[1])[d_indices].T)
+
+    # permute rows of V.T with pi:
+    #
+    vt = vt[d_indices]
+
+    return u, svals, vt
