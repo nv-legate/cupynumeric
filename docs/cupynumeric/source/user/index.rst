@@ -10,3 +10,4 @@ User guide
   advanced
   differences
   tutorial
+  task
