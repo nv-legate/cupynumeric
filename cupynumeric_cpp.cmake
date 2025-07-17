@@ -430,11 +430,18 @@ if(NOT Legion_USE_CUDA AND cupynumeric_cuRAND_INCLUDE_DIR)
   target_include_directories(cupynumeric PRIVATE ${cupynumeric_cuRAND_INCLUDE_DIR})
 endif()
 
-if(Legion_USE_CUDA AND CUSOLVERMP_DIR)
-  message(VERBOSE "cupynumeric: CUSOLVERMP_DIR ${CUSOLVERMP_DIR}")
-  target_compile_definitions(cupynumeric PUBLIC "$<$<COMPILE_LANGUAGE:CXX,CUDA>:CUPYNUMERIC_USE_CUSOLVERMP>")
-  target_include_directories(cupynumeric PRIVATE ${CUSOLVERMP_DIR}/include)
-  target_link_libraries(cupynumeric PRIVATE ${CUSOLVERMP_DIR}/lib/libcusolverMp.so)
+option(CUPYNUMERIC_USE_CUSOLVERMP "Build with CUSOLVERMP" OFF)
+
+if(Legion_USE_CUDA AND CUPYNUMERIC_USE_CUSOLVERMP)
+  rapids_find_generate_module(CUSOLVERMP HEADER_NAMES cusolverMp.h LIBRARY_NAMES cusolverMp)
+  rapids_find_package(CUSOLVERMP REQUIRED)
+  if(TARGET CUSOLVERMP::CUSOLVERMP)
+    message(VERBOSE "cupynumeric: CUSOLVERMP found")
+    target_compile_definitions(cupynumeric PUBLIC "$<$<COMPILE_LANGUAGE:CXX,CUDA>:CUPYNUMERIC_USE_CUSOLVERMP>")
+    target_link_libraries(cupynumeric PRIVATE CUSOLVERMP::CUSOLVERMP)
+  else()
+    message(FATAL_ERROR "CUSOLVERMP not found. Please ensure CUSOLVERMP is installed and available in the CMAKE_PREFIX_PATH.")
+  endif()
 endif()
 
 target_compile_options(cupynumeric

@@ -22,7 +22,8 @@ if [ -z "$CPU_ONLY" ]; then
   # cutensor, relying on the conda cutensor package
   CMAKE_ARGS+="
 -Dcutensor_DIR=$PREFIX
--DCUSOLVERMP_DIR=$PREFIX"
+-DCMAKE_CUDA_ARCHITECTURES=all-major
+-DCUPYNUMERIC_USE_CUSOLVERMP=ON"
 else
   # When we build without cuda, we need to provide the location of curand
   CMAKE_ARGS+="
