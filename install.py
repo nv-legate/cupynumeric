@@ -357,7 +357,6 @@ def install_cupynumeric(
     if editable:
         # editable implies build_isolation = False
         pip_install_cmd += ["--no-deps", "--no-build-isolation", "--editable"]
-        cmd_env.update({"SETUPTOOLS_ENABLE_FEATURES": "legacy-editable"})
     else:
         if not build_isolation:
             pip_install_cmd += ["--no-deps", "--no-build-isolation"]
