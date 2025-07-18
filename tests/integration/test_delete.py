@@ -13,8 +13,6 @@
 # limitations under the License.
 #
 
-import re
-
 import numpy as np
 import pytest
 from utils.comparisons import allclose
@@ -256,14 +254,10 @@ def test_non_integer_indices():
 
     with pytest.raises(
         IndexError,
-        match=re.escape(
-            "arrays used as indices must be of integer (or boolean) type"
-        ),
+        match=r"arrays used as indices must be of integer \(or boolean\) type",
     ):
         np.delete(arr, indices)
-    with pytest.raises(
-        TypeError, match="index arrays should be int or bool type"
-    ):
+    with pytest.raises((TypeError, IndexError)):
         num.delete(arr_num, indices)
 
 

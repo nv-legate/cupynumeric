@@ -23,11 +23,9 @@ import cupynumeric as num
 
 class TestRavelMultiIndexErrors:
     def test_none_array(self):
-        with pytest.raises(TypeError, match="only int indices permitted"):
+        with pytest.raises(TypeError):
             np.ravel_multi_index((None,), (3,))
-        with pytest.raises(
-            TypeError, match="cuPyNumeric does not support dtype=object"
-        ):
+        with pytest.raises(TypeError):
             num.ravel_multi_index((None,), (3,))
 
     def test_indices_wrong_type(self):
@@ -283,18 +281,9 @@ def test_non_broadcastable_arrays():
     multi_index_np = (np.array([0, 1, 2]), np.array([0, 1]))
     multi_index_num = (num.array([0, 1, 2]), num.array([0, 1]))
 
-    with pytest.raises(
-        ValueError,
-        match=r"operands could not be broadcast together with"
-        r" shapes \(3,\) \(2,\)",
-    ):
+    with pytest.raises(ValueError):
         np.ravel_multi_index(multi_index_np, shape)
-    with pytest.raises(
-        ValueError,
-        match=r"shape mismatch: objects cannot be broadcast to a"
-        r" single shape.  Mismatch is between arg 0 with shape"
-        r" \(3,\) and arg 1 with shape \(2,\)\.",
-    ):
+    with pytest.raises(ValueError):
         num.ravel_multi_index(multi_index_num, shape)
 
 

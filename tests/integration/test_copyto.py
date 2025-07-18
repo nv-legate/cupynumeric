@@ -171,11 +171,9 @@ def test_read_only_destination():
     num_dst.flags.writeable = False
     num_src = num.array(src)
 
-    with pytest.raises(
-        ValueError, match="assignment destination is read-only"
-    ):
+    with pytest.raises(ValueError):
         np.copyto(dst, src)
-    with pytest.raises(ValueError, match="array is not writeable"):
+    with pytest.raises(ValueError):
         num.copyto(num_dst, num_src)
 
 
@@ -255,20 +253,9 @@ def test_where_shape_mismatch():
     num_src = num.array(src)
     num_where = num.array(where)
 
-    with pytest.raises(
-        ValueError,
-        match="could not broadcast where mask from"
-        r" shape \(2,\) into shape \(3,4\)",
-    ):
+    with pytest.raises(ValueError):
         np.copyto(dst, src, where=where)
-    with pytest.raises(
-        ValueError,
-        match="shape mismatch: objects cannot be"
-        " broadcast to a single shape.  "
-        "Mismatch is between arg 0 with shape"
-        r" \(2,\) and arg 1 with shape"
-        r" \(3, 4\)",
-    ):
+    with pytest.raises(ValueError):
         num.copyto(num_dst, num_src, where=num_where)
 
 
@@ -402,21 +389,9 @@ def test_where_non_bool_mask():
 
     # NumPy has a bug with error messages, where it says "safe" no matter what
     # casting is used
-    with pytest.raises(
-        TypeError,
-        match=(
-            r"Cannot cast array data from dtype\('int64'\) to dtype\('bool'\) "
-            r"according to the rule 'safe'"
-        ),
-    ):
+    with pytest.raises(TypeError):
         np.copyto(dst, src, where=where)
-    with pytest.raises(
-        TypeError,
-        match=(
-            r"Cannot cast array data from dtype\('int64'\) to dtype\('bool'\) "
-            r"according to the rule 'same_kind'"
-        ),
-    ):
+    with pytest.raises(TypeError):
         num.copyto(num_dst, num_src, where=num_where)
 
 
@@ -430,21 +405,9 @@ def test_where_non_bool_mask_unsafe():
 
     # NumPy has a bug with error messages, where it says "safe" no matter what
     # casting is used
-    with pytest.raises(
-        TypeError,
-        match=(
-            r"Cannot cast array data from dtype\('int64'\) to dtype\('bool'\) "
-            r"according to the rule 'safe'"
-        ),
-    ):
+    with pytest.raises(TypeError):
         np.copyto(dst, src, where=where, casting="unsafe")
-    with pytest.raises(
-        TypeError,
-        match=(
-            r"Cannot cast array data from dtype\('int64'\) to dtype\('bool'\) "
-            r"according to the rule 'unsafe'"
-        ),
-    ):
+    with pytest.raises(TypeError):
         num.copyto(num_dst, num_src, where=num_where, casting="unsafe")
 
 

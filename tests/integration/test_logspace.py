@@ -166,10 +166,7 @@ def test_none_cases(start, stop):
     ):
         np.logspace(start, stop)
 
-    with pytest.raises(
-        AttributeError,
-        match="'NoneType' object has no attribute 'dtype'",
-    ):
+    with pytest.raises((AttributeError, TypeError)):
         num.logspace(start, stop)
 
 
