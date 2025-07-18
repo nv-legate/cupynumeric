@@ -28,7 +28,6 @@ else:
 
 from .._array.util import add_boilerplate
 from .array_dimension import atleast_1d
-from .creation_ranges import arange
 from .creation_shape import full
 from .indexing import compress
 from .ssc_searching import where
@@ -133,15 +132,5 @@ def delete(arr: ndarray, obj: Any, axis: int | None = None) -> ndarray:
             return compress(~obj, arr, axis=axis)
 
         mask = full(arr.shape[axis], True, dtype=bool)
-        # FIXME mask[obj] should work for slice, see
-        # https://github.com/nv-legate/cupynumeric.internal/issues/820
-        if isinstance(obj, slice):
-            indices = arange(mask.shape[0])[obj]
-            mask[indices] = False  # type: ignore [assignment]
-        else:
-            mask[obj] = False  # type: ignore [assignment]
-
-        if all(mask):
-            return arr.copy()
-        else:
-            return compress(mask, arr, axis=axis)
+        mask[obj] = False  # type: ignore [assignment]
+        return compress(mask, arr, axis=axis)
