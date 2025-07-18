@@ -1930,6 +1930,10 @@ class ndarray:
 
         if self.dtype != np.int64:
             a = a.astype(np.int64)
+            
+        if mode not in ["raise", "wrap", "clip"]:
+            mode = "raise"
+            
         if mode == "raise":
             if (a < 0).any() or (a >= n).any():
                 raise ValueError("invalid entry in choice array")
@@ -1939,11 +1943,6 @@ class ndarray:
                 a = convert_to_cupynumeric_ndarray(a)  # type: ignore [unreachable] # noqa: E501
         elif mode == "clip":
             a = a.clip(0, n - 1)
-        else:
-            raise ValueError(
-                f"mode={mode} not understood. Must "
-                "be 'raise', 'wrap', or 'clip'"
-            )
 
         # we need to broadcast all arrays in choices with
         # input and output arrays

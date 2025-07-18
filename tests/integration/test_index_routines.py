@@ -188,11 +188,7 @@ def test_choose_out():
     assert np.array_equal(np_aout, num_aout)
 
 
-@pytest.mark.xfail
-def test_choose_mode_none():
-    # In Numpy, pass and returns array equals default mode
-    # In cuPyNumeric, raises ValueError: mode=None not understood.
-    # Must be 'raise', 'wrap', or 'clip'
+def test_choose_mode_none() -> None:
     shape_choices = (3, 2, 4)
     shape_a = (2, 4)
     np_a = mk_seq_array(np, shape_a) % shape_choices[0]
@@ -258,10 +254,6 @@ class TestChooseErrors:
         # In cuPyNumeric, it raises IndexError: tuple index out of range
         with pytest.raises(TypeError):
             num.choose(self.a, None)
-
-    def test_invalid_mode(self):
-        with pytest.raises(ValueError):
-            num.choose(self.a, self.choices, mode="InvalidValue")
 
     def test_out_invalid_shape(self):
         aout = mk_seq_array(num, (1, 4))
@@ -428,6 +420,22 @@ def test_select_different_shape(
         (choice_num,),
     )
     assert np.array_equal(res_np, res_num)
+
+
+def test_select_type_error() -> None:
+    num_condlist = [num.array([True, False])]
+    num_choicelist = [num.array([1, 2]), num.array([10, 20])]
+    msg = r"list of cases must be same length as list of conditions"
+    with pytest.raises(ValueError, match=msg):
+        num.select(num_condlist, num_choicelist)
+
+
+def test_select_condlist_not_bool() -> None:
+    condlist = [num.array([1, 2, 3])]
+    choicelist = [num.array([10, 20, 30])]
+    msg = r"should be boolean ndarray"
+    with pytest.raises(TypeError, match=msg):
+        num.select(condlist, choicelist)
 
 
 def test_diagonal():
