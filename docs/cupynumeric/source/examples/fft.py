@@ -23,7 +23,7 @@ from legate.core.task import InputStore, OutputStore, task
 from legate.core.types import complex64
 from legate.timing import time
 
-
+# [fft-start]
 @task(variants=(VariantCode.CPU, VariantCode.GPU),
     constraints=(align("dst", "src"), broadcast("src", (1, 2))),
 )
@@ -33,6 +33,7 @@ def fft2d_batched_gpu(ctx: TaskContext, dst: OutputStore, src: InputStore):
     cp_dst = xp.asarray(dst)
     cp_dst[:] = xp.fft.fftn(cp_src, axes=(1, 2))  # Apply 2D FFT across axes 1 and 2
 
+#[fft-end]
 
 def main():
     parser = argparse.ArgumentParser(description="Run FFT operation")
@@ -41,14 +42,17 @@ def main():
         help="Shape of the array in the format D1,D2,D3"
     )
     args = parser.parse_args()
+
+    # [input-section]
     shape = tuple(map(int, args.shape.split(",")))
 
     A_cpn = cpn.zeros(shape, dtype=cpn.complex64)
     B_cpn = cpn.random.randint(1, 101, size=shape).astype(cpn.complex64)
 
-    # Warm-up run
     fft2d_batched_gpu(A_cpn, B_cpn)
+    # [function-call]
 
+    # benchmark run
     rt = lg.get_legate_runtime()
     rt.issue_execution_fence()
     start = time()
