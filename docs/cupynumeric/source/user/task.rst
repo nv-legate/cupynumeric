@@ -46,7 +46,7 @@ automatically converted into Legate-compatible objects such as
 ``InputStore`` or ``OutputStore``, depending on how they are used in the task.
 In Legate, arguments representing a portion of a logical store or array must be
 specified as one of the following types: ``InputStore``, ``OutputStore``, ``InputArray``, or
-``OutputArray`` (see Arguments_).
+``OutputArray`` (see `Arguments`_).
 Legate has built-in datatypes suitable for building richer
 distributed data structures, e.g. nullable arrays, but in this tutorial
 we exclusively use the simpler Legate Store class, which can only
