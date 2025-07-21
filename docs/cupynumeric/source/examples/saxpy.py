@@ -22,7 +22,7 @@ from legate.core import align, VariantCode, TaskContext
 from legate.core.task import InputArray, OutputArray, task
 from legate.timing import time
 
-
+# [saxpy-start]
 @task(variants=(VariantCode.CPU, VariantCode.GPU),
     constraints=(align("x", "y"), align("y", "z")),
 )
@@ -32,12 +32,13 @@ def saxpy_task(ctx: TaskContext, x: InputArray, y: InputArray, z: OutputArray, a
     y_local = xp.asarray(y)
     z_local = xp.asarray(z)
     z_local[:] = a * x_local + y_local
-
+# [saxpy-end]
 
 def main():
     parser = argparse.ArgumentParser(description="Run SAXPY operation.")
     parser.add_argument("--size", type=int, default=1000, help="Size of input arrays")
     args = parser.parse_args()
+    # [input-section]
     size = args.size
 
     x_global = cpn.arange(size, dtype=cpn.float32)
@@ -46,6 +47,7 @@ def main():
 
     # Warm-up run
     saxpy_task(x_global, y_global, z_global, 2.0)
+    # [funtion-call]
     
     rt = lg.get_legate_runtime()
     rt.issue_execution_fence()
