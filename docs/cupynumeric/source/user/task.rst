@@ -33,6 +33,9 @@ Here is an example of defining and invoking a Legate task with a custom function
 
 .. literalinclude:: ../examples/quick.py
    :language: python
+   :start-after: [code-start]
+   :end-before: [code-end]
+   
 
 Understanding this example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -90,7 +93,7 @@ Let’s take a look at the input and output parameters for this SAXPY example.
 .. literalinclude:: ../examples/saxpy.py
    :language: python
    :start-after: [input-section]
-   :end-before: [funtion-call]
+   :end-before: [function-call]
 
 For this example, three one-dimensional arrays of default size 1000 are
 created. ``x_global`` contains values from 0 to 999, ``y_global`` is filled with
@@ -142,6 +145,8 @@ can be run with the ``legate`` command line launcher:
 
 .. literalinclude:: ../examples/saxpy.py
    :language: python
+   :start-after: [code-start]
+   :end-before: [code-end]
 
 The Legate runtime is used in the main function to control and
 synchronize task execution. The ``get_legate_runtime()`` function returns
@@ -248,7 +253,7 @@ Let’s take a quick look at the input and output parameters for this histogram 
 .. literalinclude:: ../examples/histogram.py
    :language: python
    :start-after: [input-section]
-   :end-before: [funtion-call]
+   :end-before: [function-call]
 
 For this example, a one-dimensional array with a default size of 1000
 elements is created, filled with random integers ranging from 0 to 9.
@@ -313,6 +318,8 @@ can be run with the ``legate`` command line launcher:
 
 .. literalinclude:: ../examples/histogram.py
    :language: python
+   :start-after: [code-start]
+   :end-before: [code-end]
 
 Running on CPU and GPU
 -----------------------
@@ -398,7 +405,7 @@ The following main function prepares input matrices with proper broadcasting, ex
 .. literalinclude:: ../examples/matmul.py
    :language: python
    :start-after: [input-section]
-   :end-before: [funtion-call]
+   :end-before: [function-call]
 
 The important things that this code does are:
 
@@ -455,6 +462,8 @@ can be run with the ``legate`` command line launcher:
 
 .. literalinclude:: ../examples/matmul.py
    :language: python
+   :start-after: [code-start]
+   :end-before: [code-end]
 
 Running on CPU and GPU 
 ----------------------
@@ -542,7 +551,7 @@ The following code block initializes inputs and performs a GPU-accelerated batch
 .. literalinclude:: ../examples/fft.py
    :language: python
    :start-after: [input-section]
-   :end-before: [funtion-call]
+   :end-before: [function-call]
 
 For demonstration purposes, a default shape of (128, 256, 256) is used,
 representing a batch of 128 two dimensional matrices. Using this shape,
@@ -599,6 +608,8 @@ can be run with the ``legate`` command line launcher:
 
 .. literalinclude:: ../examples/fft.py
    :language: python
+   :start-after: [code-start]
+   :end-before: [code-end]
 
 Running on CPU and GPU 
 ----------------------
