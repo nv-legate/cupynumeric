@@ -22,6 +22,7 @@ from legate.core import broadcast, VariantCode, TaskContext
 from legate.core.task import task, InputArray, ReductionArray, ADD
 from legate.timing import time
 
+# [histogram-start]
 @task(variants=(VariantCode.CPU, VariantCode.GPU,),
       constraints=(broadcast("hist"),))
 def histogram_task(ctx: TaskContext, data: InputArray, hist: ReductionArray[ADD], N_bins: int):
@@ -31,21 +32,23 @@ def histogram_task(ctx: TaskContext, data: InputArray, hist: ReductionArray[ADD]
 
     local_hist, _ = xp.histogram(data_local, bins=N_bins)
     hist_local[:] = hist_local + local_hist
+# [histogram-end]
 
 def main():
     parser = argparse.ArgumentParser(description="Run Histogram operation.")
     parser.add_argument("--size", type=int, default=1000, help="Size of input arrays")
     args = parser.parse_args()
-
+      
+    # [input-section]
     size = args.size
     NUM_BINS = 10
 
     data = cpn.random.randint(0, NUM_BINS, size=(size,), dtype=cpn.int32)
     hist = cpn.zeros((NUM_BINS,), dtype=cpn.int32)
 
-    # Warm-up run
     histogram_task(data, hist, NUM_BINS)
-
+    # [function-call]
+      
     # Benchmark run
     rt = lg.get_legate_runtime()
     rt.issue_execution_fence()
