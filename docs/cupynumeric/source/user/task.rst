@@ -56,7 +56,7 @@ ndarray.
 The ``@task`` decorator declares that this task has two variants: ``VariantCode.CPU`` for CPU execution
 and ``VariantCode.GPU`` for GPU execution. This means the task can run
 on either device, depending on which resources the user selects at runtime.
-For more details about Legate task behavior, see legate_task_. Inside
+For more details about Legate task behavior, see `legate_task`_. Inside
 the task, ``TaskContext`` provides access to the execution environment,
 including inputs, outputs, and the execution target (CPU or GPU). The
 method ``ctx.get_variant_kind()`` is used to determine the target device,
