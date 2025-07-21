@@ -66,7 +66,7 @@ of the task-local partitions of the Legate-backed global input and
 output arrays as either CuPy or NumPy arrays.
 
 .. _Arguments: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.InputStore.html
-.. _legate_task: https://docs.nvidia.com/legate/25.07/api/python/generated/legate.core.task.task.html
+.. _legate_task: https://docs.nvidia.com/legate/latest/api/python/generated/legate.core.task.task.html
 
 SAXPY problem
 =============
@@ -284,13 +284,13 @@ distribute chunks of it to different GPUs.
 For example, imagine we have 4 GPUs, and the input data size is 1000.
 Then:
 
-- GPU 1 might get data[0–249]
+- GPU 1 might get data [0–249]
 
-- GPU 2 might get data[250–499]
+- GPU 2 might get data [250–499]
 
-- GPU 3 might get data[500–749]
+- GPU 3 might get data [500–749]
 
-- GPU 4 might get data[750–999]
+- GPU 4 might get data [750–999]
 
 Since hist is declared as a ``ReductionArray[ADD]``, Legate automatically
 merges all the local histograms from all the GPUs by summing them
