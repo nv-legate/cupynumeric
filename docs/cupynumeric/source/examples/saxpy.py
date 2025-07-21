@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [code-start]
+
 import cupy
 import numpy
 import argparse
@@ -32,12 +34,14 @@ def saxpy_task(ctx: TaskContext, x: InputArray, y: InputArray, z: OutputArray, a
     y_local = xp.asarray(y)
     z_local = xp.asarray(z)
     z_local[:] = a * x_local + y_local
+    
 # [saxpy-end]
 
 def main():
     parser = argparse.ArgumentParser(description="Run SAXPY operation.")
     parser.add_argument("--size", type=int, default=1000, help="Size of input arrays")
     args = parser.parse_args()
+    
     # [input-section]
     size = args.size
 
@@ -63,3 +67,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# [code-end]
