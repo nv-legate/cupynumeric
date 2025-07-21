@@ -51,7 +51,7 @@ def main():
 
     # Warm-up run
     saxpy_task(x_global, y_global, z_global, 2.0)
-    # [funtion-call]
+    # [function-call]
     
     rt = lg.get_legate_runtime()
     rt.issue_execution_fence()
