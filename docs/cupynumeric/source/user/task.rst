@@ -31,7 +31,7 @@ Quick example
 -------------
 Here is an example of defining and invoking a Legate task with a custom function.
 
-.. literalinclude:: examples/quick.py
+.. literalinclude:: ../examples/quick.py
    :language: python
 
 Understanding this example
@@ -87,9 +87,10 @@ Main function
 --------------
 Let’s take a look at the input and output parameters for this SAXPY example.
 
-.. literalinclude:: examples/saxpy.py
+.. literalinclude:: ../examples/saxpy.py
    :language: python
-   :lines: 24-29,36,37,39-41
+   :start-after: [input-section]
+   :end-before: [funtion-call]
 
 For this example, three one-dimensional arrays of default size 1000 are
 created. ``x_global`` contains values from 0 to 999, ``y_global`` is filled with
@@ -101,9 +102,10 @@ Task function
 -------------
 The following example shows how to define a task function that performs the SAXPY operation.
 
-.. literalinclude:: examples/saxpy.py
+.. literalinclude:: ../examples/saxpy.py
    :language: python
-   :lines: 9-19
+   :start-after: [saxpy-start]
+   :end-before: [saxpy-end]
 
 The constraint used is ``align``, it is used to ensure that ``x``, ``y`` , and ``z``
 are partitioned in the same way. This is so that corresponding elements
@@ -138,7 +140,7 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. literalinclude:: examples/saxpy.py
+.. literalinclude:: ../examples/saxpy.py
    :language: python
 
 The Legate runtime is used in the main function to control and
@@ -243,9 +245,10 @@ Main function
 --------------
 Let’s take a quick look at the input and output parameters for this histogram example.
 
-.. literalinclude:: examples/histogram.py
+.. literalinclude:: ../examples/histogram.py
    :language: python
-   :lines: 24-29,36,37,39-41
+   :start-after: [input-section]
+   :end-before: [funtion-call]
 
 For this example, a one-dimensional array with a default size of 1000
 elements is created, filled with random integers ranging from 0 to 9.
@@ -259,9 +262,10 @@ Task function
 -------------
 The following example defines a histogram task function that computes a local histogram and accumulates the results into a global ``hist`` array using a reduction.
 
-.. literalinclude:: examples/histogram.py
+.. literalinclude:: ../examples/histogram.py
    :language: python
-   :lines: 9-19
+   :start-after: [histogram-start]
+   :end-before: [histogram-end]
 
 The ``histogram_task`` function uses ``TaskContext`` and its ``get_variant_kind()``
 method to determine the execution target (GPU or CPU) and accordingly
@@ -307,7 +311,7 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. literalinclude:: examples/histogram.py
+.. literalinclude:: ../examples/histogram.py
    :language: python
 
 Running on CPU and GPU
@@ -391,9 +395,10 @@ Main function
 -------------
 The following main function prepares input matrices with proper broadcasting, executes the matrix multiplication task, and measures the computation time.
 
-.. literalinclude:: examples/matmul.py
+.. literalinclude:: ../examples/matmul.py
    :language: python
-   :lines: 26-39,46,47,49-51
+   :start-after: [input-section]
+   :end-before: [funtion-call]
 
 The important things that this code does are:
 
@@ -419,9 +424,10 @@ Task function
 -------------
 The following example shows a task function that performs matrix multiplication with aligned partitions across input and output arrays.
 
-.. literalinclude:: examples/matmul.py
+.. literalinclude:: ../examples/matmul.py
    :language: python
-   :lines: 9-20
+   :start-after: [matmul-start]
+   :end-before: [matmul-end]
 
 The task can run on either CPU or GPU, depending on the available resources at runtime.
 The alignment constraints ``align(“C”, “A”)`` and ``align(“C”, “B”)`` ensures that partitions of ``A``, ``B``, and
@@ -447,7 +453,7 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. literalinclude:: examples/matmul.py
+.. literalinclude:: ../examples/matmul.py
    :language: python
 
 Running on CPU and GPU 
@@ -533,9 +539,10 @@ Main function
 
 The following code block initializes inputs and performs a GPU-accelerated batched 2D Fast Fourier Transform.
 
-.. literalinclude:: examples/fft.py
+.. literalinclude:: ../examples/fft.py
    :language: python
-   :lines: 25-29,36,37,39-41
+   :start-after: [input-section]
+   :end-before: [funtion-call]
 
 For demonstration purposes, a default shape of (128, 256, 256) is used,
 representing a batch of 128 two dimensional matrices. Using this shape,
@@ -549,9 +556,10 @@ Task function
 -------------
 The following example defines a task that computes a batched 2D FFT over input data using ``align`` and ``broadcast`` constraints.
 
-.. literalinclude:: examples/fft.py
+.. literalinclude:: ../examples/fft.py
    :language: python
-   :lines: 10-20
+   :start-after: [fft-start]
+   :end-before: [fft-end]
 
 The ``fft2d_batched_gpu`` function uses ``TaskContext`` to detect execution on
 GPU and sets ``xp`` to CuPy accordingly. It then converts the ``src`` and ``dst``
@@ -589,7 +597,7 @@ Complete module
 Putting the pieces above together, here is a complete module that
 can be run with the ``legate`` command line launcher:
 
-.. literalinclude:: examples/fft.py
+.. literalinclude:: ../examples/fft.py
    :language: python
 
 Running on CPU and GPU 
