@@ -67,9 +67,4 @@ def load(
     --------
     Single CPU
     """
-    return array(
-        np.load(
-            file,
-            max_header_size=max_header_size,  # type: ignore [call-arg]
-        )
-    )
+    return array(np.load(file, max_header_size=max_header_size))

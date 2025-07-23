@@ -252,15 +252,12 @@ def _concatenate(
             shape=out_shape, dtype=common_info.dtype, inputs=inputs
         )
     else:
-        out = convert_to_cupynumeric_ndarray(out)
-        if not isinstance(out, ndarray):
-            raise TypeError("out should be ndarray")
-        elif list(out.shape) != out_shape:
+        out_array = convert_to_cupynumeric_ndarray(out)
+        if list(out_array.shape) != out_shape:
             raise ValueError(
                 f"out.shape({out.shape}) is not matched "
                 f"to the result shape of concatenation ({out_shape})"
             )
-        out_array = out
 
     for dest, src in zip(slices, inputs):
         out_array[(Ellipsis,) + dest] = src
@@ -426,13 +423,14 @@ def concatenate(
     try:
         eager_inputs = [_eager(x) for x in inputs]
         eager_out = _eager(out)
-        return np.concatenate(
+        result =  np.concatenate(
             eager_inputs,
             axis=axis,
             out=eager_out,
             dtype=dtype,
             casting=casting,
         )
+        return convert_to_cupynumeric_ndarray(result)
     except Exception:
         pass
 

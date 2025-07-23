@@ -23,7 +23,7 @@ from ..config import CuPyNumericOpCode
 from ..runtime import runtime
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_index
 else:
     from numpy.core.multiarray import normalize_axis_index  # type: ignore
 

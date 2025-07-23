@@ -592,7 +592,7 @@ class DeferredArray(NumPyThunk):
                     store = lhs.base
                     for dim, k in enumerate(new_key):
                         if isinstance(k, int):
-                            if k < 0:  # type: ignore [operator]
+                            if k < 0:
                                 k += store.shape[dim + key_dim + shift]
                             store = store.project(dim + key_dim + shift, k)
                             shift -= 1
@@ -736,7 +736,7 @@ class DeferredArray(NumPyThunk):
         key: Any,
         is_set: bool = False,
         set_value: Any | None = None,
-    ) -> tuple[bool, Any, Any, Any]:
+    ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
         is_bool_array, lhs, bool_key = self._has_single_boolean_array(
             key, is_set
         )
@@ -858,7 +858,7 @@ class DeferredArray(NumPyThunk):
             raise ValueError("Advanced indexing dimension mismatch")
 
     @staticmethod
-    def _unpack_ellipsis(key: Any, ndim: int) -> tuple[Any, ...]:
+    def _unpack_ellipsis(key: tuple[Any, ...], ndim: int) -> tuple[Any, ...]:
         num_ellipsis = sum(k is Ellipsis for k in key)
         num_newaxes = sum(k is np.newaxis for k in key)
 
@@ -885,7 +885,7 @@ class DeferredArray(NumPyThunk):
             if k is np.newaxis:
                 store = store.promote(dim + shift, 1)
             elif isinstance(k, slice):
-                k, store = self._slice_store(k, store, dim + shift)
+                _, store = self._slice_store(k, store, dim + shift)
             elif np.isscalar(k):
                 if k < 0:  # type: ignore [operator]
                     k += store.shape[dim + shift]  # type: ignore [operator]
@@ -955,7 +955,7 @@ class DeferredArray(NumPyThunk):
 
                 else:
                     result = runtime.create_empty_thunk(
-                        index_array.base.shape,
+                        tuple(index_array.base.shape),
                         self.base.type,
                         inputs=[self],
                     )
@@ -3825,7 +3825,7 @@ class DeferredArray(NumPyThunk):
         task.add_scalar_arg(axis, ty.uint32)
         task.add_scalar_arg(bitorder_code, ty.uint32)
         factors = tuple(8 if dim == axis else 1 for dim in range(src.ndim))
-        task.add_constraint(scale(factors, p_out, p_in))  # type: ignore
+        task.add_constraint(scale(factors, p_out, p_in))
         task.execute()
 
     @auto_convert("src")
@@ -3843,7 +3843,7 @@ class DeferredArray(NumPyThunk):
         task.add_scalar_arg(axis, ty.uint32)
         task.add_scalar_arg(bitorder_code, ty.uint32)
         factors = tuple(8 if dim == axis else 1 for dim in range(src.ndim))
-        task.add_constraint(scale(factors, p_in, p_out))  # type: ignore
+        task.add_constraint(scale(factors, p_in, p_out))
         task.execute()
 
     @auto_convert("src")

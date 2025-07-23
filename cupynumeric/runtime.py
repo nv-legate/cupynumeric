@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from legate.core import AutoTask, ManualTask
 
-    from ._array.array import ndarray
     from ._thunk.deferred import DeferredArray
     from ._thunk.eager import EagerArray
     from ._thunk.thunk import NumPyThunk
@@ -257,7 +256,7 @@ class Runtime(object):
 
     def get_numpy_thunk(
         self,
-        obj: ndarray | npt.NDArray[Any],
+        obj: Any,
         share: bool = False,
         dtype: np.dtype[Any] | None = None,
     ) -> NumPyThunk:
@@ -293,21 +292,12 @@ class Runtime(object):
                 from ._module.array_joining import stack
 
                 if (
-                    any(
-                        (
-                            isinstance(obj, tuple),
-                            isinstance(obj, list),
-                        )
-                    )
+                    isinstance(obj, (tuple, list))
                     and len(obj) > 1
-                    and all(
-                        (isinstance(o, ndarray) or isinstance(o, np.ndarray))
-                        for o in obj
-                    )
+                    and all(isinstance(o, (ndarray, np.ndarray)) for o in obj)
                     and math.prod(obj[0].shape) != 0
                 ):
-                    obj = stack(obj)  # type: ignore
-                    return obj._thunk
+                    return stack(obj)._thunk
                 obj = np.array(obj, dtype=dtype)
         elif dtype is not None and dtype != obj.dtype:
             obj = obj.astype(dtype)

@@ -14,11 +14,12 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from .array import ndarray
 
+FlagKeys = Literal['A', 'ALIGNED', 'W', 'WRITEABLE', 'X', 'WRITEBACKIFCOPY']
 
 class flagsobj:
     """
@@ -28,6 +29,8 @@ class flagsobj:
     rather the NumPy array that will be produced if the cuPyNumeric array is
     materialized on a single node.
     """
+
+    _array: ndarray
 
     def __init__(self, array: ndarray) -> None:
         # prevent infinite __setattr__ recursion
@@ -45,7 +48,7 @@ class flagsobj:
 
     def __eq__(self, other: Any) -> bool:
         flags = ("C", "F", "O", "W", "A", "X")
-        return all(self[f] == other[f] for f in flags)  # type: ignore [index]
+        return all(self[f] == other[f] for f in flags)
 
     def __getattr__(self, name: str) -> Any:
         if name == "writeable":
@@ -67,7 +70,7 @@ class flagsobj:
         flags = self._array.__array__().flags
         return flags[key]
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: FlagKeys, value: Any) -> None:
         if key == "W":
             self._check_writeable(value)
             self._array._writeable = bool(value)

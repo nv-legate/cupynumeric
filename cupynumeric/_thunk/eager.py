@@ -199,7 +199,7 @@ def diagonal_reference(a: npt.NDArray[Any], axes: NdShape) -> npt.NDArray[Any]:
     res = a * eye
     for ax in tuple(reversed(sorted(axes)))[:-1]:
         res = res.sum(axis=ax)
-    return res
+    return np.array(res)
 
 
 def _make_eager_unary_ufunc(ufunc_name: str) -> Callable[..., Any]:
@@ -458,7 +458,7 @@ class EagerArray(NumPyThunk):
                     )
                 self.array[:] = np.convolve(input.array, filter.array, mode)
             else:
-                from scipy.signal import convolve  # type: ignore [import]
+                from scipy.signal import convolve  # type: ignore [import-untyped]
 
                 self.array[...] = convolve(
                     input.array, filter.array, mode, method

@@ -32,13 +32,8 @@ else:
         normalize_axis_tuple,
     )
 
-from cupynumeric.config import CuPyNumericOpCode
 from legate.core import (
     get_machine,
-    get_legate_runtime,
-    ReductionOpKind,
-    align,
-    broadcast,
 )
 
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
