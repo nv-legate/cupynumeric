@@ -365,8 +365,10 @@ if(Legion_USE_CUDA)
   )
 endif()
 
+option(cupynumeric_USE_CUSOLVERMP "Build with CUSOLVERMP" ${Legion_USE_CUDA})
+
 # add sources for cusolverMp
-if(Legion_USE_CUDA AND CUSOLVERMP_DIR)
+if(cupynumeric_USE_CUSOLVERMP)
   target_sources(cupynumeric PRIVATE
     src/cupynumeric/matrix/mp_potrf.cu
     src/cupynumeric/matrix/mp_solve.cu
@@ -430,11 +432,13 @@ if(NOT Legion_USE_CUDA AND cupynumeric_cuRAND_INCLUDE_DIR)
   target_include_directories(cupynumeric PRIVATE ${cupynumeric_cuRAND_INCLUDE_DIR})
 endif()
 
-if(Legion_USE_CUDA AND CUSOLVERMP_DIR)
-  message(VERBOSE "cupynumeric: CUSOLVERMP_DIR ${CUSOLVERMP_DIR}")
+if(cupynumeric_USE_CUSOLVERMP)
+  include(thirdparty/get_cusolvermp)
+  if(NOT TARGET CUSOLVERMP::CUSOLVERMP)
+    message(FATAL_ERROR "cupynumeric: CUSOLVERMP was requested but not found")
+  endif()
   target_compile_definitions(cupynumeric PUBLIC "$<$<COMPILE_LANGUAGE:CXX,CUDA>:CUPYNUMERIC_USE_CUSOLVERMP>")
-  target_include_directories(cupynumeric PRIVATE ${CUSOLVERMP_DIR}/include)
-  target_link_libraries(cupynumeric PRIVATE ${CUSOLVERMP_DIR}/lib/libcusolverMp.so)
+  target_link_libraries(cupynumeric PRIVATE CUSOLVERMP::CUSOLVERMP)
 endif()
 
 target_compile_options(cupynumeric

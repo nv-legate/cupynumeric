@@ -32,6 +32,7 @@ else()
 endif()
 
 set(CUPYNUMERIC_BUILD_PIP_WHEELS ON)
+set(cupynumeric_USE_CUSOLVERMP OFF)
 
 add_subdirectory(../../../.. cupynumeric-all)
 
