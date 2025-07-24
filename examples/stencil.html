@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Jacobi stencil &#8212; NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</title>
+    <title>Jacobi stencil &#8212; NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</title>
   
   
   
@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=f0e6100c"></script>
+    <script src="../_static/documentation_options.js?v=3aba1e10"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -133,11 +133,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a></div>
     
@@ -240,11 +240,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a>
 
@@ -954,7 +954,7 @@ limitations under the License.
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">jacobi</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">I</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">jacobi</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">max_it</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running Jacobi stencil... &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
     <span class="n">center</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -964,12 +964,12 @@ limitations under the License.
     <span class="n">south</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">2</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">I</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_it</span><span class="p">):</span>
         <span class="n">average</span> <span class="o">=</span> <span class="n">center</span> <span class="o">+</span> <span class="n">north</span> <span class="o">+</span> <span class="n">east</span> <span class="o">+</span> <span class="n">west</span> <span class="o">+</span> <span class="n">south</span>
         <span class="n">center</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">average</span>
     <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed Time: </span><span class="si">{</span><span class="p">(</span><span class="n">stop</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed Time: </span><span class="si">{</span><span class="p">(</span><span class="n">stop</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">grid</span>
 </pre></div>

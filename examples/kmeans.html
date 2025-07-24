@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>K-Means Clustering Algorithm &#8212; NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</title>
+    <title>K-Means Clustering Algorithm &#8212; NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</title>
   
   
   
@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=f0e6100c"></script>
+    <script src="../_static/documentation_options.js?v=3aba1e10"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -133,11 +133,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a></div>
     
@@ -244,11 +244,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a>
 
@@ -943,7 +943,6 @@
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
 </pre></div>
@@ -964,7 +963,9 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="n">n_elements</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_centroids</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span>
+    <span class="n">n_elements</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_centroids</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Randomly initalize data and centroids of the clusters.</span>
 
@@ -988,7 +989,9 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">calculate_distances</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">centroids</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">data_magnitude_squared</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">calculate_distances</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">centroids</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">data_magnitude_squared</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return pairwise distance between the data and centroids.</span>
 
@@ -1033,7 +1036,7 @@
     <span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">pairwise_distances</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">zero_point</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-    <span class="n">n_centroids</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_centroids</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Find centroids following the algorithm in the reference mentioned earlier</span>
 <span class="sd">    centroids: np.ndarray</span>
@@ -1081,7 +1084,7 @@
     <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">n_iters</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">n_elements</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">n_iter_check</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_iter_check</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate observations and cluster them into requested number of clusters.</span>
@@ -1113,7 +1116,9 @@
     <span class="c1"># We run for max iterations or until we converge</span>
     <span class="c1"># We only test convergence every n_iter_check iterations</span>
     <span class="k">while</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="n">n_iters</span><span class="p">:</span>
-        <span class="n">pairwise_distances</span> <span class="o">=</span> <span class="n">calculate_distances</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">centroids</span><span class="p">,</span> <span class="n">data_magnitude_squared</span><span class="p">)</span>
+        <span class="n">pairwise_distances</span> <span class="o">=</span> <span class="n">calculate_distances</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span> <span class="n">centroids</span><span class="p">,</span> <span class="n">data_magnitude_squared</span>
+        <span class="p">)</span>
 
         <span class="n">new_labels</span> <span class="o">=</span> <span class="n">relabel</span><span class="p">(</span><span class="n">pairwise_distances</span><span class="p">)</span>
 
@@ -1127,8 +1132,6 @@
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">iteration</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">iteration</span> <span class="o">%</span> <span class="n">n_iter_check</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">changes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">not_equal</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">new_labels</span><span class="p">)</span>
-            <span class="n">total_changes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span>
             <span class="n">delta</span> <span class="o">=</span> <span class="n">distance_sum</span> <span class="o">/</span> <span class="n">prior_distance_sum</span>
             <span class="k">if</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.000001</span><span class="p">:</span>
                 <span class="k">break</span>
@@ -1153,7 +1156,9 @@
 <span class="n">n_iter_check</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="n">n_iters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
 
-<span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">centroids</span> <span class="o">=</span> <span class="n">run_kmeans</span><span class="p">(</span><span class="n">n_centroids</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">,</span> <span class="n">n_iters</span><span class="p">,</span> <span class="n">n_elements</span><span class="p">,</span> <span class="n">n_iter_check</span><span class="p">)</span>
+<span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">centroids</span> <span class="o">=</span> <span class="n">run_kmeans</span><span class="p">(</span>
+    <span class="n">n_centroids</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">,</span> <span class="n">n_iters</span><span class="p">,</span> <span class="n">n_elements</span><span class="p">,</span> <span class="n">n_iter_check</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1174,7 +1179,15 @@ Max iterations: 100
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">label_color_map</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">&#39;magenta&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span><span class="s1">&#39;yellow&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="mi">6</span><span class="p">:</span><span class="s1">&#39;gray&#39;</span><span class="p">}</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">label_color_map</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;magenta&quot;</span><span class="p">,</span>
+    <span class="mi">4</span><span class="p">:</span> <span class="s2">&quot;yellow&quot;</span><span class="p">,</span>
+    <span class="mi">5</span><span class="p">:</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span>
+    <span class="mi">6</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+<span class="p">}</span>
 
 <span class="c1"># make sure we have unique color for each cluster (total number of clusters specified by n_centroids)</span>
 <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">label_color_map</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="n">n_centroids</span>
@@ -1188,12 +1201,18 @@ Max iterations: 100
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># lets plot the data colored by the cluster they belong to</span>
 <span class="k">for</span> <span class="n">label_value</span><span class="p">,</span> <span class="n">label_color</span> <span class="ow">in</span> <span class="n">label_color_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="n">label_value</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">label_color</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">labels</span> <span class="o">==</span> <span class="n">label_value</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">label_color</span><span class="p">)</span>
 
 <span class="c1"># lets plot the centroid of the clusters</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">centroids</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">centroids</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">320</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">label_color_map</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">:</span><span class="n">n_centroids</span><span class="p">],</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">);</span>
-
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+    <span class="n">centroids</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="n">centroids</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="n">s</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span>
+    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">c</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">label_color_map</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">:</span><span class="n">n_centroids</span><span class="p">],</span>
+    <span class="n">edgecolors</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>

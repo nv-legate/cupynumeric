@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Newton Raphson Method In Two Dimensions &#8212; NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</title>
+    <title>Newton Raphson Method In Two Dimensions &#8212; NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</title>
   
   
   
@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=f0e6100c"></script>
+    <script src="../_static/documentation_options.js?v=3aba1e10"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -133,11 +133,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a></div>
     
@@ -244,11 +244,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a>
 
@@ -960,11 +960,12 @@
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="s2">&quot;Return a numpy array that has the computed values of $f_</span><span class="si">{1}</span><span class="s2">(x, y)$ and $f_</span><span class="si">{2}</span><span class="s2">(x, y)$&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mf">13.0</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">14.0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mf">13.0</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">14.0</span><span class="p">])</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">jacobian</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="s2">&quot;Return a 2x2 numpy array that has the computed values of the Jacobian, J&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mf">2.0</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mf">4.0</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]]])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]]])</span>
 </pre></div>
 </div>
 </div>
@@ -1008,7 +1009,9 @@
 
 <span class="c1"># let the user know if the solution converged or not</span>
 <span class="k">if</span> <span class="nb">iter</span> <span class="o">==</span> <span class="n">niters</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Newton&#39;s method did not converge for this function, tolerance (</span><span class="si">{</span><span class="n">tol</span><span class="si">}</span><span class="s2">) and number of iterations (</span><span class="si">{</span><span class="n">niters</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Newton&#39;s method did not converge for this function, tolerance (</span><span class="si">{</span><span class="n">tol</span><span class="si">}</span><span class="s2">) and number of iterations (</span><span class="si">{</span><span class="n">niters</span><span class="si">}</span><span class="s2">)&quot;</span>
+    <span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Newton&#39;s method converged in </span><span class="si">{</span><span class="nb">iter</span><span class="si">}</span><span class="s2"> iterations to xk: </span><span class="si">{</span><span class="n">xk</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1055,7 +1058,9 @@ Newton&#39;s method converged in 7 iterations to xk: [-2.  3.]
 
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;iter: </span><span class="si">{</span><span class="nb">iter</span><span class="si">}</span><span class="s2">, xk: </span><span class="si">{</span><span class="n">xk</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">xk</span> <span class="o">=</span> <span class="n">xk</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">jacobian</span><span class="p">(</span><span class="n">xk</span><span class="p">),</span> <span class="n">function</span><span class="p">(</span><span class="n">xk</span><span class="p">))</span> <span class="c1">## This uses linalg.solve</span>
+    <span class="n">xk</span> <span class="o">=</span> <span class="n">xk</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+        <span class="n">jacobian</span><span class="p">(</span><span class="n">xk</span><span class="p">),</span> <span class="n">function</span><span class="p">(</span><span class="n">xk</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1">## This uses linalg.solve</span>
 
     <span class="n">l2_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">xk</span> <span class="o">-</span> <span class="n">xk_old</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">l2_norm</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
@@ -1063,7 +1068,9 @@ Newton&#39;s method converged in 7 iterations to xk: [-2.  3.]
 
 <span class="c1"># let the user know if the solution converged or not</span>
 <span class="k">if</span> <span class="nb">iter</span> <span class="o">==</span> <span class="n">niters</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Newton&#39;s method did not converge for this function, tolerance (</span><span class="si">{</span><span class="n">tol</span><span class="si">}</span><span class="s2">) and number of iterations (</span><span class="si">{</span><span class="n">niters</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Newton&#39;s method did not converge for this function, tolerance (</span><span class="si">{</span><span class="n">tol</span><span class="si">}</span><span class="s2">) and number of iterations (</span><span class="si">{</span><span class="n">niters</span><span class="si">}</span><span class="s2">)&quot;</span>
+    <span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Newton&#39;s method converged in </span><span class="si">{</span><span class="nb">iter</span><span class="si">}</span><span class="s2"> iterations to xk: </span><span class="si">{</span><span class="n">xk</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>

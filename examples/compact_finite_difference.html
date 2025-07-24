@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Compact Finite Difference Scheme &#8212; NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</title>
+    <title>Compact Finite Difference Scheme &#8212; NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</title>
   
   
   
@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=f0e6100c"></script>
+    <script src="../_static/documentation_options.js?v=3aba1e10"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -133,11 +133,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a></div>
     
@@ -244,11 +244,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a>
 
@@ -966,7 +966,7 @@
 <span class="n">n_stencil</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
 
 <span class="c1"># length of the domain</span>
-<span class="n">length</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+<span class="n">length</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 
 <span class="c1"># wavenumber of the initial profile</span>
 <span class="n">wavenumber</span> <span class="o">=</span> <span class="mi">10</span>
@@ -978,14 +978,14 @@
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># compute the spacing</span>
-<span class="n">h</span> <span class="o">=</span> <span class="n">length</span><span class="o">/</span><span class="n">npoints</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">length</span> <span class="o">/</span> <span class="n">npoints</span>
 
 <span class="c1"># generate the discretized points</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">npoints</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="c1"># compute the function and exact derivative</span>
-<span class="n">f_interior</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">wavenumber</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
-<span class="n">derivative_exact</span> <span class="o">=</span> <span class="n">wavenumber</span><span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">wavenumber</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f_interior</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">wavenumber</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">derivative_exact</span> <span class="o">=</span> <span class="n">wavenumber</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">wavenumber</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1003,7 +1003,7 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">function_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">npoints</span> <span class="o">+</span> <span class="n">n_stencil</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">function_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">npoints</span> <span class="o">+</span> <span class="n">n_stencil</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">function_values</span><span class="p">[</span><span class="n">n_stencil</span><span class="p">:</span><span class="o">-</span><span class="n">n_stencil</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_interior</span>
 
 <span class="c1"># set the RHS boundary values using periodic boundary condition</span>
@@ -1024,11 +1024,11 @@
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">npoints</span><span class="p">,</span> <span class="n">npoints</span><span class="p">))</span>
 
 <span class="c1"># Eqn (2.1.7) from Compact Finite Difference with Spectral-like Accuracy, Lele, 1992, JCP.</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="mf">3.0</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="mf">3.0</span>
 
 <span class="c1"># generate the tridiagonal matrix using np.diag</span>
 <span class="n">main</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">npoints</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">diagonal</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">npoints</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">diagonal</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">npoints</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">main</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
 <span class="c1"># Apply periodic boundary condition</span>
@@ -1043,8 +1043,8 @@
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate the right-hand side</span>
-<span class="n">a1</span> <span class="o">=</span> <span class="mf">7.0</span><span class="o">/</span><span class="p">(</span><span class="mf">9.0</span><span class="o">*</span><span class="n">h</span><span class="p">)</span>
-<span class="n">a2</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">36.</span><span class="o">*</span><span class="n">h</span><span class="p">)</span>
+<span class="n">a1</span> <span class="o">=</span> <span class="mf">7.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">9.0</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+<span class="n">a2</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">36.0</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
 
 <span class="c1"># note how $a_{1} f_{j+1} + a_{2} f_{j+2} - a_{2} f_{j-2} - a_{1} f_{j-1}$</span>
 <span class="c1"># gets converted to slicing operations on the array function_values.</span>
@@ -1056,8 +1056,9 @@
 <span class="c1"># f_{j+2} - f_{j-2} -&gt; (function_values[4:npoints+4] - function_values[0:npoints])</span>
 <span class="c1"># f_{j+1} - f_{j-1} -&gt; (function_values[3:npoints+3] - function_values[1:npoints+1])</span>
 <span class="n">rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">npoints</span><span class="p">)</span>
-<span class="n">rhs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npoints</span><span class="p">]</span> <span class="o">=</span> <span class="n">a1</span><span class="o">*</span><span class="p">(</span><span class="n">function_values</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="n">npoints</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">function_values</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">npoints</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> \
-               <span class="o">+</span> <span class="n">a2</span><span class="o">*</span><span class="p">(</span><span class="n">function_values</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="n">npoints</span><span class="o">+</span><span class="mi">4</span><span class="p">]</span> <span class="o">-</span> <span class="n">function_values</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npoints</span><span class="p">])</span>
+<span class="n">rhs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npoints</span><span class="p">]</span> <span class="o">=</span> <span class="n">a1</span> <span class="o">*</span> <span class="p">(</span>
+    <span class="n">function_values</span><span class="p">[</span><span class="mi">3</span> <span class="p">:</span> <span class="n">npoints</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">function_values</span><span class="p">[</span><span class="mi">1</span> <span class="p">:</span> <span class="n">npoints</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">+</span> <span class="n">a2</span> <span class="o">*</span> <span class="p">(</span><span class="n">function_values</span><span class="p">[</span><span class="mi">4</span> <span class="p">:</span> <span class="n">npoints</span> <span class="o">+</span> <span class="mi">4</span><span class="p">]</span> <span class="o">-</span> <span class="n">function_values</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npoints</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -1086,14 +1087,16 @@ L2 norm error: 0.0021705301478625403
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_interior</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;$f = sin(</span><span class="si">{</span><span class="n">wavenumber</span><span class="si">}</span><span class="s1">x)$&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Computed $f</span><span class="se">\&#39;</span><span class="s1">(x)$&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative_exact</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Exact f</span><span class="se">\&#39;</span><span class="s1">(x)&#39;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_interior</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;$f = sin(</span><span class="si">{</span><span class="n">wavenumber</span><span class="si">}</span><span class="s2">x)$&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Computed $f&#39;(x)$&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative_exact</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Exact f&#39;(x)&quot;</span><span class="p">)</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;$f(x), f</span><span class="se">\&#39;</span><span class="s1">(x)$&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Compute derivative of a function using sixth-order accurate compact finite difference scheme&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center left&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;$f(x), f&#39;(x)$&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span>
+    <span class="s2">&quot;Compute derivative of a function using sixth-order accurate compact finite difference scheme&quot;</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;center left&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>

@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Black-Scholes options pricing &#8212; NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</title>
+    <title>Black-Scholes options pricing &#8212; NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</title>
   
   
   
@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=f0e6100c"></script>
+    <script src="../_static/documentation_options.js?v=3aba1e10"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -133,11 +133,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a></div>
     
@@ -240,11 +240,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+20.g17bc9297)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.08.00.dev+22.g61ec5ae1)</p>
   
 </a>
 
@@ -967,7 +967,11 @@ limitations under the License.
 
     <span class="n">K</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">0.2316419</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
 
-    <span class="n">cnd</span> <span class="o">=</span> <span class="n">RSQRT2PI</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">d</span><span class="o">*</span><span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">A1</span> <span class="o">+</span> <span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">A2</span> <span class="o">+</span> <span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">A3</span> <span class="o">+</span> <span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">A4</span> <span class="o">+</span> <span class="n">K</span><span class="o">*</span><span class="n">A5</span><span class="p">)))))</span>
+    <span class="n">cnd</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">RSQRT2PI</span>
+        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">d</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A1</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A2</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A3</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A4</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="n">A5</span><span class="p">)))))</span>
+    <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">d</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">cnd</span><span class="p">,</span> <span class="n">cnd</span><span class="p">)</span>
 </pre></div>
@@ -1012,12 +1016,12 @@ limitations under the License.
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">1000000</span>                 <span class="c1"># number of options to price</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">1000000</span>  <span class="c1"># number of options to price</span>
 <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>  <span class="c1"># current option price</span>
-<span class="n">X</span> <span class="o">=</span> <span class="mi">100</span>                     <span class="c1"># strike price</span>
-<span class="n">T</span> <span class="o">=</span> <span class="mi">10</span>                      <span class="c1"># time to expiration</span>
-<span class="n">r</span> <span class="o">=</span> <span class="mf">0.05</span>                    <span class="c1"># continuously compounded risk free interest rate</span>
-<span class="n">v</span> <span class="o">=</span> <span class="mf">0.3</span>                     <span class="c1"># implied volatility for the underlying stock</span>
+<span class="n">X</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># strike price</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># time to expiration</span>
+<span class="n">r</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># continuously compounded risk free interest rate</span>
+<span class="n">v</span> <span class="o">=</span> <span class="mf">0.3</span>  <span class="c1"># implied volatility for the underlying stock</span>
 
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 <span class="n">call</span><span class="p">,</span> <span class="n">put</span> <span class="o">=</span> <span class="n">black_scholes</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
