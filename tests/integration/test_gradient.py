@@ -122,13 +122,7 @@ def test_mixed_varargs():
     assert np.allclose(res_np, res_cn)
 
 
-@pytest.mark.parametrize(
-    "in_arr",
-    [
-        [],
-        [1],
-    ],
-)
+@pytest.mark.parametrize("in_arr", [[], [1]])
 def test_corner_cases(in_arr):
     in_cn = cn.array(in_arr)
     with pytest.raises(ValueError):

@@ -116,16 +116,12 @@ def bincount(
         # Normal case of bincount
         if weights is None:
             out = ndarray(
-                (minlength,),
-                dtype=np.dtype(np.int64),
-                inputs=(x, weights),
+                (minlength,), dtype=np.dtype(np.int64), inputs=(x, weights)
             )
             out._thunk.bincount(x._thunk)
         else:
             out = ndarray(
-                (minlength,),
-                dtype=weights.dtype,
-                inputs=(x, weights),
+                (minlength,), dtype=weights.dtype, inputs=(x, weights)
             )
             out._thunk.bincount(x._thunk, weights=weights._thunk)
     return out
@@ -279,11 +275,7 @@ def histogram(
 
 
 @add_boilerplate("x", "bins")
-def digitize(
-    x: ndarray,
-    bins: ndarray,
-    right: bool = False,
-) -> ndarray | int:
+def digitize(x: ndarray, bins: ndarray, right: bool = False) -> ndarray | int:
     """
     Return the indices of the bins to which each value in input array belongs.
 

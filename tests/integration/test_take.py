@@ -65,9 +65,7 @@ def test_with_out_array():
 
 
 @pytest.mark.parametrize(
-    "indices",
-    (-3, 2),
-    ids=lambda indices: f"(indices={indices})",
+    "indices", (-3, 2), ids=lambda indices: f"(indices={indices})"
 )
 def test_scalar_indices_default_mode(indices):
     res = np.take(x, indices, axis=0)
@@ -78,9 +76,7 @@ def test_scalar_indices_default_mode(indices):
 
 @pytest.mark.parametrize("mode", ("clip", "wrap"))
 @pytest.mark.parametrize(
-    "indices",
-    (-4, 2, 7),
-    ids=lambda indices: f"(indices={indices})",
+    "indices", (-4, 2, 7), ids=lambda indices: f"(indices={indices})"
 )
 def test_scalar_indices_mode(mode, indices):
     res = np.take(x, indices, axis=0, mode=mode)
@@ -166,9 +162,7 @@ class TestTakeErrors:
         self.A_num = mk_seq_array(num, (3, 4, 5))
 
     @pytest.mark.parametrize(
-        "indices",
-        (-5, 4),
-        ids=lambda indices: f"(indices={indices})",
+        "indices", (-5, 4), ids=lambda indices: f"(indices={indices})"
     )
     def test_indices_invalid_scalar(self, indices):
         expected_exc = IndexError
@@ -204,9 +198,7 @@ class TestTakeErrors:
             num.take(A_num, num.array(indices), axis=axis, mode=mode)
 
     @pytest.mark.parametrize(
-        "axis",
-        (-4, 3),
-        ids=lambda axis: f"(axis={axis})",
+        "axis", (-4, 3), ids=lambda axis: f"(axis={axis})"
     )
     def test_axis_out_of_bound(self, axis):
         expected_exc = ValueError

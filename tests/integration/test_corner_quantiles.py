@@ -191,22 +191,12 @@ def test_quantiles_axis_none(str_method, qin_arr, keepdims):
 
     # cupynumeric:
     # print("cupynumeric axis = %d:"%(axis))
-    q_out = num.quantile(
-        arr,
-        qs_arr,
-        method=str_method,
-        keepdims=keepdims,
-    )
+    q_out = num.quantile(arr, qs_arr, method=str_method, keepdims=keepdims)
     # print(q_out)
 
     # np:
     # print("numpy axis = %d:"%(axis))
-    np_q_out = np.quantile(
-        arr,
-        qs_arr,
-        method=str_method,
-        keepdims=keepdims,
-    )
+    np_q_out = np.quantile(arr, qs_arr, method=str_method, keepdims=keepdims)
     # print(np_q_out)
 
     assert q_out.shape == np_q_out.shape

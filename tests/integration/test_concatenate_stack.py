@@ -52,7 +52,7 @@ def run_test(arr, routine, input_size):
                     is_equal = False
                     break
         shape_list = list(inp.shape for inp in arr)
-        print_msg = f"np.{routine}(array({shape_list})" f", {args[1:]})"
+        print_msg = f"np.{routine}(array({shape_list}), {args[1:]})"
         assert is_equal, (
             f"Failed, {print_msg}\n"
             f"numpy result: {err_arr[0]}, {b.shape}\n"
@@ -85,10 +85,7 @@ SIZES = [
     (DIM, DIM, DIM),
 ]
 
-SCALARS = (
-    (10,),
-    (10, 20, 30),
-)
+SCALARS = ((10,), (10, 20, 30))
 
 
 @pytest.fixture(autouse=False)
@@ -176,11 +173,7 @@ class TestConcatenateErrors:
 
     @pytest.mark.parametrize(
         "arrays",
-        (
-            (1,),
-            (1, 2),
-            (1, [3, 4]),
-        ),
+        ((1,), (1, 2), (1, [3, 4])),
         ids=lambda arrays: f"(arrays={arrays})",
     )
     def test_scalar_axis_is_not_none(self, arrays):
@@ -209,9 +202,7 @@ class TestConcatenateErrors:
             num.concatenate(arrays, axis=axis)
 
     @pytest.mark.parametrize(
-        "axis",
-        (1, -2),
-        ids=lambda axis: f"(axis={axis})",
+        "axis", (1, -2), ids=lambda axis: f"(axis={axis})"
     )
     def test_axis_out_of_bound(self, axis):
         expected_exc = ValueError
@@ -284,11 +275,7 @@ def test_stack_with_out():
     assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize(
-    "axis",
-    (-3, -1),
-    ids=lambda axis: f"(axis={axis})",
-)
+@pytest.mark.parametrize("axis", (-3, -1), ids=lambda axis: f"(axis={axis})")
 def test_stack_axis_is_negative(axis):
     a = [[1, 2], [3, 4]]
     b = [[5, 6], [7, 8]]
@@ -334,9 +321,7 @@ class TestStackErrors:
             num.stack((num.array(a), num.array(b)), axis=axis)
 
     @pytest.mark.parametrize(
-        "axis",
-        (2, -3),
-        ids=lambda axis: f"(axis={axis})",
+        "axis", (2, -3), ids=lambda axis: f"(axis={axis})"
     )
     def test_axis_out_of_bound(self, axis):
         expected_exc = ValueError
@@ -390,10 +375,7 @@ class TestHStackErrors:
 
     @pytest.mark.parametrize(
         "arrays",
-        (
-            ([[1, 2], [3, 4]], [5, 6]),
-            ([[1, 2], [3, 4]], [[5, 6]]),
-        ),
+        (([[1, 2], [3, 4]], [5, 6]), ([[1, 2], [3, 4]], [[5, 6]])),
         ids=lambda arrays: f"(arrays={arrays})",
     )
     def test_arrays_mismatched_shape(self, arrays):
@@ -428,12 +410,7 @@ class TestColumnStackErrors:
 
     @pytest.mark.parametrize(
         "arrays",
-        (
-            (1, []),
-            ([1, 2], [3]),
-            ([[1, 2]], [3, 4]),
-            ([[1, 2]], [[3], [4]]),
-        ),
+        ((1, []), ([1, 2], [3]), ([[1, 2]], [3, 4]), ([[1, 2]], [[3], [4]])),
         ids=lambda arrays: f"(arrays={arrays})",
     )
     def test_arrays_mismatched_shape(self, arrays):

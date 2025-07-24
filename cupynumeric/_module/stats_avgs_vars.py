@@ -27,9 +27,11 @@ from .logic_truth import any
 from .stats_order import nanquantile, quantile
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_tuple
 else:
-    from numpy.core.numeric import normalize_axis_tuple  # type: ignore
+    from numpy.core.numeric import (  # type: ignore[no-redef]
+        normalize_axis_tuple,
+    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt

@@ -1,33 +1,33 @@
 [
     {
         "name": "24.11",
-        "version": "24.11",
-        "url": "https://docs.nvidia.com/cupynumeric/24.11/"
+        "url": "https://docs.nvidia.com/cupynumeric/24.11/",
+        "version": "24.11"
     },
     {
         "name": "25.01",
-        "version": "25.01",
-        "url": "https://docs.nvidia.com/cupynumeric/25.01/"
+        "url": "https://docs.nvidia.com/cupynumeric/25.01/",
+        "version": "25.01"
     },
     {
-      "name": "25.03",
-      "version": "25.03",
-      "url": "https://docs.nvidia.com/cupynumeric/25.03/"
+        "name": "25.03",
+        "url": "https://docs.nvidia.com/cupynumeric/25.03/",
+        "version": "25.03"
     },
     {
-      "name": "25.07",
-      "version": "25.07",
-      "url": "https://docs.nvidia.com/cupynumeric/25.07/"
+        "name": "25.07",
+        "url": "https://docs.nvidia.com/cupynumeric/25.07/",
+        "version": "25.07"
     },
     {
-      "name": "25.08",
-      "version": "25.08",
-      "preferred": true,
-      "url": "https://docs.nvidia.com/cupynumeric/25.08/"
+        "name": "25.08",
+        "preferred": true,
+        "url": "https://docs.nvidia.com/cupynumeric/25.08/",
+        "version": "25.08"
     },
     {
-      "name": "dev",
-      "version": "dev",
-      "url": "https://nv-legate.github.io/cupynumeric/"
+        "name": "dev",
+        "url": "https://nv-legate.github.io/cupynumeric/",
+        "version": "dev"
     }
 ]

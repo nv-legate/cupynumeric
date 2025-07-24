@@ -23,28 +23,11 @@ requires = [
 
 [tool.pytest.ini_options]
 addopts = "--capture=sys"
-
-
-[tool.black]
-line-length = 79
-target-version = ["py36"]
-include = '\.py?$'
-exclude = '''
-/(
-    \.eggs |
-    \.git |
-    \.mypy_cache |
-    \.tox |
-    \.venv |
-    _build |
-    buck-out |
-    build |
-    dist
-)/
-'''
+cache_dir = "./.cache/pytest"
 
 [tool.mypy]
 python_version = "3.11"
+cache_dir = "./.cache/mypy"
 
 pretty = true
 show_error_codes = true
@@ -70,7 +53,7 @@ no_implicit_optional = true
 strict_optional = true
 
 warn_redundant_casts = true
-warn_unused_ignores = false
+warn_unused_ignores = true
 warn_no_return = true
 warn_return_any = true
 warn_unreachable = true
@@ -97,3 +80,40 @@ module = [
   "legate.install_info",
 ]
 ignore_errors = true
+
+[tool.ruff]
+cache-dir = "./.cache/ruff"
+extend-exclude = [
+    "arch-*",
+    "*-arch",
+    "venv",
+    "*venv",
+    "build",
+]
+line-length = 79
+src = [".", "cupynumeric"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint.isort.sections]
+legion = ["legion_cffi", "legion_top"]
+legate = ["legate"]
+testing = ["pytest", "pytest_mock"]
+
+[tool.ruff.lint.isort]
+known-third-party = ["numpy"]
+known-first-party = ["cupynumeric"]
+length-sort-straight = true
+combine-as-imports = true
+split-on-trailing-comma = false
+required-imports = ["from __future__ import annotations"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "legion",
+    "legate",
+    "first-party",
+    "local-folder",
+]

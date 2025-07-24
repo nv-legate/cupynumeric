@@ -192,10 +192,7 @@ def test_ndim(ndim):
     assert allclose(out_num, out_np)
 
 
-@pytest.mark.parametrize(
-    "method",
-    ("auto", "direct", "fft"),
-)
+@pytest.mark.parametrize("method", ("auto", "direct", "fft"))
 def test_methods(method):
     shape = (5,) * 2
     arr1 = num.random.random(shape)

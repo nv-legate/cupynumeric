@@ -33,8 +33,8 @@ if TYPE_CHECKING:
 
 def _support_symbol(support: GPUSupport) -> str:
     YES = "\u2713"
-    NO = "\u274C"
-    PARTIAL = "\U0001F7E1"
+    NO = "\u274c"
+    PARTIAL = "\U0001f7e1"
 
     match support:
         case GPUSupport.YES:
@@ -91,9 +91,7 @@ def _lgref(name: str, obj: Any, implemented: bool) -> str:
 
 
 def filter_wrapped_names(
-    obj: Any,
-    *,
-    skip: Iterable[str] = (),
+    obj: Any, *, skip: Iterable[str] = ()
 ) -> Iterator[str]:
     names = (n for n in dir(obj))  # every name in the module or class
     names = (
@@ -104,11 +102,7 @@ def filter_wrapped_names(
     return names
 
 
-def filter_type_names(
-    obj: Any,
-    *,
-    skip: Iterable[str] = (),
-) -> Iterator[str]:
+def filter_type_names(obj: Any, *, skip: Iterable[str] = ()) -> Iterator[str]:
     names = (n for n in dir(obj))  # every name in the module or class
     names = (
         n for n in names if isinstance(getattr(obj, n), type)

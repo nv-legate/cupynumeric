@@ -37,10 +37,7 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ],
-    packages=find_packages(
-        where=".",
-        include=["cupynumeric*"],
-    ),
+    packages=find_packages(where=".", include=["cupynumeric*"]),
     package_data={"cupynumeric": ["_sphinxext/_templates/*.rst"]},
     include_package_data=True,
     cmdclass=versioneer.get_cmdclass(),

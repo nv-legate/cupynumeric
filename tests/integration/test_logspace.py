@@ -140,24 +140,14 @@ def test_zero_points():
 def test_num_negative():
     start, stop = 0, 2
     message = "Number of samples, -1, must be non-negative."
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         np.logspace(start, stop, num=-1)
 
     with pytest.raises(ValueError, match=message):
         num.logspace(start, stop, num=-1)
 
 
-@pytest.mark.parametrize(
-    "start, stop",
-    [
-        (None, 2),
-        (0, None),
-        (None, None),
-    ],
-)
+@pytest.mark.parametrize("start, stop", [(None, 2), (0, None), (None, None)])
 def test_none_cases(start, stop):
     # Note: both fail at linespace but different error messages
     with pytest.raises(
@@ -263,15 +253,9 @@ def test_logspace_broadcast_shape_mismatch():
         r"\(3,\)\."
     )
 
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         np.logspace(start, stop, base=base)
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         num.logspace(start_num, stop_num, base=base_num)
 
 

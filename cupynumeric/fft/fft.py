@@ -56,10 +56,7 @@ def _operate_by_axes(a: ndarray, axes: Sequence[int]) -> bool:
 
 @add_boilerplate("a")
 def fft(
-    a: ndarray,
-    n: int | None = None,
-    axis: int = -1,
-    norm: str | None = None,
+    a: ndarray, n: int | None = None, axis: int = -1, norm: str | None = None
 ) -> ndarray:
     """
     Compute the one-dimensional discrete Fourier Transform.
@@ -234,7 +231,7 @@ def fftn(
     elif a.dtype == np.complex64:
         fft_type = FFT_C2C
     else:
-        raise TypeError(("FFT input not supported " "(missing a conversion?)"))
+        raise TypeError(("FFT input not supported (missing a conversion?)"))
     return a.fft(
         s=s,
         axes=axes,
@@ -246,10 +243,7 @@ def fftn(
 
 @add_boilerplate("a")
 def ifft(
-    a: ndarray,
-    n: int | None = None,
-    axis: int = -1,
-    norm: str | None = None,
+    a: ndarray, n: int | None = None, axis: int = -1, norm: str | None = None
 ) -> ndarray:
     """
     Compute the one-dimensional inverse discrete Fourier Transform.
@@ -468,10 +462,7 @@ def ifftn(
 
 @add_boilerplate("a")
 def rfft(
-    a: ndarray,
-    n: int | None = None,
-    axis: int = -1,
-    norm: str | None = None,
+    a: ndarray, n: int | None = None, axis: int = -1, norm: str | None = None
 ) -> ndarray:
     """
     Compute the one-dimensional discrete Fourier Transform for real input.
@@ -668,10 +659,7 @@ def rfftn(
 
 @add_boilerplate("a")
 def irfft(
-    a: ndarray,
-    n: int | None = None,
-    axis: int = -1,
-    norm: str | None = None,
+    a: ndarray, n: int | None = None, axis: int = -1, norm: str | None = None
 ) -> ndarray:
     """
     Computes the inverse of `rfft`.
@@ -895,10 +883,7 @@ def irfftn(
 
 @add_boilerplate("a")
 def hfft(
-    a: ndarray,
-    n: int | None = None,
-    axis: int = -1,
-    norm: str | None = None,
+    a: ndarray, n: int | None = None, axis: int = -1, norm: str | None = None
 ) -> ndarray:
     """
     Compute the FFT of a signal that has Hermitian symmetry, i.e., a real
@@ -960,10 +945,7 @@ def hfft(
 
 @add_boilerplate("a")
 def ihfft(
-    a: ndarray,
-    n: int | None = None,
-    axis: int = -1,
-    norm: str | None = None,
+    a: ndarray, n: int | None = None, axis: int = -1, norm: str | None = None
 ) -> ndarray:
     """
     Compute the inverse FFT of a signal that has Hermitian symmetry.

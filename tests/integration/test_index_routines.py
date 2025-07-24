@@ -293,26 +293,8 @@ def test_select(size):
     choice_num1 = num.array(choice_np1)
     choice_np2 = arr * 2
     choice_num2 = num.array(choice_np2)
-    res_np = np.select(
-        (
-            cond_np1,
-            cond_np2,
-        ),
-        (
-            choice_np1,
-            choice_np2,
-        ),
-    )
-    res_num = num.select(
-        (
-            cond_num1,
-            cond_num2,
-        ),
-        (
-            choice_num1,
-            choice_num2,
-        ),
-    )
+    res_np = np.select((cond_np1, cond_np2), (choice_np1, choice_np2))
+    res_num = num.select((cond_num1, cond_num2), (choice_num1, choice_num2))
     assert np.array_equal(res_np, res_num)
 
     # test with all False
@@ -368,10 +350,7 @@ def test_select_default(size, default):
     assert np.array_equal(res_np, res_num)
 
 
-SELECT_ZERO_SHAPES = (
-    (0,),
-    (0, 1),
-)
+SELECT_ZERO_SHAPES = ((0,), (0, 1))
 
 
 @pytest.mark.parametrize("size", SELECT_ZERO_SHAPES)
@@ -411,14 +390,8 @@ def test_select_different_shape(
     cond_num = num.array(cond_np)
     choice_np = choice_arr * 10
     choice_num = num.array(choice_np)
-    res_np = np.select(
-        (cond_np,),
-        (choice_np,),
-    )
-    res_num = num.select(
-        (cond_num,),
-        (choice_num,),
-    )
+    res_np = np.select((cond_np,), (choice_np,))
+    res_num = num.select((cond_num,), (choice_num,))
     assert np.array_equal(res_np, res_num)
 
 

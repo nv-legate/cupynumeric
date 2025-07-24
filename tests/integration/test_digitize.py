@@ -20,18 +20,9 @@ import pytest
 
 import cupynumeric as num
 
-DTYPES = (
-    np.uint32,
-    np.uint64,
-    np.float32,
-    np.float64,
-)
+DTYPES = (np.uint32, np.uint64, np.float32, np.float64)
 
-SHAPES = (
-    (10,),
-    (2, 5),
-    (3, 7, 10),
-)
+SHAPES = ((10,), (2, 5), (3, 7, 10))
 
 
 class TestDigitizeErrors(object):

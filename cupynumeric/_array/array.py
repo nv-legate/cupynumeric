@@ -63,11 +63,17 @@ from .util import (
 )
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import (
+        normalize_axis_index,
+        normalize_axis_tuple,
+    )
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
-    from numpy.core.numeric import normalize_axis_tuple  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
+    from numpy.core.numeric import (  # type: ignore[no-redef]
+        normalize_axis_tuple,
+    )
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -105,8 +111,7 @@ NDARRAY_INTERNAL = {
 def _warn_and_convert(array: ndarray, dtype: np.dtype[Any]) -> ndarray:
     if array.dtype != dtype:
         runtime.warn(
-            f"converting array to {dtype} type",
-            category=RuntimeWarning,
+            f"converting array to {dtype} type", category=RuntimeWarning
         )
         return array.astype(dtype)
     else:
@@ -314,8 +319,7 @@ class ndarray:
         Base object if memory is from some other object.
         """
         raise NotImplementedError(
-            "cupynumeric.ndarray doesn't keep track of the array view "
-            "hierarchy yet"
+            "cupynumeric.ndarray doesn't keep track of the array view hierarchy yet"
         )
 
     @property
@@ -889,7 +893,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._bitwise_and(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._bitwise_and(rhs, out=self)
+        )
 
     def __idiv__(self, rhs: Any) -> ndarray:
         """a.__idiv__(value, /)
@@ -913,7 +919,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._floor_divide(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._floor_divide(rhs, out=self)
+        )
 
     def __ilshift__(self, rhs: Any) -> ndarray:
         """a.__ilshift__(value, /)
@@ -925,7 +933,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._left_shift(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._left_shift(rhs, out=self)
+        )
 
     def __imatmul__(self, rhs: Any) -> ndarray:
         """a.__imatmul__(value, /)
@@ -937,7 +947,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._matmul(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._matmul(rhs, out=self)
+        )
 
     def __imod__(self, rhs: Any) -> ndarray:
         """a.__imod__(value, /)
@@ -949,7 +961,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._remainder(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._remainder(rhs, out=self)
+        )
 
     def __imul__(self, rhs: Any) -> ndarray:
         """a.__imul__(value, /)
@@ -961,7 +975,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._multiply(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._multiply(rhs, out=self)
+        )
 
     def __index__(self) -> int:
         return self.__array__().__index__()
@@ -1000,7 +1016,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._bitwise_or(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._bitwise_or(rhs, out=self)
+        )
 
     def __ipow__(self, rhs: float) -> ndarray:
         """a.__ipow__(/)
@@ -1012,7 +1030,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._power(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._power(rhs, out=self)
+        )
 
     def __irshift__(self, rhs: Any) -> ndarray:
         """a.__irshift__(/)
@@ -1024,7 +1044,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._right_shift(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._right_shift(rhs, out=self)
+        )
 
     def __iter__(self) -> Any:
         """a.__iter__(/)"""
@@ -1040,7 +1062,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._subtract(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._subtract(rhs, out=self)
+        )
 
     def __itruediv__(self, rhs: Any) -> ndarray:
         """a.__itruediv__(/)
@@ -1052,7 +1076,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._true_divide(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._true_divide(rhs, out=self)
+        )
 
     def __ixor__(self, rhs: Any) -> ndarray:
         """a.__ixor__(/)
@@ -1064,7 +1090,9 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        return convert_to_cupynumeric_ndarray(self._thunk._bitwise_xor(rhs, out=self))
+        return convert_to_cupynumeric_ndarray(
+            self._thunk._bitwise_xor(rhs, out=self)
+        )
 
     def __le__(self, rhs: Any) -> ndarray:
         """a.__le__(value, /)
@@ -1268,7 +1296,9 @@ class ndarray:
 
         """
         if hasattr(lhs, "_thunk"):
-            return convert_to_cupynumeric_ndarray(lhs._thunk._true_divide(self))
+            return convert_to_cupynumeric_ndarray(
+                lhs._thunk._true_divide(self)
+            )
         return _ufunc.true_divide(lhs, self)
 
     def __rdivmod__(self, lhs: Any) -> ndarray:
@@ -1321,7 +1351,9 @@ class ndarray:
 
         """
         if hasattr(lhs, "_thunk"):
-            return convert_to_cupynumeric_ndarray(lhs._thunk._floor_divide(self))
+            return convert_to_cupynumeric_ndarray(
+                lhs._thunk._floor_divide(self)
+            )
         return _ufunc.floor_divide(lhs, self)
 
     def __rmatmul__(self, lhs: Any) -> ndarray:
@@ -1432,7 +1464,9 @@ class ndarray:
 
         """
         if hasattr(lhs, "_thunk"):
-            return convert_to_cupynumeric_ndarray(lhs._thunk._true_divide(self))
+            return convert_to_cupynumeric_ndarray(
+                lhs._thunk._true_divide(self)
+            )
         return _ufunc.true_divide(lhs, self)
 
     def __rxor__(self, lhs: Any) -> ndarray:
@@ -1446,7 +1480,9 @@ class ndarray:
 
         """
         if hasattr(lhs, "_thunk"):
-            return convert_to_cupynumeric_ndarray(lhs._thunk._bitwise_xor(self))
+            return convert_to_cupynumeric_ndarray(
+                lhs._thunk._bitwise_xor(self)
+            )
         return _ufunc.bitwise_xor(lhs, self)
 
     # __setattr__
@@ -1970,9 +2006,7 @@ class ndarray:
         else:
             # no output, create one
             out_arr = ndarray(
-                shape=out_shape,
-                dtype=ch_dtype,
-                inputs=(a, choices),
+                shape=out_shape, dtype=ch_dtype, inputs=(a, choices)
             )
 
         ch = tuple(c._thunk for c in choices)
@@ -1986,10 +2020,7 @@ class ndarray:
 
     @add_boilerplate()
     def compress(
-        self,
-        condition: ndarray,
-        axis: Any = None,
-        out: ndarray | None = None,
+        self, condition: ndarray, axis: Any = None, out: ndarray | None = None
     ) -> ndarray:
         """a.compress(self, condition, axis=None, out=None)
 
@@ -2026,8 +2057,7 @@ class ndarray:
 
         if a.shape[axis] < condition.shape[0]:
             raise ValueError(
-                "Shape mismatch: "
-                "condition contains entries that are out of bounds"
+                "Shape mismatch: condition contains entries that are out of bounds"
             )
         elif a.shape[axis] > condition.shape[0]:
             slice_tuple = tuple(slice(None) for ax in range(axis)) + (
@@ -2105,11 +2135,7 @@ class ndarray:
         )
 
     @add_boilerplate()
-    def round(
-        self,
-        decimals: int = 0,
-        out: ndarray | None = None,
-    ) -> ndarray:
+    def round(self, decimals: int = 0, out: ndarray | None = None) -> ndarray:
         """a.round(decimals=0, out=None)
 
         Return a with each element rounded to the given number of decimals.
@@ -2272,8 +2298,7 @@ class ndarray:
         if self.ndim == 1:
             if axes is not None:
                 raise ValueError(
-                    "Axes shouldn't be specified when getting "
-                    "diagonal for 1D array"
+                    "Axes shouldn't be specified when getting diagonal for 1D array"
                 )
             m = self.shape[0] + np.abs(offset)
             res = ndarray((m, m), dtype=self.dtype, inputs=(self,))
@@ -2290,8 +2315,7 @@ class ndarray:
                 )
             if self.ndim < N:
                 raise ValueError(
-                    "Dimension of input array shouldn't be less "
-                    "than number of axes"
+                    "Dimension of input array shouldn't be less than number of axes"
                 )
             # pack the axes that are not going to change
             transpose_axes = tuple(
@@ -2327,8 +2351,7 @@ class ndarray:
                 diag_size = a.shape[a.ndim - 1]
             elif N < 2:
                 raise ValueError(
-                    "number of axes passed to the _diag_helper"
-                    " should be more than 1"
+                    "number of axes passed to the _diag_helper should be more than 1"
                 )
 
             tr_shape = tuple(a.shape[i] for i in range(a.ndim - N))
@@ -2345,8 +2368,7 @@ class ndarray:
                     out_shape = tr_shape
                 else:
                     raise ValueError(
-                        "dimension of the array for trace operation:"
-                        " should be >=2"
+                        "dimension of the array for trace operation: should be >=2"
                     )
             else:
                 out_shape = tr_shape + (diag_size,)
@@ -2430,8 +2452,7 @@ class ndarray:
 
         if mode not in ("raise", "wrap", "clip"):
             raise ValueError(
-                "mode must be one of 'clip', 'raise', or 'wrap' "
-                f"(got  {mode})"
+                f"mode must be one of 'clip', 'raise', or 'wrap' (got  {mode})"
             )
 
         if mode == "wrap":
@@ -2534,7 +2555,9 @@ class ndarray:
         from .._module.linalg_mvp import _contract
 
         if self.ndim == 0 or rhs.ndim == 0:
-            return convert_to_cupynumeric_ndarray(self._thunk._multiply(rhs, out=out))
+            return convert_to_cupynumeric_ndarray(
+                self._thunk._multiply(rhs, out=out)
+            )
 
         (self_modes, rhs_modes, out_modes) = dot_modes(self.ndim, rhs.ndim)
         return _contract(
@@ -2685,10 +2708,7 @@ class ndarray:
                     fft_output_shape[lax] = 2 * (fft_input.shape[lax] - 1)
 
         # Execute FFT backend
-        out = ndarray(
-            shape=fft_output_shape,
-            dtype=fft_output_type,
-        )
+        out = ndarray(shape=fft_output_shape, dtype=fft_output_type)
         out._thunk.fft(
             fft_input._thunk, cast(Sequence[int], fft_axes), kind, direction
         )
@@ -2713,7 +2733,9 @@ class ndarray:
             factor = np.prod(norm_shape_along_axes)
             if fft_norm == FFTNormalization.ORTHOGONAL:
                 factor = np.sqrt(factor)
-            return convert_to_cupynumeric_ndarray(out / factor.astype(fft_output_type))
+            return convert_to_cupynumeric_ndarray(
+                out / factor.astype(fft_output_type)
+            )
 
         return out
 
@@ -3014,8 +3036,7 @@ class ndarray:
         """
         if axis is not None and not isinstance(axis, int):
             raise NotImplementedError(
-                "cupynumeric.mean only supports int types for "
-                "`axis` currently"
+                "cupynumeric.mean only supports int types for `axis` currently"
             )
 
         dtype = self._summation_dtype(dtype)
@@ -3067,11 +3088,7 @@ class ndarray:
         if where is not None:
             nan_mask &= where
         return self.mean(
-            axis=axis,
-            dtype=dtype,
-            out=out,
-            keepdims=keepdims,
-            where=nan_mask,
+            axis=axis, dtype=dtype, out=out, keepdims=keepdims, where=nan_mask
         )
 
     @add_boilerplate()
@@ -3160,11 +3177,7 @@ class ndarray:
             )
 
         self._normalize_summation(
-            result,
-            axis=axis,
-            ddof=ddof,
-            keepdims=keepdims,
-            where=where_array,
+            result, axis=axis, ddof=ddof, keepdims=keepdims, where=where_array
         )
 
         return result
@@ -3351,11 +3364,7 @@ class ndarray:
             new_size = prod(shape)
             if new_size > 0:
                 raise ValueError("new shape has bigger size than original")
-            result = ndarray(
-                shape=shape,
-                dtype=self.dtype,
-                inputs=(self,),
-            )
+            result = ndarray(shape=shape, dtype=self.dtype, inputs=(self,))
             result.fill(0)
             return result
 
@@ -3371,8 +3380,7 @@ class ndarray:
         # Can't have an unknown if the known shape has 0 size
         if num_unknowns > 0 and known_volume == 0:
             raise ValueError(
-                f"cannot reshape array of size {self.size} into "
-                f"shape {computed_shape}"
+                f"cannot reshape array of size {self.size} into shape {computed_shape}"
             )
 
         size = self.size
@@ -3380,8 +3388,7 @@ class ndarray:
 
         if unknown_extent * known_volume != size:
             raise ValueError(
-                f"cannot reshape array of size {size} into "
-                f"shape {computed_shape}"
+                f"cannot reshape array of size {size} into shape {computed_shape}"
             )
 
         computed_shape = tuple(
@@ -3394,8 +3401,7 @@ class ndarray:
             return self
 
         return ndarray(
-            shape=None,
-            thunk=self._thunk.reshape(computed_shape, order),
+            shape=None, thunk=self._thunk.reshape(computed_shape, order)
         )
 
     def setfield(
@@ -3615,8 +3621,7 @@ class ndarray:
             computed_axis = normalize_axis_tuple(axis, self.ndim)
             if any(self.shape[ax] != 1 for ax in computed_axis):
                 raise ValueError(
-                    "can only select axes to squeeze out with size "
-                    "equal to one"
+                    "can only select axes to squeeze out with size equal to one"
                 )
         else:
             computed_axis = None
@@ -3921,18 +3926,12 @@ class ndarray:
         Single GPU, Single CPU
 
         """
-        result = ndarray(
-            shape=self.shape,
-            dtype=self.dtype,
-            inputs=(self,),
-        )
+        result = ndarray(shape=self.shape, dtype=self.dtype, inputs=(self,))
         result._thunk.flip(self._thunk, axis)
         return result
 
     def view(
-        self,
-        dtype: npt.DTypeLike | None = None,
-        type: type | None = None,
+        self, dtype: npt.DTypeLike | None = None, type: type | None = None
     ) -> ndarray:
         """
         New view of array with the same data.
@@ -4010,18 +4009,12 @@ class ndarray:
             idxs = tuple(0 for i in range(self.ndim))
             return self[idxs]
 
-        out = ndarray(
-            shape=(new_len,),
-            dtype=self.dtype,
-            inputs=(self,),
-        )
+        out = ndarray(shape=(new_len,), dtype=self.dtype, inputs=(self,))
         out._thunk._wrap(src=self._thunk, new_len=new_len)
         return out
 
     def stencil_hint(
-        self,
-        low_offsets: tuple[int, ...],
-        high_offsets: tuple[int, ...],
+        self, low_offsets: tuple[int, ...], high_offsets: tuple[int, ...]
     ) -> None:
         """
         Inform cuPyNumeric that this array will be used in a stencil

@@ -37,13 +37,7 @@ if TYPE_CHECKING:
     from ..types import CastingKind
 
     PostResolutionCheckFunc: TypeAlias = Callable[
-        [
-            ndarray,
-            ndarray,
-            Any,
-            Any,
-            BinaryOpCode,
-        ],
+        [ndarray, ndarray, Any, Any, BinaryOpCode],
         tuple[ndarray, ndarray, BinaryOpCode],
     ]
 
@@ -167,18 +161,7 @@ complex_dtypes = ["F", "D"]
 
 float_and_complex = float_dtypes + complex_dtypes
 
-integer_dtypes = [
-    "b",
-    "B",
-    "h",
-    "H",
-    "i",
-    "I",
-    "l",
-    "L",
-    "q",
-    "Q",
-]
+integer_dtypes = ["b", "B", "h", "H", "i", "I", "l", "L", "q", "Q"]
 
 all_but_boolean = integer_dtypes + float_and_complex
 
@@ -343,10 +326,7 @@ class ufunc:
         out: ndarray | tuple[ndarray, ...] | None,
         where: bool = True,
     ) -> tuple[
-        Sequence[ndarray],
-        Sequence[ndarray | None],
-        tuple[int, ...],
-        bool,
+        Sequence[ndarray], Sequence[ndarray | None], tuple[int, ...], bool
     ]:
         max_nargs = self.nin + self.nout
         if len(args) < self.nin or len(args) > max_nargs:
@@ -362,8 +342,7 @@ class ufunc:
         if len(args) > self.nin:
             if out is not None:
                 raise TypeError(
-                    "cannot specify 'out' as both a positional and keyword "
-                    "argument"
+                    "cannot specify 'out' as both a positional and keyword argument"
                 )
             computed_out = args[self.nin :]
             # Missing outputs are treated as Nones
@@ -382,8 +361,7 @@ class ufunc:
 
         if self.nout != len(outputs):
             raise ValueError(
-                "The 'out' tuple must have exactly one entry "
-                "per ufunc output"
+                "The 'out' tuple must have exactly one entry per ufunc output"
             )
 
         shapes = [arr.shape for arr in inputs]
@@ -478,16 +456,11 @@ class unary_ufunc(ufunc):
         if len(args) > self.nin:
             if out is not None:
                 raise TypeError(
-                    "cannot specify 'out' as both a positional and keyword "
-                    "argument"
+                    "cannot specify 'out' as both a positional and keyword argument"
                 )
             out = args[self.nin]
         result = getattr(x._thunk, f"_{self._name}")(
-            out=out,
-            where=where,
-            casting=casting,
-            order=order,
-            dtype=dtype,
+            out=out, where=where, casting=casting, order=order, dtype=dtype
         )
         return convert_to_cupynumeric_ndarray(result)
 

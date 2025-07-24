@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,10 +53,7 @@ def test_unequal_arrays(arr1, arr2):
     assert res_np_swapped is bool(res_num_swapped) is False
 
 
-DTYPES = (
-    (np.int32, np.float64),
-    (np.float64, np.complex128),
-)
+DTYPES = ((np.int32, np.float64), (np.float64, np.complex128))
 
 
 @pytest.mark.parametrize(("dtype1", "dtype2"), DTYPES, ids=str)

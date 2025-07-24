@@ -162,13 +162,7 @@ def test_bincount_weights_high_bins(dtype):
 
 
 @pytest.mark.parametrize(
-    "weights",
-    [
-        None,
-        np.array((0.5,)),
-        np.array((22,)),
-    ],
-    ids=str,
+    "weights", [None, np.array((0.5,)), np.array((22,))], ids=str
 )
 def test_bincount_size_one(weights):
     arr_np = np.random.randint(0, 255, size=1)

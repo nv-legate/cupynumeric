@@ -21,9 +21,9 @@ import numpy as np
 from .._utils import is_np2
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_index
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy.core.multiarray import normalize_axis_index  # type: ignore[no-redef]
 
 
 from .._array.util import add_boilerplate
@@ -49,8 +49,7 @@ def _normalize_and_check_indices(
 
         axis_name = "0" if axis is None else str(axis)
         raise IndexError(
-            f"index {idx} is out of bounds for axis {axis_name} with size "
-            f"{axis_size}"
+            f"index {idx} is out of bounds for axis {axis_name} with size {axis_size}"
         )
 
     return wrapped
@@ -118,8 +117,7 @@ def delete(arr: ndarray, obj: Any, axis: int | None = None) -> ndarray:
     else:
         if axis < -arr.ndim or axis >= arr.ndim:
             raise IndexError(
-                f"axis {axis} is out of bounds for array of dimension"
-                f" {arr.ndim}"
+                f"axis {axis} is out of bounds for array of dimension {arr.ndim}"
             )
 
         if not isinstance(obj, slice) and np.issubdtype(obj.dtype, bool):

@@ -26,15 +26,7 @@ DIM = 20
 # test the array_split routines on empty, singleton, 2D and 3D arrays
 # w/ integers, list of indicies. vsplit, hsplit, dsplit are included
 # in the following loops(axis = 0: vsplit, 1: hsplit, 2: dsplit)
-SIZES = [
-    (0,),
-    (0, 10),
-    (1),
-    (1, 1),
-    (1, 1, 1),
-    (DIM, DIM),
-    (DIM, DIM, DIM),
-]
+SIZES = [(0,), (0, 10), (1), (1, 1), (1, 1, 1), (DIM, DIM), (DIM, DIM, DIM)]
 
 
 class TestArraySplitErrors:
@@ -132,7 +124,7 @@ def test_array_split(size):
 
         for input_opt in input_arr:
             # test divisible integer or indices
-            print_msg = f"np.array_split({a.shape}, {input_opt}" f", {axis})"
+            print_msg = f"np.array_split({a.shape}, {input_opt}, {axis})"
             # Check if both impls produce the error
             # for non-viable options
 

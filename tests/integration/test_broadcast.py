@@ -32,9 +32,7 @@ def _check_result(print_msg, err_arrs):
                 f"cupynumeric_result: {err_arr[2]}\n"
             )
         assert False, (
-            f"{print_output}"
-            f"cupynumeric and numpy shows"
-            f" different result\n"
+            f"{print_output}cupynumeric and numpy shows different result\n"
         )
     else:
         print(f"Passed, {print_msg}")

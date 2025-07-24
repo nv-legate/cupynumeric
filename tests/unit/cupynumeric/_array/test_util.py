@@ -215,11 +215,7 @@ class Test_add_boilerplate_where:
 
 
 def test_add_boilerplate_mixed(mock_convert: MagicMock) -> None:
-    @m.add_boilerplate(
-        "a",
-        "b",
-        "c",
-    )
+    @m.add_boilerplate("a", "b", "c")
     def func(a, b=2, c=None, d=None, e=5, out=None, where=None):
         pass
 

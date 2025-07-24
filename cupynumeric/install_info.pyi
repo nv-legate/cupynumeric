@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from __future__ import annotations
 
-from .bit_twiddling import *  # noqa: F403
-from .comparison import *  # noqa: F403
-from .math import *  # noqa: F403
-from .floating import *  # noqa: F403
-from .trigonometric import *  # noqa: F403
-from .ufunc import ufunc  # noqa: F401
+def get_libpath() -> str: ...
+
+libpath: str
+header: str

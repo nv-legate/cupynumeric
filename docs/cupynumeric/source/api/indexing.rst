@@ -51,4 +51,3 @@ Inserting data into arrays
    putmask
    put_along_axis
    place
-

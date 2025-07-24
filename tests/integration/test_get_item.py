@@ -25,11 +25,7 @@ def test_basic():
     assert x[2] == 3
 
 
-ARRAYS_4_3_2_1_0 = [
-    4 - num.arange(5),
-    4 - np.arange(5),
-    [4, 3, 2, 1, 0],
-]
+ARRAYS_4_3_2_1_0 = [4 - num.arange(5), 4 - np.arange(5), [4, 3, 2, 1, 0]]
 
 
 @pytest.mark.parametrize("arr", ARRAYS_4_3_2_1_0)

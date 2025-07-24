@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 def _prepare_manual_task_for_batched_matrices(
-    full_shape: tuple[int, ...]
+    full_shape: tuple[int, ...],
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     def choose_nd_color_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
         # start with 1D and re-balance by powers of 2

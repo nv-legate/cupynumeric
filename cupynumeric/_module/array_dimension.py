@@ -24,9 +24,11 @@ from .._utils import is_np2
 from .creation_data import array
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_tuple
 else:
-    from numpy.core.numeric import normalize_axis_tuple  # type: ignore
+    from numpy.core.numeric import (  # type: ignore[no-redef]
+        normalize_axis_tuple,
+    )
 
 if TYPE_CHECKING:
     from ..types import NdShape, NdShapeLike
@@ -278,8 +280,7 @@ def broadcast_to(
 
 
 def _broadcast_arrays(
-    arrs: list[ndarray],
-    subok: bool = False,
+    arrs: list[ndarray], subok: bool = False
 ) -> list[ndarray]:
     # create an arry object w/ options passed from 'broadcast' routines
     arrays = [array(arr, copy=False, subok=subok) for arr in arrs]

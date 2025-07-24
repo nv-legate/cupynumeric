@@ -22,16 +22,17 @@ with GPU acceleration.
 
 :meta private:
 """
+
 from __future__ import annotations
 
 import numpy as _np
 
-from . import linalg, random, fft, ma
-from ._array.array import ndarray
+from . import linalg, random, fft, ma  # noqa: F401
+from ._array.array import ndarray  # noqa: F401
 from ._array.util import maybe_convert_to_np_ndarray
-from ._module import *
-from ._ufunc import *
-from ._utils.array import is_supported_dtype, local_task_array
+from ._module import *  # noqa: F403
+from ._ufunc import *  # noqa: F403
+from ._utils.array import is_supported_dtype, local_task_array  # noqa: F401
 from ._utils.coverage import clone_module
 
 clone_module(_np, globals(), maybe_convert_to_np_ndarray)

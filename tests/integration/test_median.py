@@ -57,13 +57,7 @@ class TestMedianErrors:
 
 class TestMedian:
     @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
-    @pytest.mark.parametrize(
-        "keepdims",
-        (
-            False,
-            True,
-        ),
-    )
+    @pytest.mark.parametrize("keepdims", (False, True))
     def test_median_basic(self, ndim, keepdims):
         shape = np.random.randint(1, 4, ndim, dtype=int)
         size = 1
@@ -77,26 +71,7 @@ class TestMedian:
             assert np.array_equal(np_res, num_res)
 
         @pytest.mark.parametrize(
-            "axis",
-            (
-                None,
-                -2,
-                [
-                    1,
-                    -1,
-                ],
-                [
-                    0,
-                    1,
-                    2,
-                    3,
-                ],
-                [
-                    0,
-                    3,
-                ],
-                1,
-            ),
+            "axis", (None, -2, [1, -1], [0, 1, 2, 3], [0, 3], 1)
         )
         def test_axis(self, axis):
             shape = np.random.randint(3, 10, 4, dtype=int)
@@ -121,13 +96,7 @@ class TestMedian:
         out = num.zeros((4,))
         num.median(arr, axis=0, out=out)
         assert np.array_equal(
-            out,
-            [
-                5.0,
-                7.0,
-                9.0,
-                11.0,
-            ],
+            out, [5.0, 7.0, 9.0, 11.0]
         )  # Ensure result is written into `out` array
 
 
@@ -192,14 +161,7 @@ class TestNanmedian:
         out = num.zeros((5,))
         num.nanmedian(arr, axis=0, out=out)
         assert np.array_equal(
-            out,
-            [
-                5.0,
-                3.0,
-                8.0,
-                10.0,
-                15.0,
-            ],
+            out, [5.0, 3.0, 8.0, 10.0, 15.0]
         )  # Ensure result is written into `out` array
 
     def test_nanmedian_overwrite_input(self):

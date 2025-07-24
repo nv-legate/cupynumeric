@@ -109,11 +109,7 @@ def get_op_input(
     return in_np
 
 
-dtypes = (
-    "e",
-    "f",
-    "d",
-)
+dtypes = ("e", "f", "d")
 
 
 @pytest.mark.parametrize("dtype", dtypes)
@@ -167,18 +163,8 @@ def test_var_w_shape(dtype, ddof, axis, shape):
 
 @pytest.mark.parametrize("dtype", dtypes)
 @pytest.mark.parametrize("ddof", [0, 1])
-@pytest.mark.parametrize(
-    "axis",
-    [
-        None,
-    ],
-)
-@pytest.mark.parametrize(
-    "shape",
-    [
-        (10, 1),
-    ],
-)
+@pytest.mark.parametrize("axis", [None])
+@pytest.mark.parametrize("shape", [(10, 1)])
 def test_var_corners(dtype, ddof, axis, shape):
     np_in = get_op_input(astype=dtype, shape=shape)
 
@@ -194,18 +180,8 @@ def test_var_corners(dtype, ddof, axis, shape):
 @pytest.mark.xfail
 @pytest.mark.parametrize("dtype", dtypes)
 @pytest.mark.parametrize("ddof", [0, 1])
-@pytest.mark.parametrize(
-    "axis",
-    [
-        None,
-    ],
-)
-@pytest.mark.parametrize(
-    "shape",
-    [
-        (1,),
-    ],
-)
+@pytest.mark.parametrize("axis", [None])
+@pytest.mark.parametrize("shape", [(1,)])
 def test_var_xfail(dtype, ddof, axis, shape):
     np_in = get_op_input(astype=dtype, shape=shape)
 
@@ -297,16 +273,10 @@ def test_cov_dtype_scaling(ddof, fweights, np_aweights):
         num_aweights = np_aweights
 
     np_out = np.cov(
-        np_in,
-        ddof=ddof,
-        fweights=np_fweights,
-        aweights=np_aweights,
+        np_in, ddof=ddof, fweights=np_fweights, aweights=np_aweights
     )
     num_out = num.cov(
-        num_in,
-        ddof=ddof,
-        fweights=num_fweights,
-        aweights=num_aweights,
+        num_in, ddof=ddof, fweights=num_fweights, aweights=num_aweights
     )
     assert allclose(np_out, num_out, atol=1e-2)
 

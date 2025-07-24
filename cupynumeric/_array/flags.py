@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     from .array import ndarray
 
-FlagKeys = Literal['A', 'ALIGNED', 'W', 'WRITEABLE', 'X', 'WRITEBACKIFCOPY']
+FlagKeys = Literal["A", "ALIGNED", "W", "WRITEABLE", "X", "WRITEBACKIFCOPY"]
+
 
 class flagsobj:
     """

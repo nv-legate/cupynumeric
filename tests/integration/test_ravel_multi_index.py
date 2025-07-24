@@ -47,10 +47,7 @@ class TestRavelMultiIndexErrors:
         message = "'str' object cannot be interpreted as an integer"
         with pytest.raises(TypeError, match=message):
             np.ravel_multi_index(multi_index_np, shape)
-        with pytest.raises(
-            TypeError,
-            match=message,
-        ):
+        with pytest.raises(TypeError, match=message):
             num.ravel_multi_index(multi_index_num, shape)
 
     def test_invalid_index(self):
@@ -81,15 +78,9 @@ class TestRavelMultiIndexErrors:
         shape = (0,)
 
         message = r"cannot unravel if shape has zero entries \(is empty\)\."
-        with pytest.raises(
-            ValueError,
-            match=message,
-        ):
+        with pytest.raises(ValueError, match=message):
             np.ravel_multi_index(multi_index_np, shape)
-        with pytest.raises(
-            ValueError,
-            match=message,
-        ):
+        with pytest.raises(ValueError, match=message):
             num.ravel_multi_index(multi_index_num, shape)
 
     def test_empty_indices(self):
@@ -141,13 +132,7 @@ def test_large_indices():
 
 
 @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
-@pytest.mark.parametrize(
-    "order",
-    (
-        "F",
-        "C",
-    ),
-)
+@pytest.mark.parametrize("order", ("F", "C"))
 def test_basic(ndim, order):
     shape = (6,) * ndim
     size = (6**ndim) % 2
@@ -161,13 +146,7 @@ def test_basic(ndim, order):
 
 
 @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
-@pytest.mark.parametrize(
-    "order",
-    (
-        "F",
-        "C",
-    ),
-)
+@pytest.mark.parametrize("order", ("F", "C"))
 def test_uneven_shape(ndim, order):
     shape = np.random.randint(1, 6, ndim, dtype=int)
     size = ndim
@@ -202,11 +181,7 @@ def test_modes(mode):
 
 def test_mixed_modes():
     shape = (3, 3, 3)
-    multi_index = (
-        [-1, 0, 3],
-        [1, 1, 1],
-        [-1, 3, 0],
-    )
+    multi_index = ([-1, 0, 3], [1, 1, 1], [-1, 3, 0])
     multi_index_num = tuple(num.array(x) for x in multi_index)
 
     modes = ("wrap", "raise", "clip")
@@ -249,15 +224,9 @@ def test_mismatched_input_lengths():
     multi_index_wrong_num = (num.array([1]), num.array([0]), num.array([2]))
 
     message = "parameter multi_index must be a sequence of length 2"
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         np.ravel_multi_index(multi_index_wrong_np, shape)
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         num.ravel_multi_index(multi_index_wrong_num, shape)
 
 
@@ -295,10 +264,7 @@ def test_non_integer_shape_dims():
     message = "'float' object cannot be interpreted as an integer"
     with pytest.raises(TypeError, match=message):
         np.ravel_multi_index(multi_index_np, shape)
-    with pytest.raises(
-        TypeError,
-        match=message,
-    ):
+    with pytest.raises(TypeError, match=message):
         num.ravel_multi_index(multi_index_num, shape)
 
 

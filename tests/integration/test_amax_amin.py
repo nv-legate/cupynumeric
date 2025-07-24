@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,8 +65,7 @@ def test_src_dt(func_name, keepdims, src_dt):
     func_num = getattr(num, func_name)
 
     assert np.array_equal(
-        func_np(in_np, keepdims=keepdims),
-        func_num(in_num, keepdims=keepdims),
+        func_np(in_np, keepdims=keepdims), func_num(in_num, keepdims=keepdims)
     )
 
 
@@ -266,10 +266,7 @@ class TestAmaxAminErrors:
 
     @pytest.mark.parametrize(
         "axis_out_shape",
-        (
-            (None, (1,)),
-            (1, (3, 4)),
-        ),
+        ((None, (1,)), (1, (3, 4))),
         ids=lambda axis_out_shape: f"(axis_out_shape={axis_out_shape})",
     )
     @pytest.mark.parametrize("func_name", FUNCS)

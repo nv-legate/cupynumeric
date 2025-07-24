@@ -149,14 +149,7 @@ class TestTriluIndicesErrors:
             num.tril_indices(N, k=None)
 
 
-ARRAY_SHAPE = (
-    (1, 1),
-    (1, N),
-    (10, N),
-    (N, N),
-    (N, 10),
-    (N, 1),
-)
+ARRAY_SHAPE = ((1, 1), (1, N), (10, N), (N, N), (N, 10), (N, 1))
 
 
 @pytest.mark.parametrize("k", KS + (-N, N), ids=lambda k: f"(k={k})")

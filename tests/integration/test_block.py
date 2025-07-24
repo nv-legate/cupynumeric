@@ -44,8 +44,7 @@ def test(depth, sizes):
     b = [np.arange(np.prod(size)).reshape(size) for size in sizes]
 
     print_msg = (
-        f"depth={depth}, np.block([{_deepen(depth, a)}, "
-        f"{_deepen(depth, b)}])"
+        f"depth={depth}, np.block([{_deepen(depth, a)}, {_deepen(depth, b)}])"
     )
     arg = [_deepen(depth, a), _deepen(depth, b)]
     check_module_function("block", [arg], {}, print_msg, check_type=False)
@@ -153,16 +152,7 @@ class TestBlock:
 
         a111 = np.ones((3, 3, 3), int) * 8
 
-        arg = [
-            [
-                [a000, a001],
-                [a010, a011],
-            ],
-            [
-                [a100, a101],
-                [a110, a111],
-            ],
-        ]
+        arg = [[[a000, a001], [a010, a011]], [[a100, a101], [a110, a111]]]
 
         print_msg = "np & cupynumeric.block()"
         check_module_function("block", [arg], {}, print_msg, check_type=False)

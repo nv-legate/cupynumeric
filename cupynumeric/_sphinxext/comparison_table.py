@@ -33,9 +33,7 @@ class ComparisonTable(CupynumericDirective):
     required_arguments = 0
     optional_arguments = 1
 
-    option_spec = {
-        "sections": lambda x: choice(x, ("numpy", "grouped")),
-    }
+    option_spec = {"sections": lambda x: choice(x, ("numpy", "grouped"))}
 
     def run(self) -> list[nodes.Node]:
         if self.options.get("sections", "numpy") == "numpy":

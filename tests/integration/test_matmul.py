@@ -44,22 +44,8 @@ def test_function(a_ndim, b_ndim):
         check_types(name, modes, operation)
 
 
-@pytest.mark.parametrize(
-    "a_shape",
-    (
-        (3, 4, 5),
-        (4, 5),
-        (5,),
-    ),
-)
-@pytest.mark.parametrize(
-    "b_shape",
-    (
-        (3, 5, 6),
-        (5, 6),
-        (5,),
-    ),
-)
+@pytest.mark.parametrize("a_shape", ((3, 4, 5), (4, 5), (5,)))
+@pytest.mark.parametrize("b_shape", ((3, 5, 6), (5, 6), (5,)))
 def test_operator(a_shape, b_shape):
     np_a = np.random.random(a_shape)
     np_b = np.random.random(b_shape)
@@ -68,21 +54,8 @@ def test_operator(a_shape, b_shape):
     assert allclose(np_a @ np_b, num_a @ num_b)
 
 
-@pytest.mark.parametrize(
-    "a_shape",
-    (
-        (3, 4, 5),
-        (4, 5),
-        (5,),
-    ),
-)
-@pytest.mark.parametrize(
-    "b_shape",
-    (
-        (3, 5, 5),
-        (5, 5),
-    ),
-)
+@pytest.mark.parametrize("a_shape", ((3, 4, 5), (4, 5), (5,)))
+@pytest.mark.parametrize("b_shape", ((3, 5, 5), (5, 5)))
 def test_inplace_operator(a_shape, b_shape):
     if len(a_shape) < len(b_shape):
         return
@@ -127,11 +100,7 @@ def test_2d_matmul(mnk):
 class TestMatmulErrors:
     @pytest.mark.parametrize(
         "shapesAB",
-        (
-            ((2, 4), (2, 3)),
-            ((3, 2, 4), (2, 4, 3)),
-            ((3, 2, 4), (3, 2, 3)),
-        ),
+        (((2, 4), (2, 3)), ((3, 2, 4), (2, 4, 3)), ((3, 2, 4), (3, 2, 3))),
         ids=lambda shapesAB: f"(shapesAB={shapesAB})",
     )
     def test_invalid_shape_dim_greater_than_one(self, shapesAB):
@@ -229,8 +198,7 @@ class TestMatmulErrors:
         num.matmul(A, B, out=out)
 
     @pytest.mark.parametrize(
-        ("dtype", "out_dtype", "casting"),
-        ((None, np.int64, "same_kind"),),
+        ("dtype", "out_dtype", "casting"), ((None, np.int64, "same_kind"),)
     )
     def test_out_invalid_dtype(self, dtype, out_dtype, casting):
         expected_exc = TypeError

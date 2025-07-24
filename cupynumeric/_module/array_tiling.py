@@ -25,9 +25,11 @@ from ..runtime import runtime
 from .creation_shape import full
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_index
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -35,9 +37,9 @@ if TYPE_CHECKING:
     from ..types import NdShape
 
 if is_np2:
-    from numpy.exceptions import AxisError  # type: ignore
+    from numpy.exceptions import AxisError
 else:
-    from numpy import AxisError  # type: ignore
+    from numpy import AxisError  # type: ignore[no-redef,attr-defined]
 
 _builtin_max = max
 
@@ -212,13 +214,10 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
         # repeats should be integer type
         if not isinstance(repeats, int):
             runtime.warn(
-                "converting repeats to an integer type",
-                category=UserWarning,
+                "converting repeats to an integer type", category=UserWarning
             )
         result = array._thunk.repeat(
-            repeats=np.int64(repeats),
-            axis=axis_int,
-            scalar_repeats=True,
+            repeats=np.int64(repeats), axis=axis_int, scalar_repeats=True
         )
     # repeats is an array
     else:

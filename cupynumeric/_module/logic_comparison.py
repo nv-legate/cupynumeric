@@ -88,11 +88,7 @@ def allclose(
         )
     args = (Scalar(rtol, ty.float64), Scalar(atol, ty.float64))
     return perform_binary_reduction(
-        BinaryOpCode.ISCLOSE,
-        a,
-        b,
-        dtype=np.dtype(bool),
-        extra_args=args,
+        BinaryOpCode.ISCLOSE, a, b, dtype=np.dtype(bool), extra_args=args
     )
 
 

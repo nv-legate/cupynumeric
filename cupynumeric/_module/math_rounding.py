@@ -20,9 +20,7 @@ from .._array.util import add_boilerplate
 
 @add_boilerplate("a")
 def round(
-    a: ndarray,
-    decimals: int = 0,
-    out: ndarray | None = None,
+    a: ndarray, decimals: int = 0, out: ndarray | None = None
 ) -> ndarray:
     """
     Evenly round to the given number of decimals.

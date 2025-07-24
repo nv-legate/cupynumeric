@@ -1,3 +1,4 @@
+---
 name: Build Nightly release package
 
 concurrency:

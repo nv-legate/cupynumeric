@@ -49,7 +49,6 @@ nomask = MaskType(0)
 class MaskedArray:
     _internal_ma: _np.ma.MaskedArray[Any, Any]
 
-
     def __new__(cls, *args: Any, **kw: Any) -> MaskedArray:
         return object.__new__(cls)
 

@@ -141,10 +141,7 @@ SCALAR_PAIRS = (
 )
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    SCALAR_PAIRS,
-)
+@pytest.mark.parametrize(("a", "b"), SCALAR_PAIRS)
 def test_isclose_scalars(a, b):
     out_np = np.isclose(a, b)
     out_num = num.isclose(a, b)
@@ -200,27 +197,17 @@ def test_isclose_broadcast(shape_b):
     assert np.array_equal(out_np, out_num)
 
 
-EMPTY_ARRAY_PAIRS = (
-    ([], []),
-    ([], [[]]),
-    ([[]], [[]]),
-)
+EMPTY_ARRAY_PAIRS = (([], []), ([], [[]]), ([[]], [[]]))
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    EMPTY_ARRAY_PAIRS,
-)
+@pytest.mark.parametrize(("a", "b"), EMPTY_ARRAY_PAIRS)
 def test_isclose_empty_arrays(a, b):
     out_np = np.isclose(a, b)
     out_num = num.isclose(a, b)
     assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.parametrize(
-    ("rtol", "atol"),
-    ((1e-04, 1e-06), (1e-06, 1e-09)),
-)
+@pytest.mark.parametrize(("rtol", "atol"), ((1e-04, 1e-06), (1e-06, 1e-09)))
 def test_isclose_arrays_rtol_atol(rtol, atol):
     in1_np = np.random.rand(10)
     in2_np = in1_np + np.random.uniform(low=5e-09, high=2e-08, size=10)

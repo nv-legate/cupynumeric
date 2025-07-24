@@ -19,9 +19,7 @@ from utils.comparisons import allclose
 
 import cupynumeric as num
 
-SHAPES = [
-    (10, 20),
-]
+SHAPES = [(10, 20)]
 
 
 DTYPES = ["h", "i", "l", "H", "I", "L", "e", "f", "d"]
@@ -139,8 +137,7 @@ def test_typing_unary(fun, dtype, shape):
     fn_np = getattr(np, fun)
     fn_num = getattr(num, fun)
     assert np.array_equal(
-        fn_np(np.ones(shape, dtype=dtype)),
-        fn_num(np.ones(shape, dtype=dtype)),
+        fn_np(np.ones(shape, dtype=dtype)), fn_num(np.ones(shape, dtype=dtype))
     )
 
 

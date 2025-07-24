@@ -20,12 +20,7 @@ from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
-INDICES_VALUES = (
-    (0, 10),
-    (0, [10, 20, 30]),
-    ([0], 10),
-    ([0, 1, 2.5, 1], 10),
-)
+INDICES_VALUES = ((0, 10), (0, [10, 20, 30]), ([0], 10), ([0, 1, 2.5, 1], 10))
 
 
 @pytest.mark.parametrize(
@@ -204,9 +199,7 @@ class TestPutErrors:
             num.put(x_num, indices, values)
 
     @pytest.mark.parametrize(
-        "indices",
-        (-2, 1, [1]),
-        ids=lambda indices: f"(indices={indices})",
+        "indices", (-2, 1, [1]), ids=lambda indices: f"(indices={indices})"
     )
     def test_indices_out_of_bound_arr_is_scalar(self, indices):
         expected_exc = IndexError

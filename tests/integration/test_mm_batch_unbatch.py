@@ -16,30 +16,12 @@
 import numpy as np
 import pytest
 from utils.comparisons import allclose
-from utils.contractions import (
-    check_default,
-    check_permutations,
-    check_shapes,
-    check_types,
-)
-from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
-from cupynumeric._utils.linalg import matmul_modes
 
 
-@pytest.mark.parametrize(
-    "a_shape",
-    (
-        (4, 5), (100, 5),
-    ),
-)
-@pytest.mark.parametrize(
-    "b_shape",
-    (
-        (5, 6),
-    ),
-)
+@pytest.mark.parametrize("a_shape", ((4, 5), (100, 5)))
+@pytest.mark.parametrize("b_shape", ((5, 6),))
 def test_batched(a_shape, b_shape):
     np_a = np.random.random(a_shape)
     np_b = np.random.random(b_shape)
@@ -48,37 +30,27 @@ def test_batched(a_shape, b_shape):
 
     num_res = num.matmul(num_a, num_b)
     np_res = np.matmul(np_a, np_b)
-    
+
     assert allclose(np_res, num_res)
 
 
-@pytest.mark.parametrize(
-    "a_shape",
-    (
-        (4, 5), (100, 5),
-    ),
-)
-@pytest.mark.parametrize(
-    "b_shape",
-    (
-        (5, 6),
-    ),
-)
+@pytest.mark.parametrize("a_shape", ((4, 5), (100, 5)))
+@pytest.mark.parametrize("b_shape", ((5, 6),))
 def test_unbatched(a_shape, b_shape):
     np_a = np.random.random(a_shape)
     np_b = np.random.random(b_shape)
     num_a = num.array(np_a)
     num_b = num.array(np_b)
 
-    res_shape = (a_shape[0],b_shape[1])
-    np_res = np.zeros(res_shape, dtype = np_a.dtype)
-    
+    res_shape = (a_shape[0], b_shape[1])
+    np_res = np.zeros(res_shape, dtype=np_a.dtype)
+
     num_res = num.array(np_res)
 
     num_res._thunk.ts_matmul(num_a._thunk, num_b._thunk)
     np_res = np.matmul(np_a, np_b)
 
-    #print("A @ B = %s"%(str(num_res)))
+    # print("A @ B = %s"%(str(num_res)))
     assert allclose(np_res, num_res)
 
 

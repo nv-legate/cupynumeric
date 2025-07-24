@@ -1,3 +1,4 @@
+---
 name: Pull Request Labels
 on:
   pull_request:
@@ -21,4 +22,4 @@ jobs:
             CI
             Docs
             Feature
-            Maintenance 
+            Maintenance

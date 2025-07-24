@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,22 +20,9 @@ from legate.core import LEGATE_MAX_DIM
 
 import cupynumeric as num
 
-SCALARS = (
-    0,
-    -10.5,
-    1 + 1j,
-)
+SCALARS = (0, -10.5, 1 + 1j)
 
-ARRAYS = (
-    [],
-    (1, 2),
-    ((1, 2),),
-    [(1, 2), (3, 4.1)],
-    (
-        [1, 2.1],
-        [3, 4 + 4j],
-    ),
-)
+ARRAYS = ([], (1, 2), ((1, 2),), [(1, 2), (3, 4.1)], ([1, 2.1], [3, 4 + 4j]))
 
 
 def strict_type_equal(a, b):
@@ -42,9 +30,7 @@ def strict_type_equal(a, b):
 
 
 @pytest.mark.parametrize(
-    "obj",
-    SCALARS + ARRAYS,
-    ids=lambda obj: f"(object={obj})",
+    "obj", SCALARS + ARRAYS, ids=lambda obj: f"(object={obj})"
 )
 def test_masked_array_basic(obj):
     res_np = np.ma.masked_array(obj)
@@ -58,6 +44,7 @@ def test_masked_array_ndarray():
     res_num = num.ma.masked_array(num.array(obj))
     assert strict_type_equal(res_np, res_num)
 
+
 def test_masked_array_with_mask():
     obj = np.array([10, 20, 30, 40, 50])
     mask = np.array([False, True, False, True, False])
@@ -68,11 +55,7 @@ def test_masked_array_with_mask():
     assert strict_type_equal(res_np, res_num)
 
 
-DTYPES = (
-    np.int32,
-    np.float64,
-    np.complex128,
-)
+DTYPES = (np.int32, np.float64, np.complex128)
 
 
 @pytest.mark.parametrize("dtype", DTYPES, ids=lambda dtype: f"(dtype={dtype})")
@@ -108,9 +91,7 @@ class TestArrayErrors:
         "dtype", (np.int32, np.float64), ids=lambda dtype: f"(dtype={dtype})"
     )
     @pytest.mark.parametrize(
-        "obj",
-        (1 + 1j, [1, 2, 3.0, 4 + 4j]),
-        ids=lambda obj: f"(obj={obj})",
+        "obj", (1 + 1j, [1, 2, 3.0, 4 + 4j]), ids=lambda obj: f"(obj={obj})"
     )
     def test_invalid_dtype(self, obj, dtype):
         expected_exc = TypeError

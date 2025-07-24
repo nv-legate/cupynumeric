@@ -42,9 +42,7 @@ SIZES = (
 @pytest.mark.parametrize("a_dtype", DTYPES)
 @pytest.mark.parametrize("b_dtype", DTYPES)
 @pytest.mark.parametrize(
-    "shapeAB",
-    SIZES,
-    ids=lambda shapeAB: f"(shapeAB={shapeAB})",
+    "shapeAB", SIZES, ids=lambda shapeAB: f"(shapeAB={shapeAB})"
 )
 def test_vdot_arrays(a_dtype, b_dtype, shapeAB):
     shapeA, shapeB = shapeAB
@@ -55,9 +53,7 @@ def test_vdot_arrays(a_dtype, b_dtype, shapeAB):
 
 
 @pytest.mark.parametrize(
-    "shapeB",
-    ((1,), (1, 1)),
-    ids=lambda shapeB: f"(shapeB={shapeB})",
+    "shapeB", ((1,), (1, 1)), ids=lambda shapeB: f"(shapeB={shapeB})"
 )
 def test_vdot_scalar_and_arrays(shapeB):
     A = 5
@@ -97,9 +93,7 @@ SIZES_ERRORS = (
 
 class TestVdotErrors:
     @pytest.mark.parametrize(
-        "shapeAB",
-        SIZES_ERRORS,
-        ids=lambda shapeAB: f"(shapeAB={shapeAB})",
+        "shapeAB", SIZES_ERRORS, ids=lambda shapeAB: f"(shapeAB={shapeAB})"
     )
     def test_a_b_invalid_shape(self, shapeAB):
         # for ((0,), (1,)) and ((1,), (0,))
@@ -119,9 +113,7 @@ class TestVdotErrors:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize(
-        "shapeB",
-        ((0,), (2,), (1, 2)),
-        ids=lambda shapeB: f"(shapeB={shapeB})",
+        "shapeB", ((0,), (2,), (1, 2)), ids=lambda shapeB: f"(shapeB={shapeB})"
     )
     def test_a_b_scalar_and_arrays(self, shapeB):
         # For shape of (0,), (2,), (1, 2),

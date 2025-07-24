@@ -30,17 +30,11 @@ sin = create_unary_ufunc(
 )
 
 cos = create_unary_ufunc(
-    "Cosine element-wise.",
-    "cos",
-    UnaryOpCode.COS,
-    float_and_complex,
+    "Cosine element-wise.", "cos", UnaryOpCode.COS, float_and_complex
 )
 
 tan = create_unary_ufunc(
-    "Compute tangent element-wise.",
-    "tan",
-    UnaryOpCode.TAN,
-    float_and_complex,
+    "Compute tangent element-wise.", "tan", UnaryOpCode.TAN, float_and_complex
 )
 
 arcsin = create_unary_ufunc(

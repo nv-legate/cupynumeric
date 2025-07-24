@@ -197,7 +197,7 @@ class TestSumPositive(object):
     def test_bool_int_dtype(self, dtype, op):
         size = (5, 5, 5)
         arr = np.random.randint(10, size=size)
-        if dtype == bool:
+        if dtype is bool:
             arr %= 2
         arr_np = np.array(arr, dtype=dtype)
         arr_num = num.array(arr_np)

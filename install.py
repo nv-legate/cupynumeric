@@ -327,8 +327,7 @@ def install_cupynumeric(
         shutil.rmtree(join(cupynumeric_dir, "dist"), ignore_errors=True)
         shutil.rmtree(join(cupynumeric_dir, "build"), ignore_errors=True)
         shutil.rmtree(
-            join(cupynumeric_dir, "cupynumeric.egg-info"),
-            ignore_errors=True,
+            join(cupynumeric_dir, "cupynumeric.egg-info"), ignore_errors=True
         )
 
     # Configure and build cuPyNumeric via setup.py
@@ -377,9 +376,15 @@ def install_cupynumeric(
         cmake_flags += ["--log-level=%s" % ("DEBUG" if debug else "VERBOSE")]
 
     cmake_flags += f"""\
--DCMAKE_BUILD_TYPE={(
-        "Debug" if debug else "RelWithDebInfo" if debug_release else "Release"
-    )}
+-DCMAKE_BUILD_TYPE={
+        (
+            "Debug"
+            if debug
+            else "RelWithDebInfo"
+            if debug_release
+            else "Release"
+        )
+    }
 -DBUILD_SHARED_LIBS=ON
 -DCMAKE_CUDA_ARCHITECTURES={str(arch)}
 -DLegion_MAX_DIM={str(maxdim)}

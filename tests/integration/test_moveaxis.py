@@ -20,14 +20,7 @@ from utils.utils import TWO_MAX_DIM_RANGE, AxisError
 
 import cupynumeric as num
 
-AXES = (
-    (0, 0),
-    (0, 1),
-    (1, 0),
-    (0, -1),
-    (-1, 0),
-    ([0, 1], [1, 0]),
-)
+AXES = ((0, 0), (0, 1), (1, 0), (0, -1), (-1, 0), ([0, 1], [1, 0]))
 
 
 @pytest.mark.parametrize("ndim", TWO_MAX_DIM_RANGE)
@@ -59,11 +52,7 @@ def test_moveaxis_with_empty_axis():
     assert np.array_equal(res_np, res_num)
 
 
-EMPTY_ARRAYS = (
-    [],
-    [[]],
-    [[], []],
-)
+EMPTY_ARRAYS = ([], [[]], [[], []])
 
 
 @pytest.mark.parametrize("a", EMPTY_ARRAYS)

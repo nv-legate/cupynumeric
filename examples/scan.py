@@ -18,7 +18,6 @@
 import argparse
 
 import numpy as np
-
 from benchmark import parse_args, run_benchmark
 
 
@@ -136,11 +135,5 @@ if __name__ == "__main__":
         run_scan,
         args.benchmark,
         "Scan",
-        (
-            args.OP,
-            args.shape,
-            args.dt,
-            args.axis,
-            args.check,
-        ),
+        (args.OP, args.shape, args.dt, args.axis, args.check),
     )

@@ -90,11 +90,7 @@ def test_quantiles_negative_axes(str_method, axes):
     # out = <not-None> fails with keepdims = True
     #
     np_q_out = np.quantile(
-        arr,
-        qs_arr,
-        axis=axes,
-        method=str_method,
-        keepdims=keepdims,
+        arr, qs_arr, axis=axes, method=str_method, keepdims=keepdims
     )
     # print(np_q_out)
 

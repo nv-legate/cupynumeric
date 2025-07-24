@@ -183,10 +183,7 @@ log = create_unary_ufunc(
 )
 
 log2 = create_unary_ufunc(
-    "Base-2 logarithm of x.",
-    "log2",
-    UnaryOpCode.LOG2,
-    float_and_complex,
+    "Base-2 logarithm of x.", "log2", UnaryOpCode.LOG2, float_and_complex
 )
 
 log10 = create_unary_ufunc(

@@ -1,3 +1,4 @@
+---
 Language: Cpp
 # BasedOnStyle: Google
 AccessModifierOffset: -1
@@ -17,9 +18,10 @@ AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: true
-AlwaysBreakTemplateDeclarations: Yes
-BinPackArguments:  false
+AlwaysBreakTemplateDeclarations: Yes   # yamllint disable-line rule:truthy
+BinPackArguments: false
 BinPackParameters: false
+# yamllint disable rule:colons
 BraceWrapping:
   AfterClass:            false
   AfterControlStatement: false
@@ -37,6 +39,7 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
+# yamllint enable rule:colons
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: WebKit
 BreakBeforeInheritanceComma: false
@@ -60,6 +63,7 @@ ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
 ForEachMacros:
 IncludeBlocks: Preserve
+# yamllint disable rule:colons
 IncludeCategories:
   - Regex:           '^<.*\.h>'
     Priority:        1
@@ -67,17 +71,18 @@ IncludeCategories:
     Priority:        2
   - Regex:           '.*'
     Priority:        3
+# yamllint enable rule:colons
 IncludeIsMainRegex: '([-_](test|unittest))?$'
 IndentCaseLabels: true
 IndentPPDirectives: None
-IndentWidth:     2
+IndentWidth: 2
 IndentWrappedFunctionNames: false
 InsertBraces: true
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: false
 MacroBlockBegin: ''
-MacroBlockEnd:   ''
+MacroBlockEnd: ''
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 ObjCBinPackProtocolList: Never

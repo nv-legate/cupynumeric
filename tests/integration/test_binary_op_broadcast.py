@@ -20,10 +20,7 @@ import cupynumeric as num
 
 N = 20
 
-SHAPES = [
-    (N, N + 1, N + 2),
-    (1, N + 1, N + 2),
-]
+SHAPES = [(N, N + 1, N + 2), (1, N + 1, N + 2)]
 
 DIMS = list(range(2, 4))
 

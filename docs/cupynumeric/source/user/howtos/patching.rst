@@ -32,4 +32,3 @@ also be used:
 
     $ CUPYNUMERIC_REPORT_COVERAGE=1 LEGATE_CONFIG="--cpus 4"  lgpatch test.py -patch numpy
     cuPyNumeric API coverage: 4/4 (100.0%)
-

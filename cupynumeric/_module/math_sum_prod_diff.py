@@ -38,9 +38,11 @@ from .indexing import putmask
 from .logic_truth import all, any
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_index
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
 
 if TYPE_CHECKING:
     from .._array.array import ndarray
@@ -1411,8 +1413,7 @@ def cross(
     a = moveaxis(a, (axisa,), (-1,))
     b = moveaxis(b, (axisb,), (-1,))
     msg = (
-        "incompatible dimensions for cross product\n"
-        "(dimension must be 2 or 3)"
+        "incompatible dimensions for cross product\n(dimension must be 2 or 3)"
     )
     if a.shape[-1] not in (2, 3) or b.shape[-1] not in (2, 3):
         raise ValueError(msg)

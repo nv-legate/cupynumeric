@@ -377,9 +377,7 @@ def gamma(
 
 
 def geometric(
-    p: float,
-    size: NdShapeLike | None = None,
-    dtype: npt.DTypeLike = np.uint32,
+    p: float, size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.uint32
 ) -> ndarray:
     """
     geometric(p, size=None)
@@ -649,9 +647,7 @@ def lognormal(
 
 
 def logseries(
-    p: float,
-    size: NdShapeLike | None = None,
-    dtype: npt.DTypeLike = np.uint32,
+    p: float, size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.uint32
 ) -> ndarray:
     """
     logseries(p, size=None)
@@ -1135,9 +1131,7 @@ def randn(*shapeargs: int) -> float | ndarray:
     return normal(0.0, 1.0, shapeargs)
 
 
-def random(
-    size: NdShapeLike | None = None,
-) -> float | ndarray:
+def random(size: NdShapeLike | None = None) -> float | ndarray:
     """
     random(size=None)
 
@@ -1292,8 +1286,7 @@ sample = random_sample
 
 
 def standard_cauchy(
-    size: NdShapeLike | None = None,
-    dtype: npt.DTypeLike = np.float64,
+    size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.float64
 ) -> ndarray:
     """
     standard_cauchy(size=None)
@@ -1326,8 +1319,7 @@ def standard_cauchy(
 
 
 def standard_exponential(
-    size: NdShapeLike | None = None,
-    dtype: npt.DTypeLike = np.float64,
+    size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.float64
 ) -> ndarray:
     """
     standard_exponential(size=None)
@@ -1673,9 +1665,7 @@ def weibull(
 
 
 def zipf(
-    a: float,
-    size: NdShapeLike | None = None,
-    dtype: npt.DTypeLike = np.uint32,
+    a: float, size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.uint32
 ) -> ndarray:
     """
     zipf(a, size=None)

@@ -18,7 +18,7 @@ import numpy.fft as _npfft
 
 from .._array.util import maybe_convert_to_np_ndarray
 from .._utils.coverage import clone_module
-from .fft import *
+from .fft import *  # noqa: F403
 
 clone_module(_npfft, globals(), maybe_convert_to_np_ndarray)
 

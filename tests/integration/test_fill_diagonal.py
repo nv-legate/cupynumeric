@@ -51,27 +51,8 @@ def test_basic(ndim, val_shape, wrap):
     assert np.array_equal(np_array, num_array)
 
 
-SHAPES = [
-    (20, 10),
-    (100, 2),
-    (55, 11),
-    (3, 0),
-    (
-        1,
-        1,
-    ),
-]
-VALUE_SHAPES = [
-    (10, 10, 10),
-    (5, 5),
-    (5,),
-    (9,),
-    (
-        0,
-        3,
-    ),
-    (0,),
-]
+SHAPES = [(20, 10), (100, 2), (55, 11), (3, 0), (1, 1)]
+VALUE_SHAPES = [(10, 10, 10), (5, 5), (5,), (9,), (0, 3), (0,)]
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=str)

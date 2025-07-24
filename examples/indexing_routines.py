@@ -69,13 +69,7 @@ def compute_choose(steps, N, timing, warmup):
 
 
 def compute_repeat(steps, N, timing, warmup):
-    A2 = np.ones(
-        (
-            N,
-            N,
-        ),
-        dtype=int,
-    )
+    A2 = np.ones((N, N), dtype=int)
     R = np.repeat(int(1), N)
     print("measuring repeat")
     for step in range(steps + warmup):
@@ -152,14 +146,7 @@ def compute_advanced_indexing_2d(steps, N, timing, warmup):
 
 
 def compute_advanced_indexing_3d(steps, N, timing, warmup):
-    A3 = np.ones(
-        (
-            N,
-            int(N / 100),
-            100,
-        ),
-        dtype=int,
-    )
+    A3 = np.ones((N, int(N / 100), 100), dtype=int)
     B = np.arange(N, dtype=int)
     print("measuring advanced_indexing_3d")
     indx = B % 10
@@ -184,14 +171,7 @@ def compute_advanced_indexing_3d(steps, N, timing, warmup):
     return total
 
 
-def run_indexing_routines(
-    N,
-    steps,
-    warmup,
-    timing,
-    verbose,
-    routine,
-):
+def run_indexing_routines(N, steps, warmup, timing, verbose, routine):
     # simple operation to warm up the library
     assert not math.isnan(np.sum(np.zeros((N, N)).dot(np.zeros((N,)))))
     gc.collect()

@@ -25,7 +25,9 @@ from ..runtime import runtime
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
 
 if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray

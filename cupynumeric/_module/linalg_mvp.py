@@ -87,13 +87,7 @@ def inner(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
         return multiply(a, b, out=out)
     (a_modes, b_modes, out_modes) = inner_modes(a.ndim, b.ndim)
     return _contract(
-        a_modes,
-        b_modes,
-        out_modes,
-        a,
-        b,
-        out=out,
-        casting="unsafe",
+        a_modes, b_modes, out_modes, a, b, out=out, casting="unsafe"
     )
 
 
@@ -349,10 +343,7 @@ def outer(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
 
 @add_boilerplate("a", "b")
 def tensordot(
-    a: ndarray,
-    b: ndarray,
-    axes: AxesPairLike = 2,
-    out: ndarray | None = None,
+    a: ndarray, b: ndarray, axes: AxesPairLike = 2, out: ndarray | None = None
 ) -> ndarray:
     """
     Compute tensor dot product along specified axes.
@@ -406,13 +397,7 @@ def tensordot(
     (a_modes, b_modes, out_modes) = tensordot_modes(a.ndim, b.ndim, axes)
 
     return _contract(
-        a_modes,
-        b_modes,
-        out_modes,
-        a,
-        b,
-        out=out,
-        casting="unsafe",
+        a_modes, b_modes, out_modes, a, b, out=out, casting="unsafe"
     )
 
 
@@ -608,19 +593,10 @@ def _contract(
         if out is not None and out_dtype == c_dtype and out_shape == c_shape:
             c = out
         else:
-            c = ndarray(
-                shape=c_shape,
-                dtype=c_dtype,
-                inputs=(a, b),
-            )
+            c = ndarray(shape=c_shape, dtype=c_dtype, inputs=(a, b))
         # Perform operation
         c._thunk.contract(
-            c_modes,
-            a._thunk,
-            a_modes,
-            b._thunk,
-            b_modes,
-            mode2extent,
+            c_modes, a._thunk, a_modes, b._thunk, b_modes, mode2extent
         )
 
     # Postprocess result before returning
@@ -637,11 +613,7 @@ def _contract(
                 f"'{casting}'"
             )
         if out is None:
-            out = ndarray(
-                shape=out_shape,
-                dtype=out_dtype,
-                inputs=(c,),
-            )
+            out = ndarray(shape=out_shape, dtype=out_dtype, inputs=(c,))
         out[...] = c.reshape(c_bloated_shape)
         return out
     if out_shape != c_shape:

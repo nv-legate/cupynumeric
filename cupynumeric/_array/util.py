@@ -46,8 +46,7 @@ P = ParamSpec("P")
 
 
 def _compute_param_indices(
-    func: Callable[P, R],
-    to_convert: set[str],
+    func: Callable[P, R], to_convert: set[str]
 ) -> tuple[set[int], int]:
     # compute the positional index for all of the user-provided argument
     # names, specifically noting the index of an "out" param, if present
@@ -67,9 +66,7 @@ def _compute_param_indices(
 
 
 def _convert_args(
-    args: tuple[Any, ...],
-    indices: set[int],
-    out_idx: int,
+    args: tuple[Any, ...], indices: set[int], out_idx: int
 ) -> tuple[Any, ...]:
     # convert specified non-None positional arguments, making sure
     # that any out-parameters are appropriately writeable
@@ -87,8 +84,7 @@ def _convert_args(
 
 
 def _convert_kwargs(
-    kwargs: dict[str, Any],
-    to_convert: set[str],
+    kwargs: dict[str, Any], to_convert: set[str]
 ) -> dict[str, Any]:
     # convert specified non-None keyword arguments, making sure
     # that any out-parameters are appropriately writeable
@@ -158,7 +154,9 @@ def convert_to_cupynumeric_ndarray(obj: Any, share: bool = False) -> ndarray:
         return obj
     # Ask the runtime to make a numpy thunk for this object
     thunk = runtime.get_numpy_thunk(obj, share=share)
-    writeable = obj.flags.writeable if isinstance(obj, np.ndarray) and share else True
+    writeable = (
+        obj.flags.writeable if isinstance(obj, np.ndarray) and share else True
+    )
     return ndarray(shape=None, thunk=thunk, writeable=writeable)
 
 

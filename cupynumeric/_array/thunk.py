@@ -35,11 +35,17 @@ from .util import (
 )
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import (
+        normalize_axis_index,
+        normalize_axis_tuple,
+    )
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
-    from numpy.core.numeric import normalize_axis_tuple  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
+    from numpy.core.numeric import (  # type: ignore[no-redef]
+        normalize_axis_tuple,
+    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -94,42 +100,19 @@ def perform_unary_op(
             else:
                 dtype = np.dtype(np.float64)
 
-        out = ndarray(
-            shape=out_shape,
-            dtype=dtype,
-            inputs=(src,),
-        )
+        out = ndarray(shape=out_shape, dtype=dtype, inputs=(src,))
 
     if out.dtype != src.dtype:
         if (
             op == UnaryOpCode.ABSOLUTE and src.dtype.kind == "c"
         ) or op == UnaryOpCode.ANGLE:
-            out._thunk.unary_op(
-                op,
-                src._thunk,
-                True,
-                extra_args,
-            )
+            out._thunk.unary_op(op, src._thunk, True, extra_args)
         else:
-            temp = ndarray(
-                out.shape,
-                dtype=src.dtype,
-                inputs=(src,),
-            )
-            temp._thunk.unary_op(
-                op,
-                src._thunk,
-                True,
-                extra_args,
-            )
+            temp = ndarray(out.shape, dtype=src.dtype, inputs=(src,))
+            temp._thunk.unary_op(op, src._thunk, True, extra_args)
             out._thunk.convert(temp._thunk)
     else:
-        out._thunk.unary_op(
-            op,
-            src._thunk,
-            True,
-            extra_args,
-        )
+        out._thunk.unary_op(op, src._thunk, True, extra_args)
     return out
 
 
@@ -206,10 +189,7 @@ def perform_unary_reduction(
     if out is None:
         out = ndarray(shape=out_shape, dtype=res_dtype, inputs=(src, where))
     elif out.shape != out_shape:
-        errmsg = (
-            f"the output shapes do not match: expected {out_shape} "
-            f"but got {out.shape}"
-        )
+        errmsg = f"the output shapes do not match: expected {out_shape} but got {out.shape}"
         raise ValueError(errmsg)
 
     if dtype != src.dtype:
@@ -271,11 +251,7 @@ def perform_binary_reduction(
 
     dst = ndarray(shape=(), dtype=dtype, inputs=args)
     dst._thunk.binary_reduction(
-        op,
-        one_thunk,
-        two_thunk,
-        broadcast,
-        extra_args,
+        op, one_thunk, two_thunk, broadcast, extra_args
     )
     return dst
 

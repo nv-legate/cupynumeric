@@ -18,7 +18,6 @@
 import argparse
 
 import numpy as np
-
 from benchmark import parse_args, run_benchmark
 
 
@@ -147,11 +146,7 @@ if __name__ == "__main__":
         help="sort axis (default -1)",
     )
     parser.add_argument(
-        "-g",
-        "--arg",
-        dest="argsort",
-        action="store_true",
-        help="use argsort",
+        "-g", "--arg", dest="argsort", action="store_true", help="use argsort"
     )
 
     args, num, timer = parse_args(parser)

@@ -40,10 +40,7 @@ def gen_result(used_modes: int):
 
 
 def gen_operand(
-    used_modes: int,
-    dim_lim: int,
-    mode_lim: int,
-    op: list[int] | None = None,
+    used_modes: int, dim_lim: int, mode_lim: int, op: list[int] | None = None
 ):
     if op is None:
         op = []
@@ -211,10 +208,7 @@ def mk_typed_input(lib, shape):
 
 # Can't cache these, because they get overwritten by the operation
 def mk_typed_output(lib, shape):
-    return [
-        lib.zeros(shape, np.float16),
-        lib.zeros(shape, np.complex64),
-    ]
+    return [lib.zeros(shape, np.float16), lib.zeros(shape, np.complex64)]
 
 
 def check_np_vs_num(expr, mk_input, mk_output=None, **kwargs):
@@ -265,15 +259,7 @@ def test_cast(expr, dtype):
     )
 
 
-@pytest.mark.parametrize(
-    "optimize",
-    [
-        False,
-        "optimal",
-        "greedy",
-        True,
-    ],
-)
+@pytest.mark.parametrize("optimize", [False, "optimal", "greedy", True])
 def test_optimize(optimize):
     a = np.random.rand(256, 256)
     b = np.random.rand(256, 256)

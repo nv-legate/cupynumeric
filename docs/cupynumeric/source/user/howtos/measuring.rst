@@ -66,4 +66,3 @@ include full call stack information in a CSV report:
 After execution completes, the CSV output file have full call stack
 information in the location column, with individual stack frames separated
 by pipe (``|``) characters:
-

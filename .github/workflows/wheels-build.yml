@@ -1,3 +1,4 @@
+---
 on:
   workflow_call:
     inputs:
@@ -82,7 +83,7 @@ jobs:
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
   build:
-    name:  ${{ matrix.ARCH }}, py${{ matrix.PY_VER }}, ${{ matrix.TARGET_DEV }}, ${{ matrix.BUILD_MODE }}
+    name: ${{ matrix.ARCH }}, py${{ matrix.PY_VER }}, ${{ matrix.TARGET_DEV }}, ${{ matrix.BUILD_MODE }}
     needs: compute-matrix
     timeout-minutes: 90
     strategy:
@@ -104,7 +105,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-2
-          role-duration-seconds: 28800 # 8 hours
+          role-duration-seconds: 28800  # 8 hours
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-nv-legate
       - uses: actions/checkout@v4
         with:

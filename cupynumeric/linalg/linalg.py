@@ -22,25 +22,25 @@ from .._utils import is_np2
 from ..runtime import runtime
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import (
+        normalize_axis_index,
+        normalize_axis_tuple,
+    )
 else:
-    from numpy.core.multiarray import (  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
         normalize_axis_index,
     )
-    from numpy.core.numeric import (  # type: ignore
+    from numpy.core.numeric import (  # type: ignore[no-redef]
         normalize_axis_tuple,
     )
 
-from legate.core import (
-    get_machine,
-)
+from legate.core import get_machine
 
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module import dot, empty_like, eye, matmul, ndarray
 from .._module.array_rearrange import flip
-from .._module.creation_shape import empty, zeros, zeros_like
 from .._module.creation_matrices import diag
+from .._module.creation_shape import empty, zeros, zeros_like
 from .._module.ssc_sorting import argsort
 from .._ufunc.math import add, sqrt as _sqrt
 from ._exception import LinAlgError
@@ -422,13 +422,11 @@ def solve(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
     """
     if a.ndim < 2:
         raise LinAlgError(
-            f"{a.ndim}-dimensional array given. "
-            "Array must be at least two-dimensional"
+            f"{a.ndim}-dimensional array given. Array must be at least two-dimensional"
         )
     if b.ndim < 1:
         raise LinAlgError(
-            f"{b.ndim}-dimensional array given. "
-            "Array must be at least one-dimensional"
+            f"{b.ndim}-dimensional array given. Array must be at least one-dimensional"
         )
     if np.dtype("e") in (a.dtype, b.dtype):
         raise TypeError("array type float16 is unsupported in linalg")
@@ -978,11 +976,7 @@ def _thunk_cholesky(a: ndarray) -> ndarray:
     input = a
     if input.dtype.kind not in ("f", "c"):
         input = input.astype("float64")
-    output = ndarray(
-        shape=input.shape,
-        dtype=input.dtype,
-        inputs=(input,),
-    )
+    output = ndarray(shape=input.shape, dtype=input.dtype, inputs=(input,))
     output._thunk.cholesky(input._thunk)
     return output
 
@@ -1003,26 +997,14 @@ def _thunk_eig(a: ndarray) -> tuple[ndarray, ...]:
     if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
         a = ndarray(a.shape, a.dtype, thunk=runtime.to_eager_array(a._thunk))
         out_ew = ndarray(
-            shape=a.shape[:-1],
-            dtype=complex_dtype,
-            force_thunk="eager",
+            shape=a.shape[:-1], dtype=complex_dtype, force_thunk="eager"
         )
         out_ev = ndarray(
-            shape=a.shape,
-            dtype=complex_dtype,
-            force_thunk="eager",
+            shape=a.shape, dtype=complex_dtype, force_thunk="eager"
         )
     else:
-        out_ew = ndarray(
-            shape=a.shape[:-1],
-            dtype=complex_dtype,
-            inputs=(a,),
-        )
-        out_ev = ndarray(
-            shape=a.shape,
-            dtype=complex_dtype,
-            inputs=(a,),
-        )
+        out_ew = ndarray(shape=a.shape[:-1], dtype=complex_dtype, inputs=(a,))
+        out_ev = ndarray(shape=a.shape, dtype=complex_dtype, inputs=(a,))
 
     if a.shape[-1] > 0:
         a._thunk.eig(out_ew._thunk, out_ev._thunk)
@@ -1045,16 +1027,10 @@ def _thunk_eigvals(a: ndarray) -> ndarray:
     if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
         a = ndarray(a.shape, a.dtype, thunk=runtime.to_eager_array(a._thunk))
         out_ew = ndarray(
-            shape=a.shape[:-1],
-            dtype=complex_dtype,
-            force_thunk="eager",
+            shape=a.shape[:-1], dtype=complex_dtype, force_thunk="eager"
         )
     else:
-        out_ew = ndarray(
-            shape=a.shape[:-1],
-            dtype=complex_dtype,
-            inputs=(a,),
-        )
+        out_ew = ndarray(shape=a.shape[:-1], dtype=complex_dtype, inputs=(a,))
 
     if a.shape[-1] > 0:
         a._thunk.eigvals(out_ew._thunk)
@@ -1074,16 +1050,8 @@ def _thunk_eigh(a: ndarray, uplo_l: bool) -> tuple[ndarray, ...]:
     else:
         raise TypeError("Eigh input not supported (missing a conversion?)")
 
-    out_ew = ndarray(
-        shape=a.shape[:-1],
-        dtype=real_dtype,
-        inputs=(a,),
-    )
-    out_ev = ndarray(
-        shape=a.shape,
-        dtype=a.dtype,
-        inputs=(a,),
-    )
+    out_ew = ndarray(shape=a.shape[:-1], dtype=real_dtype, inputs=(a,))
+    out_ev = ndarray(shape=a.shape, dtype=a.dtype, inputs=(a,))
 
     if a.shape[-1] > 0:
         a._thunk.eigh(out_ew._thunk, out_ev._thunk, uplo_l)
@@ -1103,11 +1071,7 @@ def _thunk_eigvalsh(a: ndarray, uplo_l: bool) -> ndarray:
     else:
         raise TypeError("Eigvalsh input not supported (missing a conversion?)")
 
-    out_ew = ndarray(
-        shape=a.shape[:-1],
-        dtype=real_dtype,
-        inputs=(a,),
-    )
+    out_ew = ndarray(shape=a.shape[:-1], dtype=real_dtype, inputs=(a,))
 
     if a.shape[-1] > 0:
         a._thunk.eigvalsh(out_ew._thunk, uplo_l)
@@ -1120,16 +1084,8 @@ def _thunk_qr(a: ndarray) -> tuple[ndarray, ...]:
 
     k = min(a.shape[0], a.shape[1])
 
-    out_q = ndarray(
-        shape=(a.shape[0], k),
-        dtype=a.dtype,
-        inputs=(a,),
-    )
-    out_r = ndarray(
-        shape=(k, a.shape[1]),
-        dtype=a.dtype,
-        inputs=(a,),
-    )
+    out_q = ndarray(shape=(a.shape[0], k), dtype=a.dtype, inputs=(a,))
+    out_r = ndarray(shape=(k, a.shape[1]), dtype=a.dtype, inputs=(a,))
 
     a._thunk.qr(out_q._thunk, out_r._thunk)
     return out_q, out_r
@@ -1150,13 +1106,11 @@ def _thunk_solve(
     if output is not None:
         if output.shape != b.shape:
             raise ValueError(
-                f"Output shape mismatch: expected {b.shape}, "
-                f"but found {output.shape}"
+                f"Output shape mismatch: expected {b.shape}, but found {output.shape}"
             )
         elif output.dtype != b.dtype:
             raise TypeError(
-                f"Output type mismatch: expected {b.dtype}, "
-                f"but found {output.dtype}"
+                f"Output type mismatch: expected {b.dtype}, but found {output.dtype}"
             )
 
     expand_b = b.ndim == 1
@@ -1166,14 +1120,7 @@ def _thunk_solve(
     if output is not None:
         out = output.reshape(b.shape)
     else:
-        out = ndarray(
-            shape=b.shape,
-            dtype=b.dtype,
-            inputs=(
-                a,
-                b,
-            ),
-        )
+        out = ndarray(shape=b.shape, dtype=b.dtype, inputs=(a, b))
 
     out._thunk.solve(a._thunk, b._thunk)
 
@@ -1197,11 +1144,7 @@ def _thunk_svd(a: ndarray, full_matrices: bool) -> tuple[ndarray, ...]:
 
     real_dtype = a.dtype.type(0).real.dtype
 
-    out_s = ndarray(
-        shape=(k,),
-        dtype=real_dtype,
-        inputs=(a,),
-    )
+    out_s = ndarray(shape=(k,), dtype=real_dtype, inputs=(a,))
     out_vh = ndarray(
         shape=(a.shape[1] if full_matrices else k, a.shape[1]),
         dtype=a.dtype,
@@ -1298,13 +1241,7 @@ class ExpmConstants:
     # Pade error control: absolute error tolerance
     # parameter `theta`, also degree `m` dependent:
     #
-    theta = {
-        3: 1.5e-2,
-        5: 2.5e-1,
-        7: 9.5e-1,
-        9: 2.1,
-        13: 5.4,
-    }
+    theta = {3: 1.5e-2, 5: 2.5e-1, 7: 9.5e-1, 9: 2.1, 13: 5.4}
 
     # Taylor-18 coefficients
     #
@@ -1606,9 +1543,9 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     -----
     This routine is only efficient if ``M >> N``. In particular, it assumes that
     an ``(N, N)`` matrix can fit within a single processor memory.
-            
+
     Implements the algorithm described in [1]_.
-    
+
     Requires ``a.T @ a`` to not be singular.
     Input matrix must be non-singular.
 
@@ -1619,8 +1556,8 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     Availability
     --------
     Multiple GPUs, Multiple CPUs
-    
-    
+
+
     References
     ----------
     .. [1] https://stanford.edu/~rezab/classes/cme323/S22/notes/L17/cme323_lec17.pdf
@@ -1629,12 +1566,11 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
         raise ValueError(f"Invalid input shape for tssvd: {a.shape}")
 
     m_info = get_machine()
-    num_PEs = m_info.count()
 
     # A.T*A:
     #
     # unbatched way (there's a bug resulting in 0-matrix, it seems):
-    #{
+    # {
     m = a.shape[0]
     n = a.shape[1]
 
@@ -1643,7 +1579,7 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     a2 = empty(shape=(n, n), dtype=a.dtype)
     ah = a.transpose().conj()
     a2._thunk.ts_matmul(ah._thunk, a._thunk)
-    #}
+    # }
     #
     # batched way (slower, but passes):
     #
@@ -1666,8 +1602,8 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     # generate index permutation, pi
     # via sort-by-key decreasingly:
     #
-    d_indices = zeros(shape=(n, ), dtype=np.int64)
-    with m_info[0]: # !
+    d_indices = zeros(shape=(n,), dtype=np.int64)
+    with m_info[0]:  # !
         d_indices = argsort(svals)
         #
         # reverse:
@@ -1679,7 +1615,7 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     #
     vt = ev.transpose().conj()
 
-    reciprocal_svals = 1.0/svals
+    reciprocal_svals = 1.0 / svals
     Sinv = diag(reciprocal_svals)
 
     # U = A*V*inv(S):
@@ -1690,9 +1626,9 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     B = empty(shape=(n, n), dtype=a.dtype)
     B._thunk.ts_matmul(ev._thunk, Sinv._thunk)
 
-    u  = empty(shape=(m, n), dtype=a.dtype)
+    u = empty(shape=(m, n), dtype=a.dtype)
     u._thunk.ts_matmul(a._thunk, B._thunk)
-    
+
     # re-arrange svals decreasingly:
     #
     svals = svals[d_indices]

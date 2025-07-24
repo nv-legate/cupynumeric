@@ -20,17 +20,7 @@ from utils.utils import AxisError
 import cupynumeric as num
 
 DIM = 5
-SIZES = [
-    (0,),
-    1,
-    DIM,
-    (0, 1),
-    (1, 0),
-    (1, 1),
-    (1, DIM),
-    (DIM, 1),
-    (DIM, DIM),
-]
+SIZES = [(0,), 1, DIM, (0, 1), (1, 0), (1, 1), (1, DIM), (DIM, 1), (DIM, DIM)]
 
 
 @pytest.mark.xfail

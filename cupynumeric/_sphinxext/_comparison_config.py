@@ -24,12 +24,7 @@ from types import (
 
 import numpy
 
-__all__ = (
-    "GROUPED_CONFIGS",
-    "MISSING_NP_REFS",
-    "NUMPY_CONFIGS",
-    "SKIP",
-)
+__all__ = ("GROUPED_CONFIGS", "MISSING_NP_REFS", "NUMPY_CONFIGS", "SKIP")
 
 SKIP = {
     "abs",
@@ -109,14 +104,7 @@ LOGICAL = (
     "isscalar",
 )
 
-EINSUM = (
-    "dot",
-    "einsum",
-    "inner",
-    "outer",
-    "tensordot",
-    "trace",
-)
+EINSUM = ("dot", "einsum", "inner", "outer", "tensordot", "trace")
 
 SET = (
     "in1d",
@@ -187,14 +175,7 @@ SVD = ("lstsq", "matrix_rank", "pinv", "svd")
 
 EIGEN = ("eig", "eigh", "eigvals", "eigvalsh")
 
-LU = (
-    "det",
-    "inv",
-    "slogdet",
-    "solve",
-    "tensorinv",
-    "tensorsolve",
-)
+LU = ("det", "inv", "slogdet", "solve", "tensorinv", "tensorsolve")
 
 CREATION = (
     "arange",
@@ -362,12 +343,7 @@ INDEX = (
 
 PAD = ("pad",)
 
-FUNCTIONAL = (
-    "apply_along_axis",
-    "apply_over_axes",
-    "frompyfunc",
-    "piecewise",
-)
+FUNCTIONAL = ("apply_along_axis", "apply_over_axes", "frompyfunc", "piecewise")
 
 GROUPED_CONFIGS = [
     SectionConfig("Convolve and Correlate", None, names=CONVOLVE),

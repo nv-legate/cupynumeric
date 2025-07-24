@@ -117,10 +117,7 @@ def test_where():
 
     # Where is a boolean
     assert num.array_equal(num.all(cy, where=True), np.all(y, where=True))
-    assert num.array_equal(
-        num.any(cy, where=False),
-        np.any(y, where=False),
-    )
+    assert num.array_equal(num.any(cy, where=False), np.any(y, where=False))
 
 
 class TestAnyAllErrors:

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,22 +19,12 @@ import pytest
 
 import cupynumeric as num
 
-SCALARS_TRUE_DEFAULT = (
-    (0, -1e-8),
-    (1e10, 1.00001e10),
-    (1 + 1j, 1 + 1.00001j),
-)
+SCALARS_TRUE_DEFAULT = ((0, -1e-8), (1e10, 1.00001e10), (1 + 1j, 1 + 1.00001j))
 
-SCALARS_TRUE_INF = (
-    (np.inf, np.inf),
-    (-np.inf, -np.inf),
-)
+SCALARS_TRUE_INF = ((np.inf, np.inf), (-np.inf, -np.inf))
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    SCALARS_TRUE_DEFAULT + SCALARS_TRUE_INF,
-)
+@pytest.mark.parametrize(("a", "b"), SCALARS_TRUE_DEFAULT + SCALARS_TRUE_INF)
 def test_scalar_true(a, b):
     res_np = np.allclose(a, b)
     res_num = num.allclose(a, b)
@@ -53,10 +44,7 @@ SCALARS_FALSE_DEFAULT = (
 SCALARS_FALSE_INF = ((np.inf, -np.inf),)
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    SCALARS_FALSE_DEFAULT + SCALARS_FALSE_INF,
-)
+@pytest.mark.parametrize(("a", "b"), SCALARS_FALSE_DEFAULT + SCALARS_FALSE_INF)
 def test_scalar_false(a, b):
     res_np = np.allclose(a, b)
     res_num = num.allclose(a, b)
@@ -67,13 +55,7 @@ def test_scalar_false(a, b):
     assert res_np_swapped is bool(res_num_swapped) is False
 
 
-SHAPES = (
-    (1,),
-    (6,),
-    (1, 1),
-    (2, 3),
-    (2, 3, 4),
-)
+SHAPES = ((1,), (6,), (1, 1), (2, 3), (2, 3, 4))
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=lambda shape: f"(shape={shape})")
@@ -135,12 +117,7 @@ def test_array_false(shape):
     assert res_np_swapped is bool(res_num_swapped) is False
 
 
-SHAPES_BROADCASTING1 = (
-    (1, 3),
-    (2, 3),
-    (1, 2, 3),
-    (2, 2, 3),
-)
+SHAPES_BROADCASTING1 = ((1, 3), (2, 3), (1, 2, 3), (2, 2, 3))
 
 
 @pytest.mark.xfail
@@ -171,12 +148,7 @@ def test_broadcast_true1(shape_b):
     assert res_np is bool(res_num) is True
 
 
-SHAPES_BROADCASTING2 = (
-    (1,),
-    (1, 1),
-    (1, 2, 1),
-    (2, 2, 1),
-)
+SHAPES_BROADCASTING2 = ((1,), (1, 1), (1, 2, 1), (2, 2, 1))
 
 
 @pytest.mark.xfail
@@ -225,17 +197,10 @@ def test_equal_nan_basic(arr, equal_nan):
     assert res_np == res_num
 
 
-EMPTY_ARRAY_PAIRS = (
-    ([], []),
-    ([], [[]]),
-    ([[]], [[]]),
-)
+EMPTY_ARRAY_PAIRS = (([], []), ([], [[]]), ([[]], [[]]))
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    EMPTY_ARRAY_PAIRS,
-)
+@pytest.mark.parametrize(("a", "b"), EMPTY_ARRAY_PAIRS)
 def test_empty_array(a, b):
     res_np = np.allclose(a, b)
     res_num = num.allclose(a, b)
@@ -243,17 +208,11 @@ def test_empty_array(a, b):
     assert res_np is bool(res_num) is True
 
 
-SCALAR_BROADCASTING = (
-    (1e10, [1.00001e10]),
-    (1e10, [[1.00001e10]]),
-)
+SCALAR_BROADCASTING = ((1e10, [1.00001e10]), (1e10, [[1.00001e10]]))
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize(
-    ("a", "b"),
-    SCALAR_BROADCASTING,
-)
+@pytest.mark.parametrize(("a", "b"), SCALAR_BROADCASTING)
 def test_scalar_broadcasting(a, b):
     # for all cases,
     # In Numpy, it pass
@@ -265,10 +224,7 @@ def test_scalar_broadcasting(a, b):
     assert res_np is bool(res_num) is True
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    SCALARS_FALSE_DEFAULT,
-)
+@pytest.mark.parametrize(("a", "b"), SCALARS_FALSE_DEFAULT)
 def test_scalar_rtol_atol_true(a, b):
     rtol = 1e-04
     atol = 1e-06
@@ -279,10 +235,7 @@ def test_scalar_rtol_atol_true(a, b):
     assert res_np is bool(res_num) is True
 
 
-@pytest.mark.parametrize(
-    ("a", "b"),
-    SCALARS_TRUE_DEFAULT,
-)
+@pytest.mark.parametrize(("a", "b"), SCALARS_TRUE_DEFAULT)
 def test_scalar_rtol_atol_false(a, b):
     rtol = 1e-06
     atol = 1e-09

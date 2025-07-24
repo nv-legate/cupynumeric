@@ -56,12 +56,7 @@ def test_multi_dot(shapes):
         if len(shapes[-1]) == 1:
             out = num.zeros((shapes[0][0],))
         else:
-            out = num.zeros(
-                (
-                    shapes[0][0],
-                    shapes[-1][1],
-                )
-            )
+            out = num.zeros((shapes[0][0], shapes[-1][1]))
     res_num = num.linalg.multi_dot(num_arrays, out=out)
     assert allclose(res_np, out)
 

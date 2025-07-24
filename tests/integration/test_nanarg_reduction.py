@@ -27,10 +27,7 @@ NAN_ARG_FUNCS = ("nanargmax", "nanargmin")
 
 EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
-DISALLOWED_DTYPES = (
-    np.complex64,
-    np.complex128,
-)
+DISALLOWED_DTYPES = (np.complex64, np.complex128)
 
 # Note that when an element is repeated mulitple times in an array,
 # the output from cuPyNumeric and numpy will vary. This is expected and

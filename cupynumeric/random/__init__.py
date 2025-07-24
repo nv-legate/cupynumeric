@@ -20,9 +20,9 @@ from .._array.util import maybe_convert_to_np_ndarray
 from .._utils.coverage import clone_module
 from ..runtime import runtime
 
-from ._random import *
-from ._bitgenerator import *
-from ._generator import *
+from ._random import *  # noqa: F403
+from ._bitgenerator import *  # noqa: F403
+from ._generator import *  # noqa: F403
 
 clone_module(
     _nprandom,

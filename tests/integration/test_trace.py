@@ -112,9 +112,7 @@ def test_offset(offset):
 
 @pytest.mark.xfail
 @pytest.mark.parametrize(
-    "axes",
-    ((-2, -1), (-2, 0), (1, -3)),
-    ids=lambda axes: f"(axes={axes})",
+    "axes", ((-2, -1), (-2, 0), (1, -3)), ids=lambda axes: f"(axes={axes})"
 )
 def test_negative_axes(axes):
     # For all 3 cases,
@@ -135,9 +133,7 @@ class TestTraceErrors:
         self.a_num = num.array(self.a_np)
 
     @pytest.mark.parametrize(
-        "array",
-        (1, [], [1]),
-        ids=lambda array: f"(array={array})",
+        "array", (1, [], [1]), ids=lambda array: f"(array={array})"
     )
     def test_invalid_arrays(self, array):
         expected_exc = ValueError
@@ -167,9 +163,7 @@ class TestTraceErrors:
             num.trace(self.a_num, axis1=axis1, axis2=axis2)
 
     @pytest.mark.parametrize(
-        "axes",
-        ((-4, 1), (0, 3)),
-        ids=lambda axes: f"(axes={axes})",
+        "axes", ((-4, 1), (0, 3)), ids=lambda axes: f"(axes={axes})"
     )
     def test_axes_out_of_bound(self, axes):
         expected_exc = ValueError
@@ -180,9 +174,7 @@ class TestTraceErrors:
             num.trace(self.a_num, axis1=axis1, axis2=axis2)
 
     @pytest.mark.parametrize(
-        "axes",
-        ((-3, 0), (1, 1)),
-        ids=lambda axes: f"(axes={axes})",
+        "axes", ((-3, 0), (1, 1)), ids=lambda axes: f"(axes={axes})"
     )
     def test_axes_duplicate(self, axes):
         expected_exc = ValueError

@@ -94,8 +94,7 @@ def test_singleton_seed(seed):
 
 
 @pytest.mark.xfail(
-    EAGER_TEST,
-    reason="cuPyNumeric does not respect seed in Eager mode",
+    EAGER_TEST, reason="cuPyNumeric does not respect seed in Eager mode"
 )
 @pytest.mark.parametrize(
     "seed",
@@ -120,8 +119,7 @@ def test_default_rng_seed(seed):
 
 
 @pytest.mark.xfail(
-    EAGER_TEST,
-    reason="cuPyNumeric does not respect seed in Eager mode",
+    EAGER_TEST, reason="cuPyNumeric does not respect seed in Eager mode"
 )
 def test_default_rng_bitgenerator():
     seed = 12345
@@ -134,8 +132,7 @@ def test_default_rng_bitgenerator():
 
 
 @pytest.mark.xfail(
-    EAGER_TEST,
-    reason="cuPyNumeric does not respect seed in Eager mode",
+    EAGER_TEST, reason="cuPyNumeric does not respect seed in Eager mode"
 )
 @pytest.mark.xfail(reason="cupynumeric.internal#135")
 def test_default_rng_generator():
@@ -163,10 +160,7 @@ def test_rand(shape):
     )
 
 
-LOW_HIGH = [
-    (5, 10000),
-    (-10000, 5),
-]
+LOW_HIGH = [(5, 10000), (-10000, 5)]
 SMALL_RNG_SIZES = [5, 1024, (1, 2)]
 LARGE_RNG_SIZES = [10000, (20, 50, 4)]
 ALL_RNG_SIZES = SMALL_RNG_SIZES + LARGE_RNG_SIZES + [None]
@@ -233,8 +227,7 @@ def test_randint_float_range(low, high):
 
 
 @pytest.mark.xfail(
-    not EAGER_TEST,
-    reason="cuPyNumeric raises NotImplementedError",
+    not EAGER_TEST, reason="cuPyNumeric raises NotImplementedError"
 )
 @pytest.mark.parametrize("size", ALL_RNG_SIZES, ids=str)
 @pytest.mark.parametrize("low, high", [(1000, 65535), (0, 1024)], ids=str)
@@ -277,8 +270,7 @@ def test_randint_distribution(low, high, size, dtype):
 
 
 @pytest.mark.xfail(
-    not EAGER_TEST,
-    reason="cuPyNumeric raises NotImplementedError",
+    not EAGER_TEST, reason="cuPyNumeric raises NotImplementedError"
 )
 @pytest.mark.parametrize("size", (1024, 1025))
 def test_randint_bool(size):
@@ -348,11 +340,7 @@ class TestRandomErrors:
 
     @pytest.mark.parametrize(
         "seed, expected_exc",
-        [
-            (-100, ValueError),
-            (12.0, TypeError),
-            ("abc", TypeError),
-        ],
+        [(-100, ValueError), (12.0, TypeError), ("abc", TypeError)],
         ids=lambda x: f" {str(getattr(x, 'expected_exception', x))} ",
     )
     @pytest.mark.xfail(reason="NumPy raises exceptions, cuPyNumeric pass")
@@ -383,16 +371,8 @@ class TestRandomErrors:
     @pytest.mark.parametrize(
         "low, high, expected_exc",
         [
-            pytest.param(
-                -10000,
-                None,
-                ValueError,
-            ),
-            pytest.param(
-                -10000,
-                -20000,
-                ValueError,
-            ),
+            pytest.param(-10000, None, ValueError),
+            pytest.param(-10000, -20000, ValueError),
         ],
         ids=str,
     )
@@ -401,11 +381,7 @@ class TestRandomErrors:
 
     @pytest.mark.parametrize(
         "size, expected_exc",
-        [
-            (12.3, TypeError),
-            (-1, ValueError),
-            ((12, 4, 5.0), TypeError),
-        ],
+        [(12.3, TypeError), (-1, ValueError), ((12, 4, 5.0), TypeError)],
         ids=str,
     )
     def test_randint_invalid_size(self, size, expected_exc):

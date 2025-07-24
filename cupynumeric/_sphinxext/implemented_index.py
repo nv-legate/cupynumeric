@@ -37,12 +37,7 @@ def _filter(x: Any) -> bool:
     )
 
 
-namespaces = (
-    cn,
-    cn.fft,
-    cn.linalg,
-    cn.random,
-)
+namespaces = (cn, cn.fft, cn.linalg, cn.random)
 
 
 class ImplementedIndex(CupynumericDirective):

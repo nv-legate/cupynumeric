@@ -27,15 +27,9 @@ import cupynumeric as num
 @pytest.mark.parametrize("obj", [-2, 1, 2])
 def test_scalar_index_error(obj):
     message = f"index {obj} is out of bounds for axis 0 with size 1"
-    with pytest.raises(
-        IndexError,
-        match=message,
-    ):
+    with pytest.raises(IndexError, match=message):
         np.delete(5, obj)
-    with pytest.raises(
-        IndexError,
-        match=message,
-    ):
+    with pytest.raises(IndexError, match=message):
         num.delete(5, obj)
 
 
@@ -49,15 +43,9 @@ def test_scalar_negative_index(obj):
 @pytest.mark.parametrize("axis", [-1, 0, 1])
 def test_scalar_axis_error(axis):
     message = f"axis {axis} is out of bounds for array of dimension 0"
-    with pytest.raises(
-        IndexError,
-        match=message,
-    ):
+    with pytest.raises(IndexError, match=message):
         np.delete(5, 0, axis=axis)
-    with pytest.raises(
-        IndexError,
-        match=message,
-    ):
+    with pytest.raises(IndexError, match=message):
         num.delete(5, 0, axis=axis)
 
 
@@ -67,15 +55,9 @@ def test_scalar_axis_error(axis):
 @pytest.mark.parametrize("obj", [-1, 0, 1, 2])
 def test_empty(obj):
     message = f"index {obj} is out of bounds for axis 0 with size 0"
-    with pytest.raises(
-        IndexError,
-        match=message,
-    ):
+    with pytest.raises(IndexError, match=message):
         np.delete([], obj)
-    with pytest.raises(
-        IndexError,
-        match=message,
-    ):
+    with pytest.raises(IndexError, match=message):
         num.delete([], obj)
 
 
@@ -214,15 +196,9 @@ def test_boolean_mask_wrong_size():
         "boolean array argument obj to delete must be one dimensional"
         " and match the axis length of 8"
     )
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         np.delete(arr, mask)
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         num.delete(arr_num, mask)
 
 
@@ -235,15 +211,9 @@ def test_out_of_bounds_boolean_mask():
         "boolean array argument obj to delete must be one dimensional"
         " and match the axis length of 8"
     )
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         np.delete(arr, mask)
-    with pytest.raises(
-        ValueError,
-        match=message,
-    ):
+    with pytest.raises(ValueError, match=message):
         num.delete(arr_num, mask)
 
 
@@ -312,11 +282,11 @@ def test_slice_axis_out_of_bounds():
     axis = 2
 
     with pytest.raises(
-        IndexError, match="axis 2 is out of bounds for array of" " dimension 2"
+        IndexError, match="axis 2 is out of bounds for array of dimension 2"
     ):
         np.delete(arr_np, obj, axis=axis)
     with pytest.raises(
-        IndexError, match="axis 2 is out of bounds for array of" " dimension 2"
+        IndexError, match="axis 2 is out of bounds for array of dimension 2"
     ):
         num.delete(arr_num, obj, axis=axis)
 

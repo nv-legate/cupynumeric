@@ -41,9 +41,11 @@ from .ssc_counting import count_nonzero
 from .ssc_searching import nonzero
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_index
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -248,9 +250,7 @@ def mask_indices(
 
 @add_boilerplate("indices")
 def unravel_index(
-    indices: ndarray,
-    shape: NdShape,
-    order: OrderType = "C",
+    indices: ndarray, shape: NdShape, order: OrderType = "C"
 ) -> tuple[ndarray, ...] | ndarray:
     """
     Converts a flat index or array of flat indices into a tuple
@@ -283,10 +283,7 @@ def unravel_index(
     Multiple GPUs, Multiple CPUs
     """
 
-    if order not in (
-        "F",
-        "C",
-    ):
+    if order not in ("F", "C"):
         raise ValueError("order is not understood")
 
     if indices is None or not np.can_cast(
@@ -941,8 +938,7 @@ def select(
     default_ = np.array(default, dtype=common_type)
 
     out_shape = np.broadcast_shapes(
-        *(c.shape for c in condlist_),
-        *(c.shape for c in choicelist_),
+        *(c.shape for c in condlist_), *(c.shape for c in choicelist_)
     )
     out = ndarray(shape=out_shape, dtype=common_type, inputs=args)
     out._thunk.select(
@@ -1310,8 +1306,7 @@ def ravel_multi_index(
             )
         if not np.issubdtype(type(d), int):
             raise TypeError(
-                f"'{type(d).__name__}' object cannot be interpreted as an "
-                f"integer"
+                f"'{type(d).__name__}' object cannot be interpreted as an integer"
             )
 
     if all(i == 0 for i in dims):

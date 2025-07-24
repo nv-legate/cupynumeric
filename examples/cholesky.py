@@ -16,7 +16,6 @@
 import argparse
 
 import numpy
-
 from benchmark import parse_args, run_benchmark
 
 

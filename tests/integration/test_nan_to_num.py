@@ -23,17 +23,7 @@ import cupynumeric as num
 
 
 class TestNanToNum:
-    @pytest.mark.parametrize(
-        "value",
-        [
-            np.inf,
-            -np.inf,
-            np.nan,
-            42,
-            -17,
-            0,
-        ],
-    )
+    @pytest.mark.parametrize("value", [np.inf, -np.inf, np.nan, 42, -17, 0])
     def test_scalar(self, value):
         """Test scalar inputs match numpy's implementation."""
         result = num.nan_to_num(value)
@@ -87,13 +77,7 @@ class TestNanToNum:
             ]
         )
 
-    @pytest.mark.parametrize(
-        "kwargs",
-        [
-            {},
-            {"nan": 111111, "posinf": 222222},
-        ],
-    )
+    @pytest.mark.parametrize("kwargs", [{}, {"nan": 111111, "posinf": 222222}])
     def test_complex(self, complex_array, kwargs):
         """Test complex number handling matches numpy's implementation."""
         complex_array_num = num.array(complex_array)

@@ -22,9 +22,9 @@ import numpy as np
 from .._utils import is_np2
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_tuple
 else:
-    from numpy.core.numeric import (  # type: ignore
+    from numpy.core.numeric import (  # type: ignore[no-redef]
         normalize_axis_tuple,
     )
 
@@ -883,10 +883,7 @@ def nanquantile(
     # ndarray of non-NaNs:
     #
     non_nan_counts = asarray(
-        count_nonzero(
-            logical_not(isnan(a_rr)),
-            axis=real_axis,
-        )
+        count_nonzero(logical_not(isnan(a_rr)), axis=real_axis)
     )
 
     # covers both array-like and scalar cases:

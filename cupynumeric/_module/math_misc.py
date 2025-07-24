@@ -125,11 +125,7 @@ def convolve(
 
     if a.dtype != v.dtype:
         v = v.astype(a.dtype)
-    out = ndarray(
-        shape=a.shape,
-        dtype=a.dtype,
-        inputs=(a, v),
-    )
+    out = ndarray(shape=a.shape, dtype=a.dtype, inputs=(a, v))
     out._thunk.convolve(a._thunk, v._thunk, mode, method)
     return out
 

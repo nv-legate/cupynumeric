@@ -453,12 +453,11 @@ class EagerArray(NumPyThunk):
             if self.ndim == 1:
                 if method != "auto":
                     runtime.warn(
-                        f"the method {method} is ignored "
-                        "for the 1D convolution"
+                        f"the method {method} is ignored for the 1D convolution"
                     )
                 self.array[:] = np.convolve(input.array, filter.array, mode)
             else:
-                from scipy.signal import convolve  # type: ignore [import-untyped]
+                from scipy.signal import convolve
 
                 self.array[...] = convolve(
                     input.array, filter.array, mode, method
@@ -574,9 +573,7 @@ class EagerArray(NumPyThunk):
             result = EagerArray(child)
         else:
             result = EagerArray(
-                child,
-                parent=self,
-                key=("reshape", newshape, order),
+                child, parent=self, key=("reshape", newshape, order)
             )
             self.children.append(result)
         return result
@@ -654,11 +651,7 @@ class EagerArray(NumPyThunk):
         if not scalar_repeats:
             self.check_eager_args(repeats)
         if self.deferred is not None:
-            return self.deferred.repeat(
-                repeats,
-                axis,
-                scalar_repeats,
-            )
+            return self.deferred.repeat(repeats, axis, scalar_repeats)
         else:
             if not scalar_repeats:
                 array = np.repeat(self.array, repeats.array, axis)
@@ -708,8 +701,7 @@ class EagerArray(NumPyThunk):
             )
         else:
             np.einsum(
-                f"{''.join(rhs1_modes)},{''.join(rhs2_modes)}"
-                f"->{''.join(lhs_modes)}",
+                f"{''.join(rhs1_modes)},{''.join(rhs2_modes)}->{''.join(lhs_modes)}",
                 rhs1_thunk.array,
                 rhs2_thunk.array,
                 out=self.array,
@@ -718,10 +710,7 @@ class EagerArray(NumPyThunk):
     def choose(self, rhs: Any, *args: Any) -> None:
         self.check_eager_args(*args, rhs)
         if self.deferred is not None:
-            self.deferred.choose(
-                rhs,
-                *args,
-            )
+            self.deferred.choose(rhs, *args)
         else:
             choices = tuple(c.array for c in args)
             self.array[:] = np.choose(rhs.array, choices, mode="raise")
@@ -734,11 +723,7 @@ class EagerArray(NumPyThunk):
     ) -> None:
         self.check_eager_args(*condlist, *choicelist)
         if self.deferred is not None:
-            self.deferred.select(
-                condlist,
-                choicelist,
-                default,
-            )
+            self.deferred.select(condlist, choicelist, default)
         else:
             self.array[...] = np.select(
                 tuple(c.array for c in condlist),
@@ -1223,12 +1208,7 @@ class EagerArray(NumPyThunk):
     ) -> None:
         if self.deferred is not None:
             self.deferred.bitgenerator_f(
-                handle,
-                generatorType,
-                seed,
-                flags,
-                dfnum,
-                dfden,
+                handle, generatorType, seed, flags, dfnum, dfden
             )
         else:
             if self.array.size == 1:
@@ -1532,9 +1512,7 @@ class EagerArray(NumPyThunk):
                 self.array[:] = np.random.randn(*(self.array.shape))
 
     def random_integer(
-        self,
-        low: int | npt.NDArray[Any],
-        high: int | npt.NDArray[Any],
+        self, low: int | npt.NDArray[Any], high: int | npt.NDArray[Any]
     ) -> None:
         if self.deferred is not None:
             self.deferred.random_integer(low, high)
@@ -1570,13 +1548,7 @@ class EagerArray(NumPyThunk):
                 )
 
             a = ndarray(self.shape, self.dtype, thunk=self.deferred)
-            return matmul(
-                a,
-                rhs,
-                out=out,
-                casting=casting,
-                dtype=dtype,
-            )
+            return matmul(a, rhs, out=out, casting=casting, dtype=dtype)
         else:
             rhs_array = (
                 rhs._thunk.__numpy_array__()
@@ -1589,12 +1561,7 @@ class EagerArray(NumPyThunk):
                 if (out is not None and hasattr(out, "_thunk"))
                 else out
             )
-            return np.matmul(
-                self.array,
-                rhs_array,
-                out=out_array,
-                **kwargs,
-            )
+            return np.matmul(self.array, rhs_array, out=out_array, **kwargs)
 
     _add = _make_eager_binary_ufunc("add")
     _multiply = _make_eager_binary_ufunc("multiply")
@@ -1731,11 +1698,7 @@ class EagerArray(NumPyThunk):
         elif op == UnaryOpCode.REAL:
             self.array = np.real(rhs.array)
         elif op == UnaryOpCode.ROUND:
-            np.round(
-                rhs.array,
-                out=self.array,
-                decimals=args[0].value(),
-            )
+            np.round(rhs.array, out=self.array, decimals=args[0].value())
         elif op == UnaryOpCode.ANGLE:
             self.array = np.angle(rhs.array, args[0].value())
         else:
@@ -1755,14 +1718,7 @@ class EagerArray(NumPyThunk):
         self.check_eager_args(rhs, where)
         if self.deferred is not None:
             self.deferred.unary_reduction(
-                op,
-                rhs,
-                where,
-                orig_axis,
-                axes,
-                keepdims,
-                args,
-                initial,
+                op, rhs, where, orig_axis, axes, keepdims, args, initial
             )
             return
         if where is None:
@@ -2122,15 +2078,10 @@ class EagerArray(NumPyThunk):
             )
 
     def stencil_hint(
-        self,
-        low_offsets: tuple[int, ...],
-        high_offsets: tuple[int, ...],
+        self, low_offsets: tuple[int, ...], high_offsets: tuple[int, ...]
     ) -> None:
         if self.deferred is not None:
             self.deferred.stencil_hint(low_offsets, high_offsets)
 
-    def ts_matmul(
-        self,
-        rhs1_thunk: Any,
-        rhs2_thunk: Any) -> Any:
+    def ts_matmul(self, rhs1_thunk: Any, rhs2_thunk: Any) -> Any:
         np.matmul(rhs1_thunk.array, rhs2_thunk.array, out=self.array)

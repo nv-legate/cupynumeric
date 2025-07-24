@@ -89,13 +89,7 @@ def test_type_convert():
     x_num = mk_seq_array(num, (3, 4, 5))
     values = mk_seq_array(np, (6,)) * 10
     values_num = num.array(values)
-    mask = np.zeros(
-        (
-            3,
-            4,
-            5,
-        )
-    )
+    mask = np.zeros((3, 4, 5))
     mask_num = num.zeros((3, 4, 5))
     np.putmask(x, mask, values)
     num.putmask(x_num, mask_num, values_num)
@@ -105,13 +99,7 @@ def test_type_convert():
     x_num = mk_seq_array(num, (3, 4, 5))
     x = x.astype(np.int32)
     x_num = x_num.astype(np.int32)
-    mask = np.zeros(
-        (
-            3,
-            4,
-            5,
-        )
-    )
+    mask = np.zeros((3, 4, 5))
     mask_num = num.zeros((3, 4, 5))
     np.putmask(x, mask, 11)
     num.putmask(x_num, mask_num, 11)

@@ -16,9 +16,7 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-BOILERPLATE = [
-    "sys.exit(pytest.main(sys.argv))",
-]
+BOILERPLATE = ["sys.exit(pytest.main(sys.argv))"]
 
 TESTS_TOP = Path(__file__).parents[2] / "tests"
 

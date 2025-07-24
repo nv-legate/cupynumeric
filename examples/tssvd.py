@@ -16,12 +16,11 @@
 #
 
 import argparse
-import re
 
-from benchmark import *
+import numpy as np
+from benchmark import parse_args, run_benchmark
 
 import cupynumeric as num
-import numpy as np
 
 
 def check_result(a, u, s, vh):
@@ -35,10 +34,10 @@ def check_result(a, u, s, vh):
 # make random real full column rank mxn, m>n matrix:
 #
 def make_random_matrix(
-        m: int, n: int, scale: float = 10.0,
-        dtype_=np.dtype("float64") ) -> np.ndarray:
+    m: int, n: int, scale: float = 10.0, dtype_=np.dtype("float64")
+) -> np.ndarray:
     num.random.seed(6174)
-    
+
     mat = scale * num.random.rand(m, n)
 
     mat = mat.astype(dtype_)
@@ -46,7 +45,7 @@ def make_random_matrix(
     # strictly diagonally dominant:
     #
     for i in range(n):
-        mat[i, i] = 1.0 + num.sum(num.abs(mat[i,:]))
+        mat[i, i] = 1.0 + num.sum(num.abs(mat[i, :]))
 
     return mat
 
@@ -96,16 +95,14 @@ if __name__ == "__main__":
         action="store_true",
         help="compare result to numpy",
     )
+
+    global num
+
     args, num, timer = parse_args(parser)
 
     run_benchmark(
         run_tssvd,
         args.benchmark,
         "TSSVD",
-        (
-            args.m,
-            args.n,
-            args.check,
-            args.timing,
-        ),
+        (args.m, args.n, args.check, args.timing),
     )

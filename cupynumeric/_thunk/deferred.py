@@ -80,9 +80,11 @@ from ._sort import sort_deferred
 from .thunk import NumPyThunk
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_tuple
 else:
-    from numpy.core.numeric import normalize_axis_tuple  # type: ignore
+    from numpy.core.numeric import (  # type: ignore[no-redef]
+        normalize_axis_tuple,
+    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -102,10 +104,7 @@ if TYPE_CHECKING:
     )
 
 
-_COMPLEX_FIELD_DTYPES = {
-    ty.complex64: ty.float32,
-    ty.complex128: ty.float64,
-}
+_COMPLEX_FIELD_DTYPES = {ty.complex64: ty.float32, ty.complex128: ty.float64}
 
 
 def _prod(tpl: Sequence[int]) -> int:
@@ -131,9 +130,9 @@ def auto_convert(
     assert len(keys) == len(thunk_params)
 
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        assert not hasattr(
-            func, "__wrapped__"
-        ), "this decorator must be the innermost"
+        assert not hasattr(func, "__wrapped__"), (
+            "this decorator must be the innermost"
+        )
 
         # For each parameter specified by name, also consider the case where
         # it's passed as a positional parameter.
@@ -268,9 +267,7 @@ class DeferredArray(NumPyThunk):
     """
 
     def __init__(
-        self,
-        base: LogicalStore,
-        numpy_array: npt.NDArray[Any] | None = None,
+        self, base: LogicalStore, numpy_array: npt.NDArray[Any] | None = None
     ) -> None:
         super().__init__(base.type.to_numpy_dtype())
         assert base is not None
@@ -297,9 +294,7 @@ class DeferredArray(NumPyThunk):
         copy = cast(
             DeferredArray,
             runtime.create_empty_thunk(
-                self.shape,
-                self.base.type,
-                inputs=[self],
+                self.shape, self.base.type, inputs=[self]
             ),
         )
         copy.copy(self, deep=True)
@@ -334,11 +329,7 @@ class DeferredArray(NumPyThunk):
             inputs=[self],
         )
 
-        result.unary_op(
-            UnaryOpCode.IMAG,
-            self,
-            True,
-        )
+        result.unary_op(UnaryOpCode.IMAG, self, True)
 
         return result
 
@@ -350,26 +341,16 @@ class DeferredArray(NumPyThunk):
             inputs=[self],
         )
 
-        result.unary_op(
-            UnaryOpCode.REAL,
-            self,
-            True,
-        )
+        result.unary_op(UnaryOpCode.REAL, self, True)
 
         return result
 
     def conj(self) -> NumPyThunk:
         result = runtime.create_empty_thunk(
-            self.shape,
-            dtype=self.base.type,
-            inputs=[self],
+            self.shape, dtype=self.base.type, inputs=[self]
         )
 
-        result.unary_op(
-            UnaryOpCode.CONJ,
-            self,
-            True,
-        )
+        result.unary_op(UnaryOpCode.CONJ, self, True)
 
         return result
 
@@ -379,11 +360,7 @@ class DeferredArray(NumPyThunk):
         if self.scalar and rhs.scalar:
             legate_runtime.issue_fill(self.base, rhs.base)
             return
-        self.unary_op(
-            UnaryOpCode.COPY,
-            rhs,
-            True,
-        )
+        self.unary_op(UnaryOpCode.COPY, rhs, True)
 
     @property
     def scalar(self) -> bool:
@@ -467,9 +444,7 @@ class DeferredArray(NumPyThunk):
         output_arr = cast(
             DeferredArray,
             runtime.create_empty_thunk(
-                shape=out_shape,
-                dtype=pointN_dtype,
-                inputs=[self],
+                shape=out_shape, dtype=pointN_dtype, inputs=[self]
             ),
         )
 
@@ -493,9 +468,7 @@ class DeferredArray(NumPyThunk):
     def _copy_store(self, store: Any) -> DeferredArray:
         store_to_copy = DeferredArray(base=store)
         store_copy = runtime.create_empty_thunk(
-            store_to_copy.shape,
-            self.base.type,
-            inputs=[store_to_copy],
+            store_to_copy.shape, self.base.type, inputs=[store_to_copy]
         )
         store_copy.copy(store_to_copy, deep=True)
         return cast(DeferredArray, store_copy)
@@ -616,10 +589,7 @@ class DeferredArray(NumPyThunk):
                 return False, self, key
 
     def _advanced_indexing_with_boolean_array(
-        self,
-        key: Any,
-        is_set: bool = False,
-        set_value: Any | None = None,
+        self, key: Any, is_set: bool = False, set_value: Any | None = None
     ) -> tuple[bool, Any, Any, Any]:
         rhs = self
         if not isinstance(key, DeferredArray):
@@ -653,9 +623,7 @@ class DeferredArray(NumPyThunk):
             out = cast(
                 DeferredArray,
                 runtime.create_empty_thunk(
-                    out_shape,
-                    rhs.base.type,
-                    inputs=[rhs],
+                    out_shape, rhs.base.type, inputs=[rhs]
                 ),
             )
             out.fill(np.zeros((), dtype=out.dtype))
@@ -691,8 +659,7 @@ class DeferredArray(NumPyThunk):
             key_dims = key.ndim  # dimension of the original key
 
             task = legate_runtime.create_auto_task(
-                self.library,
-                CuPyNumericOpCode.ADVANCED_INDEXING,
+                self.library, CuPyNumericOpCode.ADVANCED_INDEXING
             )
             task.add_output(out.base)
             p_rhs = task.add_input(rhs.base)
@@ -717,9 +684,7 @@ class DeferredArray(NumPyThunk):
                     out = cast(
                         DeferredArray,
                         runtime.create_empty_thunk(
-                            out_shape,
-                            out_dtype,
-                            inputs=[out],
+                            out_shape, out_dtype, inputs=[out]
                         ),
                     )
                     if not is_set:
@@ -732,10 +697,7 @@ class DeferredArray(NumPyThunk):
             return is_set, rhs, out, self
 
     def _create_indexing_array(
-        self,
-        key: Any,
-        is_set: bool = False,
-        set_value: Any | None = None,
+        self, key: Any, is_set: bool = False, set_value: Any | None = None
     ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
         is_bool_array, lhs, bool_key = self._has_single_boolean_array(
             key, is_set
@@ -825,8 +787,7 @@ class DeferredArray(NumPyThunk):
                     for i in range(k.ndim):
                         if k.shape[i] != store.shape[dim + i + shift]:
                             raise ValueError(
-                                "shape of boolean index did not match "
-                                "indexed array "
+                                "shape of boolean index did not match indexed array "
                             )
                     # in case of the mixed indices we all nonzero
                     # for the boolean array
@@ -921,9 +882,7 @@ class DeferredArray(NumPyThunk):
         else:
             shape = self.shape
         store = legate_runtime.create_store(
-            self.base.type,
-            shape=shape,
-            optimize_scalar=False,
+            self.base.type, shape=shape, optimize_scalar=False
         )
         thunk_copy = DeferredArray(base=store)
         thunk_copy.copy(self, deep=True)
@@ -933,12 +892,9 @@ class DeferredArray(NumPyThunk):
         # Check to see if this is advanced indexing or not
         if is_advanced_indexing(key):
             # Create the indexing array
-            (
-                copy_needed,
-                rhs,
-                index_array,
-                self,
-            ) = self._create_indexing_array(key)
+            (copy_needed, rhs, index_array, self) = (
+                self._create_indexing_array(key)
+            )
 
             if copy_needed:
                 if rhs.base.has_scalar_storage:
@@ -961,7 +917,9 @@ class DeferredArray(NumPyThunk):
                     )
 
                 legate_runtime.issue_gather(
-                    result.base, rhs.base, index_array.base  # type: ignore
+                    result.base,  # type: ignore[attr-defined]
+                    rhs.base,
+                    index_array.base,
                 )
 
             else:
@@ -996,12 +954,9 @@ class DeferredArray(NumPyThunk):
             rhs = rhs._copy_if_overlapping(self)
 
             # Create the indexing array
-            (
-                copy_needed,
-                lhs,
-                index_array,
-                self,
-            ) = self._create_indexing_array(key, True, rhs)
+            (copy_needed, lhs, index_array, self) = (
+                self._create_indexing_array(key, True, rhs)
+            )
 
             if not copy_needed:
                 return
@@ -1636,7 +1591,7 @@ class DeferredArray(NumPyThunk):
 
                 # TODO: better heuristics
                 def choose_2d_color_shape(
-                    shape: tuple[int, int]
+                    shape: tuple[int, int],
                 ) -> tuple[int, int]:
                     # 1M elements, we should probably even go larger
                     MIN_MATRIX_SIZE = 1 << 20
@@ -1660,7 +1615,7 @@ class DeferredArray(NumPyThunk):
 
                 # TODO: better heuristics?
                 def choose_batchsize(
-                    tilesize: tuple[int, int], k: int, itemsize: int
+                    tilesize: tuple[int, ...], k: int, itemsize: int
                 ) -> int:
                     # don't batch in case we only have 1 proc
                     if runtime.num_procs == 1:
@@ -1669,6 +1624,7 @@ class DeferredArray(NumPyThunk):
                     # default corresponds to 128MB (to store A and B tile)
                     from ..settings import settings
 
+                    assert len(tilesize) >= 2
                     max_elements_per_tile = (
                         settings.matmul_cache_size() // itemsize
                     )
@@ -1685,7 +1641,7 @@ class DeferredArray(NumPyThunk):
                 tile_shape = rounding_divide((m, n), initial_color_shape)
                 color_shape = rounding_divide((m, n), tile_shape)
                 k_batch_size = choose_batchsize(
-                    tile_shape, k, rhs1_thunk.dtype.itemsize  # type: ignore
+                    tile_shape, k, rhs1_thunk.dtype.itemsize
                 )
                 k_color = rounding_divide((k,), (k_batch_size,))
 
@@ -1728,10 +1684,7 @@ class DeferredArray(NumPyThunk):
             # If we used a single-precision intermediate accumulator, cast the
             # result back to half-precision.
             if rhs1_thunk.dtype == np.float16:
-                self.convert(
-                    lhs_thunk,
-                    warn=False,
-                )
+                self.convert(lhs_thunk, warn=False)
 
             return
 
@@ -1841,12 +1794,7 @@ class DeferredArray(NumPyThunk):
     # Create or extract a diagonal from a matrix
     @auto_convert("rhs")
     def _diag_helper(
-        self,
-        rhs: Any,
-        offset: int,
-        naxes: int,
-        extract: bool,
-        trace: bool,
+        self, rhs: Any, offset: int, naxes: int, extract: bool, trace: bool
     ) -> None:
         # fill output array with 0
         self.fill(np.array(0, dtype=self.dtype))
@@ -1938,9 +1886,7 @@ class DeferredArray(NumPyThunk):
         indirect = cast(
             DeferredArray,
             runtime.create_empty_thunk(
-                shape=indices.shape,
-                dtype=pointN_dtype,
-                inputs=[indices],
+                shape=indices.shape, dtype=pointN_dtype, inputs=[indices]
             ),
         )
 
@@ -2086,9 +2032,7 @@ class DeferredArray(NumPyThunk):
             out = cast(
                 DeferredArray,
                 runtime.create_empty_thunk(
-                    out_shape,
-                    dtype=self.base.type,
-                    inputs=[self],
+                    out_shape, dtype=self.base.type, inputs=[self]
                 ),
             )
             p_self = task.declare_partition()
@@ -2746,14 +2690,7 @@ class DeferredArray(NumPyThunk):
         else:
             raise NotImplementedError("type for random.bytes has to be uint8")
         self.bitgenerator_distribution(
-            handle,
-            generatorType,
-            seed,
-            flags,
-            distribution,
-            (),
-            (),
-            (),
+            handle, generatorType, seed, flags, distribution, (), (), ()
         )
 
     def bitgenerator_beta(
@@ -3001,14 +2938,7 @@ class DeferredArray(NumPyThunk):
             )
         intparams = (int(ngood), int(nbad), int(nsample))
         self.bitgenerator_distribution(
-            handle,
-            generatorType,
-            seed,
-            flags,
-            distribution,
-            intparams,
-            (),
-            (),
+            handle, generatorType, seed, flags, distribution, intparams, (), ()
         )
 
     def bitgenerator_vonmises(
@@ -3209,9 +3139,7 @@ class DeferredArray(NumPyThunk):
         self.random(RandGenCode.NORMAL)
 
     def random_integer(
-        self,
-        low: int | npt.NDArray[Any],
-        high: int | npt.NDArray[Any],
+        self, low: int | npt.NDArray[Any], high: int | npt.NDArray[Any]
     ) -> None:
         assert self.dtype.kind == "i"
         args = (Scalar(low, self.base.type), Scalar(high, self.base.type))
@@ -3384,9 +3312,7 @@ class DeferredArray(NumPyThunk):
         if argred:
             argred_dtype = runtime.get_argred_type(rhs_array.base.type)
             lhs_array = runtime.create_empty_thunk(
-                lhs_array.shape,
-                dtype=argred_dtype,
-                inputs=[self],
+                lhs_array.shape, dtype=argred_dtype, inputs=[self]
             )
 
         is_where = bool(where is not None)
@@ -3478,20 +3404,13 @@ class DeferredArray(NumPyThunk):
                 task.execute()
 
         if argred:
-            self.unary_op(
-                UnaryOpCode.GETARG,
-                lhs_array,
-                True,
-            )
+            self.unary_op(UnaryOpCode.GETARG, lhs_array, True)
 
     def isclose(
         self, rhs1: Any, rhs2: Any, rtol: float, atol: float, equal_nan: bool
     ) -> None:
         assert not equal_nan
-        args = (
-            Scalar(rtol, ty.float64),
-            Scalar(atol, ty.float64),
-        )
+        args = (Scalar(rtol, ty.float64), Scalar(atol, ty.float64))
         self.binary_op(BinaryOpCode.ISCLOSE, rhs1, rhs2, True, args)
 
     # Perform the binary operation and put the result in the lhs array
@@ -3860,9 +3779,7 @@ class DeferredArray(NumPyThunk):
         indirect = cast(
             DeferredArray,
             runtime.create_empty_thunk(
-                shape=(new_len,),
-                dtype=pointN_dtype,
-                inputs=[src],
+                shape=(new_len,), dtype=pointN_dtype, inputs=[src]
             ),
         )
 
@@ -3909,25 +3826,19 @@ class DeferredArray(NumPyThunk):
         task.execute()
 
     def stencil_hint(
-        self,
-        low_offsets: tuple[int, ...],
-        high_offsets: tuple[int, ...],
+        self, low_offsets: tuple[int, ...], high_offsets: tuple[int, ...]
     ) -> None:
         legate_runtime.prefetch_bloated_instances(
             self.base, low_offsets, high_offsets, False
         )
 
     @auto_convert("rhs1_thunk", "rhs2_thunk")
-    def ts_matmul(
-        self,
-        rhs1_thunk: Any,
-        rhs2_thunk: Any) -> Any:
-
+    def ts_matmul(self, rhs1_thunk: Any, rhs2_thunk: Any) -> Any:
         lhs_thunk: NumPyThunk = self
 
         # Clear output array
         lhs_thunk.fill(np.array(0, dtype=lhs_thunk.dtype))
-        lhs = lhs_thunk.base # type: ignore
+        lhs = lhs_thunk.base  # type: ignore
 
         rhs1 = rhs1_thunk.base
         rhs2 = rhs2_thunk.base

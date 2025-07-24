@@ -23,7 +23,7 @@ function(find_or_configure_cusolvermp)
     HEADER_NAMES  cusolverMp.h
     LIBRARY_NAMES cusolverMp
   )
-    
+
   rapids_find_package(CUSOLVERMP REQUIRED)
 endfunction()
 

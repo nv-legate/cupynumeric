@@ -106,11 +106,7 @@ def test_full(value):
         assert xf.dtype == yf.dtype
 
 
-SHAPES_NEGATIVE = [
-    -1,
-    (-1, 2, 3),
-    np.array([2, -3, 4]),
-]
+SHAPES_NEGATIVE = [-1, (-1, 2, 3), np.array([2, -3, 4])]
 
 
 class TestCreationErrors:

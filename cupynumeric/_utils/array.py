@@ -139,7 +139,7 @@ def local_task_array(obj: PhysicalArray | PhysicalStore) -> Any:
     if store.target in {StoreTarget.FBMEM, StoreTarget.ZCMEM}:
         # cupy is only a dependency for GPU packages -- but we should
         # only hit this import in case the store is located on a GPU
-        import cupy  # type: ignore
+        import cupy  # type: ignore [import-untyped,import-not-found,unused-ignore]
 
         return cupy.asarray(store)
     else:

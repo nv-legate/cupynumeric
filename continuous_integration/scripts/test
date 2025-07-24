@@ -31,7 +31,7 @@ setup_docs_env() {
 }
 
 setup_mypy_env() {
-    legate-conda-retry install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0" types-docutils
+    legate-conda-retry install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0" types-docutils scipy-stubs
 }
 
 setup_unit_env() {

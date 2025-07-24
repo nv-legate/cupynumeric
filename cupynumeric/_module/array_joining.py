@@ -29,9 +29,11 @@ from .creation_shape import empty, ones, zeros
 from .ssc_searching import flatnonzero
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_index
 else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy.core.multiarray import (  # type: ignore[no-redef]
+        normalize_axis_index,
+    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -93,9 +95,7 @@ def check_list_depth(arr: Any, prefix: NdShape = (0,)) -> int:
 
 
 def check_shape_with_axis(
-    inputs: list[ndarray],
-    func_name: str,
-    axis: int,
+    inputs: list[ndarray], func_name: str, axis: int
 ) -> None:
     ndim = inputs[0].ndim
     shape = inputs[0].shape
@@ -131,8 +131,7 @@ def check_shape_dtype_without_axis(
 
     if _builtin_any(ndim != inp.ndim for inp in inputs):
         raise ValueError(
-            f"All arguments to {func_name} "
-            "must have the same number of dimensions"
+            f"All arguments to {func_name} must have the same number of dimensions"
         )
 
     # Cast arrays with the passed arguments (dtype, casting)
@@ -423,7 +422,7 @@ def concatenate(
     try:
         eager_inputs = [_eager(x) for x in inputs]
         eager_out = _eager(out)
-        result =  np.concatenate(
+        result = np.concatenate(
             eager_inputs,
             axis=axis,
             out=eager_out,
@@ -442,8 +441,7 @@ def concatenate(
 
     if casting not in casting_kinds:
         raise ValueError(
-            "casting must be one of 'no', 'equiv', "
-            "'safe', 'same_kind', or 'unsafe'"
+            "casting must be one of 'no', 'equiv', 'safe', 'same_kind', or 'unsafe'"
         )
 
     # flatten arrays if axis == None and concatenate arrays on the first axis
@@ -462,12 +460,7 @@ def concatenate(
     check_shape_with_axis(cupynumeric_inputs, concatenate.__name__, axis)
 
     return _concatenate(
-        cupynumeric_inputs,
-        common_info,
-        axis,
-        out,
-        dtype,
-        casting,
+        cupynumeric_inputs, common_info, axis, out, dtype, casting
     )
 
 
@@ -566,12 +559,7 @@ def vstack(tup: Sequence[ndarray]) -> ndarray:
         reshaped, vstack.__name__
     )
     check_shape_with_axis(tup, vstack.__name__, 0)
-    return _concatenate(
-        tup,
-        common_info,
-        axis=0,
-        dtype=common_info.dtype,
-    )
+    return _concatenate(tup, common_info, axis=0, dtype=common_info.dtype)
 
 
 def hstack(tup: Sequence[ndarray]) -> ndarray:
@@ -669,12 +657,7 @@ def dstack(tup: Sequence[ndarray]) -> ndarray:
         reshaped, dstack.__name__
     )
     check_shape_with_axis(tup, dstack.__name__, 2)
-    return _concatenate(
-        tup,
-        common_info,
-        axis=2,
-        dtype=common_info.dtype,
-    )
+    return _concatenate(tup, common_info, axis=2, dtype=common_info.dtype)
 
 
 def column_stack(tup: Sequence[ndarray]) -> ndarray:
@@ -719,12 +702,7 @@ def column_stack(tup: Sequence[ndarray]) -> ndarray:
         tup = list(inp.reshape((inp.shape[0], 1)) for inp in tup)
         common_info.shape = tup[0].shape
     check_shape_with_axis(tup, column_stack.__name__, 1)
-    return _concatenate(
-        tup,
-        common_info,
-        axis=1,
-        dtype=common_info.dtype,
-    )
+    return _concatenate(tup, common_info, axis=1, dtype=common_info.dtype)
 
 
 row_stack = vstack
@@ -788,8 +766,7 @@ def insert(
         if isinstance(obj, ndarray) and obj.dtype == bool:
             if obj.ndim != 1:
                 raise ValueError(
-                    "boolean array argument obj to insert "
-                    "must be one dimensional"
+                    "boolean array argument obj to insert must be one dimensional"
                 )
             indices = flatnonzero(obj)
         else:
@@ -803,8 +780,7 @@ def insert(
         index = indices.item()
         if index < -N or index > N:
             raise IndexError(
-                f"index {obj} is out of bounds for axis {axis} "
-                f"with size {N}"
+                f"index {obj} is out of bounds for axis {axis} with size {N}"
             )
         if index < 0:
             index += N

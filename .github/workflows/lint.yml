@@ -1,0 +1,67 @@
+---
+name: Lint
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+      - "*branch-*"
+      - "main"
+
+defaults:
+  run:
+    shell: bash -eou pipefail {0}
+
+jobs:
+  pre-commit:
+    runs-on: linux-amd64-cpu4
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+    if: ${{ github.repository_owner == 'nv-legate' }}
+    permissions:
+      contents: read  # This is required for actions/checkout
+
+    name: pre-commit
+
+    steps:
+      - name: Checkout ${{ github.event.repository.name }} (= this repo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate requirements.txt
+        run: |
+          {
+            echo "shellcheck-py"
+            echo "cmakelang"
+            echo "rich"
+          } > requirements.txt
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: run pre-commit
+        uses: pre-commit/action@v3.0.1
+
+  lint-pass:
+    if: always()
+    needs:
+      - pre-commit
+    runs-on: linux-amd64-cpu4
+    timeout-minutes: 15
+    steps:
+      - name: Check job results
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

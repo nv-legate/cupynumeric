@@ -343,9 +343,7 @@ def zeros_like(
 
 
 def full(
-    shape: NdShapeLike,
-    value: Any,
-    dtype: npt.DTypeLike | None = None,
+    shape: NdShapeLike, value: Any, dtype: npt.DTypeLike | None = None
 ) -> ndarray:
     """
 

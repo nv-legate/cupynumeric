@@ -48,10 +48,7 @@ def test_3d_cross_product(array_a, array_b):
 
 @pytest.mark.parametrize(
     "array_a, array_b",
-    [
-        ([1, 2], [3, 4]),
-        ([[1, 2], [5, 6]], [[3, 4], [7, 8]]),
-    ],
+    [([1, 2], [3, 4]), ([[1, 2], [5, 6]], [[3, 4], [7, 8]])],
 )
 def test_2d_cross_product(array_a, array_b):
     a_num = num.array(array_a)
@@ -64,10 +61,7 @@ def test_2d_cross_product(array_a, array_b):
 
 @pytest.mark.parametrize(
     "array_a, array_b",
-    [
-        ([1, 2], [3, 4, 5]),
-        ([[1, 2], [7, 8]], [[3, 4, 5], [1, 0, 1]]),
-    ],
+    [([1, 2], [3, 4, 5]), ([[1, 2], [7, 8]], [[3, 4, 5], [1, 0, 1]])],
 )
 def test_mixed_2d_3d_vectors(array_a, array_b):
     a_num = num.array(array_a)
@@ -79,11 +73,7 @@ def test_mixed_2d_3d_vectors(array_a, array_b):
 
 
 @pytest.mark.parametrize(
-    "array_a, array_b",
-    [
-        ([1, 2, 3], [2, 4, 6]),
-        ([1, 2], [3, 6]),
-    ],
+    "array_a, array_b", [([1, 2, 3], [2, 4, 6]), ([1, 2], [3, 6])]
 )
 def test_parallel_vectors(array_a, array_b):
     a_num = num.array(array_a)
@@ -96,11 +86,7 @@ def test_parallel_vectors(array_a, array_b):
 
 @pytest.mark.parametrize(
     "array_a, array_b",
-    [
-        ([1, 0, 0], [0, 1, 0]),
-        ([0, 1, 0], [0, 0, 1]),
-        ([0, 0, 1], [1, 0, 0]),
-    ],
+    [([1, 0, 0], [0, 1, 0]), ([0, 1, 0], [0, 0, 1]), ([0, 0, 1], [1, 0, 0])],
 )
 def test_orthogonal_vectors(array_a, array_b):
     a_num = num.array(array_a)
@@ -112,11 +98,7 @@ def test_orthogonal_vectors(array_a, array_b):
 
 
 @pytest.mark.parametrize(
-    "array_a, array_b",
-    [
-        ([1, 2, 3], [-1, -2, -3]),
-        ([1, 2], [-1, -2]),
-    ],
+    "array_a, array_b", [([1, 2, 3], [-1, -2, -3]), ([1, 2], [-1, -2])]
 )
 def test_opposite_vectors(array_a, array_b):
     a_num = num.array(array_a)
@@ -196,10 +178,7 @@ def test_empty_arrays():
 
 @pytest.mark.parametrize(
     "array_a, array_b",
-    [
-        ([1, np.nan, 3], [4, 5, 6]),
-        ([1, np.inf, 3], [4, 5, 6]),
-    ],
+    [([1, np.nan, 3], [4, 5, 6]), ([1, np.inf, 3], [4, 5, 6])],
 )
 def test_nan_inf_values(array_a, array_b):
     a = num.array(array_a)
@@ -248,11 +227,7 @@ def test_dtypes(array_a, array_b, dtype_a, dtype_b):
 
 
 @pytest.mark.parametrize(
-    "array_a, array_b",
-    [
-        ([1], [2, 3]),
-        ([1, 2, 3, 4], [5, 6, 7]),
-    ],
+    "array_a, array_b", [([1], [2, 3]), ([1, 2, 3, 4], [5, 6, 7])]
 )
 def test_incompatible_dimensions(array_a, array_b):
     a = num.array(array_a)
@@ -326,11 +301,7 @@ def test_negative_axis_indices():
 
 
 @pytest.mark.parametrize(
-    "axis_name, axis_value, dim",
-    [
-        ("axisa", 5, 1),
-        ("axisb", -5, 1),
-    ],
+    "axis_name, axis_value, dim", [("axisa", 5, 1), ("axisb", -5, 1)]
 )
 def test_axis_validation(axis_name, axis_value, dim):
     a = mk_seq_array(np, (3,))

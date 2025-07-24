@@ -42,3 +42,7 @@ cupynumeric/install_info.py
 /_cmake_test_compile
 .ipynb_checkpoints
 .legate-test-last-failed
+compile_commands.json
+reconfigure-*
+*-arch/
+scripts/get_cupynumeric_arch.py

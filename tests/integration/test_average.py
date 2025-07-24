@@ -57,11 +57,7 @@ def test_full_weights(axis):
     assert allclose(out_num, out_num_no_scl)
 
 
-single_dimension_weights = [
-    [3, 4],
-    [1, 2],
-    [4, 1, 2, 1],
-]
+single_dimension_weights = [[3, 4], [1, 2], [4, 1, 2, 1]]
 single_dimension_axis = [0, 1, 2]
 
 

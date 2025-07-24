@@ -44,14 +44,7 @@ def _maybe_loose_atol(op, dtype):
     return {}
 
 
-complex_data = [
-    1 + 1j,
-    -1 - 1j,
-    5 + 1j,
-    1 + 0.5j,
-    2.0 + 1.4j,
-    -1 + 2j,
-]
+complex_data = [1 + 1j, -1 - 1j, 5 + 1j, 1 + 0.5j, 2.0 + 1.4j, -1 + 2j]
 
 
 def deterministic_op_test(func):
@@ -197,10 +190,7 @@ def check_math_ops(op, **kwargs):
     check_op_input(op, astype="B", **kwargs)
     check_op_input(op, randint=True, a_min=1, a_max=10, **kwargs)
     check_op_input(op, shape=(1,), **kwargs)
-    no_complex_test_list = (
-        "fabs",
-        "logical_not",
-    )
+    no_complex_test_list = ("fabs", "logical_not")
     numpy_version = Version(np.__version__)
     # sign has an incorrect implementation for complex
     # numbers in numpy <2.0
@@ -248,12 +238,7 @@ def test_special_math_ops(op, kwargs):
     check_math_ops(op, **kwargs)
 
 
-log_ops = (
-    "log",
-    "log10",
-    "log1p",
-    "log2",
-)
+log_ops = ("log", "log10", "log1p", "log2")
 
 
 @pytest.mark.parametrize("op", log_ops)
@@ -336,17 +321,11 @@ def test_trig_ops(op):
     check_op(op, fp16_in, **_maybe_loose_atol(op, "e"))
     check_op(op, np.array(np.random.uniform(low=-1, high=1)))
     # check with complex data type
-    if op not in (
-        "deg2rad",
-        "rad2deg",
-    ):
+    if op not in ("deg2rad", "rad2deg"):
         check_op_input(op, complex_type=True, out_dtype=np.complex128)
 
 
-arc_hyp_trig_ops = (
-    "arccosh",
-    "arcsinh",
-)
+arc_hyp_trig_ops = ("arccosh", "arcsinh")
 
 
 @pytest.mark.parametrize("op", arc_hyp_trig_ops)
@@ -440,16 +419,10 @@ if __name__ == "__main__":
         help="the name of operation to test",
     )
     parser.add_argument(
-        "--inputs",
-        dest="inputs",
-        default="1",
-        help="input data",
+        "--inputs", dest="inputs", default="1", help="input data"
     )
     parser.add_argument(
-        "--dtypes",
-        dest="dtypes",
-        default="l",
-        help="input data",
+        "--dtypes", dest="dtypes", default="l", help="input data"
     )
     args, extra = parser.parse_known_args()
 

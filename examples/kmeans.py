@@ -133,11 +133,7 @@ def run_kmeans(C, D, T, I, N, S, benchmarking):  # noqa: E741
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--centers",
-        type=int,
-        default=10,
-        dest="C",
-        help="number of centroids",
+        "--centers", type=int, default=10, dest="C", help="number of centroids"
     )
     parser.add_argument(
         "-d",

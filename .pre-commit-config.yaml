@@ -1,51 +1,79 @@
+---
 repos:
-    - repo: https://github.com/pre-commit/mirrors-mypy
-      rev: 'v1.5.1'
-      hooks:
-        - id: mypy
-          language: system
-          pass_filenames: false
-          args: ['cupynumeric']
-    - repo: https://github.com/PyCQA/isort
-      rev: 5.12.0
-      hooks:
-        - id: isort
-    - repo: https://github.com/psf/black
-      rev: 23.9.1
-      hooks:
-        - id: black
-          args: ["--target-version", "py310"]
-    - repo: https://github.com/PyCQA/flake8
-      rev: 6.1.0
-      hooks:
-        - id: flake8
-    - repo: https://github.com/pre-commit/mirrors-clang-format
-      rev: 'v16.0.6'  # Use the sha / tag you want to point at
-      hooks:
-        - id: clang-format
-          files: \.(cu|cuh|h|cc|inl)$
-          types_or: []
-    - repo: local
-      hooks:
-        - id: enforce-boilerplate
-          name: Enforce boilerplate
-          description: Make sure tests include required boilerplate
-          entry: python scripts/hooks/enforce_boilerplate.py
-          language: python
-          pass_filenames: false
-        - id: legate-defined
-          name: legate-defined
-          description: 'Find uses of ifdef LEGATE_ that should be using LegateDefined()'
-          entry: ./scripts/hooks/legate_defined.sh
-          language: script
-          'types_or': [c++, c, cuda]
-          require_serial: false
-          stages: [pre-commit]
-          exclude: '^src/cupynumeric/cupynumeric_c\.h$'
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        types: [yaml]
+        args: ['-c', './scripts/pre-commit/yamllint.yml']
+        exclude: 'meta\.yaml$'
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-json  # checks that all json files have proper syntax
+      - id: check-toml  # checks that all toml files have proper syntax
+      - id: end-of-file-fixer  # check all files end in a newline
+        # handled by clang-format
+        exclude_types: [c, c++, cuda]
+      - id: pretty-format-json
+        args: ['--autofix', '--indent=4']
+      - id: trailing-whitespace  # remove trailing whitespace
+        # don't mess up diff files
+        exclude: '^src/cmake/patches/.*\.diff$'
+        # handled by clang-format
+        exclude_types: [c, c++, cuda]
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.4
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args: ["--config=./pyproject.toml", "--fix"]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.17.0'
+    hooks:
+      - id: mypy
+        pass_filenames: false
+        args: ['cupynumeric']
+        additional_dependencies: [
+          legate,
+          jinja2,
+          docutils,
+          types-docutils,
+          sphinx,
+          numpy,
+          scipy-stubs,
+          opt_einsum,
+        ]
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: 'v16.0.6'  # Use the sha / tag you want to point at
+    hooks:
+      - id: clang-format
+        files: \.(cu|cuh|h|cc|inl)$
+        types_or: []
+  - repo: local
+    hooks:
+      - id: enforce-boilerplate
+        name: Enforce boilerplate
+        description: Make sure tests include required boilerplate
+        entry: python scripts/hooks/enforce_boilerplate.py
+        language: python
+        pass_filenames: false
+      - id: legate-defined
+        name: legate-defined
+        description: 'Find uses of ifdef LEGATE_ that should be using LegateDefined()'
+        entry: ./scripts/hooks/legate_defined.sh
+        language: script
+        'types_or': [c++, c, cuda]
+        require_serial: false
+        stages: [pre-commit]
+        exclude: '^src/cupynumeric/cupynumeric_c\.h$'
 
 ci:
-    skip: [mypy]
-    autoupdate_schedule: quarterly
+  autoupdate_schedule: quarterly
 
 default_language_version:
-    python: python3
+  python: python3

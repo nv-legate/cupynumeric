@@ -96,17 +96,7 @@ class TestDiagIndicesFromErrors:
         with pytest.raises(ValueError, match=msg):
             num.diag_indices_from(a)
 
-    @pytest.mark.parametrize(
-        "size",
-        [
-            (
-                5,
-                2,
-            ),
-            (5, 0, 0),
-        ],
-        ids=str,
-    )
+    @pytest.mark.parametrize("size", [(5, 2), (5, 0, 0)], ids=str)
     def test_unequal_length(self, size):
         a = np.ones(size, dtype=int)
         msg = "All dimensions of input must be of equal length"

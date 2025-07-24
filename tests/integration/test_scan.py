@@ -43,9 +43,9 @@ def _gen_array(n0, shape, dt, axis, outtype):
         A[(1,) * len(shape)] = np.nan
     elif n0 == "second_half":
         # second from last element along all axes is a NAN
-        A[
-            tuple(map(lambda i, j: i - j, A.shape, (2,) * len(A.shape)))
-        ] = np.nan
+        A[tuple(map(lambda i, j: i - j, A.shape, (2,) * len(A.shape)))] = (
+            np.nan
+        )
     if outtype is None:
         B = None
         C = None
@@ -91,26 +91,10 @@ def _run_tests(op, n0, shape, dt, axis, out0, outtype):
         assert False
 
 
-ops = [
-    "cumsum",
-    "cumprod",
-    "nancumsum",
-    "nancumprod",
-]
-ops_nan = [
-    "nancumsum",
-    "nancumprod",
-]
-shapes = [
-    [100],
-    [4, 25],
-    [4, 5, 6],
-]
-axes = [
-    None,
-    0,
-    -1,
-]
+ops = ["cumsum", "cumprod", "nancumsum", "nancumprod"]
+ops_nan = ["nancumsum", "nancumprod"]
+shapes = [[100], [4, 25], [4, 5, 6]]
+axes = [None, 0, -1]
 dtypes = [
     np.int16,
     np.int32,
@@ -120,16 +104,8 @@ dtypes = [
     np.complex64,
     np.complex128,
 ]
-dtypes_simplified = [
-    np.int32,
-    np.float32,
-    np.complex64,
-]
-n0s = [
-    None,
-    "first_half",
-    "second_half",
-]
+dtypes_simplified = [np.int32, np.float32, np.complex64]
+n0s = [None, "first_half", "second_half"]
 
 
 @pytest.mark.parametrize(

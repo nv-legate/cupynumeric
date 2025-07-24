@@ -20,15 +20,9 @@ from utils.utils import MAX_DIM_RANGE
 
 import cupynumeric as num
 
-FLOAT = (
-    np.float32,
-    np.float64,
-)
+FLOAT = (np.float32, np.float64)
 
-COMPLEX = (
-    np.complex64,
-    np.complex128,
-)
+COMPLEX = (np.complex64, np.complex128)
 
 
 @pytest.mark.parametrize("decimals", range(-5, 5))

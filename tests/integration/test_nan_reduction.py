@@ -291,7 +291,7 @@ class TestNanReductions:
     @pytest.mark.parametrize("dtype", DTYPE, ids=to_dtype)
     def test_dtype_nanprod(self, dtype) -> None:
         in_np = np.arange(1, 10)
-        if dtype == bool:
+        if dtype is bool:
             in_np %= 2
         in_np = in_np.astype(dtype)
         out_np = np.nanprod(in_np)
@@ -302,7 +302,7 @@ class TestNanReductions:
     @pytest.mark.parametrize("dtype", DTYPE, ids=to_dtype)
     def test_dtype_nansum(self, dtype) -> None:
         in_np = np.arange(1, 10)
-        if dtype == bool:
+        if dtype is bool:
             in_np %= 2
         in_np = in_np.astype(dtype)
         out_np = np.nansum(in_np)

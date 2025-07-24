@@ -43,12 +43,7 @@ def test_tri_m(m):
     check_module_function("tri", [N], {"M": m}, print_msg)
 
 
-DTYPES = (
-    int,
-    float,
-    bool,
-    pytest.param(None, marks=pytest.mark.xfail),
-)
+DTYPES = (int, float, bool, pytest.param(None, marks=pytest.mark.xfail))
 
 
 @pytest.mark.parametrize("dtype", DTYPES, ids=str)

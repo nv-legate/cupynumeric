@@ -63,12 +63,7 @@ SIZES_VSPLIT = [
     (DIM, DIM, DIM),
 ]
 
-SIZES_HSPLIT = [
-    (DIM, 1),
-    (DIM, DIM),
-    (DIM, 1, 1),
-    (DIM, DIM, DIM),
-]
+SIZES_HSPLIT = [(DIM, 1), (DIM, DIM), (DIM, 1, 1), (DIM, DIM, DIM)]
 
 
 SIZES_DSPLIT = [

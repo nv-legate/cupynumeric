@@ -32,9 +32,7 @@ if TYPE_CHECKING:
 
 class BitGenerator:
     def __init__(
-        self,
-        seed: int | None = None,
-        forceBuild: bool = False,
+        self, seed: int | None = None, forceBuild: bool = False
     ) -> None:
         """
         BitGenerator(seed=None)
@@ -71,8 +69,7 @@ class BitGenerator:
         )
 
     @abstractproperty
-    def generatorType(self) -> BitGeneratorType:
-        ...
+    def generatorType(self) -> BitGeneratorType: ...
 
     def __del__(self) -> None:
         if self.handle != 0:
@@ -364,10 +361,7 @@ class BitGenerator:
             length = (length,)
         res = ndarray(length, dtype=np.dtype(np.uint8))
         res._thunk.bitgenerator_bytes(
-            self.handle,
-            self.generatorType,
-            self.seed,
-            self.flags,
+            self.handle, self.generatorType, self.seed, self.flags
         )
         return res
 

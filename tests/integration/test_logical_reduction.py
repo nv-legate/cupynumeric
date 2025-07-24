@@ -37,14 +37,7 @@ def test_logical_reductions(axis):
 
 
 @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
-@pytest.mark.parametrize(
-    "axis",
-    [
-        None,
-        0,
-        -1,
-    ],
-)
+@pytest.mark.parametrize("axis", [None, 0, -1])
 def test_logical_reductions_over_cupynumeric_arrays(ndim, axis):
     shape = (5,) * ndim
     np_arr = mk_seq_array(np, shape)

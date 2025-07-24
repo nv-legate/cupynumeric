@@ -73,12 +73,7 @@ def compare_array_and_print_results(a, b, print_msg, check_type=True):
 
 
 def check_array_method(
-    ndarray_np,
-    fn,
-    args,
-    kwargs,
-    print_msg,
-    check_type=True,
+    ndarray_np, fn, args, kwargs, print_msg, check_type=True
 ):
     """
     Run np_array.func and num_array.func respectively and compare results
@@ -90,13 +85,7 @@ def check_array_method(
     compare_array_and_print_results(a, b, print_msg, check_type=check_type)
 
 
-def check_module_function(
-    fn,
-    args,
-    kwargs,
-    print_msg,
-    check_type=True,
-):
+def check_module_function(fn, args, kwargs, print_msg, check_type=True):
     """
     Run np.func and num.func respectively and compare results
     """

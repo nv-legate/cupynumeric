@@ -33,16 +33,8 @@ def test_interpolation_x():
         [-1.0 / 12, 7.0 / 12, 7.0 / 12, -1.0 / 12], dtype=num.float64
     ).reshape(1, 1, 4)
     state = num.arange(nelements).astype(num.float64).reshape(shape)
-    out_legate = num.convolve(
-        state[:, 2 : nz + 2, :],
-        kernel,
-        mode="same",
-    )
-    out_scipy = signal.convolve(
-        state[:, 2 : nz + 2, :],
-        kernel,
-        mode="same",
-    )
+    out_legate = num.convolve(state[:, 2 : nz + 2, :], kernel, mode="same")
+    out_scipy = signal.convolve(state[:, 2 : nz + 2, :], kernel, mode="same")
 
     assert allclose(out_scipy, out_legate)
 
@@ -61,16 +53,8 @@ def test_interpolation_z():
         [-1.0 / 12, 7.0 / 12, 7.0 / 12, -1.0 / 12], dtype=num.float64
     ).reshape(1, 4, 1)
     state = num.arange(nelements).astype(num.float64).reshape(shape)
-    out_legate = num.convolve(
-        state[:, :, 2 : nx + 2],
-        kernel,
-        mode="same",
-    )
-    out_scipy = signal.convolve(
-        state[:, :, 2 : nx + 2],
-        kernel,
-        mode="same",
-    )
+    out_legate = num.convolve(state[:, :, 2 : nx + 2], kernel, mode="same")
+    out_scipy = signal.convolve(state[:, :, 2 : nx + 2], kernel, mode="same")
 
     assert allclose(out_scipy, out_legate)
 

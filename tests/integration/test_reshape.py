@@ -48,16 +48,12 @@ class TestSquare:
     def test_1d(self):
         a = num.arange(100).reshape(10, 10)
         assert np.array_equal(
-            num.reshape(a, (100,)),
-            np.reshape(self.anp, (100,)),
+            num.reshape(a, (100,)), np.reshape(self.anp, (100,))
         )
 
     def test_ravel(self):
         a = num.arange(100).reshape(10, 10)
-        assert np.array_equal(
-            num.ravel(a),
-            np.ravel(self.anp),
-        )
+        assert np.array_equal(num.ravel(a), np.ravel(self.anp))
 
         i = num.array(
             [
@@ -136,15 +132,13 @@ class TestRect:
         # In cuPyNumeric, raises TypeError: 'NoneType' object is not iterable
         a = num.array(self.anp)
         assert np.array_equal(
-            num.reshape(a, shape),
-            np.reshape(self.anp, shape),
+            num.reshape(a, shape), np.reshape(self.anp, shape)
         )
 
     def test_1d(self):
         a = num.array(self.anp)
         assert np.array_equal(
-            num.reshape(a, (200,)),
-            np.reshape(self.anp, (200,)),
+            num.reshape(a, (200,)), np.reshape(self.anp, (200,))
         )
 
     @pytest.mark.parametrize(
@@ -158,8 +152,7 @@ class TestRect:
         # order 'K' is not permitted for reshaping
         a = num.array(self.anp)
         assert np.array_equal(
-            num.ravel(a, order=order),
-            np.ravel(self.anp, order=order),
+            num.ravel(a, order=order), np.ravel(self.anp, order=order)
         )
 
     @pytest.mark.xfail
@@ -167,20 +160,14 @@ class TestRect:
         # In Numpy, pass and returns [None]
         # In cuPyNumeric, raises AttributeError:
         # 'NoneType' object has no attribute 'ravel'
-        assert np.array_equal(
-            num.ravel(None),
-            np.ravel(None),
-        )
+        assert np.array_equal(num.ravel(None), np.ravel(None))
 
 
 @pytest.mark.parametrize("shape", (0, (0,), (1, 0), (0, 1, 1)), ids=str)
 def test_reshape_empty_array(shape):
     a = num.arange(0).reshape(0, 1)
     anp = np.arange(0).reshape(0, 1)
-    assert np.array_equal(
-        num.reshape(a, shape),
-        np.reshape(anp, shape),
-    )
+    assert np.array_equal(num.reshape(a, shape), np.reshape(anp, shape))
 
 
 def test_reshape_same_shape():

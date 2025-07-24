@@ -18,7 +18,6 @@
 import argparse
 
 import numpy as np
-
 from benchmark import parse_args, run_benchmark
 
 
@@ -31,12 +30,7 @@ def check_quantiles(package, a, q, axis, str_m, q_out):
         arr = a.__array__()
         qs_arr = q.__array__()
 
-    np_q_out = np.quantile(
-        arr,
-        qs_arr,
-        axis=axis,
-        method=str_m,
-    )
+    np_q_out = np.quantile(arr, qs_arr, axis=axis, method=str_m)
 
     print("Checking result...")
     if num.allclose(np_q_out, q_out, atol=eps):
@@ -82,23 +76,11 @@ def run_quantiles(
     q = np.array([0.0, 0.37, 0.42, 0.5, 0.67, 0.83, 0.99, 1.0])
 
     timer.start()
-    q_out = num.quantile(
-        a,
-        q,
-        axis=axis,
-        method=str_method,
-    )
+    q_out = num.quantile(a, q, axis=axis, method=str_method)
     total = timer.stop()
 
     if perform_check:
-        check_quantiles(
-            package,
-            a,
-            q,
-            axis,
-            str_method,
-            q_out,
-        )
+        check_quantiles(package, a, q, axis, str_method, q_out)
     else:
         # do we need to synchronize?
         assert True

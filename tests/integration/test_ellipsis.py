@@ -22,14 +22,7 @@ import cupynumeric as cn
 # Basic functionality
 
 
-@pytest.mark.parametrize(
-    "shape",
-    [
-        (3,),
-        (3, 3),
-        (3, 3, 3),
-    ],
-)
+@pytest.mark.parametrize("shape", [(3,), (3, 3), (3, 3, 3)])
 def test_ellipsis_multiply(shape):
     a = mk_seq_array(cn, shape)
     b = mk_seq_array(cn, shape)

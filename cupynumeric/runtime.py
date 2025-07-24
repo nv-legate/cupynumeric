@@ -58,8 +58,7 @@ def thunk_from_scalar(
     from ._thunk.deferred import DeferredArray
 
     store = legate_runtime.create_store_from_scalar(
-        Scalar(bytes, to_core_type(dtype)),
-        shape=shape,
+        Scalar(bytes, to_core_type(dtype)), shape=shape
     )
     return DeferredArray(store)
 
@@ -126,9 +125,7 @@ class Runtime(object):
 
     def _load_cudalibs(self) -> None:
         task = legate_runtime.create_manual_task(
-            self.library,
-            CuPyNumericOpCode.LOAD_CUDALIBS,
-            [self.num_gpus],
+            self.library, CuPyNumericOpCode.LOAD_CUDALIBS, [self.num_gpus]
         )
         task.execute()
         legate_runtime.issue_execution_fence(block=True)
@@ -203,9 +200,7 @@ class Runtime(object):
         self.current_random_bitgenid = self.current_random_bitgenid + 1
         if forceCreate:
             task = legate_runtime.create_manual_task(
-                self.library,
-                CuPyNumericOpCode.BITGENERATOR,
-                (self.num_procs,),
+                self.library, CuPyNumericOpCode.BITGENERATOR, (self.num_procs,)
             )
             self.bitgenerator_populate_task(
                 task,
@@ -233,9 +228,7 @@ class Runtime(object):
             # with explicit destruction, do schedule a task
             legate_runtime.issue_execution_fence()
             task = legate_runtime.create_manual_task(
-                self.library,
-                CuPyNumericOpCode.BITGENERATOR,
-                (self.num_procs,),
+                self.library, CuPyNumericOpCode.BITGENERATOR, (self.num_procs,)
             )
             self.bitgenerator_populate_task(
                 task, BitGeneratorOperation.DESTROY, handle
@@ -255,10 +248,7 @@ class Runtime(object):
         return result
 
     def get_numpy_thunk(
-        self,
-        obj: Any,
-        share: bool = False,
-        dtype: np.dtype[Any] | None = None,
+        self, obj: Any, share: bool = False, dtype: np.dtype[Any] | None = None
     ) -> NumPyThunk:
         # Check to see if this object implements the Legate data interface
         if hasattr(obj, "__legate_data_interface__"):
@@ -413,10 +403,7 @@ class Runtime(object):
                     + "transforms of their parent array."
                 )
             parent_thunk = self.find_or_create_array_thunk(
-                array.base,
-                transfer,
-                read_only,
-                defer,
+                array.base, transfer, read_only, defer
             )
             return parent_thunk.get_item(key)
 
@@ -485,9 +472,7 @@ class Runtime(object):
         return DeferredArray(store)
 
     def create_eager_thunk(
-        self,
-        shape: NdShape,
-        dtype: np.dtype[Any],
+        self, shape: NdShape, dtype: np.dtype[Any]
     ) -> NumPyThunk:
         from ._thunk.eager import EagerArray
 
@@ -568,9 +553,7 @@ class Runtime(object):
             raise RuntimeError("invalid array type")
 
     def to_deferred_array(
-        self,
-        array: NumPyThunk,
-        read_only: bool,
+        self, array: NumPyThunk, read_only: bool
     ) -> DeferredArray:
         if self.is_deferred_array(array):
             return array

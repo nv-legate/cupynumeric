@@ -64,8 +64,7 @@ def test_multidim_index_error(arr_shape, multidim_indices):
     multidim_indices = np.array(multidim_indices)
     multidim_indices_num = num.array(multidim_indices)
     message = (
-        "index array argument obj to insert must be one dimensional"
-        " or scalar"
+        "index array argument obj to insert must be one dimensional or scalar"
     )
     with pytest.raises(ValueError, match=message):
         num.insert(arr_num, multidim_indices_num, 99)
@@ -88,12 +87,7 @@ def test_single_index_out_of_bounds(idx):
 
 
 @pytest.mark.parametrize(
-    "arr_shape, idx",
-    [
-        ((1,), -1),
-        ((2, 3), -2),
-        ((2, 2, 2), -1),
-    ],
+    "arr_shape, idx", [((1,), -1), ((2, 3), -2), ((2, 2, 2), -1)]
 )
 def test_negative_index(arr_shape, idx):
     arr_np = mk_seq_array(np, arr_shape)

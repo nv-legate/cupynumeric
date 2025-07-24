@@ -97,31 +97,20 @@ def check_api(a=None):
         kth = shape[i] // 2
         print(f"argpartition axis {i}")
         assert_argpartition(
-            num.argpartition(a_num, kth, axis=i),
-            a_num,
-            kth,
-            i,
+            num.argpartition(a_num, kth, axis=i), a_num, kth, i
         )
 
     # flatten
     print("argpartition flattened")
     kth = volume // 2
     assert_argpartition(
-        num.argpartition(a_num, kth, axis=None),
-        a_num.flatten(),
-        kth,
-        0,
+        num.argpartition(a_num, kth, axis=None), a_num.flatten(), kth, 0
     )
 
     # nd.argpartition -- no change to array
     kth = shape[a.ndim - 1] // 2
     copy_a_num = a_num.copy()
-    assert_argpartition(
-        copy_a_num.argpartition(kth),
-        a_num,
-        kth,
-        a.ndim - 1,
-    )
+    assert_argpartition(copy_a_num.argpartition(kth), a_num, kth, a.ndim - 1)
     assert allclose(copy_a_num, copy_a_num)
 
 

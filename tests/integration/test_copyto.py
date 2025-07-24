@@ -214,15 +214,9 @@ def test_no_casting():
     r"\('int32'\) to dtype\('float32'\) "
     r"according to the rule 'no'"
 
-    with pytest.raises(
-        TypeError,
-        match=message,
-    ):
+    with pytest.raises(TypeError, match=message):
         np.copyto(dst, src, casting="no")
-    with pytest.raises(
-        TypeError,
-        match=message,
-    ):
+    with pytest.raises(TypeError, match=message):
         num.copyto(num_dst, num_src, casting="no")
 
 

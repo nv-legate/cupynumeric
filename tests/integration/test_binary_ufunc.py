@@ -214,11 +214,7 @@ def test_trig_ops_scalar_scalar(op, scalar1, scalar2) -> None:
     check_op(op, (scalar1, scalar2))
 
 
-power_ops = [
-    "**",
-    "power",
-    "float_power",
-]
+power_ops = ["**", "power", "float_power"]
 
 
 @pytest.mark.parametrize("op", power_ops)
@@ -247,10 +243,7 @@ def test_power_ops_scalar_scalar(op) -> None:
     check_op(op, (scalars[4], scalars[0]))
 
 
-div_ops = [
-    "%",
-    "remainder",
-]
+div_ops = ["%", "remainder"]
 
 
 @pytest.mark.parametrize("op", div_ops)
@@ -444,10 +437,7 @@ def test_array_reduce_ex() -> None:
     assert isinstance(state, tuple)
 
 
-@pytest.mark.skipif(
-    EAGER_TEST,
-    reason="Eager mode did not raise TypeError",
-)
+@pytest.mark.skipif(EAGER_TEST, reason="Eager mode did not raise TypeError")
 def test_rmatmul_typeerror() -> None:
     a = num.array([[1, 2], [3, 4]])
     b = np.array([[1, 0], [0, 1]])
@@ -484,16 +474,10 @@ if __name__ == "__main__":
         help="the name of operation to test",
     )
     parser.add_argument(
-        "--inputs",
-        dest="inputs",
-        default="1:1",
-        help="input data",
+        "--inputs", dest="inputs", default="1:1", help="input data"
     )
     parser.add_argument(
-        "--dtypes",
-        dest="dtypes",
-        default="l:l",
-        help="input data",
+        "--dtypes", dest="dtypes", default="l:l", help="input data"
     )
     args, extra = parser.parse_known_args()
 

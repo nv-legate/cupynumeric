@@ -62,9 +62,7 @@ def transpose_copy(
     p_output: LogicalStorePartition,
 ) -> None:
     task = legate_runtime.create_manual_task(
-        library,
-        CuPyNumericOpCode.TRANSPOSE_COPY_2D,
-        launch_domain,
+        library, CuPyNumericOpCode.TRANSPOSE_COPY_2D, launch_domain
     )
     task.add_output(p_output)
     task.add_input(p_input)
@@ -189,9 +187,8 @@ def choose_color_shape(
     num_tiles = runtime.num_procs
     max_num_tiles = runtime.num_procs * 4
     while (
-        (extent + num_tiles - 1) // num_tiles > MIN_CHOLESKY_TILE_SIZE
-        and num_tiles * 2 <= max_num_tiles
-    ):
+        extent + num_tiles - 1
+    ) // num_tiles > MIN_CHOLESKY_TILE_SIZE and num_tiles * 2 <= max_num_tiles:
         num_tiles *= 2
 
     return (num_tiles, num_tiles)

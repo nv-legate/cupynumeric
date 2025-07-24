@@ -15,13 +15,11 @@
 
 import numpy as np
 import pytest
-import scipy as sp
 from utils.comparisons import allclose
 
 import cupynumeric as num
 
-
-MN_SIZES = ((25, 5), )
+MN_SIZES = ((25, 5),)
 
 RTOL = {
     np.dtype(np.float32): 1e-1,
@@ -41,10 +39,10 @@ ATOL = {
 # make random real full column rank mxn, m>n matrix:
 #
 def make_random_matrix(
-        m: int, n: int, scale: float = 10.0,
-        dtype_=np.dtype("float64") ) -> np.ndarray:
+    m: int, n: int, scale: float = 10.0, dtype_=np.dtype("float64")
+) -> np.ndarray:
     np.random.seed(6174)
-    
+
     mat = scale * np.random.rand(m, n)
 
     mat = mat.astype(dtype_)
@@ -52,13 +50,13 @@ def make_random_matrix(
     # strictly diagonally dominant:
     #
     for i in range(n):
-        mat[i, i] = 1.0 + np.sum(np.abs(mat[i,:]))
+        mat[i, i] = 1.0 + np.sum(np.abs(mat[i, :]))
 
     return mat
 
 
 def check_decreasing(a: np.ndarray) -> bool:
-    return bool(np.all([a[j] > a[j+1] for j in range(0, a.size-1)]))
+    return bool(np.all([a[j] > a[j + 1] for j in range(0, a.size - 1)]))
 
 
 @pytest.mark.parametrize("shapes", MN_SIZES)
@@ -71,7 +69,7 @@ def test_tssvd_ordered(shapes: (int, int), scale: float):
 
     u, svals, vt = num.linalg.tssvd(a)
 
-    assert check_decreasing(svals) == True
+    assert check_decreasing(svals)
 
 
 @pytest.mark.parametrize("shapes", MN_SIZES)
@@ -91,20 +89,16 @@ def test_tssvd_vs_svd(shapes: (int, int), scale: float):
     rtol = RTOL[a.dtype]
     atol = ATOL[a.dtype]
 
-    assert allclose(
-        sp, svals, rtol=rtol, atol=atol, check_dtype=False
-    )
+    assert allclose(sp, svals, rtol=rtol, atol=atol, check_dtype=False)
 
     a1 = num.matmul(u, S)
     ap = num.matmul(a1, vt)
-    
-    assert allclose(
-        ap, a, rtol=rtol, atol=atol, check_dtype=False
-    )
 
-    print("svals:\n%s\n"%(str(svals)))
-    print("U:\n%s\n%s\n"%(str(u), str(up)))
-    print("V.T:\n%s\n%s\n"%(str(vt), str(vtp)))
+    assert allclose(ap, a, rtol=rtol, atol=atol, check_dtype=False)
+
+    print("svals:\n%s\n" % (str(svals)))
+    print("U:\n%s\n%s\n" % (str(u), str(up)))
+    print("V.T:\n%s\n%s\n" % (str(vt), str(vtp)))
 
     # for _distinct_ singular values, the orthonormal
     # matrices U,V should be "equal", in absolute value;

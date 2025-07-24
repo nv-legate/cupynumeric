@@ -35,9 +35,9 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 if is_np2:
-    from numpy.exceptions import AxisError  # type: ignore
+    from numpy.exceptions import AxisError
 else:
-    from numpy import AxisError  # type: ignore
+    from numpy import AxisError  # type: ignore[no-redef,attr-defined]
 
 _builtin_max = max
 
@@ -425,9 +425,7 @@ def logspace(
 
     if any(base < 0):
         warnings.warn(
-            "invalid value encountered in power",
-            RuntimeWarning,
-            stacklevel=2,
+            "invalid value encountered in power", RuntimeWarning, stacklevel=2
         )
 
     # Validate axis parameter for scalar inputs
@@ -448,9 +446,7 @@ def logspace(
 
     if np.any(isfinite(base) & isfinite(y) & isinf(result)):
         warnings.warn(
-            "overflow encountered in power",
-            RuntimeWarning,
-            stacklevel=2,
+            "overflow encountered in power", RuntimeWarning, stacklevel=2
         )
 
     # Handle dtype conversion

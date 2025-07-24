@@ -20,9 +20,11 @@ from .._array.util import add_boilerplate
 from .._utils import is_np2
 
 if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple  # type: ignore
+    from numpy.lib.array_utils import normalize_axis_tuple
 else:
-    from numpy.core.numeric import normalize_axis_tuple  # type: ignore
+    from numpy.core.numeric import (  # type: ignore[no-redef]
+        normalize_axis_tuple,
+    )
 
 
 if TYPE_CHECKING:
@@ -127,8 +129,7 @@ def moveaxis(
     destination = normalize_axis_tuple(destination, a.ndim, "destination")
     if len(source) != len(destination):
         raise ValueError(
-            "`source` and `destination` arguments must have the same number "
-            "of elements"
+            "`source` and `destination` arguments must have the same number of elements"
         )
     order = [n for n in range(a.ndim) if n not in source]
     for dest, src in sorted(zip(destination, source)):

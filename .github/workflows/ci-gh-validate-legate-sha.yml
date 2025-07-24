@@ -1,3 +1,4 @@
+---
 name: Validate legate.core.internal SHA
 
 concurrency:
@@ -17,44 +18,44 @@ jobs:
     runs-on: linux-amd64-cpu4
     timeout-minutes: 15
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        path: cupynumeric.internal
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: cupynumeric.internal
 
-    - name: Set up environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y jq
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
-    - name: Parse versions.json
-      shell: bash --noprofile --norc -xeuo pipefail {0}
-      run: |
-        DEPENDENCIES_FILE="cupynumeric.internal/cmake/versions.json"
-        GIT_REPO=$(jq -r '.packages.legate.repo' ${DEPENDENCIES_FILE})
-        GIT_ORG=$(jq -r '.packages.legate.org' ${DEPENDENCIES_FILE})
-        GIT_TAG=$(jq -r '.packages.legate.git_tag' ${DEPENDENCIES_FILE})
+      - name: Parse versions.json
+        shell: bash --noprofile --norc -xeuo pipefail {0}
+        run: |
+          DEPENDENCIES_FILE="cupynumeric.internal/cmake/versions.json"
+          GIT_REPO=$(jq -r '.packages.legate.repo' ${DEPENDENCIES_FILE})
+          GIT_ORG=$(jq -r '.packages.legate.org' ${DEPENDENCIES_FILE})
+          GIT_TAG=$(jq -r '.packages.legate.git_tag' ${DEPENDENCIES_FILE})
 
-        echo "GIT_REPO=${GIT_REPO}" >> $GITHUB_ENV
-        echo "GIT_ORG=${GIT_ORG}" >> $GITHUB_ENV
-        echo "GIT_TAG=${GIT_TAG}" >> $GITHUB_ENV
+          echo "GIT_REPO=${GIT_REPO}" >> $GITHUB_ENV
+          echo "GIT_ORG=${GIT_ORG}" >> $GITHUB_ENV
+          echo "GIT_TAG=${GIT_TAG}" >> $GITHUB_ENV
 
-        if [[ ${{ github.ref_name }} == cpp-branch-* ]]; then
+          if [[ ${{ github.ref_name }} == cpp-branch-* ]]; then
           echo "GIT_REF=${{ github.ref_name }}" >> $GITHUB_ENV
-        else
+          else
           echo "GIT_REF=main" >> $GITHUB_ENV
-        fi
+          fi
 
-    - name: Clone dependency
-      uses: actions/checkout@v4
-      with:
-        repository: "${{ env.GIT_ORG }}/${{ env.GIT_REPO }}"
-        ref: ${{ env.GIT_REF }}
-        token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
-        fetch-depth: 0
-        path: legate.core.internal
+      - name: Clone dependency
+        uses: actions/checkout@v4
+        with:
+          repository: "${{ env.GIT_ORG }}/${{ env.GIT_REPO }}"
+          ref: ${{ env.GIT_REF }}
+          token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+          fetch-depth: 0
+          path: legate.core.internal
 
-    - name: Verify commit exists
-      run: |
-        cd legate.core.internal
-        git rev-parse --verify "${{ env.GIT_TAG }}^{commit}"
+      - name: Verify commit exists
+        run: |
+          cd legate.core.internal
+          git rev-parse --verify "${{ env.GIT_TAG }}^{commit}"

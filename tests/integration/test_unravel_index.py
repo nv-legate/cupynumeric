@@ -30,14 +30,8 @@ class TestUnravelIndexErrors:
             num.unravel_index(None, (3,))
 
     def test_indices_wrong_type(self):
-        indices = [
-            1.0,
-            2.0,
-        ]
-        shape = (
-            3,
-            3,
-        )
+        indices = [1.0, 2.0]
+        shape = (3, 3)
         expected_exc = TypeError
         with pytest.raises(expected_exc):
             num.unravel_index(indices, shape)
@@ -103,11 +97,7 @@ def test_empty_indices():
 def test_large_shape():
     # Test a large shape
     index = 123
-    shape = (
-        100,
-        100,
-        100,
-    )
+    shape = (100, 100, 100)
     res_np = np.unravel_index(index, shape)
     res_num = num.unravel_index(index, shape)
     assert np.array_equal(res_num, res_np)
@@ -123,13 +113,7 @@ def test_large_index():
 
 
 @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
-@pytest.mark.parametrize(
-    "order",
-    (
-        "F",
-        "C",
-    ),
-)
+@pytest.mark.parametrize("order", ("F", "C"))
 def test_basic(ndim, order):
     shape = (6,) * ndim
     size = (6**ndim) % 2
@@ -142,13 +126,7 @@ def test_basic(ndim, order):
 
 
 @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
-@pytest.mark.parametrize(
-    "order",
-    (
-        "F",
-        "C",
-    ),
-)
+@pytest.mark.parametrize("order", ("F", "C"))
 def test_uneven_shape(ndim, order):
     shape = np.random.randint(1, 6, ndim, dtype=int)
     size = ndim

@@ -43,11 +43,7 @@ def test_einsum_path(optimize):
     assert path_np == path_num
 
 
-OPTIMIZE_OPPOSITE = [
-    2,
-    2.2,
-    ("optimal", 4, 5),
-]
+OPTIMIZE_OPPOSITE = [2, 2.2, ("optimal", 4, 5)]
 
 
 @pytest.mark.xfail

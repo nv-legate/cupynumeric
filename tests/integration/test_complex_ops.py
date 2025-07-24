@@ -18,13 +18,7 @@ import pytest
 
 import cupynumeric as num
 
-ARRAYS = (
-    [1, 2, 3],
-    [4j, 5j, 6j],
-    [3 + 6j],
-    [[1 + 4j, 2 + 5j, 3 + 6j]],
-    [],
-)
+ARRAYS = ([1, 2, 3], [4j, 5j, 6j], [3 + 6j], [[1 + 4j, 2 + 5j, 3 + 6j]], [])
 
 
 def strict_type_equal_array(a, b):

@@ -61,9 +61,9 @@ def test_f_float32(t: object):
     d2 = 48.0
     a = gen.f(d1, d2, size=(1024 * 1024,), dtype=np.float32)
     theo_mean = d2 / (d2 - 2.0)
-    theo_std = np.sqrt(
-        (2.0 * d2**2 * (d1 + d2 - 2.0)) / (d1 * (d2 - 4.0))
-    ) / (d2 - 2.0)
+    theo_std = np.sqrt((2.0 * d2**2 * (d1 + d2 - 2.0)) / (d1 * (d2 - 4.0))) / (
+        d2 - 2.0
+    )
     assert_distribution(a, theo_mean, theo_std)
 
 
@@ -75,9 +75,9 @@ def test_f_float64(t: object):
     d2 = 48.0
     a = gen.f(d1, d2, size=(1024 * 1024,), dtype=np.float32)
     theo_mean = d2 / (d2 - 2.0)
-    theo_std = np.sqrt(
-        (2.0 * d2**2 * (d1 + d2 - 2.0)) / (d1 * (d2 - 4.0))
-    ) / (d2 - 2.0)
+    theo_std = np.sqrt((2.0 * d2**2 * (d1 + d2 - 2.0)) / (d1 * (d2 - 4.0))) / (
+        d2 - 2.0
+    )
     assert_distribution(a, theo_mean, theo_std)
 
 

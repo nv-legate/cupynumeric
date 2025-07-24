@@ -63,11 +63,7 @@ def issue_fallback_warning(what: str) -> None:
             "\n\nSet CUPYNUMERIC_FALLBACK_STACKTRACE=1 and re-run to include "
             "a full stack trace with this warning."
         )
-    warnings.warn(
-        msg,
-        stacklevel=stacklevel,
-        category=RuntimeWarning,
-    )
+    warnings.warn(msg, stacklevel=stacklevel, category=RuntimeWarning)
 
 
 def filter_namespace(
@@ -85,8 +81,7 @@ def filter_namespace(
 
 
 class AnyCallable(Protocol):
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        ...
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
 class GPUSupport(Enum):
@@ -157,9 +152,7 @@ def implemented(
                 not settings.report_dump_callstack()
             )
             runtime.record_api_call(
-                name=name,
-                location=location,
-                implemented=True,
+                name=name, location=location, implemented=True
             )
             return func(*args, **kwargs)
 
@@ -222,9 +215,7 @@ def unimplemented(
                 not settings.report_dump_callstack()
             )
             runtime.record_api_call(
-                name=name,
-                location=location,
-                implemented=False,
+                name=name, location=location, implemented=False
             )
             if fallback:
                 args = deep_apply(args, fallback)
@@ -342,11 +333,7 @@ def clone_module(
             and isinstance(value, BuiltinFunctionType)
         ):
             wrapped = unimplemented(
-                value,
-                mod_name,
-                attr,
-                reporting=reporting,
-                fallback=fallback,
+                value, mod_name, attr, reporting=reporting, fallback=fallback
             )
             new_globals[attr] = wrapped
             if isinstance(value, npufunc):
@@ -408,10 +395,7 @@ def clone_class(
                 continue
             if should_wrap(value):
                 wrapped = implemented(
-                    value,
-                    class_name,
-                    attr,
-                    reporting=reporting,
+                    value, class_name, attr, reporting=reporting
                 )
                 setattr(cls, attr, wrapped)
 

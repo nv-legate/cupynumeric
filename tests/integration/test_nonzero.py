@@ -26,14 +26,7 @@ from cupynumeric._utils import is_np2_1
 # cupynumeric.flatnonzero(a: ndarray) → ndarray
 
 DIM = 5
-EMPTY_SIZES = [
-    (0,),
-    (0, 1),
-    (1, 0),
-    (1, 0, 0),
-    (1, 1, 0),
-    (1, 0, 1),
-]
+EMPTY_SIZES = [(0,), (0, 1), (1, 0), (1, 0, 0), (1, 1, 0), (1, 0, 1)]
 
 NO_EMPTY_SIZE = [
     (1),

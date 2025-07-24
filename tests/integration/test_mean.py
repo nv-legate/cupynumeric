@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -182,10 +183,7 @@ class TestMeanErrors:
 
     @pytest.mark.parametrize(
         "axis_out_shape",
-        (
-            (None, (1,)),
-            (1, (3, 4)),
-        ),
+        ((None, (1,)), (1, (3, 4))),
         ids=lambda axis_out_shape: f"(axis_out_shape={axis_out_shape})",
     )
     def test_out_invalid_shape(self, axis_out_shape):

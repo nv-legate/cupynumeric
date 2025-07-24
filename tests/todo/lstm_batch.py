@@ -16,6 +16,7 @@
 """
 This is a batched LSTM forward and backward pass
 """
+
 import cupynumeric as np
 
 
@@ -137,9 +138,7 @@ class LSTM:
             tanhCt = Ct[t]
             dIFOGf[t, :, 2 * d : 3 * d] = tanhCt * dHout[t]
             # backprop tanh non-linearity first then continue backprop
-            dC[t] += (1 - tanhCt**2) * (
-                IFOGf[t, :, 2 * d : 3 * d] * dHout[t]
-            )
+            dC[t] += (1 - tanhCt**2) * (IFOGf[t, :, 2 * d : 3 * d] * dHout[t])
             if t > 0:
                 dIFOGf[t, :, d : 2 * d] = C[t - 1] * dC[t]
                 dC[t - 1] += IFOGf[t, :, d : 2 * d] * dC[t]
@@ -200,7 +199,7 @@ def checkSequentialMatchesBatch():
     # sanity check: perform batch forward to check that we get the same thing
     H, _, _, batch_cache = LSTM.forward(X, WLSTM, c0, h0)
 
-    assert np.allclose(H, Hcat), "Sequential and Batch forward don" "t match!"
+    assert np.allclose(H, Hcat), "Sequential and Batch forward dont match!"
 
     # eval loss
     wrand = np.random.randn(*Hcat.shape)

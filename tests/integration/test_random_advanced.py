@@ -262,9 +262,7 @@ class TestRandomErrors:
 
     @pytest.mark.skipif(LEGATE_TEST, reason="Test hang when LEGATE_TEST=1")
     @pytest.mark.parametrize(
-        "ngood, nbad, nsample",
-        ((200, 60, 500), ((1, 5, 7), 6, 22)),
-        ids=str,
+        "ngood, nbad, nsample", ((200, 60, 500), ((1, 5, 7), 6, 22)), ids=str
     )
     def test_hypergeometric_invalid_args(
         self, ngood: int, nbad: int, nsample: int
