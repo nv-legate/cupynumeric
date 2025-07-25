@@ -57,8 +57,9 @@ endif()
 rapids_cpm_init(OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/versions.json)
 
 rapids_find_package(OpenMP GLOBAL_TARGETS OpenMP::OpenMP_CXX)
+rapids_find_package(CUDAToolkit)
 
-option(Legion_USE_CUDA "Use CUDA" ON)
+option(Legion_USE_CUDA "Use CUDA" ${CUDAToolkit_FOUND})
 option(Legion_USE_OpenMP "Use OpenMP" ${OpenMP_FOUND})
 option(Legion_BOUNDS_CHECKS "Build cuPyNumeric with bounds checks (expensive)" OFF)
 

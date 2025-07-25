@@ -77,6 +77,23 @@ function(find_or_configure_legate)
     set(git_repo "${PKG_REPOSITORY}")
   endif()
 
+  # CCCL (which will be imported for us by legate -- though cupyumeric should *really* be
+  # handling this stuff by itself...) will try to use CUDA by default, so we need to tell
+  # it not to for CPU-only or OpenMP builds.
+  #
+  # Legate has the same (or similar) logic, but it does not export this, since Legate
+  # should not impose a particular device system on downstream libraries. So we must also
+  # do it here.
+  if(NOT DEFINED CCCL_THRUST_DEVICE_SYSTEM)
+    if(Legion_USE_CUDA)
+      set(CCCL_THRUST_DEVICE_SYSTEM CUDA)
+    elseif(Legion_USE_OpenMP)
+      set(CCCL_THRUST_DEVICE_SYSTEM OMP)
+    else()
+      set(CCCL_THRUST_DEVICE_SYSTEM CPP)
+    endif()
+  endif()
+
   set(FIND_PKG_ARGS
       GLOBAL_TARGETS     legate::legate
       BUILD_EXPORT_SET   cupynumeric-exports
@@ -112,6 +129,15 @@ function(find_or_configure_legate)
           FIND_PACKAGE_ARGUMENTS EXACT
           EXCLUDE_FROM_ALL       ${exclude_from_all}
     )
+  endif()
+
+  # Workaround for https://github.com/NVIDIA/cccl/issues/5002
+  if(Legion_USE_OpenMP)
+    get_target_property(opts OpenMP::OpenMP_CXX INTERFACE_COMPILE_OPTIONS)
+    message(STATUS "openmp interface options ${opts}")
+    string(REPLACE [[-Xcompiler=SHELL:]] [[SHELL:-Xcompiler=]] opts "${opts}")
+    message(STATUS "openmp interface options after ${opts}")
+    set_target_properties(OpenMP::OpenMP_CXX PROPERTIES INTERFACE_COMPILE_OPTIONS "${opts}")
   endif()
 
   set(Legion_USE_CUDA ${Legion_USE_CUDA} PARENT_SCOPE)
