@@ -3277,8 +3277,143 @@ class DeferredArray(NumPyThunk):
 
             task.execute()
 
-    # Perform a unary reduction operation from one set of dimensions down to
-    # fewer
+    def _scalar_unary_reduction(
+        self,
+        op: UnaryRedCode,
+        lhs_array: Any,
+        rhs_array: Any,
+        where: Any,
+        axes: tuple[int, ...],
+        keepdims: bool,
+        args: tuple[Scalar, ...],
+        argred: bool,
+    ) -> None:
+        assert axes is None or lhs_array.ndim == rhs_array.ndim - (
+            0 if keepdims else len(axes)
+        )
+
+        is_where = bool(where is not None)
+
+        lhs = lhs_array.base
+        while lhs.ndim > 1:
+            lhs = lhs.project(0, 0)
+
+        with Annotation({"OpCode": op.name, "ArgRed?": str(argred)}):
+            task = legate_runtime.create_auto_task(
+                self.library, CuPyNumericOpCode.SCALAR_UNARY_RED
+            )
+
+            task.add_reduction(lhs, _UNARY_RED_TO_REDUCTION_OPS[op])
+            task.add_input(rhs_array.base)
+            task.add_scalar_arg(op, ty.int32)
+            task.add_scalar_arg(rhs_array.shape, (ty.int64,))
+            task.add_scalar_arg(is_where, ty.bool_)
+            if is_where:
+                task.add_input(where.base)
+                task.add_alignment(rhs_array.base, where.base)
+
+            for arg in args:
+                task.add_scalar_arg(arg)
+
+            task.execute()
+
+    def _single_axis_unary_reduction(
+        self,
+        op: UnaryRedCode,
+        lhs_array: Any,
+        rhs_array: Any,
+        where: Any,
+        axes: tuple[int, ...],
+        keepdims: bool,
+        args: tuple[Scalar, ...],
+        argred: bool,
+    ) -> None:
+        assert len(axes) == 1
+        axis = axes[0]
+        is_where = bool(where is not None)
+
+        # If output dims is not 0, then we must have axes
+        assert axes is not None
+        # Reduction to a smaller array
+        result = lhs_array.base
+        if keepdims:
+            result = result.project(axis, 0)
+        result = result.promote(axis, rhs_array.shape[axis])
+
+        with Annotation({"OpCode": op.name, "ArgRed?": str(argred)}):
+            task = legate_runtime.create_auto_task(
+                self.library, CuPyNumericOpCode.UNARY_RED
+            )
+
+            p_rhs = task.add_input(rhs_array.base)
+            p_result = task.add_reduction(
+                result, _UNARY_RED_TO_REDUCTION_OPS[op]
+            )
+            task.add_scalar_arg(axis, ty.int32)
+            task.add_scalar_arg(op, ty.int32)
+            task.add_scalar_arg(is_where, ty.bool_)
+            if is_where:
+                task.add_input(where.base)
+                task.add_alignment(rhs_array.base, where.base)
+
+            for arg in args:
+                task.add_scalar_arg(arg)
+
+            task.add_constraint(align(p_result, p_rhs))
+
+            task.execute()
+
+    def _multi_axis_unary_reduction(
+        self,
+        op: UnaryRedCode,
+        lhs_array: Any,
+        rhs_array: Any,
+        where: Any,
+        axes: tuple[int, ...],
+        keepdims: bool,
+        args: tuple[Scalar, ...],
+    ) -> None:
+        assert len(axes) > 1
+
+        sorted_axes = tuple(reversed(sorted(axes)))
+
+        tmp_rhs = rhs_array
+        for i, axis in enumerate(sorted_axes):
+            # use the user-supplied lhs on the final iteration
+            if i == len(sorted_axes) - 1:
+                tmp_lhs = lhs_array
+
+            else:
+                dim = (1,) if keepdims else ()
+                # remove current axis from latest rhs shape and create a
+                # new array for the next single axis reduction to use
+                tmp_shape = (
+                    tmp_rhs.shape[:axis] + dim + tmp_rhs.shape[(axis + 1) :]
+                )
+                tmp_lhs = runtime.create_empty_thunk(
+                    tmp_shape, rhs_array.base.type, force_thunk="deferred"
+                )
+                fill_value = _UNARY_RED_IDENTITIES[op](rhs_array.dtype)
+                tmp_lhs.fill(np.array(fill_value, tmp_lhs.dtype))
+
+            self._single_axis_unary_reduction(
+                op,
+                tmp_lhs,
+                tmp_rhs,
+                where,
+                (axis,),
+                keepdims,
+                args,
+                argred=False,
+            )
+            tmp_rhs = tmp_lhs
+
+            # only apply where on the first iteration
+            where = None
+
+        assert lhs_array.size == tmp_lhs.size
+
+    # Perform a unary reduction from one set of dimensions down to fewer
     @auto_convert("rhs", "where")
     def unary_reduction(
         self,
@@ -3303,98 +3438,39 @@ class DeferredArray(NumPyThunk):
         )
 
         if argred:
+            if len(axes) > 1 and lhs_array.size != 1:
+                raise RuntimeError(
+                    "Arg reduction not supported for multi-axis"
+                )
             argred_dtype = runtime.get_argred_type(rhs_array.base.type)
             lhs_array = runtime.create_empty_thunk(
                 lhs_array.shape, dtype=argred_dtype, inputs=[self]
             )
 
-        is_where = bool(where is not None)
-        # See if we are doing reduction to a point or another region
+        # Before we perform region reduction, make sure to have the lhs
+        # initialized. If an initial value is given, we use it, otherwise
+        # we use the identity of the reduction operator
+        if initial is not None:
+            assert not argred
+            fill_value = initial
+        else:
+            fill_value = _UNARY_RED_IDENTITIES[op](rhs_array.dtype)
+        lhs_array.fill(np.array(fill_value, lhs_array.dtype))
+
         if lhs_array.size == 1:
-            assert axes is None or lhs_array.ndim == rhs_array.ndim - (
-                0 if keepdims else len(axes)
+            self._scalar_unary_reduction(
+                op, lhs_array, rhs_array, where, axes, keepdims, args, argred
             )
 
-            if initial is not None:
-                assert not argred
-                fill_value = initial
-            else:
-                fill_value = _UNARY_RED_IDENTITIES[op](rhs_array.dtype)
-
-            lhs_array.fill(np.array(fill_value, dtype=lhs_array.dtype))
-
-            lhs = lhs_array.base  # type: ignore
-            while lhs.ndim > 1:
-                lhs = lhs.project(0, 0)
-
-            with Annotation({"OpCode": op.name, "ArgRed?": str(argred)}):
-                task = legate_runtime.create_auto_task(
-                    self.library, CuPyNumericOpCode.SCALAR_UNARY_RED
-                )
-
-                task.add_reduction(lhs, _UNARY_RED_TO_REDUCTION_OPS[op])
-                task.add_input(rhs_array.base)
-                task.add_scalar_arg(op, ty.int32)
-                task.add_scalar_arg(rhs_array.shape, (ty.int64,))
-                task.add_scalar_arg(is_where, ty.bool_)
-                if is_where:
-                    task.add_input(where.base)
-                    task.add_alignment(rhs_array.base, where.base)
-
-                for arg in args:
-                    task.add_scalar_arg(arg)
-
-                task.execute()
+        elif len(axes) == 1:
+            self._single_axis_unary_reduction(
+                op, lhs_array, rhs_array, where, axes, keepdims, args, argred
+            )
 
         else:
-            # Before we perform region reduction, make sure to have the lhs
-            # initialized. If an initial value is given, we use it, otherwise
-            # we use the identity of the reduction operator
-            if initial is not None:
-                assert not argred
-                fill_value = initial
-            else:
-                fill_value = _UNARY_RED_IDENTITIES[op](rhs_array.dtype)
-            lhs_array.fill(np.array(fill_value, lhs_array.dtype))
-
-            # If output dims is not 0, then we must have axes
-            assert axes is not None
-            # Reduction to a smaller array
-            result = lhs_array.base  # type: ignore
-            if keepdims:
-                for axis in axes:
-                    result = result.project(axis, 0)
-            for axis in axes:
-                result = result.promote(axis, rhs_array.shape[axis])
-            # Iterate over all the dimension(s) being collapsed and build a
-            # temporary field that we will reduce down to the final value
-            if len(axes) > 1:
-                raise NotImplementedError(
-                    "Need support for reducing multiple dimensions"
-                )
-
-            with Annotation({"OpCode": op.name, "ArgRed?": str(argred)}):
-                task = legate_runtime.create_auto_task(
-                    self.library, CuPyNumericOpCode.UNARY_RED
-                )
-
-                p_rhs = task.add_input(rhs_array.base)
-                p_result = task.add_reduction(
-                    result, _UNARY_RED_TO_REDUCTION_OPS[op]
-                )
-                task.add_scalar_arg(axis, ty.int32)
-                task.add_scalar_arg(op, ty.int32)
-                task.add_scalar_arg(is_where, ty.bool_)
-                if is_where:
-                    task.add_input(where.base)
-                    task.add_alignment(rhs_array.base, where.base)
-
-                for arg in args:
-                    task.add_scalar_arg(arg)
-
-                task.add_constraint(align(p_result, p_rhs))
-
-                task.execute()
+            self._multi_axis_unary_reduction(
+                op, lhs_array, rhs_array, where, axes, keepdims, args
+            )
 
         if argred:
             self.unary_op(UnaryOpCode.GETARG, lhs_array, True)

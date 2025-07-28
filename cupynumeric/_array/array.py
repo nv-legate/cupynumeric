@@ -26,12 +26,7 @@ from legate.core.utils import OrderedSet
 
 from .. import _ufunc
 from .._utils import is_np2
-from .._utils.array import (
-    calculate_volume,
-    max_identity,
-    min_identity,
-    to_core_type,
-)
+from .._utils.array import max_identity, min_identity, to_core_type
 from .._utils.coverage import (
     clone_class,
     is_implemented,
@@ -60,7 +55,6 @@ from .util import (
     convert_to_cupynumeric_ndarray,
     maybe_convert_to_np_ndarray,
     sanitize_shape,
-    tuple_pop,
 )
 
 if TYPE_CHECKING:
@@ -694,7 +688,6 @@ class ndarray:
             UnaryRedCode.CONTAINS,
             self,
             axis=None,
-            res_dtype=bool,
             args=(Scalar(args[0].squeeze()[()], core_dtype),),
         )
 
@@ -1616,7 +1609,6 @@ class ndarray:
             UnaryRedCode.ALL,
             self,
             axis=axis,
-            res_dtype=bool,
             out=out,
             keepdims=keepdims,
             initial=initial,
@@ -1651,7 +1643,6 @@ class ndarray:
             UnaryRedCode.ANY,
             self,
             axis=axis,
-            res_dtype=bool,
             out=out,
             keepdims=keepdims,
             initial=initial,
@@ -1685,12 +1676,7 @@ class ndarray:
         if axis is not None and not isinstance(axis, int):
             raise ValueError("axis must be an integer")
         return perform_unary_reduction(
-            UnaryRedCode.ARGMAX,
-            self,
-            axis=axis,
-            res_dtype=np.dtype(np.int64),
-            out=out,
-            keepdims=keepdims,
+            UnaryRedCode.ARGMAX, self, axis=axis, out=out, keepdims=keepdims
         )
 
     @add_boilerplate()
@@ -1720,12 +1706,7 @@ class ndarray:
         if axis is not None and not isinstance(axis, int):
             raise ValueError("axis must be an integer")
         return perform_unary_reduction(
-            UnaryRedCode.ARGMIN,
-            self,
-            axis=axis,
-            res_dtype=np.dtype(np.int64),
-            out=out,
-            keepdims=keepdims,
+            UnaryRedCode.ARGMIN, self, axis=axis, out=out, keepdims=keepdims
         )
 
     def astype(
@@ -2361,20 +2342,20 @@ class ndarray:
             else:
                 out_shape = tr_shape + (diag_size,)
 
-            res_dtype = (
+            out_dtype = (
                 dtype
                 if dtype is not None
                 else out.dtype
                 if out is not None
                 else a.dtype
             )
-            a = a._maybe_convert(res_dtype, (a,))
+            a = a._maybe_convert(out_dtype, (a,))
             if out is not None and out.shape != out_shape:
                 raise ValueError("output array has the wrong shape")
-            if out is not None and out.dtype == res_dtype:
+            if out is not None and out.dtype == out_dtype:
                 res = out
             else:
-                res = ndarray(shape=out_shape, dtype=res_dtype, inputs=(self,))
+                res = ndarray(shape=out_shape, dtype=out_dtype, inputs=(self,))
 
             res._thunk._diag_helper(
                 a._thunk, offset=offset, naxes=N, extract=extract, trace=trace
@@ -2939,10 +2920,7 @@ class ndarray:
         if self.size == 0:
             return 0
         return perform_unary_reduction(
-            UnaryRedCode.COUNT_NONZERO,
-            self,
-            res_dtype=np.dtype(np.uint64),
-            axis=axis,
+            UnaryRedCode.COUNT_NONZERO, self, axis=axis
         )
 
     def _summation_dtype(self, dtype: np.dtype[Any] | None) -> np.dtype[Any]:
@@ -2984,7 +2962,13 @@ class ndarray:
                 else:
                     divisor -= ddof
             else:
-                divisor = self.shape[axis] - ddof
+                axis = normalize_axis_tuple(axis, self.ndim)
+                divisor = (
+                    reduce(
+                        lambda x, y: x * y, (self.shape[d] for d in axis), 1
+                    )
+                    - ddof
+                )
 
         # Divide by the number of things in the collapsed dimensions
         # Pick the right kinds of division based on the dtype
@@ -3022,11 +3006,6 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        if axis is not None and not isinstance(axis, int):
-            raise NotImplementedError(
-                "cupynumeric.mean only supports int types for `axis` currently"
-            )
-
         dtype = self._summation_dtype(dtype)
         where_array = broadcast_where(where, self.shape)
 
@@ -3105,11 +3084,6 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        if axis is not None and not isinstance(axis, int):
-            raise NotImplementedError(
-                "cupynumeric.var only supports int types for `axis` currently"
-            )
-
         # this could be computed as a single pass through the array
         # by computing both <x^2> and <x> and then computing <x^2> - <x>^2.
         # this would takee the difference of two large numbers and is unstable
@@ -3127,7 +3101,7 @@ class ndarray:
         where_array = broadcast_where(where, self.shape)
 
         # 1D arrays (or equivalent) should benefit from this unary reduction:
-        if axis is None or calculate_volume(tuple_pop(self.shape, axis)) == 1:
+        if axis is None:
             # this is a scalar reduction and we can optimize this as a single
             # pass through a scalar reduction
             result = perform_unary_reduction(

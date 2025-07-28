@@ -182,7 +182,6 @@ class TestProdPositive(object):
         out_num = num.prod(arr_num)
         assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail(reason="numpy and cupynumeric return different dtypes")
     @pytest.mark.parametrize("dtype", INTEGER_DTYPE, ids=to_dtype)
     def test_dtype_integer_precision(self, dtype):
         arr_np = np.arange(0, 5).astype(dtype)
@@ -190,9 +189,6 @@ class TestProdPositive(object):
         out_np = np.prod(arr_np)
         out_num = num.prod(arr_num)
         assert allclose(out_num, arr_num.prod())
-        # When input precision is less than default platform integer
-        # NumPy returns the product with dtype of platform integer
-        # cuPyNumeric returns the product with dtype of the input array
         assert allclose(out_np, out_num)
 
     @pytest.mark.parametrize(
@@ -230,9 +226,6 @@ class TestProdPositive(object):
         out_np = np.prod(arr_np, axis=axis)
         assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail(
-        reason="cupynumeric raises exceptions when LEGATE_TEST=1"
-    )
     @pytest.mark.parametrize(
         "axis", ((-1, 1), (0, 1), (1, 2), (0, 2)), ids=str
     )
@@ -241,11 +234,6 @@ class TestProdPositive(object):
         arr_np = np.random.random(size) * 10
         arr_num = num.array(arr_np)
         out_np = np.prod(arr_np, axis=axis)
-        # when LEGATE_TEST = 1 cuPyNumeric raises two types of exceptions
-        # (-1, 1): ValueError: Invalid promotion on dimension 2 for a 1-D store
-        # others:
-        # NotImplementedError: Need support for reducing multiple dimensions
-        # Numpy get results.
         out_num = num.prod(arr_num, axis=axis)
         assert allclose(out_np, out_num)
 
@@ -310,7 +298,6 @@ class TestProdPositive(object):
             out_num = num.prod(arr_num, axis=axis, keepdims=False)
             assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("size", SIZE_E)
     def test_axis_keepdims_true(self, size):
         arr_np = np.random.random(size)
@@ -319,12 +306,6 @@ class TestProdPositive(object):
         for axis in range(-ndim + 1, ndim, 1):
             out_np = np.prod(arr_np, axis=axis, keepdims=True)
             out_num = num.prod(arr_num, axis=axis, keepdims=True)
-            # in cupynumeric/deferred/unary_reduction:
-            # if lhs_array.size == 1:
-            #     > assert axes is None or len(axes) == rhs_array.ndim - (
-            #         0 if keepdims else lhs_array.ndim
-            #     )
-            # E    AssertionError
             assert allclose(out_np, out_num)
 
     @pytest.mark.parametrize("size", NO_EMPTY_SIZE)

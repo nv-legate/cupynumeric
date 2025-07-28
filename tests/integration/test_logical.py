@@ -56,16 +56,10 @@ def test_basic(func, input, keepdims):
 
 
 @pytest.mark.parametrize(
-    "axes",
-    ((0,), (1, 2), pytest.param((-1, 0), marks=pytest.mark.xfail), (-1, 0, 1)),
-    ids=lambda axes: f"(axes={axes})",
+    "axes", ((0,), (-1, 0, 1)), ids=lambda axes: f"(axes={axes})"
 )
 @pytest.mark.parametrize("func", FUNCTIONS)
 def test_axis_tuple(func, axes):
-    # For axes=(-1, 0),
-    # in Numpy, it pass
-    # in cuPyNumeric, raises ValueError:
-    # Invalid promotion on dimension 2 for a 1-D store
     input = [[[5, 10], [0, 100]]]
     in_np = np.array(input)
     in_num = num.array(in_np)
@@ -75,6 +69,18 @@ def test_axis_tuple(func, axes):
     out_np = fn_np(in_np, axis=axes)
     out_num = fn_num(in_num, axis=axes)
     assert np.array_equal(out_np, out_num)
+
+
+@pytest.mark.parametrize(
+    "axes", ((1, 2), (-1, 0)), ids=lambda axes: f"(axes={axes})"
+)
+@pytest.mark.parametrize("func", FUNCTIONS)
+def test_axis_tuple_fail(func, axes):
+    input = [[[5, 10], [0, 100]]]
+    in_num = num.array(np.array(input))
+    fn_num = getattr(num, func)
+    with pytest.raises(RuntimeError, match="multi-axis only supported for"):
+        fn_num(in_num, axis=axes)
 
 
 @pytest.mark.parametrize("ndim", MAX_DIM_RANGE)

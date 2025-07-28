@@ -97,10 +97,7 @@ def test_axis_tuple(axis):
     out_np = np.count_nonzero(arr_np, axis=axis)
     # Numpy passed all axis values
     out_num = num.count_nonzero(arr_num, axis=axis)
-    # For (-1, 1), cuPyNumeric raises 'ValueError:
-    # Invalid promotion on dimension 2 for a 1-D store'
-    # For the others, cuPyNumeric raises 'NotImplementedError:
-    # Need support for reducing multiple dimensions'
+    # cuPyNumeric raises 'RuntimeError
     assert np.array_equal(out_np, out_num)
 
 

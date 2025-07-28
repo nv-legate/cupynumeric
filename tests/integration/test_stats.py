@@ -114,7 +114,7 @@ dtypes = ("e", "f", "d")
 
 @pytest.mark.parametrize("dtype", dtypes)
 @pytest.mark.parametrize("ddof", [0, 1])
-@pytest.mark.parametrize("axis", [None, 0, 1])
+@pytest.mark.parametrize("axis", [None, 0, 1, (0, 1)])
 @pytest.mark.parametrize("keepdims", [False, True])
 def test_var_default_shape(dtype, ddof, axis, keepdims):
     np_in = get_op_input(astype=dtype)
@@ -129,7 +129,7 @@ def test_var_default_shape(dtype, ddof, axis, keepdims):
 
 @pytest.mark.parametrize("dtype", dtypes)
 @pytest.mark.parametrize("ddof", [0, 1])
-@pytest.mark.parametrize("axis", [None, 0, 1])
+@pytest.mark.parametrize("axis", [None, 0, 1, (0, 1)])
 @pytest.mark.parametrize("keepdims", [False, True])
 def test_var_where(dtype, ddof, axis, keepdims):
     np_in = get_op_input(astype=dtype)
@@ -145,14 +145,22 @@ def test_var_where(dtype, ddof, axis, keepdims):
     check_op(op_np, op_num, np_in, dtype)
 
 
+def _max_axis(obj) -> bool:
+    if isinstance(obj, tuple):
+        return max(obj)
+    return obj
+
+
 @pytest.mark.parametrize("dtype", dtypes)
 @pytest.mark.parametrize("ddof", [0, 1])
-@pytest.mark.parametrize("axis", [None, 0, 1, 2])
+@pytest.mark.parametrize(
+    "axis", [None, 0, 1, 2, pytest.param((0, 1), marks=pytest.mark.xfail)]
+)
 @pytest.mark.parametrize("shape", [(10,), (4, 5), (2, 3, 4)])
 def test_var_w_shape(dtype, ddof, axis, shape):
     np_in = get_op_input(astype=dtype, shape=shape)
 
-    if axis is not None and axis >= len(shape):
+    if axis is not None and _max_axis(axis) >= len(shape):
         axis = None
 
     op_np = functools.partial(np.var, ddof=ddof, axis=axis)
@@ -168,7 +176,7 @@ def test_var_w_shape(dtype, ddof, axis, shape):
 def test_var_corners(dtype, ddof, axis, shape):
     np_in = get_op_input(astype=dtype, shape=shape)
 
-    if axis is not None and axis >= len(shape):
+    if axis is not None and _max_axis(axis) >= len(shape):
         axis = None
 
     op_np = functools.partial(np.var, ddof=ddof, axis=axis)

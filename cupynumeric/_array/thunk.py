@@ -111,12 +111,23 @@ def _need_upcast_for_reduction(op: UnaryRedCode, dtype: np.dtype[Any]) -> bool:
     )
 
 
+_NON_DECOMPOSABLE_OPS: dict[UnaryRedCode, npt.DTypeLike] = {
+    UnaryRedCode.ALL: bool,
+    UnaryRedCode.ANY: bool,
+    UnaryRedCode.ARGMAX: np.int64,
+    UnaryRedCode.ARGMIN: np.int64,
+    UnaryRedCode.CONTAINS: bool,
+    UnaryRedCode.COUNT_NONZERO: np.uint64,
+    UnaryRedCode.NANARGMAX: np.int64,
+    UnaryRedCode.NANARGMIN: np.int64,
+}
+
+
 def perform_unary_reduction(
     op: UnaryRedCode,
     src: ndarray,
     axis: Any = None,
     dtype: np.dtype[Any] | None = None,
-    res_dtype: npt.DTypeLike | None = None,
     out: ndarray | None = None,
     keepdims: bool = False,
     args: tuple[Scalar, ...] = (),
@@ -125,12 +136,25 @@ def perform_unary_reduction(
 ) -> ndarray:
     from .array import ndarray
 
-    # When 'res_dtype' is not None, the input and output of the reduction
-    # have different types. Such reduction operators don't take a dtype of
-    # the accumulator
-    if res_dtype is not None:
-        assert dtype is None
+    if axis is None:
+        axes = tuple(range(src.ndim))
+    else:
+        axes = normalize_axis_tuple(axis, src.ndim)
+
+    if 1 < len(axes) < src.ndim and op in _NON_DECOMPOSABLE_OPS:
+        raise RuntimeError(
+            "multi-axis only supported for decomposable reductions"
+        )
+
+    res_dtype: npt.DTypeLike | None
+
+    if op in _NON_DECOMPOSABLE_OPS:
+        if dtype is not None:
+            raise TypeError(
+                f"Cannot override dtype for reduction operator {op.name}"
+            )
         dtype = src.dtype
+        res_dtype = _NON_DECOMPOSABLE_OPS[op]
     else:
         if dtype is not None:
             # If 'dtype' exists, that determines both the accumulation dtype
@@ -160,11 +184,6 @@ def perform_unary_reduction(
         raise NotImplementedError(
             "(arg)max/min not supported for complex-type arrays"
         )
-
-    if axis is None:
-        axes = tuple(range(src.ndim))
-    else:
-        axes = normalize_axis_tuple(axis, src.ndim)
 
     out_shape: NdShape = ()
     for dim in range(src.ndim):

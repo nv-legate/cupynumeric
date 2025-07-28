@@ -97,17 +97,31 @@ class TestSumNegative(object):
         with pytest.raises(AxisError, match=msg):
             num.sum(arr, axis=2)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("axis", ((-1, 1), (0, 1), (1, 2), (0, 2)))
     def test_axis_tuple(self, axis):
         size = (5, 5, 5)
         arr_np = np.random.random(size) * 10
         arr_num = num.array(arr_np)
         out_np = np.sum(arr_np, axis=axis)
-        # cuPyNumeric raises NotImplementedError:
-        # 'Need support for reducing multiple dimensions'
-        # Numpy get results
         out_num = num.sum(arr_num, axis=axis)
+        assert allclose(out_np, out_num)
+
+    @pytest.mark.parametrize("axis", ((-1, 1), (0, 1), (1, 2), (0, 2)))
+    def test_axis_tuple_keepdims(self, axis):
+        size = (5, 5, 5)
+        arr_np = np.random.random(size) * 10
+        arr_num = num.array(arr_np)
+        out_np = np.sum(arr_np, axis=axis, keepdims=True)
+        out_num = num.sum(arr_num, axis=axis, keepdims=True)
+        assert allclose(out_np, out_num)
+
+    @pytest.mark.parametrize("axis", ((-1, 1), (0, 1), (1, 2), (0, 2)))
+    def test_axis_tuple_with_initial(self, axis):
+        size = (5, 5, 5)
+        arr_np = np.random.random(size) * 10
+        arr_num = num.array(arr_np)
+        out_np = np.sum(arr_np, axis=axis, initial=1)
+        out_num = num.sum(arr_num, axis=axis, initial=1)
         assert allclose(out_np, out_num)
 
     def test_out_negative(self):
@@ -143,7 +157,6 @@ class TestSumNegative(object):
         with pytest.raises((ValueError, TypeError)):
             num.sum(arr, initial=initial_value)
 
-    @pytest.mark.xfail
     def test_initial_empty_array(self):
         size = (1, 0)
         arr_np = np.random.random(size) * 10
@@ -251,7 +264,7 @@ class TestSumPositive(object):
             assert allclose(out_np, out_num)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("size", SIZES)
+    @pytest.mark.parametrize("size", SIZES, ids=str)
     def test_out_axis_dtype(self, size):
         arr = np.random.random(size) * 10
         arr_np = np.array(arr, dtype=to_dtype("f"))
@@ -286,7 +299,6 @@ class TestSumPositive(object):
 
             assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("keepdims", [False, True])
     def test_axis_keepdims(self, size, keepdims):
@@ -296,12 +308,6 @@ class TestSumPositive(object):
         for axis in range(-ndim + 1, ndim, 1):
             out_np = np.sum(arr_np, axis=axis, keepdims=keepdims)
             out_num = num.sum(arr_num, axis=axis, keepdims=keepdims)
-            # in cupynumeric/deferred/unary_reduction:
-            # if lhs_array.size == 1:
-            #     > assert axes is None or len(axes) == rhs_array.ndim - (
-            #         0 if keepdims else lhs_array.ndim
-            #     )
-            # E    AssertionError
             assert allclose(out_np, out_num)
 
     @pytest.mark.parametrize("size", NO_EMPTY_SIZE)

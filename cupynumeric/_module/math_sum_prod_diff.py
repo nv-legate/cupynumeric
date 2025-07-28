@@ -513,12 +513,7 @@ def nanargmax(
     )
 
     return perform_unary_reduction(
-        unary_red_code,
-        a,
-        axis=axis,
-        out=out,
-        keepdims=keepdims,
-        res_dtype=np.dtype(np.int64),
+        unary_red_code, a, axis=axis, out=out, keepdims=keepdims
     )
 
 
@@ -581,12 +576,7 @@ def nanargmin(
     )
 
     return perform_unary_reduction(
-        unary_red_code,
-        a,
-        axis=axis,
-        out=out,
-        keepdims=keepdims,
-        res_dtype=np.dtype(np.int64),
+        unary_red_code, a, axis=axis, out=out, keepdims=keepdims
     )
 
 
