@@ -177,6 +177,20 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
+    max_eager_volume: EnvOnlySetting[int] = EnvOnlySetting(
+        "max_eager_volume",
+        "CUPYNUMERIC_MAX_EAGER_VOLUME",
+        default=8192,  # 1 << 13
+        test_default=2,
+        convert=convert_int,
+        help="""
+        cuPyNumeric will fall-back to eager execution with Numpy when data
+        sizes are below this value.
+
+        This is a read-only environment variable setting used by the runtime.
+        """,
+    )
+
     min_gpu_chunk: EnvOnlySetting[int] = EnvOnlySetting(
         "min_gpu_chunk",
         "CUPYNUMERIC_MIN_GPU_CHUNK",
@@ -184,10 +198,7 @@ class CupynumericRuntimeSettings(Settings):
         test_default=2,
         convert=convert_int,
         help="""
-        Legate will fall back to vanilla NumPy when handling arrays smaller
-        than this, rather than attempt to accelerate using GPUs, as the
-        offloading overhead would likely not be offset by the accelerated
-        operation code.
+        DEPRECATED: use CUPYNUMERIC_MAX_EAGER_VOLUME instead.
 
         This is a read-only environment variable setting used by the runtime.
         """,
@@ -200,10 +211,7 @@ class CupynumericRuntimeSettings(Settings):
         test_default=2,
         convert=convert_int,
         help="""
-        Legate will fall back to vanilla NumPy when handling arrays smaller
-        than this, rather than attempt to accelerate using native CPU code, as
-        the offloading overhead would likely not be offset by the accelerated
-        operation code.
+        DEPRECATED: use CUPYNUMERIC_MAX_EAGER_VOLUME instead.
 
         This is a read-only environment variable setting used by the runtime.
         """,
@@ -216,10 +224,7 @@ class CupynumericRuntimeSettings(Settings):
         test_default=2,
         convert=convert_int,
         help="""
-        Legate will fall back to vanilla NumPy when handling arrays smaller
-        than this, rather than attempt to accelerate using OpenMP, as the
-        offloading overhead would likely not be offset by the accelerated
-        operation code.
+        DEPRECATED: use CUPYNUMERIC_MAX_EAGER_VOLUME instead.
 
         This is a read-only environment variable setting used by the runtime.
         """,

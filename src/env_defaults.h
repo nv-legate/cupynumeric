@@ -19,17 +19,9 @@
 // values agree. If these values are modified, the corresponding Python values
 // must also be updated.
 
-// 1 << 16 (need actual number for python to parse)
-#define MIN_GPU_CHUNK_DEFAULT 65536
-#define MIN_GPU_CHUNK_TEST 2
-
-// 1 << 10 (need actual number for python to parse)
-#define MIN_CPU_CHUNK_DEFAULT 1024
-#define MIN_CPU_CHUNK_TEST 2
-
 // 1 << 13 (need actual number for python to parse)
-#define MIN_OMP_CHUNK_DEFAULT 8192
-#define MIN_OMP_CHUNK_TEST 2
+#define MAX_EAGER_VOLUME_DEFAULT 8192
+#define MAX_EAGER_VOLUME_TEST 2
 
 // 1 << 27 (need actual number for python to parse)
 #define MATMUL_CACHE_SIZE_DEFAULT 134217728

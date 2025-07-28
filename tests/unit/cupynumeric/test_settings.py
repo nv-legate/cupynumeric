@@ -31,6 +31,7 @@ _expected_settings = (
     "fast_math",
     "force_thunk",
     "matmul_cache_size",
+    "max_eager_volume",
     "min_cpu_chunk",
     "min_gpu_chunk",
     "min_omp_chunk",

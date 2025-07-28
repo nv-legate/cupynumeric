@@ -52,9 +52,7 @@ class CPNProject(Project):
             case "eager":
                 return {
                     "CUPYNUMERIC_FORCE_THUNK": "eager",
-                    "CUPYNUMERIC_MIN_CPU_CHUNK": "2000000000",
-                    "CUPYNUMERIC_MIN_OMP_CHUNK": "2000000000",
-                    "CUPYNUMERIC_MIN_GPU_CHUNK": "2000000000",
+                    "CUPYNUMERIC_MAX_EAGER_VOLUME": "2000000000",
                 }
             case _:
                 return {}

@@ -58,5 +58,23 @@ def _fixup_version() -> str:
     raise RuntimeError("Failed to determine version")
 
 
+def _warn_deprecated_chunk_settings() -> None:
+    import os
+    import warnings
+
+    for k in (
+        "CUPYNUMERIC_MIN_CPU_CHUNK",
+        "CUPYNUMERIC_MIN_GPU_CHUNK",
+        "CUPYNUMERIC_MIN_OMP_CHUNK",
+    ):
+        if k in os.environ:
+            warnings.warn(
+                f"env setting {k} is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME"
+            )
+
+
 __version__ = _fixup_version()
-del _fixup_version
+
+_warn_deprecated_chunk_settings()
+
+del _fixup_version, _warn_deprecated_chunk_settings

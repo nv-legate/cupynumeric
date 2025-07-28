@@ -15,6 +15,7 @@
  */
 
 #include "env_defaults.h"
+#include "cupynumeric/operators.h"
 #include "cupynumeric/runtime.h"
 
 #include "cupynumeric/ndarray.h"
@@ -164,22 +165,32 @@ extern "C" {
 
 unsigned cupynumeric_max_eager_volume()
 {
-  static const auto min_gpu_chunk = cupynumeric::extract_env(
-    "CUPYNUMERIC_MIN_GPU_CHUNK", MIN_GPU_CHUNK_DEFAULT, MIN_GPU_CHUNK_TEST);
-  static const auto min_cpu_chunk = cupynumeric::extract_env(
-    "CUPYNUMERIC_MIN_CPU_CHUNK", MIN_CPU_CHUNK_DEFAULT, MIN_CPU_CHUNK_TEST);
-  static const auto min_omp_chunk = cupynumeric::extract_env(
-    "CUPYNUMERIC_MIN_OMP_CHUNK", MIN_OMP_CHUNK_DEFAULT, MIN_OMP_CHUNK_TEST);
-
   auto machine = legate::get_machine();
 
-  if (machine.count(legate::mapping::TaskTarget::GPU) > 0) {
-    return min_gpu_chunk;
+  if (!getenv("CUPYNUMERIC_MAX_EAGER_VOLUME")) {
+    if (machine.count(legate::mapping::TaskTarget::GPU) > 0) {
+      if (const auto* min_gpu_chunk = std::getenv("CUPYNUMERIC_MIN_GPU_CHUNK"); min_gpu_chunk) {
+        cupynumeric::cupynumeric_log().warning()
+          << "CUPYNUMERIC_MIN_GPU_CHUNK is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME";
+        return cupynumeric::parse_value(min_gpu_chunk);
+      }
+    }
+    if (machine.count(legate::mapping::TaskTarget::OMP) > 0) {
+      if (const auto* min_omp_chunk = std::getenv("CUPYNUMERIC_MIN_OMP_CHUNK"); min_omp_chunk) {
+        cupynumeric::cupynumeric_log().warning()
+          << "CUPYNUMERIC_MIN_OMP_CHUNK is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME";
+        return cupynumeric::parse_value(min_omp_chunk);
+      }
+    }
+    if (const auto* min_cpu_chunk = std::getenv("CUPYNUMERIC_MIN_CPU_CHUNK"); min_cpu_chunk) {
+      cupynumeric::cupynumeric_log().warning()
+        << "CUPYNUMERIC_MIN_CPU_CHUNK is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME";
+      return cupynumeric::parse_value(min_cpu_chunk);
+    }
   }
-  if (machine.count(legate::mapping::TaskTarget::OMP) > 0) {
-    return min_omp_chunk;
-  }
-  return min_cpu_chunk;
+  static const auto max_eager_volume = cupynumeric::extract_env(
+    "CUPYNUMERIC_MAX_EAGER_VOLUME", MAX_EAGER_VOLUME_DEFAULT, MAX_EAGER_VOLUME_TEST);
+  return max_eager_volume;
 }
 
 unsigned cupynumeric_matmul_cache_size()
