@@ -25,9 +25,9 @@ from .._array.util import (
     convert_to_cupynumeric_ndarray,
 )
 from .._module.array_dimension import broadcast_arrays
-from .._utils import is_np2
 from .._utils.array import calculate_volume
 from .._utils.coverage import is_implemented
+from ..lib.array_utils import normalize_axis_index
 from ..runtime import runtime
 from ..types import NdShape
 from .array_joining import hstack
@@ -39,13 +39,6 @@ from .creation_ranges import arange
 from .creation_shape import empty, ones, zeros_like
 from .ssc_counting import count_nonzero
 from .ssc_searching import nonzero
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
 
 if TYPE_CHECKING:
     from typing import Callable

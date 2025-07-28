@@ -21,15 +21,9 @@ import numpy as np
 from .._array.array import _warn_and_convert, ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_index
 from ..runtime import runtime
 from .creation_shape import full
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt

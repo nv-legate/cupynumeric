@@ -48,6 +48,7 @@ from ..config import (
     UnaryOpCode,
     UnaryRedCode,
 )
+from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..runtime import runtime
 from ..types import NdShape
 from .flags import flagsobj
@@ -61,19 +62,6 @@ from .util import (
     sanitize_shape,
     tuple_pop,
 )
-
-if is_np2:
-    from numpy.lib.array_utils import (
-        normalize_axis_index,
-        normalize_axis_tuple,
-    )
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 if TYPE_CHECKING:
     from pathlib import Path

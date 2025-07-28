@@ -21,17 +21,10 @@ import numpy as np
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
-from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_tuple
 from .creation_shape import full
 from .logic_truth import any
 from .stats_order import nanquantile, quantile
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple
-else:
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt

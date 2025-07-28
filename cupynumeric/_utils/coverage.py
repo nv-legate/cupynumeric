@@ -19,7 +19,16 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import WRAPPER_ASSIGNMENTS, wraps
 from types import BuiltinFunctionType, ModuleType
-from typing import Any, Callable, Container, Iterable, Mapping, Protocol, cast
+from typing import (
+    Any,
+    Callable,
+    Container,
+    Iterable,
+    Mapping,
+    Protocol,
+    TypeVar,
+    cast,
+)
 
 from legate.core import track_provenance
 from legate.core.utils import OrderedSet
@@ -147,7 +156,7 @@ def implemented(
         @wraps(func)
         @track_provenance()
         @_fixup_co_name(func, "implemented")
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def _wrapper(*args: Any, **kwargs: Any) -> Any:
             location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
             )
@@ -161,8 +170,10 @@ def implemented(
         @wraps(func)
         @track_provenance()
         @_fixup_co_name(func, "implemented")
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def _wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
+
+    wrapper = cast(CuWrapped, _wrapper)
 
     # This is incredibly ugly and unpleasant, but @wraps(func) doesn't handle
     # ufuncs the way we need it to. The alternative would be to vendor and
@@ -210,7 +221,7 @@ def unimplemented(
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
         @_fixup_co_name(func, "unimplemented")
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def _wrapper(*args: Any, **kwargs: Any) -> Any:
             location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
             )
@@ -226,12 +237,14 @@ def unimplemented(
 
         @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
         @_fixup_co_name(func, "unimplemented")
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def _wrapper(*args: Any, **kwargs: Any) -> Any:
             issue_fallback_warning(what=name)
             if fallback:
                 args = deep_apply(args, fallback)
                 kwargs = deep_apply(kwargs, fallback)
             return func(*args, **kwargs)
+
+    wrapper = cast(CuWrapped, _wrapper)
 
     wrapper.__doc__ = f"""
     cuPyNumeric has not implemented this function, and will fall back to NumPy.
@@ -366,11 +379,14 @@ def should_wrap(obj: object) -> bool:
     ) or isinstance(obj, (lgufunc, npufunc))
 
 
+T = TypeVar("T")
+
+
 def clone_class(
     origin_class: type,
     omit_names: Iterable[str] | None = None,
     fallback: Callable[[Any], Any] | None = None,
-) -> Callable[[type], type]:
+) -> Callable[[T], T]:
     """Copy attributes from one class to another
 
     Method types are wrapped with a decorator to report API calls. All
@@ -381,7 +397,7 @@ def clone_class(
     class_name = f"{origin_class.__module__}.{origin_class.__name__}"
     clean_omit_names = OrderedSet() if omit_names is None else omit_names
 
-    def _clone_class(cls: type) -> type:
+    def _clone_class(cls: T) -> T:
         missing = filter_namespace(
             origin_class.__dict__,
             omit_names=set(cls.__dict__).union(clean_omit_names),

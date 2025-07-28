@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from legate.core import Scalar
 
-from .._utils import is_np2
 from ..config import (
     BinaryOpCode,
     ConvertCode,
@@ -27,25 +26,13 @@ from ..config import (
     UnaryOpCode,
     UnaryRedCode,
 )
+from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..types import NdShape
 from .util import (
     broadcast_where,
     convert_to_cupynumeric_ndarray,
     find_common_type,
 )
-
-if is_np2:
-    from numpy.lib.array_utils import (
-        normalize_axis_index,
-        normalize_axis_tuple,
-    )
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt

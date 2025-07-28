@@ -18,17 +18,10 @@ import itertools
 from typing import TYPE_CHECKING, Sequence
 
 from .._array.util import add_boilerplate
-from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_tuple
 from .array_dimension import broadcast
 from .array_transpose import transpose
 from .creation_shape import empty_like
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple
-else:
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 if TYPE_CHECKING:
     from .._array.array import ndarray

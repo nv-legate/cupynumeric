@@ -27,6 +27,7 @@ from .._ufunc.floating import isnan
 from .._ufunc.math import add, multiply, negative, subtract
 from .._utils import is_np2
 from ..config import ScanCode, UnaryRedCode
+from ..lib.array_utils import normalize_axis_index
 from ..settings import settings as cupynumeric_settings
 from ._unary_red_utils import get_non_nan_unary_red_code
 from .array_dimension import broadcast_shapes, broadcast_to
@@ -36,13 +37,6 @@ from .creation_data import asarray
 from .creation_shape import empty, empty_like
 from .indexing import putmask
 from .logic_truth import all, any
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
 
 if TYPE_CHECKING:
     from .._array.array import ndarray
@@ -1437,12 +1431,8 @@ def cross(
     # create local aliases for readability
     a0 = a[..., 0]
     a1 = a[..., 1]
-    if a.shape[-1] == 3:
-        a2 = a[..., 2]
     b0 = b[..., 0]
     b1 = b[..., 1]
-    if b.shape[-1] == 3:
-        b2 = b[..., 2]
     if cp.ndim != 0 and cp.shape[-1] == 3:
         cp0 = cp[..., 0]
         cp1 = cp[..., 1]
@@ -1456,6 +1446,7 @@ def cross(
             return cp
         else:
             assert b.shape[-1] == 3
+            b2 = b[..., 2]
             # cp0 = a1 * b2 - 0  (a2 = 0)
             # cp1 = 0 - a0 * b2  (a2 = 0)
             # cp2 = a0 * b1 - a1 * b0
@@ -1467,7 +1458,9 @@ def cross(
             cp2 -= a1 * b0
     else:
         assert a.shape[-1] == 3
+        a2 = a[..., 2]
         if b.shape[-1] == 3:
+            b2 = b[..., 2]
             # cp0 = a1 * b2 - a2 * b1
             # cp1 = a2 * b0 - a0 * b2
             # cp2 = a0 * b1 - a1 * b0

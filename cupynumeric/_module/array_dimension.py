@@ -20,15 +20,8 @@ import numpy as np
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
-from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_tuple
 from .creation_data import array
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple
-else:
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 if TYPE_CHECKING:
     from ..types import NdShape, NdShapeLike

@@ -18,21 +18,8 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
-from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..runtime import runtime
-
-if is_np2:
-    from numpy.lib.array_utils import (
-        normalize_axis_index,
-        normalize_axis_tuple,
-    )
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 from legate.core import get_machine
 

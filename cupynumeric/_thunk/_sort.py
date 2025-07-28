@@ -18,16 +18,9 @@ from typing import TYPE_CHECKING, cast
 
 from legate.core import get_legate_runtime, types as ty
 
-from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_index
 from ..config import CuPyNumericOpCode
 from ..runtime import runtime
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index
-else:
-    from numpy.core.multiarray import (  # type: ignore[no-redef]
-        normalize_axis_index,
-    )
 
 if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray
@@ -99,14 +92,6 @@ def sort_task(
 
     uses_unbound_output = runtime.num_procs > 1 and input.ndim == 1
 
-    task.add_input(input.base)
-    if uses_unbound_output:
-        unbound = runtime.create_unbound_thunk(dtype=output.base.type, ndim=1)
-        task.add_output(unbound.base)
-    else:
-        task.add_output(output.base)
-        task.add_alignment(output.base, input.base)
-
     if runtime.num_gpus > 1:
         task.add_nccl_communicator()
     elif runtime.num_gpus == 0 and runtime.num_procs > 1:
@@ -115,11 +100,18 @@ def sort_task(
     task.add_scalar_arg(argsort, ty.bool_)  # return indices flag
     task.add_scalar_arg(input.base.shape, (ty.int64,))
     task.add_scalar_arg(stable, ty.bool_)
-    task.execute()
+    task.add_input(input.base)
 
     if uses_unbound_output:
+        unbound = runtime.create_unbound_thunk(dtype=output.base.type, ndim=1)
+        task.add_output(unbound.base)
+        task.execute()
         output.base = unbound.base
         output.numpy_array = None
+    else:
+        task.add_output(output.base)
+        task.add_alignment(output.base, input.base)
+        task.execute()
 
 
 def sort_deferred(

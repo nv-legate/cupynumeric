@@ -50,7 +50,7 @@ from legate.core.utils import OrderedSet
 
 from .. import _ufunc
 from .._ufunc.ufunc import binary_ufunc, unary_ufunc
-from .._utils import is_np2
+from ..lib.array_utils import normalize_axis_tuple
 from .._utils.array import (
     is_advanced_indexing,
     max_identity,
@@ -78,13 +78,6 @@ from ..runtime import runtime
 from ..settings import settings
 from ._sort import sort_deferred
 from .thunk import NumPyThunk
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_tuple
-else:
-    from numpy.core.numeric import (  # type: ignore[no-redef]
-        normalize_axis_tuple,
-    )
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -944,39 +937,39 @@ class DeferredArray(NumPyThunk):
 
         return result
 
-    @auto_convert("rhs")
-    def set_item(self, key: Any, rhs: Any) -> None:
-        assert self.dtype == rhs.dtype
+    @auto_convert("value")
+    def set_item(self, key: Any, value: Any) -> None:
+        assert self.dtype == value.dtype
 
         # Check to see if this is advanced indexing or not
         if is_advanced_indexing(key):
             # copy if a self-copy might overlap
-            rhs = rhs._copy_if_overlapping(self)
+            value = value._copy_if_overlapping(self)
 
             # Create the indexing array
             (copy_needed, lhs, index_array, self) = (
-                self._create_indexing_array(key, True, rhs)
+                self._create_indexing_array(key, True, value)
             )
 
             if not copy_needed:
                 return
 
-            if rhs.shape != index_array.shape:
-                rhs_tmp = rhs._broadcast(index_array.base.shape)
-                rhs_tmp = rhs._copy_store(rhs_tmp)
-                rhs_store = rhs_tmp.base
+            if value.shape != index_array.shape:
+                value_tmp = value._broadcast(index_array.base.shape)
+                value_tmp = value._copy_store(value_tmp)
+                value_store = value_tmp.base
             else:
-                if rhs.base.transformed:
-                    rhs = rhs._copy_store(rhs.base)
-                rhs_store = rhs.base
+                if value.base.transformed:
+                    value = value._copy_store(value.base)
+                value_store = value.base
 
-            # the case when rhs is a scalar and indices array contains
+            # the case when value is a scalar and indices array contains
             # a single value
             # TODO this logic should be removed when copy accepts Futures
-            if rhs_store.has_scalar_storage:
-                rhs_tmp = DeferredArray(base=rhs_store)
-                rhs_tmp2 = rhs_tmp._convert_future_to_regionfield()
-                rhs_store = rhs_tmp2.base
+            if value_store.has_scalar_storage:
+                value_tmp = DeferredArray(base=value_store)
+                value_tmp2 = value_tmp._convert_future_to_regionfield()
+                value_store = value_tmp2.base
 
             if index_array.base.has_scalar_storage:
                 index_array = index_array._convert_future_to_regionfield()
@@ -987,7 +980,7 @@ class DeferredArray(NumPyThunk):
 
             if index_array.size != 0:
                 legate_runtime.issue_scatter(
-                    lhs.base, index_array.base, rhs_store
+                    lhs.base, index_array.base, value_store
                 )
 
             # TODO this copy will be removed when affine copies are
@@ -1003,7 +996,7 @@ class DeferredArray(NumPyThunk):
 
             if view.shape == ():
                 # We're just writing a single value
-                assert rhs.size == 1
+                assert value.size == 1
 
                 task = legate_runtime.create_auto_task(
                     self.library, CuPyNumericOpCode.WRITE
@@ -1013,7 +1006,7 @@ class DeferredArray(NumPyThunk):
                 # instance just for this one-element view or picks one of the
                 # existing valid instances for the parent.
                 task.add_output(view.base)
-                task.add_input(rhs.base)
+                task.add_input(value.base)
                 task.execute()
             else:
                 # In Python, any inplace update of form arr[key] op= value
@@ -1028,10 +1021,10 @@ class DeferredArray(NumPyThunk):
                 # NOTE: Neither Store nor Storage have an __eq__, so we can
                 # only check that the underlying RegionField/Future corresponds
                 # to the same Legion handle.
-                if view.base.equal_storage(rhs.base):
+                if view.base.equal_storage(value.base):
                     return
 
-                view.copy(rhs, deep=False)
+                view.copy(value, deep=False)
 
     def broadcast_to(self, shape: NdShape) -> NumPyThunk:
         return DeferredArray(base=self._broadcast(shape))
@@ -1399,15 +1392,15 @@ class DeferredArray(NumPyThunk):
             task.add_input(value)
             task.execute()
 
-    def fill(self, numpy_array: Any) -> None:
-        assert isinstance(numpy_array, np.ndarray)
-        if numpy_array.size != 1:
+    def fill(self, value: Any) -> None:
+        assert isinstance(value, np.ndarray)
+        if value.size != 1:
             raise ValueError("Filled value array size is not equal to 1")
-        assert self.dtype == numpy_array.dtype
+        assert self.dtype == value.dtype
         # Have to copy the numpy array because this launch is asynchronous
         # and we need to make sure the application doesn't mutate the value
         # so make a future result, this is immediate so no dependence
-        self._fill(Scalar(numpy_array.tobytes(), self.base.type))
+        self._fill(Scalar(value.tobytes(), self.base.type))
 
     @auto_convert("rhs1_thunk", "rhs2_thunk")
     def contract(
@@ -3251,18 +3244,18 @@ class DeferredArray(NumPyThunk):
     _rad2deg = _make_deferred_unary_ufunc(_ufunc.rad2deg)
 
     # Perform the unary operation and put the result in the array
-    @auto_convert("src")
+    @auto_convert("rhs")
     def unary_op(
         self,
         op: UnaryOpCode,
-        src: Any,
+        rhs: Any,
         where: Any,
         args: tuple[Scalar, ...] = (),
         multiout: Any | None = None,
     ) -> None:
         lhs = self.base
-        src = src._copy_if_partially_overlapping(self)
-        rhs = src._broadcast(lhs.shape)
+        rhs = rhs._copy_if_partially_overlapping(self)
+        rhs = rhs._broadcast(lhs.shape)
 
         with Annotation({"OpCode": op.name}):
             task = legate_runtime.create_auto_task(
@@ -3286,11 +3279,11 @@ class DeferredArray(NumPyThunk):
 
     # Perform a unary reduction operation from one set of dimensions down to
     # fewer
-    @auto_convert("src", "where")
+    @auto_convert("rhs", "where")
     def unary_reduction(
         self,
         op: UnaryRedCode,
-        src: Any,
+        rhs: Any,
         where: Any,
         orig_axis: int | None,
         axes: tuple[int, ...],
@@ -3299,7 +3292,7 @@ class DeferredArray(NumPyThunk):
         initial: Any,
     ) -> None:
         lhs_array: NumPyThunk | DeferredArray = self
-        rhs_array = src
+        rhs_array = rhs
         assert lhs_array.ndim <= rhs_array.ndim
 
         argred = op in (
@@ -3414,22 +3407,22 @@ class DeferredArray(NumPyThunk):
         self.binary_op(BinaryOpCode.ISCLOSE, rhs1, rhs2, True, args)
 
     # Perform the binary operation and put the result in the lhs array
-    @auto_convert("src1", "src2")
+    @auto_convert("rhs1", "rhs2")
     def binary_op(
         self,
-        op_code: BinaryOpCode,
-        src1: Any,
-        src2: Any,
+        op: BinaryOpCode,
+        rhs1: Any,
+        rhs2: Any,
         where: Any,
         args: tuple[Scalar, ...],
     ) -> None:
         lhs = self.base
-        src1 = src1._copy_if_partially_overlapping(self)
-        rhs1 = src1._broadcast(lhs.shape)
-        src2 = src2._copy_if_partially_overlapping(self)
-        rhs2 = src2._broadcast(lhs.shape)
+        rhs1 = rhs1._copy_if_partially_overlapping(self)
+        rhs1 = rhs1._broadcast(lhs.shape)
+        rhs2 = rhs2._copy_if_partially_overlapping(self)
+        rhs2 = rhs2._broadcast(lhs.shape)
 
-        with Annotation({"OpCode": op_code.name}):
+        with Annotation({"OpCode": op.name}):
             # Populate the Legate launcher
             task = legate_runtime.create_auto_task(
                 self.library, CuPyNumericOpCode.BINARY_OP
@@ -3437,7 +3430,7 @@ class DeferredArray(NumPyThunk):
             p_lhs = task.add_output(lhs)
             p_rhs1 = task.add_input(rhs1)
             p_rhs2 = task.add_input(rhs2)
-            task.add_scalar_arg(op_code.value, ty.int32)
+            task.add_scalar_arg(op.value, ty.int32)
             for arg in args:
                 task.add_scalar_arg(arg)
 
@@ -3446,12 +3439,12 @@ class DeferredArray(NumPyThunk):
 
             task.execute()
 
-    @auto_convert("src1", "src2")
+    @auto_convert("rhs1", "rhs2")
     def binary_reduction(
         self,
         op: BinaryOpCode,
-        src1: Any,
-        src2: Any,
+        rhs1: Any,
+        rhs2: Any,
         broadcast: NdShape | None,
         args: tuple[Scalar, ...],
     ) -> None:
@@ -3459,11 +3452,11 @@ class DeferredArray(NumPyThunk):
         assert lhs.has_scalar_storage
 
         if broadcast is not None:
-            rhs1 = src1._broadcast(broadcast)
-            rhs2 = src2._broadcast(broadcast)
+            rhs1 = rhs1._broadcast(broadcast)
+            rhs2 = rhs2._broadcast(broadcast)
         else:
-            rhs1 = src1.base
-            rhs2 = src2.base
+            rhs1 = rhs1.base
+            rhs2 = rhs2.base
 
         # Populate the Legate launcher
         if op == BinaryOpCode.NOT_EQUAL:
@@ -3486,12 +3479,12 @@ class DeferredArray(NumPyThunk):
 
         task.execute()
 
-    @auto_convert("src1", "src2", "src3")
-    def where(self, src1: Any, src2: Any, src3: Any) -> None:
+    @auto_convert("rhs1", "rhs2", "rhs3")
+    def where(self, rhs1: Any, rhs2: Any, rhs3: Any) -> None:
         lhs = self.base
-        rhs1 = src1._broadcast(lhs.shape)
-        rhs2 = src2._broadcast(lhs.shape)
-        rhs3 = src3._broadcast(lhs.shape)
+        rhs1 = rhs1._broadcast(lhs.shape)
+        rhs2 = rhs2._broadcast(lhs.shape)
+        rhs3 = rhs3._broadcast(lhs.shape)
 
         # Populate the Legate launcher
         task = legate_runtime.create_auto_task(
