@@ -135,6 +135,7 @@ requirements:
     - make
     - ninja
     - cmake {{ cmake_version }}
+    - {{ stdlib("c") }}
     - {{ compiler('c') }} =11.2
     - {{ compiler('cxx') }} =11.2
     # the nvcc requirement is necessary because it contains crt/host_config.h used by cuda runtime. This is a packaging bug that has been reported.
@@ -186,9 +187,6 @@ requirements:
     - cupy
     - libnvjitlink
 {% endif %}
-
-  run_constrained:
-    - __glibc >=2.17  # [linux]
 
 about:
   home: https://github.com/nv-legate/cupynumeric
