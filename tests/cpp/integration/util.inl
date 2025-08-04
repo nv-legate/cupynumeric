@@ -176,7 +176,7 @@ template <typename T, int32_t DIM>
 void print_array(cupynumeric::NDArray array)
 {
   auto acc            = array.get_read_accessor<T, DIM>();
-  auto& shape         = array.shape();
+  const auto shape    = array.shape();
   auto logical_store  = array.get_store();
   auto physical_store = logical_store.get_physical_store();
   auto rect           = physical_store.shape<DIM>();
@@ -192,7 +192,7 @@ void check_array_eq(cupynumeric::NDArray array, T* values_ptr, size_t length)
   }
   assert(values_ptr != nullptr);
   auto acc            = array.get_read_accessor<T, DIM>();
-  auto& shape         = array.shape();
+  const auto shape    = array.shape();
   auto logical_store  = array.get_store();
   auto physical_store = logical_store.get_physical_store();
   auto rect           = physical_store.shape<DIM>();

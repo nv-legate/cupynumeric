@@ -31,7 +31,7 @@ std::vector<uint64_t> broadcast_shapes(std::vector<NDArray> arrays)
   std::vector<uint64_t> result(dim, 1);
 
   for (auto& array : arrays) {
-    auto& shape = array.shape();
+    const auto shape = array.shape();
 
     auto in_it  = shape.rbegin();
     auto out_it = result.rbegin();

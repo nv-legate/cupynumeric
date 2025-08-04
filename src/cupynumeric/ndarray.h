@@ -41,7 +41,7 @@ class NDArray {
 
  public:
   int32_t dim() const;
-  const std::vector<uint64_t>& shape() const;
+  std::vector<uint64_t> shape() const;
   size_t size() const;
   legate::Type type() const;
 

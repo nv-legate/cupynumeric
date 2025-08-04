@@ -106,7 +106,7 @@ test_cupynumeric() {
             shift;
             run_legate_issue;
             export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib/legate/deps:${LD_LIBRARY_PATH:-}
-            REALM_BACKTRACE=1 LEGATE_TEST=1 LEGATE_LOG_MAPPING=1 ${CONDA_PREFIX}/bin/cpp_tests
+            REALM_BACKTRACE=1 LEGATE_TEST=1 ${CONDA_PREFIX}/bin/cpp_tests
             ;;
         *)
             echo "Invalid command: $1"

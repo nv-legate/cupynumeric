@@ -245,8 +245,8 @@ NDArray bincount(NDArray x,
 
 NDArray trilu(NDArray rhs, int32_t k, bool lower)
 {
-  auto dim    = rhs.dim();
-  auto& shape = rhs.shape();
+  auto dim         = rhs.dim();
+  const auto shape = rhs.shape();
   std::vector<uint64_t> out_shape(shape);
   if (dim == 0) {
     throw std::invalid_argument("Dim of input array must be > 0");

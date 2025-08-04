@@ -34,8 +34,8 @@ struct Config {
 
 void print_array(cupynumeric::NDArray array)
 {
-  auto acc    = array.get_read_accessor<double, 2>();
-  auto& shape = array.shape();
+  auto acc         = array.get_read_accessor<double, 2>();
+  const auto shape = array.shape();
   std::stringstream ss;
   for (uint32_t i = 0; i < shape[0]; ++i) {
     for (uint32_t j = 0; j < shape[0]; ++j) {

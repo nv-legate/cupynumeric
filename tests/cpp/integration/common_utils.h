@@ -137,7 +137,7 @@ struct PrintArray {
   void operator()(cupynumeric::NDArray array)
   {
     auto acc            = array.get_read_accessor<T, DIM>();
-    auto& shape         = array.shape();
+    const auto shape    = array.shape();
     auto logical_store  = array.get_store();
     auto physical_store = logical_store.get_physical_store();
     auto rect           = physical_store.shape<DIM>();

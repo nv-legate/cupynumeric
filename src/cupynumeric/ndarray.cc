@@ -142,7 +142,7 @@ NDArray::NDArray(legate::LogicalStore&& store) : store_(std::forward<legate::Log
 
 int32_t NDArray::dim() const { return store_.dim(); }
 
-const std::vector<uint64_t>& NDArray::shape() const { return store_.extents().data(); }
+std::vector<uint64_t> NDArray::shape() const { return store_.extents().data(); }
 
 size_t NDArray::size() const { return store_.volume(); }
 
@@ -443,8 +443,8 @@ void NDArray::trilu(NDArray rhs, int32_t k, bool lower)
 
   auto task = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_TRILU);
 
-  auto& out_shape = shape();
-  rhs             = rhs.broadcast(out_shape, rhs.store_);
+  const auto out_shape = shape();
+  rhs                  = rhs.broadcast(out_shape, rhs.store_);
 
   task.add_scalar_arg(legate::Scalar(lower));
   task.add_scalar_arg(legate::Scalar(k));
@@ -473,9 +473,9 @@ void NDArray::binary_op(int32_t op_code, NDArray rhs1, NDArray rhs2)
 
   auto task = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_BINARY_OP);
 
-  auto& out_shape = shape();
-  auto rhs1_store = broadcast(out_shape, rhs1.store_);
-  auto rhs2_store = broadcast(out_shape, rhs2.store_);
+  const auto out_shape = shape();
+  auto rhs1_store      = broadcast(out_shape, rhs1.store_);
+  auto rhs2_store      = broadcast(out_shape, rhs2.store_);
 
   auto p_lhs  = task.add_output(store_);
   auto p_rhs1 = task.add_input(rhs1_store);
@@ -984,10 +984,20 @@ NDArray NDArray::_perform_unary_reduction(int32_t op,
   if (!out.has_value()) {
     out = runtime->create_array(out_shape, res_dtype.value());
   } else if (out.value().shape() != out_shape) {
-    std::string err_msg = "the output shapes do not match: expected" +
-                          std::string(out_shape.begin(), out_shape.end()) + "but got " +
-                          std::string(out.value().shape().begin(), out.value().shape().end());
-    throw std::invalid_argument(std::move(err_msg));
+    auto shape_to_string = [](const auto& shape) {
+      if (shape.empty()) {
+        return std::string("[]");
+      }
+      std::string result = "[" + std::to_string(shape[0]);
+      for (size_t i = 1; i < shape.size(); ++i) {
+        result += ", " + std::to_string(shape[i]);
+      }
+      return result + "]";
+    };
+
+    std::string err_msg = "the output shapes do not match: expected " + shape_to_string(out_shape) +
+                          " but got " + shape_to_string(out.value().shape());
+    throw std::invalid_argument(err_msg);
   }
 
   if (dtype.value() != src.type()) {
@@ -1847,10 +1857,10 @@ NDArray NDArray::squeeze(
 
 void NDArray::where(NDArray rhs1, NDArray rhs2, NDArray rhs3)
 {
-  const auto& out_shape = shape();
-  auto rhs1_store       = broadcast(out_shape, rhs1.store_);
-  auto rhs2_store       = broadcast(out_shape, rhs2.store_);
-  auto rhs3_store       = broadcast(out_shape, rhs3.store_);
+  const auto out_shape = shape();
+  auto rhs1_store      = broadcast(out_shape, rhs1.store_);
+  auto rhs2_store      = broadcast(out_shape, rhs2.store_);
+  auto rhs3_store      = broadcast(out_shape, rhs3.store_);
   assert(store_.type() == rhs2.store_.type());
   assert(store_.type() == rhs3.store_.type());
 
