@@ -26,7 +26,7 @@ DTYPES = ["h", "i", "l", "H", "I", "L", "e", "f", "d"]
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=str)
-def test_modf(shape):
+def test_modf(shape: tuple[int, ...]) -> None:
     x_np = np.random.random(shape)
     x_num = num.array(x_np)
 
@@ -92,7 +92,7 @@ def test_modf(shape):
 
 
 @pytest.mark.parametrize("shape", SHAPES, ids=str)
-def test_floating(shape):
+def test_floating(shape: tuple[int, ...]) -> None:
     x_np = np.random.random(shape)
     x_num = num.array(x_np)
 
@@ -129,11 +129,18 @@ def test_floating(shape):
 
     assert ldexp_np.dtype == ldexp_num.dtype == np.float64
 
+    ldexp_np = np.ldexp(np.float16(1.0), np.array([1, 2], dtype=np.int8))
+    ldexp_num = num.ldexp(np.float16(1.0), num.array([1, 2], dtype=np.int8))
+
+    assert ldexp_np.dtype == ldexp_num.dtype == np.float16
+
 
 @pytest.mark.parametrize("fun", ("modf", "frexp"))
 @pytest.mark.parametrize("dtype", DTYPES)
 @pytest.mark.parametrize("shape", SHAPES, ids=str)
-def test_typing_unary(fun, dtype, shape):
+def test_typing_unary(
+    fun: str, dtype: np.dtype, shape: tuple[int, ...]
+) -> None:
     fn_np = getattr(np, fun)
     fn_num = getattr(num, fun)
     assert np.array_equal(

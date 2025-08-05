@@ -393,6 +393,18 @@ def test_contains_with_ndarray_multi_element() -> None:
         item in arr
 
 
+@pytest.mark.parametrize("ddtype", (np.int8, np.uint8))
+def test_lcm_zero_input(ddtype: np.dtype) -> None:
+    arr = np.zeros(3, dtype=ddtype)
+    arr_num = num.zeros(3, dtype=ddtype)
+
+    out = np.lcm(arr, arr)
+    out_num = num.lcm(arr_num, arr_num)
+
+    assert allclose(out, out_num)
+    assert out.dtype == out_num.dtype
+
+
 def test_array_complex() -> None:
     a = num.array(3 + 4j)
     result = complex(a)
