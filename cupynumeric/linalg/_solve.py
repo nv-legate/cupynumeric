@@ -14,15 +14,15 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import legate.core.types as ty
-from legate.core import broadcast, get_legate_runtime
+from legate.core import dimension, get_legate_runtime
 
 from ..config import CuPyNumericOpCode
 from ..runtime import runtime
 from ..settings import settings
-from ._cholesky import transpose_copy_single
+from ._eigen import prepare_manual_task_for_batched_matrices
 from ._exception import LinAlgError
 
 if TYPE_CHECKING:
@@ -31,18 +31,28 @@ if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray
 
 
-def solve_single(library: Library, a: LogicalStore, b: LogicalStore) -> None:
-    task = get_legate_runtime().create_auto_task(
-        library, CuPyNumericOpCode.SOLVE
+def solve_batched(
+    library: Library, a: DeferredArray, b: DeferredArray, x: DeferredArray
+) -> None:
+    nrhs = b.shape[-1]
+    tilesize_a, color_shape = prepare_manual_task_for_batched_matrices(a.shape)
+    tilesize_b = tuple(tilesize_a[:-1]) + (nrhs,)
+
+    # partition defined py local batchsize
+    tiled_a = a.base.partition_by_tiling(tilesize_a)
+    tiled_b = b.base.partition_by_tiling(tilesize_b)
+    tiled_x = x.base.partition_by_tiling(tilesize_b)
+
+    task = get_legate_runtime().create_manual_task(
+        library, CuPyNumericOpCode.SOLVE, color_shape
     )
     task.throws_exception(LinAlgError)
-    p_a = task.add_input(a)
-    p_b = task.add_input(b)
-    task.add_output(a, p_a)
-    task.add_output(b, p_b)
 
-    task.add_constraint(broadcast(p_a))
-    task.add_constraint(broadcast(p_b))
+    partition = tuple(dimension(i) for i in range(len(color_shape)))
+    task.add_input(tiled_a, partition)
+    task.add_input(tiled_b, partition)
+    task.add_output(tiled_x, partition)
+    task.execute()
 
     task.execute()
 
@@ -89,13 +99,12 @@ def mp_solve(
 def solve_deferred(
     output: DeferredArray, a: DeferredArray, b: DeferredArray
 ) -> None:
-    from .._thunk.deferred import DeferredArray
-
     library = output.library
 
     if (
         runtime.has_cusolvermp
         and runtime.num_gpus > 1
+        and a.ndim == 2
         and a.base.shape[0] >= MIN_SOLVE_MATRIX_SIZE
     ):
         n = a.base.shape[0]
@@ -105,15 +114,4 @@ def solve_deferred(
         )
         return
 
-    a_copy = cast(
-        DeferredArray,
-        runtime.create_empty_thunk(a.shape, dtype=a.base.type, inputs=(a,)),
-    )
-    transpose_copy_single(library, a.base, a_copy.base)
-
-    if b.ndim > 1:
-        transpose_copy_single(library, b.base, output.base)
-    else:
-        output.copy(b)
-
-    solve_single(library, a_copy.base, output.base)
+    solve_batched(library, a, b, output)

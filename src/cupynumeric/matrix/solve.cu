@@ -30,30 +30,39 @@ static inline void solve_template(GetrfBufferSize getrf_buffer_size,
                                   int32_t m,
                                   int32_t n,
                                   int32_t nrhs,
-                                  VAL* a,
-                                  VAL* b)
+                                  const VAL* a,
+                                  const VAL* b,
+                                  VAL* x)
 {
   const auto trans = CUBLAS_OP_N;
 
   auto handle = get_cusolver();
   auto stream = get_cached_stream();
+
+  // copy inputs for in-place compute
+  auto a_copy = create_buffer<VAL>(m * n, Memory::Kind::GPU_FB_MEM);
+  CUPYNUMERIC_CHECK_CUDA(
+    cudaMemcpyAsync(a_copy.ptr(0), a, sizeof(VAL) * m * n, cudaMemcpyDeviceToDevice, stream));
+  CUPYNUMERIC_CHECK_CUDA(
+    cudaMemcpyAsync(x, b, sizeof(VAL) * m * nrhs, cudaMemcpyDeviceToDevice, stream));
+
   CHECK_CUSOLVER(cusolverDnSetStream(handle, stream));
 
   int32_t buffer_size;
-  CHECK_CUSOLVER(getrf_buffer_size(handle, m, n, a, m, &buffer_size));
+  CHECK_CUSOLVER(getrf_buffer_size(handle, m, n, a_copy.ptr(0), m, &buffer_size));
 
   auto ipiv   = create_buffer<int32_t>(std::min(m, n), Memory::Kind::GPU_FB_MEM);
   auto buffer = create_buffer<VAL>(buffer_size, Memory::Kind::GPU_FB_MEM);
   auto info   = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
 
-  CHECK_CUSOLVER(getrf(handle, m, n, a, m, buffer.ptr(0), ipiv.ptr(0), info.ptr(0)));
+  CHECK_CUSOLVER(getrf(handle, m, n, a_copy.ptr(0), m, buffer.ptr(0), ipiv.ptr(0), info.ptr(0)));
   CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
 
   if (info[0] != 0) {
     throw legate::TaskException(SolveTask::ERROR_MESSAGE);
   }
 
-  CHECK_CUSOLVER(getrs(handle, trans, n, nrhs, a, m, ipiv.ptr(0), b, n, info.ptr(0)));
+  CHECK_CUSOLVER(getrs(handle, trans, n, nrhs, a_copy.ptr(0), m, ipiv.ptr(0), x, n, info.ptr(0)));
 
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
@@ -62,51 +71,166 @@ static inline void solve_template(GetrfBufferSize getrf_buffer_size,
 #endif
 }
 
+template <typename GetrfBatched, typename GetrsBatched, typename VAL>
+static inline void solve_template_batched(GetrfBatched getrfbatched,
+                                          GetrsBatched getrsbatched,
+                                          int32_t batchsize,
+                                          int32_t n,
+                                          int32_t nrhs,
+                                          const VAL* a,
+                                          const VAL* b,
+                                          VAL* x)
+{
+  auto cublas_handle = get_cublas();
+  auto stream        = get_cached_stream();
+
+  // copy inputs for in-place compute
+  auto a_copy = create_buffer<VAL>(batchsize * n * n, Memory::Kind::GPU_FB_MEM);
+  CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
+    a_copy.ptr(0), a, sizeof(VAL) * batchsize * n * n, cudaMemcpyDeviceToDevice, stream));
+  CUPYNUMERIC_CHECK_CUDA(
+    cudaMemcpyAsync(x, b, sizeof(VAL) * batchsize * n * nrhs, cudaMemcpyDeviceToDevice, stream));
+
+  CHECK_CUBLAS(cublasSetStream(cublas_handle, stream));
+
+  Buffer<VAL*> aArray = create_buffer<VAL*>(batchsize, legate::Memory::Z_COPY_MEM);
+  Buffer<VAL*> bArray = create_buffer<VAL*>(batchsize, legate::Memory::Z_COPY_MEM);
+  for (int i = 0; i < batchsize; ++i) {
+    aArray[i] = a_copy.ptr(0) + i * n * n;
+    bArray[i] = x + i * n * nrhs;
+  }
+
+  auto ipiv = create_buffer<int32_t>(n * batchsize, Memory::Kind::GPU_FB_MEM);
+
+  auto info = create_buffer<int32_t>(batchsize, Memory::Kind::Z_COPY_MEM);
+  CHECK_CUBLAS(
+    getrfbatched(cublas_handle, n, aArray.ptr(0), n, ipiv.ptr(0), info.ptr(0), batchsize));
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+
+  for (int i = 0; i < batchsize; ++i) {
+    if (info[i] != 0) {
+      throw legate::TaskException(SolveTask::ERROR_MESSAGE);
+    }
+  }
+
+  const auto trans = CUBLAS_OP_N;
+  CHECK_CUBLAS(getrsbatched(cublas_handle,
+                            trans,
+                            n,
+                            nrhs,
+                            aArray.ptr(0),
+                            n,
+                            ipiv.ptr(0),
+                            bArray.ptr(0),
+                            n,
+                            info.ptr(0),
+                            batchsize));
+
+  CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
+
+#ifdef DEBUG_CUPYNUMERIC
+  for (int i = 0; i < batchsize; ++i) {
+    assert(info[i] == 0);
+  }
+#endif
+}
+
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
-  void operator()(int32_t m, int32_t n, int32_t nrhs, float* a, float* b)
+  void operator()(
+    int32_t batchsize, int32_t m, int32_t n, int32_t nrhs, const float* a, const float* b, float* x)
   {
-    solve_template(
-      cusolverDnSgetrf_bufferSize, cusolverDnSgetrf, cusolverDnSgetrs, m, n, nrhs, a, b);
+    if (batchsize > 1) {
+      solve_template_batched(cublasSgetrfBatched, cublasSgetrsBatched, batchsize, n, nrhs, a, b, x);
+    } else {
+      solve_template(
+        cusolverDnSgetrf_bufferSize, cusolverDnSgetrf, cusolverDnSgetrs, m, n, nrhs, a, b, x);
+    }
   }
 };
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
-  void operator()(int32_t m, int32_t n, int32_t nrhs, double* a, double* b)
+  void operator()(int32_t batchsize,
+                  int32_t m,
+                  int32_t n,
+                  int32_t nrhs,
+                  const double* a,
+                  const double* b,
+                  double* x)
   {
-    solve_template(
-      cusolverDnDgetrf_bufferSize, cusolverDnDgetrf, cusolverDnDgetrs, m, n, nrhs, a, b);
+    if (batchsize > 1) {
+      solve_template_batched(cublasDgetrfBatched, cublasDgetrsBatched, batchsize, n, nrhs, a, b, x);
+    } else {
+      solve_template(
+        cusolverDnDgetrf_bufferSize, cusolverDnDgetrf, cusolverDnDgetrs, m, n, nrhs, a, b, x);
+    }
   }
 };
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
-  void operator()(int32_t m, int32_t n, int32_t nrhs, complex<float>* a, complex<float>* b)
+  void operator()(int32_t batchsize,
+                  int32_t m,
+                  int32_t n,
+                  int32_t nrhs,
+                  const complex<float>* a,
+                  const complex<float>* b,
+                  complex<float>* x)
   {
-    solve_template(cusolverDnCgetrf_bufferSize,
-                   cusolverDnCgetrf,
-                   cusolverDnCgetrs,
-                   m,
-                   n,
-                   nrhs,
-                   reinterpret_cast<cuComplex*>(a),
-                   reinterpret_cast<cuComplex*>(b));
+    if (batchsize > 1) {
+      solve_template_batched(cublasCgetrfBatched,
+                             cublasCgetrsBatched,
+                             batchsize,
+                             n,
+                             nrhs,
+                             reinterpret_cast<const cuComplex*>(a),
+                             reinterpret_cast<const cuComplex*>(b),
+                             reinterpret_cast<cuComplex*>(x));
+    } else {
+      solve_template(cusolverDnCgetrf_bufferSize,
+                     cusolverDnCgetrf,
+                     cusolverDnCgetrs,
+                     m,
+                     n,
+                     nrhs,
+                     reinterpret_cast<const cuComplex*>(a),
+                     reinterpret_cast<const cuComplex*>(b),
+                     reinterpret_cast<cuComplex*>(x));
+    }
   }
 };
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
-  void operator()(int32_t m, int32_t n, int32_t nrhs, complex<double>* a, complex<double>* b)
+  void operator()(int32_t batchsize,
+                  int32_t m,
+                  int32_t n,
+                  int32_t nrhs,
+                  const complex<double>* a,
+                  const complex<double>* b,
+                  complex<double>* x)
   {
-    solve_template(cusolverDnZgetrf_bufferSize,
-                   cusolverDnZgetrf,
-                   cusolverDnZgetrs,
-                   m,
-                   n,
-                   nrhs,
-                   reinterpret_cast<cuDoubleComplex*>(a),
-                   reinterpret_cast<cuDoubleComplex*>(b));
+    if (batchsize > 1) {
+      solve_template_batched(cublasZgetrfBatched,
+                             cublasZgetrsBatched,
+                             batchsize,
+                             n,
+                             nrhs,
+                             reinterpret_cast<const cuDoubleComplex*>(a),
+                             reinterpret_cast<const cuDoubleComplex*>(b),
+                             reinterpret_cast<cuDoubleComplex*>(x));
+    } else {
+      solve_template(cusolverDnZgetrf_bufferSize,
+                     cusolverDnZgetrf,
+                     cusolverDnZgetrs,
+                     m,
+                     n,
+                     nrhs,
+                     reinterpret_cast<const cuDoubleComplex*>(a),
+                     reinterpret_cast<const cuDoubleComplex*>(b),
+                     reinterpret_cast<cuDoubleComplex*>(x));
+    }
   }
 };
 

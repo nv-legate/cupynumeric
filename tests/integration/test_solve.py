@@ -21,6 +21,17 @@ import cupynumeric as num
 
 SIZES = (8, 9, 255)
 
+SIZES_BATCHED = [
+    (27, 5, 5),
+    (1, 5, 5),
+    (3, 2, 255, 255),
+    (3, 2, 5, 5),
+    (1, 2, 5, 5),
+    (4, 1, 5, 5),
+    (2, 1, 0, 0),
+    (4, 4, 255, 255),
+]
+
 RTOL = {
     np.dtype(np.float32): 1e-1,
     np.dtype(np.complex64): 1e-1,
@@ -80,6 +91,30 @@ def test_solve_2d(n: int, a_dtype: np.dtype, b_dtype: np.dtype):
     assert allclose(
         b, num.matmul(a, out), rtol=rtol, atol=atol, check_dtype=False
     )
+
+
+@pytest.mark.parametrize("size", SIZES_BATCHED)
+@pytest.mark.parametrize(
+    "a_dtype", (np.float32, np.float64, np.complex64, np.complex128)
+)
+@pytest.mark.parametrize(
+    "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
+)
+def test_solve_batched(size: tuple, a_dtype: np.dtype, b_dtype: np.dtype):
+    nrhs = size[0] + 1
+    size_b = tuple(size[:-1]) + (nrhs,)
+    a = (
+        np.random.rand(np.prod(size)).reshape(size).astype(a_dtype)
+        + np.eye(size[-1], dtype=a_dtype) * size[-1]
+    )
+    b = np.random.rand(np.prod(size_b)).reshape(size_b).astype(b_dtype)
+
+    out = num.linalg.solve(a, b)
+
+    rtol = RTOL[out.dtype]
+    atol = ATOL[out.dtype]
+
+    assert allclose(b, a @ out, rtol=rtol, atol=atol, check_dtype=False)
 
 
 def test_solve_corner_cases():
@@ -158,16 +193,28 @@ class TestSolveErrors:
         with pytest.raises(num.linalg.LinAlgError, match=msg):
             num.linalg.solve(self.a, b)
 
-    def test_a_dim_greater_than_two(self):
-        a = num.random.rand(self.n, self.n, self.n).astype(np.float64)
-        b = num.random.rand(self.n, self.n).astype(np.float64)
-        with pytest.raises(NotImplementedError):
+    def test_a_dim_3_dimension_mismatch(self):
+        n = 3
+        a = num.random.rand(37, n, n).astype(np.float64)
+        b = num.random.rand(37, n + 1, 12).astype(np.float64)
+        msg = (
+            "Input operand 1 has a mismatch in its dimension 1, with signature"
+            " (...,m,m),(...,m,n)->(...,m,n) (size 4 is different from 3)"
+        )
+        import re
+
+        with pytest.raises(ValueError, match=re.escape(msg)):
             num.linalg.solve(a, b)
 
-    def test_b_dim_greater_than_two(self):
-        a = num.random.rand(self.n, self.n).astype(np.float64)
-        b = num.random.rand(self.n, self.n, self.n).astype(np.float64)
-        with pytest.raises(NotImplementedError):
+    def test_a_dim_3_b_not_dim_3(self):
+        a = num.random.rand(37, self.n, self.n).astype(np.float64)
+        b = num.random.rand(37, self.n).astype(np.float64)
+        msg = (
+            "Batched matrices require signature (...,m,m),(...,m,n)->(...,m,n)"
+        )
+        import re
+
+        with pytest.raises(ValueError, match=re.escape(msg)):
             num.linalg.solve(a, b)
 
     def test_a_bad_dtype_float16(self):

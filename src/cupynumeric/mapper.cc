@@ -126,7 +126,6 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
     case CUPYNUMERIC_POTRF:
     case CUPYNUMERIC_QR:
     case CUPYNUMERIC_TRSM:
-    case CUPYNUMERIC_SOLVE:
     case CUPYNUMERIC_SVD:
     case CUPYNUMERIC_SYRK:
     case CUPYNUMERIC_GEMM:
@@ -144,6 +143,33 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
         mappings.push_back(
           StoreMapping::default_mapping(output.data(), options.front(), true /*exact*/));
         mappings.back().policy().ordering.set_fortran_order();
+      }
+      return mappings;
+    }
+    case CUPYNUMERIC_SOLVE: {
+      std::vector<StoreMapping> mappings;
+      auto dimensions = task.input(0).dim();
+
+      // last 2 (matrix) dimensions col-major
+      // batch dimensions 0, ..., dim-3 row-major
+      std::vector<int32_t> dim_order;
+      dim_order.push_back(dimensions - 2);
+      dim_order.push_back(dimensions - 1);
+      for (int32_t i = dimensions - 3; i >= 0; i--) {
+        dim_order.push_back(i);
+      }
+
+      auto inputs  = task.inputs();
+      auto outputs = task.outputs();
+      for (auto& input : inputs) {
+        mappings.push_back(
+          StoreMapping::default_mapping(input.data(), options.front(), true /*exact*/));
+        mappings.back().policy().ordering.set_custom_order(dim_order);
+      }
+      for (auto& output : outputs) {
+        mappings.push_back(
+          StoreMapping::default_mapping(output.data(), options.front(), true /*exact*/));
+        mappings.back().policy().ordering.set_custom_order(dim_order);
       }
       return mappings;
     }

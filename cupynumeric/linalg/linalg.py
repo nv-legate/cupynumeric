@@ -378,16 +378,16 @@ def solve(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
 
     Parameters
     ----------
-    a : (M, M) array_like
+    a : (..., M, M) array_like
         Coefficient matrix.
-    b : {(M,), (M, K)}, array_like
+    b : {(M,), (..., M, K)}, array_like
         Ordinate or "dependent variable" values.
-    out : {(M,), (M, K)}, array_like, optional
+    out : {(..., M,), (..., M, K)}, array_like, optional
         An optional output array for the solution
 
     Returns
     -------
-    x : {(M,), (M, K)} ndarray
+    x : {(..., M,), (..., M, K)} ndarray
         Solution to the system a x = b.  Returned shape is identical to `b`.
 
     Raises
@@ -397,7 +397,8 @@ def solve(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
 
     Notes
     ------
-    Multi-GPU usage is only available when compiled with cusolverMP.
+    Single matrix multi-GPU usage is limited to cusolverMP. Additional
+    multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
 
     See Also
     --------
@@ -405,7 +406,7 @@ def solve(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
 
     Availability
     --------
-    Multiple GPUs, Single CPU
+    Multiple GPUs, Multiple CPUs
     """
     if a.ndim < 2:
         raise LinAlgError(
@@ -417,25 +418,33 @@ def solve(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
         )
     if np.dtype("e") in (a.dtype, b.dtype):
         raise TypeError("array type float16 is unsupported in linalg")
-    if a.ndim > 2 or b.ndim > 2:
-        raise NotImplementedError(
-            "cuPyNumeric does not yet support stacked 2d arrays"
-        )
     if a.shape[-2] != a.shape[-1]:
         raise LinAlgError("Last 2 dimensions of the array must be square")
-    if a.shape[-1] != b.shape[0]:
+    if a.ndim == 2 and a.shape[1] != b.shape[0]:
         if b.ndim == 1:
             raise ValueError(
                 "Input operand 1 has a mismatch in its dimension 0, "
                 f"with signature (m,m),(m)->(m) (size {b.shape[0]} "
-                f"is different from {a.shape[-1]})"
+                f"is different from {a.shape[1]})"
             )
         else:
             raise ValueError(
                 "Input operand 1 has a mismatch in its dimension 0, "
                 f"with signature (m,m),(m,n)->(m,n) (size {b.shape[0]} "
-                f"is different from {a.shape[-1]})"
+                f"is different from {a.shape[1]})"
             )
+    if a.ndim > 2:
+        if a.ndim != b.ndim:
+            raise ValueError(
+                "Batched matrices require signature (...,m,m),(...,m,n)->(...,m,n)"
+            )
+        if a.shape[-1] != b.shape[-2]:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension "
+                f"{b.ndim - 2}, with signature (...,m,m),(...,m,n)->(...,m,n)"
+                f" (size {b.shape[-2]} is different from {a.shape[-1]})"
+            )
+
     if a.size == 0 or b.size == 0:
         return empty_like(b)
 

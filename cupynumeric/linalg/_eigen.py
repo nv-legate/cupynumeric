@@ -28,9 +28,29 @@ if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray
 
 
-def _prepare_manual_task_for_batched_matrices(
+def prepare_manual_task_for_batched_matrices(
     full_shape: tuple[int, ...],
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """
+    Generates a pair of tilesize and color_shape to distribute a store
+    containing batched matrices (..., M, N) along the batched dimensions
+    without cutting through the matrices themselves.
+    The routine aims for a partition of 'runtime.num_procs'.
+
+    Parameters
+    ----------
+    full_shape : tuple[int, ...]
+        dimension shape of batched matrices, (..., M, N)
+
+    Returns
+    -------
+    tilesize : tuple[int, ...]
+        shape used to tile the full shape
+    color_shape : tuple[int, ...]
+        shape to be used as launch shape to cover the full store
+
+    """
+
     def choose_nd_color_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
         # start with 1D and re-balance by powers of 2
         # (don't worry about other primes)
@@ -79,7 +99,7 @@ def eig_deferred(
     if m == 0:
         raise ValueError("Input shape dimension 0 not allowed!")
 
-    tilesize, color_shape = _prepare_manual_task_for_batched_matrices(a.shape)
+    tilesize, color_shape = prepare_manual_task_for_batched_matrices(a.shape)
 
     # partition defined py local batchsize
     tiled_a = a.base.partition_by_tiling(tilesize)
@@ -111,7 +131,7 @@ def eigh_deferred(
     if m == 0:
         raise ValueError("Input shape dimension 0 not allowed!")
 
-    tilesize, color_shape = _prepare_manual_task_for_batched_matrices(a.shape)
+    tilesize, color_shape = prepare_manual_task_for_batched_matrices(a.shape)
 
     # partition defined py local batchsize
     tiled_a = a.base.partition_by_tiling(tilesize)
