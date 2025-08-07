@@ -529,18 +529,6 @@ struct BinaryOp<BinaryOpCode::LCM, CODE> {
     r = a / r * b;
     return r;
   }
-
-  __CUDA_HD__ bool operator()(const bool& _a, const bool& _b) const
-  {
-    int32_t a = static_cast<int32_t>(_a);
-    int32_t b = static_cast<int32_t>(_b);
-    int32_t r = _gcd(a, b);
-    if (r == 0) {
-      return false;
-    }
-    r = a / r * b;
-    return static_cast<bool>(r);
-  }
 };
 
 template <legate::Type::Code CODE>
