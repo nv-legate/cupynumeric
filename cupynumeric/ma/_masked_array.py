@@ -18,13 +18,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-    from ..types import NdShape
-
-
+    
 import numpy as _np
 
 from .._array.util import maybe_convert_to_np_ndarray
 from .._utils.coverage import clone_class
+from ..types import NdShape
 
 NDARRAY_INTERNAL = {
     "__array_finalize__",

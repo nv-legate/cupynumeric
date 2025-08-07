@@ -108,6 +108,15 @@ def test_asarray_ndarray():
     assert strict_type_equal(res_np, res_num)
 
 
+def test_masked_array_size_and_shape() -> None:
+    data = np.array([[1, 2, 3], [4, 5, 6]])
+    mask = np.array([[False, False, True], [False, True, False]])
+    m_arr = num.ma.MaskedArray(data, mask=mask)
+
+    assert m_arr.shape == (2, 3)
+    assert m_arr.size == 6
+    
+
 if __name__ == "__main__":
     import sys
 
