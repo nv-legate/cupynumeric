@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-    
+
 import numpy as _np
 
 from .._array.util import maybe_convert_to_np_ndarray

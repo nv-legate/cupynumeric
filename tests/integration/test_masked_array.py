@@ -115,7 +115,7 @@ def test_masked_array_size_and_shape() -> None:
 
     assert m_arr.shape == (2, 3)
     assert m_arr.size == 6
-    
+
 
 if __name__ == "__main__":
     import sys

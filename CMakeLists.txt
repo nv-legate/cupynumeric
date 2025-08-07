@@ -41,7 +41,8 @@ include(rapids-cuda)
 include(rapids-export)
 include(rapids-find)
 
-set(cupynumeric_version 25.09.00)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" cupynumeric_version)
+string(STRIP "${cupynumeric_version}" cupynumeric_version)
 
 # For now we want the optimization flags to match on both normal make and cmake
 # builds so we override the cmake defaults here for release, this changes

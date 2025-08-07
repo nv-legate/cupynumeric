@@ -16,7 +16,10 @@
 
 cmake_minimum_required(VERSION 3.26.4)
 
-project(cupynumeric-python VERSION 25.09.00 LANGUAGES CXX)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../../../../VERSION" cupynumeric_version)
+string(STRIP "${cupynumeric_version}" cupynumeric_version)
+
+project(cupynumeric-python VERSION "${cupynumeric_version}" LANGUAGES CXX)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_INSTALL_LIBDIR lib64)
