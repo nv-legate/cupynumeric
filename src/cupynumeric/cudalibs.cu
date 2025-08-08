@@ -18,6 +18,7 @@
 #include "cupynumeric/random/bitgenerator.h"
 
 #include "cudalibs.h"
+#include <realm/cuda/cuda_module.h>
 
 #include <dlfcn.h>
 #include <stdio.h>
@@ -418,6 +419,8 @@ const cudaDeviceProp& CUDALibraries::get_device_properties()
   return *device_prop_;
 }
 
+CUstream_st* get_cached_stream() { return Realm::Cuda::get_task_cuda_stream(); }
+
 cublasHandle_t CUDALibraries::get_cublas()
 {
   if (nullptr == cublas_) {
@@ -485,11 +488,6 @@ static CUDALibraries& get_cuda_libraries(legate::Processor proc)
   static CUDALibraries cuda_libraries[LEGION_MAX_NUM_PROCS];
   const auto proc_id = proc.id & (LEGION_MAX_NUM_PROCS - 1);
   return cuda_libraries[proc_id];
-}
-
-legate::cuda::StreamView get_cached_stream()
-{
-  return legate::cuda::StreamPool::get_stream_pool().get_stream();
 }
 
 cublasContext* get_cublas()

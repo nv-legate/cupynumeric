@@ -22,7 +22,6 @@
 #error "This header can only be included from .cu files"
 #endif
 
-#include "legate/cuda/stream_pool.h"
 #include "cupynumeric/arg.h"
 #include <cublas_v2.h>
 #include <cusolverDn.h>
@@ -415,7 +414,7 @@ struct CuSolverExtraSymbols {
 // Defined in cudalibs.cu
 
 // Return a cached stream for the current GPU
-legate::cuda::StreamView get_cached_stream();
+CUstream_st* get_cached_stream();
 int get_device_ordinal();
 const cudaDeviceProp& get_device_properties();
 cublasHandle_t get_cublas();
