@@ -120,6 +120,9 @@ jobs:
           BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12-py${{ matrix.PY_VER }}
           GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
         run: |
+          echo "::group::Checking rate limit for API calls"
+          gh api /rate_limit | jq .
+          echo "::endgroup::"
           legate-gh-download-artifact ${{ inputs.legate-sha }} "legate-wheel-${{ env.BUILD_NAME }}" "wheel"
       - name: Wheel build
         run: ${{ inputs.script }}
