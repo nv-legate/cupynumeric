@@ -26,6 +26,11 @@ output_path="${3}"
 
 echo "Downloading and decompressing artifact ${artifact_name} from run ${run_id} to ${output_path}"
 
+if [[ -z "${run_id}" ]]; then
+  echo "Error no run ID was found for the given SHA."
+  exit 1
+fi
+
 gh run download "${run_id}" \
   --repo "${LEGATE_REPO_NAME}" \
   --name "${artifact_name}" \
