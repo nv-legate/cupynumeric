@@ -2,7 +2,12 @@
 name: Validate legate.core.internal SHA
 
 concurrency:
-  group: ci-validate-legate-core-sha-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  group: >-
+    ${{
+      (startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'branch-')) &&
+      format('{0}-{1}', github.workflow, github.run_id) ||
+      format('{0}-{1}', github.workflow, github.ref_name)
+    }}
   cancel-in-progress: true
 
 on:

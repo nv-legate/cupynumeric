@@ -9,7 +9,12 @@ on:
       - "main"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: >-
+    ${{
+      (startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'branch-')) &&
+      format('{0}-{1}', github.workflow, github.run_id) ||
+      format('{0}-{1}', github.workflow, github.ref_name)
+    }}
   cancel-in-progress: true
 
 defaults:
