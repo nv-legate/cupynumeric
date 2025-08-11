@@ -10,3 +10,4 @@ Making proper sets
    :toctree: generated/
 
    unique
+   in1d

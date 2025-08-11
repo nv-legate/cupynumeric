@@ -1,0 +1,6 @@
+﻿cupynumeric.in1d
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: in1d
