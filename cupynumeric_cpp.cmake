@@ -183,6 +183,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/search/nonzero.cc
   src/cupynumeric/set/unique.cc
   src/cupynumeric/set/unique_reduce.cc
+  src/cupynumeric/set/in1d.cc
   src/cupynumeric/stat/bincount.cc
   src/cupynumeric/convolution/convolve.cc
   src/cupynumeric/transform/flip.cc
@@ -195,6 +196,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/cephes/chbevl.cc
   src/cupynumeric/cephes/i0.cc
   src/cupynumeric/stat/histogram.cc
+
 )
 
 if(Legion_USE_OpenMP)
@@ -244,6 +246,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/search/nonzero_omp.cc
     src/cupynumeric/set/unique_omp.cc
     src/cupynumeric/set/unique_reduce_omp.cc
+    src/cupynumeric/set/in1d_omp.cc
     src/cupynumeric/stat/bincount_omp.cc
     src/cupynumeric/convolution/convolve_omp.cc
     src/cupynumeric/transform/flip_omp.cc
@@ -299,6 +302,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/search/argwhere.cu
     src/cupynumeric/search/nonzero.cu
     src/cupynumeric/set/unique.cu
+    src/cupynumeric/set/in1d.cu
     src/cupynumeric/stat/bincount.cu
     src/cupynumeric/convolution/convolve.cu
     src/cupynumeric/fft/fft.cu

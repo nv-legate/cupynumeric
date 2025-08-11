@@ -14,12 +14,11 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Literal, Any
 
 from .._array.util import add_boilerplate
-
-if TYPE_CHECKING:
-    from .._array.array import ndarray
+from .._array.array import ndarray
+import numpy as np
 
 _builtin_any = any
 
@@ -104,3 +103,151 @@ def unique(
             "Keyword arguments for `unique` are not yet supported"
         )
     return ar.unique()
+
+
+@add_boilerplate("ar2")
+def in1d(
+    ar1: Any,
+    ar2: Any,
+    assume_unique: bool = False,
+    invert: bool = False,
+    kind: Literal["sort", "table"] | None = None,
+) -> "ndarray":
+    """
+    Test whether each element of this 1-D array is also present in a second
+    array.
+
+    Parameters
+    ----------
+    ar2 : array_like
+        The values against which to test each value of ar1.
+    assume_unique : bool, optional
+        If True, the input arrays are both assumed to be unique, which can
+        speed up the calculation. Default is False.
+    invert : bool, optional
+        If True, the values in the returned array are inverted (that is,
+        False where an element of ar1 is in ar2 and True otherwise).
+        Default is False.
+    kind : {None, 'sort', 'table'}, optional
+        The algorithm to use. This will not affect the final result, but
+        will affect the speed and memory use. The default, None, will
+        select automatically based on memory considerations.
+
+    Returns
+    -------
+    in1d : ndarray, bool
+        The values ar1[in1d] are in ar2.
+
+    See Also
+    --------
+    numpy.in1d : NumPy equivalent function
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    # Ciruclar import
+    from .._module.creation_shape import (
+        full,
+        ones,
+        ones_like,
+        zeros,
+        zeros_like,
+    )
+
+    # Check kind
+    if kind not in (None, "sort", "table"):
+        raise ValueError("kind must be None, 'sort', or 'table'")
+
+    ar1 = ar1.ravel()
+    ar2 = ar2.ravel()
+
+    # Handle empty arrays
+    if ar1.size == 0 or ar2.size == 0:
+        if invert:
+            return ones(ar1.shape, dtype=bool)
+        else:
+            return zeros(ar1.shape, dtype=bool)
+
+    # Handle object arrays
+    if ar2.dtype == object:
+        ar2 = ar2.reshape(-1, 1)
+
+    # Handle NaNs
+    supports_nan = np.issubdtype(ar1.dtype, np.floating) or np.issubdtype(
+        ar1.dtype, np.complexfloating
+    )
+    if supports_nan:
+        ar2 = ar2[~np.isnan(ar2)]
+
+    # Check dtype compatibility
+    common_dtype = np.result_type(ar1.dtype, ar2.dtype)
+    if ar1.dtype != common_dtype:
+        ar1 = ar1._maybe_convert(common_dtype, (ar1,))
+    if ar2.dtype != common_dtype:
+        ar2 = ar2._maybe_convert(common_dtype, (ar2,))
+
+    # Handle kind
+    is_int_arrays = ar2.dtype.kind in ("u", "i", "b")
+    use_table_method = is_int_arrays and kind in {None, "table"}
+
+    ar2_min = 0
+    ar2_max = 0
+
+    if use_table_method:
+        if ar2.size == 0:
+            if invert:
+                return ones_like(ar1, dtype=bool)
+            else:
+                return zeros_like(ar1, dtype=bool)
+
+        ar2_min = min(ar2)
+        ar2_max = max(ar2)
+
+        ar2_range = ar2_max - ar2_min
+
+        # Constraints on whether we can actually use the table method:
+        #  1. Assert memory usage is not too large
+        below_memory_constraint = ar2_range <= 6 * (ar1.size + ar2.size)
+        #  2. Check overflows for (ar2 - ar2_min); dtype=ar2.dtype
+        range_safe_from_overflow = ar2_range <= np.iinfo(ar2.dtype).max
+        if range_safe_from_overflow and (
+            below_memory_constraint or kind == "table"
+        ):
+            kind = "table"
+
+        elif kind == "table":
+            raise RuntimeError(
+                "You have specified kind='table', "
+                "but the range of values in `ar2` or `ar1` exceed the "
+                "maximum integer of the datatype. "
+                "Please set `kind` to None or 'sort'."
+            )
+        else:
+            kind = "sort"
+
+    elif kind == "table":
+        raise ValueError(
+            "The 'table' method is only "
+            "supported for boolean or integer arrays. "
+            "Please select 'sort' or None for kind."
+        )
+    else:
+        kind = "sort"
+
+    result_thunk = ar1._thunk.in1d(
+        ar2._thunk,
+        assume_unique=assume_unique,
+        invert=invert,
+        kind=kind,
+        ar2_min=ar2_min,
+        ar2_max=ar2_max,
+    )
+
+    result = ndarray(shape=result_thunk.shape, thunk=result_thunk)
+
+    if supports_nan:
+        mask = np.isnan(ar1)
+        result[mask] = full(mask.sum(), False, dtype=bool)
+
+    return result

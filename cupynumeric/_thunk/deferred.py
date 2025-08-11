@@ -3717,6 +3717,40 @@ class DeferredArray(NumPyThunk):
 
         return result
 
+    @auto_convert("ar2")
+    def in1d(
+        self,
+        ar2: Any,
+        assume_unique: bool = False,
+        invert: bool = False,
+        kind: str | None = None,
+        ar2_min: int = 0,
+        ar2_max: int = 0,
+    ) -> NumPyThunk:
+        result = cast(
+            DeferredArray,
+            runtime.create_empty_thunk(
+                self.shape, ty.bool_, inputs=[self, ar2]
+            ),
+        )
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.IN1D
+        )
+        p_out = task.add_output(result.base)
+        p_in1 = task.add_input(self.base)
+        p_in2 = task.add_input(ar2.base)
+        task.add_constraint(broadcast(p_in2))
+        task.add_constraint(align(p_out, p_in1))
+        task.add_scalar_arg(assume_unique, ty.bool_)
+        task.add_scalar_arg(invert, ty.bool_)
+        task.add_scalar_arg(kind if kind is not None else "", ty.string_type)
+        task.add_scalar_arg(ar2_min, ty.int64)
+        task.add_scalar_arg(ar2_max, ty.int64)
+        task.execute()
+
+        return result
+
     @auto_convert("rhs", "v")
     def searchsorted(self, rhs: Any, v: Any, side: SortSide = "left") -> None:
         task = legate_runtime.create_auto_task(

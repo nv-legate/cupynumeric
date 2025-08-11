@@ -169,6 +169,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_GEEV: int
     CUPYNUMERIC_GEMM: int
     CUPYNUMERIC_HISTOGRAM: int
+    CUPYNUMERIC_IN1D: int
     CUPYNUMERIC_LOAD_CUDALIBS: int
     CUPYNUMERIC_MATMUL: int
     CUPYNUMERIC_MATVECMUL: int
@@ -391,6 +392,7 @@ class CuPyNumericOpCode(IntEnum):
     GEEV = _cupynumeric.CUPYNUMERIC_GEEV
     GEMM = _cupynumeric.CUPYNUMERIC_GEMM
     HISTOGRAM = _cupynumeric.CUPYNUMERIC_HISTOGRAM
+    IN1D = _cupynumeric.CUPYNUMERIC_IN1D
     LOAD_CUDALIBS = _cupynumeric.CUPYNUMERIC_LOAD_CUDALIBS
     MATMUL = _cupynumeric.CUPYNUMERIC_MATMUL
     MATVECMUL = _cupynumeric.CUPYNUMERIC_MATVECMUL

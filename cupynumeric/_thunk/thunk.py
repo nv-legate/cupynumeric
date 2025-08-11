@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod, abstractproperty
-from typing import TYPE_CHECKING, Any, Iterable, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, Literal
 
 from ..config import ConvertCode
 from ..runtime import runtime
@@ -1490,3 +1490,14 @@ class NumPyThunk(ABC):
 
     @abstractmethod
     def ts_matmul(self, rhs1_thunk: Any, rhs2_thunk: Any) -> Any: ...
+
+    @abstractmethod
+    def in1d(
+        self,
+        ar2: NumPyThunk,
+        assume_unique: bool = False,
+        invert: bool = False,
+        kind: Literal["sort", "table"] | None = None,
+        ar2_min: int = 0,
+        ar2_max: int = 0,
+    ) -> NumPyThunk: ...

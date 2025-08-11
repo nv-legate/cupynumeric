@@ -14,7 +14,15 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Sequence,
+    cast,
+    Literal,
+)
 
 import numpy as np
 from legate.core import Scalar
@@ -2085,3 +2093,30 @@ class EagerArray(NumPyThunk):
 
     def ts_matmul(self, rhs1_thunk: Any, rhs2_thunk: Any) -> Any:
         np.matmul(rhs1_thunk.array, rhs2_thunk.array, out=self.array)
+
+    def in1d(
+        self,
+        ar2: Any,
+        assume_unique: bool = False,
+        invert: bool = False,
+        kind: Literal["sort", "table"] | None = None,
+        ar2_min: int = 0,
+        ar2_max: int = 0,
+    ) -> NumPyThunk:
+        self.check_eager_args(ar2)
+        if self.deferred is not None:
+            result = self.deferred.in1d(
+                ar2, assume_unique, invert, kind, ar2_min, ar2_max
+            )
+            return result
+        else:
+            result = EagerArray(
+                np.in1d(
+                    self.array,
+                    ar2.array,
+                    assume_unique=assume_unique,
+                    invert=invert,
+                    kind=kind,
+                )
+            )
+            return result

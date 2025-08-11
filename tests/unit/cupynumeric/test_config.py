@@ -118,6 +118,7 @@ def test_CuPyNumericOpCode() -> None:
         "GEEV",
         "GEMM",
         "HISTOGRAM",
+        "IN1D",
         "LOAD_CUDALIBS",
         "MATMUL",
         "MATVECMUL",
