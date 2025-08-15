@@ -51,6 +51,7 @@ from .thunk import NumPyThunk
 if TYPE_CHECKING:
     import numpy.typing as npt
 
+    from .._ufunc.ufunc import binary_ufunc, unary_ufunc
     from ..config import BitGeneratorType, FFTType
     from ..types import (
         BitOrder,
@@ -210,7 +211,9 @@ def diagonal_reference(a: npt.NDArray[Any], axes: NdShape) -> npt.NDArray[Any]:
     return np.array(res)
 
 
-def _make_eager_unary_ufunc(ufunc_name: str) -> Callable[..., Any]:
+def _make_eager_unary_ufunc(
+    np_ufunc: np.ufunc, deferred_ufunc: unary_ufunc
+) -> Callable[..., Any]:
     def method(
         self: Any,
         out: Any | None = None,
@@ -223,39 +226,37 @@ def _make_eager_unary_ufunc(ufunc_name: str) -> Callable[..., Any]:
         Helper method to apply unary ufunc operations.
         """
         self.check_eager_args(out)
-        if self.deferred is not None:
-            from .._array.array import ndarray  # Lazy import
 
-            a = ndarray(self.shape, self.dtype, thunk=self.deferred)
-            deferred_ufunc = getattr(_ufunc, ufunc_name)
+        if self.deferred is not None:
             return deferred_ufunc._call_full(
-                a,
+                self.deferred,
                 out=out,
                 where=where,
                 casting=casting,
                 order=order,
                 dtype=dtype,
             )
-        else:
-            out_array = (
-                out._thunk.__numpy_array__()
-                if (out is not None and hasattr(out, "_thunk"))
-                else out
-            )
-            np_ufunc = getattr(np, ufunc_name)
-            return np_ufunc(
-                self.array,
-                out=out_array,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
+
+        out_array = (
+            out._thunk.__numpy_array__()
+            if (out is not None and hasattr(out, "_thunk"))
+            else out
+        )
+        return np_ufunc(
+            self.array,
+            out=out_array,
+            where=where,
+            casting=casting,
+            order=order,
+            dtype=dtype,
+        )
 
     return method
 
 
-def _make_eager_binary_ufunc(ufunc_name: str) -> Callable[..., Any]:
+def _make_eager_binary_ufunc(
+    np_ufunc: np.ufunc, deferred_ufunc: binary_ufunc
+) -> Callable[..., Any]:
     def method(
         self: Any,
         rhs: Any,
@@ -269,13 +270,10 @@ def _make_eager_binary_ufunc(ufunc_name: str) -> Callable[..., Any]:
         Helper method to apply binary ufunc operations.
         """
         self.check_eager_args(rhs, out)
-        if self.deferred is not None:
-            from .._array.array import ndarray  # Lazy import
 
-            a = ndarray(self.shape, self.dtype, thunk=self.deferred)
-            deferred_ufunc = getattr(_ufunc, ufunc_name)
+        if self.deferred is not None:
             return deferred_ufunc._call_full(
-                a,
+                self.deferred,
                 rhs,
                 out=out,
                 where=where,
@@ -283,29 +281,27 @@ def _make_eager_binary_ufunc(ufunc_name: str) -> Callable[..., Any]:
                 order=order,
                 dtype=dtype,
             )
-        else:
-            rhs_array = (
-                rhs._thunk.__numpy_array__()
-                if (rhs is not None and hasattr(rhs, "_thunk"))
-                else rhs
-            )
 
-            out_array = (
-                out._thunk.__numpy_array__()
-                if (out is not None and hasattr(out, "_thunk"))
-                else out
-            )
-            np_ufunc = getattr(np, ufunc_name)
+        rhs_array = (
+            rhs._thunk.__numpy_array__()
+            if (rhs is not None and hasattr(rhs, "_thunk"))
+            else rhs
+        )
 
-            return np_ufunc(
-                self.array,
-                rhs_array,
-                out=out_array,
-                where=where,
-                casting=casting,
-                order=order,
-                dtype=dtype,
-            )
+        out_array = (
+            out._thunk.__numpy_array__()
+            if (out is not None and hasattr(out, "_thunk"))
+            else out
+        )
+        return np_ufunc(
+            self.array,
+            rhs_array,
+            out=out_array,
+            where=where,
+            casting=casting,
+            order=order,
+            dtype=dtype,
+        )
 
     return method
 
@@ -1571,91 +1567,95 @@ class EagerArray(NumPyThunk):
             )
             return np.matmul(self.array, rhs_array, out=out_array, **kwargs)
 
-    _add = _make_eager_binary_ufunc("add")
-    _multiply = _make_eager_binary_ufunc("multiply")
-    _subtract = _make_eager_binary_ufunc("subtract")
-    _true_divide = _make_eager_binary_ufunc("true_divide")
-    _floor_divide = _make_eager_binary_ufunc("floor_divide")
-    _logaddexp = _make_eager_binary_ufunc("logaddexp")
-    _logaddexp2 = _make_eager_binary_ufunc("logaddexp2")
-    _power = _make_eager_binary_ufunc("power")
-    _float_power = _make_eager_binary_ufunc("float_power")
-    _remainder = _make_eager_binary_ufunc("remainder")
-    _gcd = _make_eager_binary_ufunc("gcd")
-    _lcm = _make_eager_binary_ufunc("lcm")
+    _add = _make_eager_binary_ufunc(np.add, _ufunc.add)
+    _multiply = _make_eager_binary_ufunc(np.multiply, _ufunc.multiply)
+    _subtract = _make_eager_binary_ufunc(np.subtract, _ufunc.subtract)
+    _true_divide = _make_eager_binary_ufunc(np.true_divide, _ufunc.true_divide)
+    _floor_divide = _make_eager_binary_ufunc(
+        np.floor_divide, _ufunc.floor_divide
+    )
+    _logaddexp = _make_eager_binary_ufunc(np.logaddexp, _ufunc.logaddexp)
+    _logaddexp2 = _make_eager_binary_ufunc(np.logaddexp2, _ufunc.logaddexp2)
+    _power = _make_eager_binary_ufunc(np.power, _ufunc.power)
+    _float_power = _make_eager_binary_ufunc(np.float_power, _ufunc.float_power)
+    _remainder = _make_eager_binary_ufunc(np.remainder, _ufunc.remainder)
+    _gcd = _make_eager_binary_ufunc(np.gcd, _ufunc.gcd)
+    _lcm = _make_eager_binary_ufunc(np.lcm, _ufunc.lcm)
 
     # unary
-    _negative = _make_eager_unary_ufunc("negative")
-    _positive = _make_eager_unary_ufunc("positive")
-    _absolute = _make_eager_unary_ufunc("absolute")
-    _rint = _make_eager_unary_ufunc("rint")
-    _sign = _make_eager_unary_ufunc("sign")
-    _conjugate = _make_eager_unary_ufunc("conjugate")
-    _exp = _make_eager_unary_ufunc("exp")
-    _exp2 = _make_eager_unary_ufunc("exp2")
-    _log = _make_eager_unary_ufunc("log")
-    _log2 = _make_eager_unary_ufunc("log2")
-    _log10 = _make_eager_unary_ufunc("log10")
-    _expm1 = _make_eager_unary_ufunc("expm1")
-    _log1p = _make_eager_unary_ufunc("log1p")
-    _square = _make_eager_unary_ufunc("square")
-    _sqrt = _make_eager_unary_ufunc("sqrt")
-    _cbrt = _make_eager_unary_ufunc("cbrt")
-    _reciprocal = _make_eager_unary_ufunc("reciprocal")
+    _negative = _make_eager_unary_ufunc(np.negative, _ufunc.negative)
+    _positive = _make_eager_unary_ufunc(np.positive, _ufunc.positive)
+    _absolute = _make_eager_unary_ufunc(np.absolute, _ufunc.absolute)
+    _rint = _make_eager_unary_ufunc(np.rint, _ufunc.rint)
+    _sign = _make_eager_unary_ufunc(np.sign, _ufunc.sign)
+    _conjugate = _make_eager_unary_ufunc(np.conjugate, _ufunc.conjugate)
+    _exp = _make_eager_unary_ufunc(np.exp, _ufunc.exp)
+    _exp2 = _make_eager_unary_ufunc(np.exp2, _ufunc.exp2)
+    _log = _make_eager_unary_ufunc(np.log, _ufunc.log)
+    _log2 = _make_eager_unary_ufunc(np.log2, _ufunc.log2)
+    _log10 = _make_eager_unary_ufunc(np.log10, _ufunc.log10)
+    _expm1 = _make_eager_unary_ufunc(np.expm1, _ufunc.expm1)
+    _log1p = _make_eager_unary_ufunc(np.log1p, _ufunc.log1p)
+    _square = _make_eager_unary_ufunc(np.square, _ufunc.square)
+    _sqrt = _make_eager_unary_ufunc(np.sqrt, _ufunc.sqrt)
+    _cbrt = _make_eager_unary_ufunc(np.cbrt, _ufunc.cbrt)
+    _reciprocal = _make_eager_unary_ufunc(np.reciprocal, _ufunc.reciprocal)
 
     # logical
-    _greater_equal = _make_eager_binary_ufunc("greater_equal")
-    _equal = _make_eager_binary_ufunc("equal")
-    _greater = _make_eager_binary_ufunc("greater")
-    _less = _make_eager_binary_ufunc("less")
-    _less_equal = _make_eager_binary_ufunc("less_equal")
-    _not_equal = _make_eager_binary_ufunc("not_equal")
-    _logical_and = _make_eager_binary_ufunc("logical_and")
-    _logical_or = _make_eager_binary_ufunc("logical_or")
-    _logical_xor = _make_eager_binary_ufunc("logical_xor")
-    _logical_not = _make_eager_unary_ufunc("logical_not")
-    _maximum = _make_eager_binary_ufunc("maximum")
-    _minimum = _make_eager_binary_ufunc("minimum")
+    _greater_equal = _make_eager_binary_ufunc(
+        np.greater_equal, _ufunc.greater_equal
+    )
+    _equal = _make_eager_binary_ufunc(np.equal, _ufunc.equal)
+    _greater = _make_eager_binary_ufunc(np.greater, _ufunc.greater)
+    _less = _make_eager_binary_ufunc(np.less, _ufunc.less)
+    _less_equal = _make_eager_binary_ufunc(np.less_equal, _ufunc.less_equal)
+    _not_equal = _make_eager_binary_ufunc(np.not_equal, _ufunc.not_equal)
+    _logical_and = _make_eager_binary_ufunc(np.logical_and, _ufunc.logical_and)
+    _logical_or = _make_eager_binary_ufunc(np.logical_or, _ufunc.logical_or)
+    _logical_xor = _make_eager_binary_ufunc(np.logical_xor, _ufunc.logical_xor)
+    _logical_not = _make_eager_unary_ufunc(np.logical_not, _ufunc.logical_not)
+    _maximum = _make_eager_binary_ufunc(np.maximum, _ufunc.maximum)
+    _minimum = _make_eager_binary_ufunc(np.minimum, _ufunc.minimum)
 
     # bit_twiddling
-    _bitwise_and = _make_eager_binary_ufunc("bitwise_and")
-    _bitwise_or = _make_eager_binary_ufunc("bitwise_or")
-    _bitwise_xor = _make_eager_binary_ufunc("bitwise_xor")
-    _invert = _make_eager_unary_ufunc("invert")
-    _left_shift = _make_eager_binary_ufunc("left_shift")
-    _right_shift = _make_eager_binary_ufunc("right_shift")
+    _bitwise_and = _make_eager_binary_ufunc(np.bitwise_and, _ufunc.bitwise_and)
+    _bitwise_or = _make_eager_binary_ufunc(np.bitwise_or, _ufunc.bitwise_or)
+    _bitwise_xor = _make_eager_binary_ufunc(np.bitwise_xor, _ufunc.bitwise_xor)
+    _invert = _make_eager_unary_ufunc(np.invert, _ufunc.invert)
+    _left_shift = _make_eager_binary_ufunc(np.left_shift, _ufunc.left_shift)
+    _right_shift = _make_eager_binary_ufunc(np.right_shift, _ufunc.right_shift)
 
     # floating:
-    _isfinite = _make_eager_unary_ufunc("isfinite")
-    _isinf = _make_eager_unary_ufunc("isinf")
-    _isnan = _make_eager_unary_ufunc("isnan")
-    _fabs = _make_eager_unary_ufunc("fabs")
-    _signbit = _make_eager_unary_ufunc("signbit")
-    _copysign = _make_eager_binary_ufunc("copysign")
-    _nextafter = _make_eager_binary_ufunc("nextafter")
-    _ldexp = _make_eager_binary_ufunc("ldexp")
-    _fmod = _make_eager_binary_ufunc("fmod")
-    _floor = _make_eager_unary_ufunc("floor")
-    _ceil = _make_eager_unary_ufunc("ceil")
-    _trunc = _make_eager_unary_ufunc("trunc")
+    _isfinite = _make_eager_unary_ufunc(np.isfinite, _ufunc.isfinite)
+    _isinf = _make_eager_unary_ufunc(np.isinf, _ufunc.isinf)
+    _isnan = _make_eager_unary_ufunc(np.isnan, _ufunc.isnan)
+    _fabs = _make_eager_unary_ufunc(np.fabs, _ufunc.fabs)
+    _signbit = _make_eager_unary_ufunc(np.signbit, _ufunc.signbit)
+    _copysign = _make_eager_binary_ufunc(np.copysign, _ufunc.copysign)
+    _nextafter = _make_eager_binary_ufunc(np.nextafter, _ufunc.nextafter)
+    _ldexp = _make_eager_binary_ufunc(np.ldexp, _ufunc.ldexp)
+    _fmod = _make_eager_binary_ufunc(np.fmod, _ufunc.fmod)
+    _floor = _make_eager_unary_ufunc(np.floor, _ufunc.floor)
+    _ceil = _make_eager_unary_ufunc(np.ceil, _ufunc.ceil)
+    _trunc = _make_eager_unary_ufunc(np.trunc, _ufunc.trunc)
 
     # trigonometric:
-    _sin = _make_eager_unary_ufunc("sin")
-    _cos = _make_eager_unary_ufunc("cos")
-    _tan = _make_eager_unary_ufunc("tan")
-    _arcsin = _make_eager_unary_ufunc("arcsin")
-    _arccos = _make_eager_unary_ufunc("arccos")
-    _arctan = _make_eager_unary_ufunc("arctan")
-    _arctan2 = _make_eager_binary_ufunc("arctan2")
-    _hypot = _make_eager_binary_ufunc("hypot")
-    _sinh = _make_eager_unary_ufunc("sinh")
-    _cosh = _make_eager_unary_ufunc("cosh")
-    _tanh = _make_eager_unary_ufunc("tanh")
-    _arcsinh = _make_eager_unary_ufunc("arcsinh")
-    _arccosh = _make_eager_unary_ufunc("arccosh")
-    _arctanh = _make_eager_unary_ufunc("arctanh")
-    _deg2rad = _make_eager_unary_ufunc("deg2rad")
-    _rad2deg = _make_eager_unary_ufunc("rad2deg")
+    _sin = _make_eager_unary_ufunc(np.sin, _ufunc.sin)
+    _cos = _make_eager_unary_ufunc(np.cos, _ufunc.cos)
+    _tan = _make_eager_unary_ufunc(np.tan, _ufunc.tan)
+    _arcsin = _make_eager_unary_ufunc(np.arcsin, _ufunc.arcsin)
+    _arccos = _make_eager_unary_ufunc(np.arccos, _ufunc.arccos)
+    _arctan = _make_eager_unary_ufunc(np.arctan, _ufunc.arctan)
+    _arctan2 = _make_eager_binary_ufunc(np.arctan2, _ufunc.arctan2)
+    _hypot = _make_eager_binary_ufunc(np.hypot, _ufunc.hypot)
+    _sinh = _make_eager_unary_ufunc(np.sinh, _ufunc.sinh)
+    _cosh = _make_eager_unary_ufunc(np.cosh, _ufunc.cosh)
+    _tanh = _make_eager_unary_ufunc(np.tanh, _ufunc.tanh)
+    _arcsinh = _make_eager_unary_ufunc(np.arcsinh, _ufunc.arcsinh)
+    _arccosh = _make_eager_unary_ufunc(np.arccosh, _ufunc.arccosh)
+    _arctanh = _make_eager_unary_ufunc(np.arctanh, _ufunc.arctanh)
+    _deg2rad = _make_eager_unary_ufunc(np.deg2rad, _ufunc.deg2rad)
+    _rad2deg = _make_eager_unary_ufunc(np.rad2deg, _ufunc.rad2deg)
 
     def unary_op(
         self,

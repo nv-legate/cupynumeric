@@ -114,7 +114,7 @@ class _Test_ufunc(cupynumeric._ufunc.ufunc):
     """docstring"""
 
     def __init__(self):
-        super().__init__("_test_ufunc", "docstring")
+        super().__init__("_test_ufunc", "docstring", "op_code")
 
     def __call__(self, a: int, b: int) -> int:
         return a + b

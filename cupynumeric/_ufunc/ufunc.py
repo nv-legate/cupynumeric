@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Sequence, TypeAlias
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 import numpy as np
 from legate.core.utils import OrderedSet
@@ -31,6 +31,7 @@ from ..config import BinaryOpCode, UnaryOpCode, UnaryRedCode
 from ..types import NdShape
 
 if TYPE_CHECKING:
+    from typing import Any, Callable, Sequence, TypeAlias
     import numpy.typing as npt
 
     from .._array.array import ndarray
@@ -210,6 +211,11 @@ def _check_should_use_weak_scalar(key: tuple[str | type, ...]) -> bool:
     return not all_scalars_or_arrays and max_array_kind >= max_scalar_kind
 
 
+def _check_where(where: Any) -> None:
+    if not isinstance(where, bool) or not where:
+        raise NotImplementedError("the 'where' keyword is not yet supported")
+
+
 def _default_post_resolution_check(
     arr_x: ndarray,
     arr_y: ndarray,
@@ -230,13 +236,18 @@ def _default_post_resolution_check(
     return arr_x, arr_y, op_code
 
 
-class ufunc:
+T = TypeVar("T")
+
+
+class ufunc(Generic[T]):
     _types: dict[Any, str]
     _nin: int
     _nout: int
+    _op_code: T
 
-    def __init__(self, name: str, doc: str) -> None:
+    def __init__(self, name: str, doc: str, op_code: T) -> None:
         self._name = name
+        self._op_code = op_code
         self.__doc__ = doc
 
     @property
@@ -321,13 +332,8 @@ class ufunc:
         raise TypeError("return arrays must be of ArrayType")
 
     def _prepare_operands(
-        self,
-        *args: Any,
-        out: ndarray | tuple[ndarray, ...] | None,
-        where: bool = True,
-    ) -> tuple[
-        Sequence[ndarray], Sequence[ndarray | None], tuple[int, ...], bool
-    ]:
+        self, *args: Any, out: ndarray | tuple[ndarray, ...] | None
+    ) -> tuple[Sequence[ndarray], Sequence[ndarray | None], tuple[int, ...]]:
         max_nargs = self.nin + self.nout
         if len(args) < self.nin or len(args) > max_nargs:
             raise TypeError(
@@ -379,18 +385,16 @@ class ufunc:
                 )
             check_writeable(out)
 
-        if not isinstance(where, bool) or not where:
-            raise NotImplementedError(
-                "the 'where' keyword is not yet supported"
-            )
-
-        return inputs, outputs, out_shape, where
+        return inputs, outputs, out_shape
 
     def __repr__(self) -> str:
         return f"<ufunc {self._name}>"
 
 
-class unary_ufunc(ufunc):
+class unary_ufunc(ufunc[UnaryOpCode]):
+    _nin = 1
+    _nout = 1
+
     def __init__(
         self,
         name: str,
@@ -399,15 +403,15 @@ class unary_ufunc(ufunc):
         types: dict[str, str],
         overrides: dict[str, UnaryOpCode],
     ) -> None:
-        super().__init__(name, doc)
+        super().__init__(name, doc, op_code)
 
         self._types = types
         assert len(self._types)
-        in_ty, out_ty = next(iter(self._types.items()))
-        self._nin = len(in_ty)
-        self._nout = len(out_ty)
 
-        self._op_code = op_code
+        in_ty, out_ty = next(iter(self._types.items()))
+        assert len(in_ty) == self.nin
+        assert len(out_ty) == self.nout
+
         self._resolution_cache: dict[np.dtype[Any], np.dtype[Any]] = {}
         self._overrides = overrides
 
@@ -473,9 +477,9 @@ class unary_ufunc(ufunc):
         order: str = "K",
         dtype: np.dtype[Any] | None = None,
     ) -> ndarray:
-        (x,), (out,), out_shape, where = self._prepare_operands(
-            *args, out=out, where=where
-        )
+        _check_where(where)
+
+        (x,), (out,), out_shape = self._prepare_operands(*args, out=out)
 
         # If no dtype is given to prescribe the accuracy, we use the dtype
         # of the input
@@ -509,19 +513,21 @@ class unary_ufunc(ufunc):
         return self._maybe_cast_output(out, result)
 
 
-class multiout_unary_ufunc(ufunc):
+class multiout_unary_ufunc(ufunc[UnaryOpCode]):
+    _nin = 1
+
     def __init__(
         self, name: str, doc: str, op_code: UnaryOpCode, types: dict[Any, Any]
     ) -> None:
-        super().__init__(name, doc)
+        super().__init__(name, doc, op_code)
 
         self._types = types
         assert len(self._types)
-        in_ty, out_ty = next(iter(self._types.items()))
-        self._nin = len(in_ty)
-        self._nout = len(out_ty)
 
-        self._op_code = op_code
+        in_ty, out_ty = next(iter(self._types.items()))
+        self._nout = len(out_ty)
+        assert len(in_ty) == self.nin
+
         self._resolution_cache: dict[np.dtype[Any], np.dtype[Any]] = {}
 
     def _resolve_dtype(
@@ -566,9 +572,9 @@ class multiout_unary_ufunc(ufunc):
         dtype: np.dtype[Any] | None = None,
         **kwargs: Any,
     ) -> tuple[ndarray, ...]:
-        (x,), outs, out_shape, where = self._prepare_operands(
-            *args, out=out, where=where
-        )
+        _check_where(where)
+
+        (x,), outs, out_shape = self._prepare_operands(*args, out=out)
 
         # If no dtype is given to prescribe the accuracy, we use the dtype
         # of the input
@@ -600,7 +606,9 @@ class multiout_unary_ufunc(ufunc):
         )
 
 
-class binary_ufunc(ufunc):
+class binary_ufunc(ufunc[BinaryOpCode]):
+    _nin = 2
+    _nout = 1
     _post_resolution_check: PostResolutionCheckFunc
 
     def __init__(
@@ -613,15 +621,15 @@ class binary_ufunc(ufunc):
         use_common_type: bool = True,
         post_resolution_check: PostResolutionCheckFunc | None = None,
     ) -> None:
-        super().__init__(name, doc)
+        super().__init__(name, doc, op_code)
 
         self._types = types
         assert len(self._types)
-        in_ty, out_ty = next(iter(self._types.items()))
-        self._nin = len(in_ty)
-        self._nout = len(out_ty)
 
-        self._op_code = op_code
+        in_ty, out_ty = next(iter(self._types.items()))
+        assert len(in_ty) == self.nin
+        assert len(out_ty) == self.nout
+
         self._resolution_cache: dict[
             tuple[str | type, ...], tuple[np.dtype[Any], ...]
         ] = {}
@@ -781,9 +789,9 @@ class binary_ufunc(ufunc):
         order: str = "K",
         dtype: np.dtype[Any] | None = None,
     ) -> ndarray:
-        arrs, (out,), out_shape, where = self._prepare_operands(
-            *args, out=out, where=where
-        )
+        _check_where(where)
+
+        arrs, (out,), out_shape = self._prepare_operands(*args, out=out)
 
         orig_args = args[: self.nin]
 

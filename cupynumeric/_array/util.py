@@ -148,12 +148,16 @@ def broadcast_where(where: ndarray | None, shape: NdShape) -> ndarray | None:
 
 def convert_to_cupynumeric_ndarray(obj: Any, share: bool = False) -> ndarray:
     from .array import ndarray
+    from .._thunk.thunk import NumPyThunk
 
     # If this is an instance of one of our ndarrays then we're done
     if isinstance(obj, ndarray):
         return obj
-    # Ask the runtime to make a numpy thunk for this object
-    thunk = runtime.get_numpy_thunk(obj, share=share)
+    if isinstance(obj, NumPyThunk):
+        thunk = obj
+    else:
+        # Ask the runtime to make a numpy thunk for this object
+        thunk = runtime.get_numpy_thunk(obj, share=share)
     writeable = (
         obj.flags.writeable if isinstance(obj, np.ndarray) and share else True
     )

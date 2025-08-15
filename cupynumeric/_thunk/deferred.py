@@ -49,7 +49,6 @@ from legate.core import (
 from legate.core.utils import OrderedSet
 
 from .. import _ufunc
-from .._ufunc.ufunc import binary_ufunc, unary_ufunc
 from ..lib.array_utils import normalize_axis_tuple
 from .._utils.array import (
     is_advanced_indexing,
@@ -83,6 +82,7 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from legate.core import LogicalStorePartition
 
+    from .._ufunc.ufunc import binary_ufunc, unary_ufunc
     from ..config import BitGeneratorType, FFTDirection, FFTType, WindowOpCode
     from ..types import (
         BitOrder,
@@ -211,26 +211,6 @@ class BlasOperation(IntEnum):
     MM = 3
 
 
-def _make_deferred_binary_ufunc(ufunc: binary_ufunc) -> Callable[..., Any]:
-    """Factory that creates deferred ufunc methods.
-
-    Args:
-        ufunc: function from the ``_ufunc`` module
-        (e.g., ``_ufunc.add``)
-
-    Returns:
-        A fully-formed ufunc method with deferred execution support
-    """
-
-    def ufunc_method(self: Any, *args: Any, **kwargs: Any) -> Any:
-        from .._array.array import ndarray
-
-        a = ndarray(self.shape, self.dtype, thunk=self)
-        return ufunc._call_full(a, *args, **kwargs)
-
-    return ufunc_method
-
-
 def _make_deferred_unary_ufunc(ufunc: unary_ufunc) -> Callable[..., Any]:
     """Factory that creates deferred ufunc methods.
 
@@ -242,13 +222,57 @@ def _make_deferred_unary_ufunc(ufunc: unary_ufunc) -> Callable[..., Any]:
         A fully-formed ufunc method with deferred execution support
     """
 
-    def ufunc_method(self: Any, *args: Any, **kwargs: Any) -> Any:
-        from .._array.array import ndarray  # Lazy import inside function
+    def method(
+        self: Any,
+        out: Any | None = None,
+        where: bool = True,
+        casting: CastingKind = "same_kind",
+        order: str = "K",
+        dtype: np.dtype[Any] | None = None,
+    ) -> Any:
+        return ufunc._call_full(
+            self,
+            out=out,
+            where=where,
+            casting=casting,
+            order=order,
+            dtype=dtype,
+        )
 
-        a = ndarray(self.shape, self.dtype, thunk=self)
-        return ufunc._call_full(a, *args, **kwargs)
+    return method
 
-    return ufunc_method
+
+def _make_deferred_binary_ufunc(ufunc: binary_ufunc) -> Callable[..., Any]:
+    """Factory that creates deferred ufunc methods.
+
+    Args:
+        ufunc: function from the ``_ufunc`` module
+        (e.g., ``_ufunc.add``)
+
+    Returns:
+        A fully-formed ufunc method with deferred execution support
+    """
+
+    def method(
+        self: Any,
+        rhs: Any,
+        out: Any | None = None,
+        where: bool = True,
+        casting: CastingKind = "same_kind",
+        order: str = "K",
+        dtype: np.dtype[Any] | None = None,
+    ) -> Any:
+        return ufunc._call_full(
+            self,
+            rhs,
+            out=out,
+            where=where,
+            casting=casting,
+            order=order,
+            dtype=dtype,
+        )
+
+    return method
 
 
 class DeferredArray(NumPyThunk):
