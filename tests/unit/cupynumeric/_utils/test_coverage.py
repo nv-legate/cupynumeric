@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 
+import sys
 from types import ModuleType
 from typing import Any
 
@@ -542,6 +543,39 @@ def test_implemented_decorator_actual() -> None:
 
     assert hasattr(decorated_func, "_cupynumeric_metadata")
     assert decorated_func._cupynumeric_metadata.implemented
+
+
+def test_finish_triggers_shutdown(monkeypatch) -> None:
+    runtime_mod = sys.modules["cupynumeric.runtime"]
+    monkeypatch.setattr(runtime_mod.runtime, "destroyed", False)
+    mock_legate_runtime = MagicMock()
+
+    def mock_finish():
+        runtime_mod._shutdown_callback()
+
+    mock_legate_runtime.finish = mock_finish
+    monkeypatch.setattr(runtime_mod, "legate_runtime", mock_legate_runtime)
+    runtime_mod.legate_runtime.finish()
+    assert runtime_mod.runtime.destroyed is True
+
+
+def test_bitgenerator_destroy_else(monkeypatch) -> None:
+    runtime = cupynumeric.runtime
+    runtime_mod = sys.modules["cupynumeric.runtime"]
+
+    mock_runtime = MagicMock()
+    monkeypatch.setattr(runtime_mod, "legate_runtime", mock_runtime)
+    mock_task = MagicMock()
+    mock_runtime.create_manual_task.return_value = mock_task
+
+    runtime.current_random_bitgen_zombies = (123,)
+    handle = 456
+    runtime.bitgenerator_destroy(handle, disposing=False)
+
+    mock_runtime.issue_execution_fence.assert_called_once()
+    mock_runtime.create_manual_task.assert_called_once()
+    mock_task.execute.assert_called_once()
+    assert runtime.current_random_bitgen_zombies == ()
 
 
 if __name__ == "__main__":
