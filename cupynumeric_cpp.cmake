@@ -421,7 +421,8 @@ set_target_properties(cupynumeric
 target_link_libraries(cupynumeric
   PUBLIC legate::legate
           $<TARGET_NAME_IF_EXISTS:NCCL::NCCL>
-  PRIVATE BLAS::BLAS
+  PRIVATE CCCL::Thrust
+          BLAS::BLAS
           tblis::tblis
           # Add Conda library and include paths
           $<TARGET_NAME_IF_EXISTS:conda_env>
