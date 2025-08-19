@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Extend cuPyNumeric with Legate-tasks &#8212; NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75)</title>
+    <title>Extend cuPyNumeric with Legate-tasks &#8212; NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29)</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=50fa0752"></script>
+    <script src="../_static/documentation_options.js?v=18e1c056"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -132,11 +132,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29)</p>
   
 </a></div>
     
@@ -243,11 +243,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.09.00.dev+12.g27731a75)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.09.00.dev+14.gf595ce29)</p>
   
 </a>
 
@@ -1045,6 +1045,8 @@ through the <code class="docutils literal notranslate"><span class="pre">--size<
     <span class="n">y_local</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
     <span class="n">z_local</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
     <span class="n">z_local</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">x_local</span> <span class="o">+</span> <span class="n">y_local</span>
+
+
 </pre></div>
 </div>
 <p>The constraint used is <code class="docutils literal notranslate"><span class="pre">align</span></code>, it is used to ensure that <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code> , and <code class="docutils literal notranslate"><span class="pre">z</span></code>
@@ -1096,6 +1098,8 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">y_local</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
     <span class="n">z_local</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
     <span class="n">z_local</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">x_local</span> <span class="o">+</span> <span class="n">y_local</span>
+
+
 <span class="c1"># [saxpy-end]</span>
 
 
@@ -1242,6 +1246,8 @@ the <code class="docutils literal notranslate"><span class="pre">--size</span></
 
     <span class="n">local_hist</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">data_local</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">N_bins</span><span class="p">)</span>
     <span class="n">hist_local</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">hist_local</span> <span class="o">+</span> <span class="n">local_hist</span>
+
+
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">histogram_task</span></code> function uses <code class="docutils literal notranslate"><span class="pre">TaskContext</span></code> and its <code class="docutils literal notranslate"><span class="pre">get_variant_kind()</span></code>
@@ -1303,6 +1309,8 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 
     <span class="n">local_hist</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">data_local</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">N_bins</span><span class="p">)</span>
     <span class="n">hist_local</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">hist_local</span> <span class="o">+</span> <span class="n">local_hist</span>
+
+
 <span class="c1"># [histogram-end]</span>
 
 
@@ -1451,6 +1459,8 @@ alignment for performing matrix multiplication.</p></li>
     <span class="n">A</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">A</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
     <span class="n">B</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">B</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
     <span class="n">C</span> <span class="o">+=</span> <span class="n">xp</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+
+
 </pre></div>
 </div>
 <p>The task can run on either CPU or GPU, depending on the available resources at runtime.
@@ -1496,6 +1506,8 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">A</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">A</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
     <span class="n">B</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">B</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
     <span class="n">C</span> <span class="o">+=</span> <span class="n">xp</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+
+
 <span class="c1"># [matmul-end]</span>
 
 
@@ -1642,6 +1654,8 @@ running the script</p>
     <span class="n">cp_dst</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftn</span><span class="p">(</span>
         <span class="n">cp_src</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
     <span class="p">)</span>  <span class="c1"># Apply 2D FFT across axes 1 and 2</span>
+
+
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">fft2d_batched_gpu</span></code> function uses <code class="docutils literal notranslate"><span class="pre">TaskContext</span></code> to detect execution on
@@ -1699,6 +1713,8 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">cp_dst</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftn</span><span class="p">(</span>
         <span class="n">cp_src</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
     <span class="p">)</span>  <span class="c1"># Apply 2D FFT across axes 1 and 2</span>
+
+
 <span class="c1"># [fft-end]</span>
 
 
