@@ -37,6 +37,8 @@ def saxpy_task(
     y_local = xp.asarray(y)
     z_local = xp.asarray(z)
     z_local[:] = a * x_local + y_local
+
+
 # [saxpy-end]
 
 

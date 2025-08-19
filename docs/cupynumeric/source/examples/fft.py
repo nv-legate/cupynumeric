@@ -38,6 +38,8 @@ def fft2d_batched_gpu(
     cp_dst[:] = xp.fft.fftn(
         cp_src, axes=(1, 2)
     )  # Apply 2D FFT across axes 1 and 2
+
+
 # [fft-end]
 
 

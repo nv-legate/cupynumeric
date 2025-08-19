@@ -38,6 +38,8 @@ def histogram_task(
 
     local_hist, _ = xp.histogram(data_local, bins=N_bins)
     hist_local[:] = hist_local + local_hist
+
+
 # [histogram-end]
 
 

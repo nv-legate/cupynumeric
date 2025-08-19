@@ -36,6 +36,8 @@ def matmul_task(
     A = xp.asarray(A)[:, :, 0]
     B = xp.asarray(B)[0, :, :]
     C += xp.matmul(A, B)
+
+
 # [matmul-end]
 
 
