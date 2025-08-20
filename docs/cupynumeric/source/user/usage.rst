@@ -48,3 +48,18 @@ RAM, GPUs) available on the current machine.
 
 For more information on controlling the resource allocation, running on multiple
 nodes etc. see https://docs.nvidia.com/legate/latest/usage.html.
+
+Jupyter
+-------
+
+It is possible to run cuPyNumeric code in Jupyter notebooks. You can configure a
+Jupyter kernel with desired runtime configuration using the ``legate-jupyter`` command:
+
+.. code-block:: sh
+
+    legate-jupyter --name legate_cpus_2 --cpus 2
+
+Then select this kernel to use in the running notebook.
+
+For more information see
+`Running Legate programs with Jupyter Notebook <https://docs.nvidia.com/legate/latest/manual/usage/jupyter.html>`_.
