@@ -35,6 +35,11 @@ struct SelectImpl {
     using VAL     = type_of<CODE>;
     auto out_rect = args.out.shape<DIM>();
 
+    // working set is the intersection of the shapes
+    for (const auto& input : args.inputs) {
+      out_rect = out_rect.intersection(input.shape<DIM>());
+    }
+
     Pitches<DIM - 1> pitches;
     size_t volume = pitches.flatten(out_rect);
     if (volume == 0) {
@@ -54,22 +59,14 @@ struct SelectImpl {
     std::vector<AccessorRO<bool, DIM>> condlist;
     condlist.reserve(args.inputs.size() / 2);
     for (int32_t i = 0; i < args.inputs.size() / 2; i++) {
-      auto rect_c = args.inputs[i].shape<DIM>();
-#ifdef DEBUG_CUPYNUMERIC
-      assert(rect_c == out_rect);
-#endif
-      condlist.push_back(args.inputs[i].data().read_accessor<bool, DIM>(rect_c));
+      condlist.push_back(args.inputs[i].data().read_accessor<bool, DIM>(out_rect));
       dense = dense && condlist.back().accessor.is_dense_row_major(out_rect);
     }
 
     std::vector<AccessorRO<VAL, DIM>> choicelist;
     choicelist.reserve(args.inputs.size() / 2);
     for (int32_t i = args.inputs.size() / 2; i < args.inputs.size(); i++) {
-      auto rect_c = args.inputs[i].shape<DIM>();
-#ifdef DEBUG_CUPYNUMERIC
-      assert(rect_c == out_rect);
-#endif
-      choicelist.push_back(args.inputs[i].data().read_accessor<VAL, DIM>(rect_c));
+      choicelist.push_back(args.inputs[i].data().read_accessor<VAL, DIM>(out_rect));
       dense = dense && choicelist.back().accessor.is_dense_row_major(out_rect);
     }
 
