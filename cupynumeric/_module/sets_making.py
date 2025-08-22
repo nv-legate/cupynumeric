@@ -143,8 +143,13 @@ def in1d(
     numpy.in1d : NumPy equivalent function
 
     Availability
-    --------
+    ------------
     Multiple GPUs, Multiple CPUs
+
+    Notes
+    --------
+    When `kind` is None (default), the 'sort' algorithm is used to leverage
+    GPU acceleration for optimal performance.
     """
     # Ciruclar import
     from .._module.creation_shape import (
@@ -189,10 +194,13 @@ def in1d(
 
     # Handle kind
     is_int_arrays = ar2.dtype.kind in ("u", "i", "b")
-    use_table_method = is_int_arrays and kind in {None, "table"}
+    use_table_method = is_int_arrays and kind == "table"
 
     ar2_min = 0
     ar2_max = 0
+
+    if kind is None:
+        kind = "sort"
 
     if use_table_method:
         if ar2.size == 0:
@@ -201,8 +209,8 @@ def in1d(
             else:
                 return zeros_like(ar1, dtype=bool)
 
-        ar2_min = min(ar2)
-        ar2_max = max(ar2)
+        ar2_min = ar2.min()
+        ar2_max = ar2.max()
 
         ar2_range = ar2_max - ar2_min
 
