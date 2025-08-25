@@ -15,6 +15,7 @@
 
 import numpy as np
 import pytest
+from typing import Any
 from utils.comparisons import allclose
 from utils.generators import mk_seq_array
 
@@ -342,6 +343,30 @@ def test_input_immutability():
     assert np.array_equal(original_stop, stop_copy_num)
     assert np.array_equal(original_base, base_copy_np)
     assert np.array_equal(original_base, base_copy_num)
+
+
+@pytest.mark.parametrize("number", [None, 0.5, "1"])
+def test_invalid_number(number: Any) -> None:
+    start = 0
+    stop = 1
+    np_expected_error = "cannot be interpreted as an integer"
+    num_expected_error = "must be an integer"
+    with pytest.raises(TypeError, match=np_expected_error):
+        np.logspace(start, stop, num=number)
+    with pytest.raises(TypeError, match=num_expected_error):
+        num.logspace(start, stop, num=number)
+
+
+def test_invalid_axis() -> None:
+    start = 0
+    stop = 10
+    number = 3
+    axis = 1
+    expected_error = "axis 1 is out of bounds for array of dimension 1"
+    with pytest.raises(np.exceptions.AxisError, match=expected_error):
+        np.logspace(start, stop, num=number, axis=axis)
+    with pytest.raises(np.exceptions.AxisError, match=expected_error):
+        num.logspace(start, stop, num=number, axis=axis)
 
 
 if __name__ == "__main__":
