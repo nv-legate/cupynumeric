@@ -208,7 +208,7 @@ def diagonal_reference(a: npt.NDArray[Any], axes: NdShape) -> npt.NDArray[Any]:
     res = a * eye
     for ax in tuple(reversed(sorted(axes)))[:-1]:
         res = res.sum(axis=ax)
-    return np.array(res)
+    return res
 
 
 def _make_eager_unary_ufunc(

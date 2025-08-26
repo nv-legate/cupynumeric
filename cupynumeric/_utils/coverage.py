@@ -444,10 +444,10 @@ def is_implemented(obj: Any) -> bool:
 def is_single(obj: Any) -> GPUSupport:
     if not is_wrapped(obj):
         return GPUSupport.NO
-    return cast(CuWrapped, obj)._cupynumeric_metadata.single
+    return obj._cupynumeric_metadata.single
 
 
 def is_multi(obj: Any) -> GPUSupport:
     if not is_wrapped(obj):
         return GPUSupport.NO
-    return cast(CuWrapped, obj)._cupynumeric_metadata.multi
+    return obj._cupynumeric_metadata.multi

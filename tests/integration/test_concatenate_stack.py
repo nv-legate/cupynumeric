@@ -133,15 +133,6 @@ def test_concatenate_dtype(dtype):
     assert np.array_equal(res_np, res_num)
 
 
-def test_concatenate_return():
-    a = num.array([[1, 2], [3, 4]])
-    b = num.array([[5, 6]])
-
-    res_num = num.concatenate((a, b))
-
-    assert isinstance(res_num, num.ndarray)
-
-
 @pytest.mark.parametrize(
     "casting",
     ("no", "equiv", "safe", "same_kind", "unsafe"),

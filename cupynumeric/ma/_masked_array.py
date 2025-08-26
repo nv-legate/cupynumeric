@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Type
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -48,8 +48,8 @@ nomask = MaskType(0)
 class MaskedArray:
     _internal_ma: _np.ma.MaskedArray[Any, Any]
 
-    def __new__(cls, *args: Any, **kw: Any) -> MaskedArray:
-        return object.__new__(cls)
+    def __new__(cls: Type[Any], *args: Any, **kw: Any) -> MaskedArray:
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -88,8 +88,8 @@ class MaskedArray:
 
     @property
     def shape(self) -> NdShape:
-        return cast(NdShape, self._internal_ma.shape)
+        return self._internal_ma.shape
 
     @property
     def dtype(self) -> _np.dtype[Any]:
-        return cast(_np.dtype[Any], self._internal_ma.dtype)
+        return self._internal_ma.dtype
