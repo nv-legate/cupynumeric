@@ -45,61 +45,6 @@ R = TypeVar("R")
 P = ParamSpec("P")
 
 
-def _compute_param_indices(
-    func: Callable[P, R], to_convert: set[str]
-) -> tuple[set[int], int]:
-    # compute the positional index for all of the user-provided argument
-    # names, specifically noting the index of an "out" param, if present
-    params = signature(func).parameters
-    extra = to_convert - set(params) - {"out", "where"}
-    assert len(extra) == 0, f"unknown parameter(s): {extra}"
-
-    out_index = -1
-    indices = set()
-    for idx, param in enumerate(params):
-        if param == "out":
-            out_index = idx
-        if param in to_convert:
-            indices.add(idx)
-
-    return indices, out_index
-
-
-def _convert_args(
-    args: tuple[Any, ...], indices: set[int], out_idx: int
-) -> tuple[Any, ...]:
-    # convert specified non-None positional arguments, making sure
-    # that any out-parameters are appropriately writeable
-    converted = []
-    for idx, arg in enumerate(args):
-        if idx in indices and arg is not None:
-            if idx == out_idx:
-                arg = convert_to_cupynumeric_ndarray(arg, share=True)
-                if not arg.flags.writeable:
-                    raise ValueError("out is not writeable")
-            else:
-                arg = convert_to_cupynumeric_ndarray(arg)
-        converted.append(arg)
-    return tuple(converted)
-
-
-def _convert_kwargs(
-    kwargs: dict[str, Any], to_convert: set[str]
-) -> dict[str, Any]:
-    # convert specified non-None keyword arguments, making sure
-    # that any out-parameters are appropriately writeable
-    converted = dict(kwargs)
-    for k, v in kwargs.items():
-        if k in to_convert and v is not None:
-            if k == "out":
-                converted[k] = convert_to_cupynumeric_ndarray(v, share=True)
-                if not converted[k].flags.writeable:
-                    raise ValueError("out is not writeable")
-            else:
-                converted[k] = convert_to_cupynumeric_ndarray(v)
-    return converted
-
-
 def add_boilerplate(
     *array_params: str,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -114,23 +59,58 @@ def add_boilerplate(
     to_convert = set(array_params)
     assert len(to_convert) == len(array_params)
 
-    # we also always want to convert "out" and "where"
-    # even if they are not explicitly specified by the user
-    to_convert.update(("out", "where"))
-
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        assert not hasattr(func, "__wrapped__"), "apply add_boilerplate first"
+        assert not hasattr(func, "__wrapped__"), (
+            "this decorator must be the innermost"
+        )
 
-        indices, out_index = _compute_param_indices(func, to_convert)
+        params = signature(func).parameters
+        extra = to_convert - set(params)
+        assert len(extra) == 0, f"unknown parameter(s): {extra}"
+
+        # we also always want to convert "out" and "where"
+        # even if they are not explicitly specified by the user
+        to_convert.update(("out", "where"))
+
+        out_idx = -1
+        indices = set()
+        for idx, param in enumerate(params):
+            if param == "out":
+                out_idx = idx
+            if param in to_convert:
+                indices.add(idx)
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> R:
-            args = _convert_args(args, indices, out_index)
-            kwargs = _convert_kwargs(kwargs, to_convert)
+            # convert specified non-None positional arguments, making sure
+            # that any out-parameters are appropriately writeable
+            converted_args = []
+            for idx, arg in enumerate(args):
+                if idx in indices and arg is not None:
+                    if idx == out_idx:
+                        arg = convert_to_cupynumeric_ndarray(arg, share=True)
+                        if not arg.flags.writeable:
+                            raise ValueError("out is not writeable")
+                    else:
+                        arg = convert_to_cupynumeric_ndarray(arg)
+                converted_args.append(arg)
+            args = tuple(converted_args)
+
+            # convert specified non-None keyword arguments, making sure
+            # that any out-parameters are appropriately writeable
+            for k, v in kwargs.items():
+                if k in to_convert and v is not None:
+                    if k == "out":
+                        kwargs[k] = convert_to_cupynumeric_ndarray(
+                            v, share=True
+                        )
+                        if not kwargs[k].flags.writeable:
+                            raise ValueError("out is not writeable")
+                    else:
+                        kwargs[k] = convert_to_cupynumeric_ndarray(v)
 
             if settings.doctor():
                 doctor.diagnose(func.__name__, args, kwargs)
-
             return func(*args, **kwargs)
 
         return wrapper
@@ -208,7 +188,8 @@ def sanitize_shape(
         result = tuple(operator.index(value) for value in seq)
     except TypeError:
         raise TypeError(
-            f"expected a sequence of integers or a single integer, got {shape!r}"
+            "expected a sequence of integers or a single integer, "
+            f"got {shape!r}"
         )
     return result
 

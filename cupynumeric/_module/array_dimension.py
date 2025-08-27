@@ -390,7 +390,7 @@ class broadcast:
     @property
     def size(self) -> int:
         """Total size of broadcasted result."""
-        return int(self._size)
+        return self._size
 
 
 @add_boilerplate("a")

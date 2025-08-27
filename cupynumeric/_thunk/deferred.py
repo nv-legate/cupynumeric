@@ -691,7 +691,7 @@ class DeferredArray(NumPyThunk):
 
     def _create_indexing_array(
         self, key: Any, is_set: bool = False, set_value: Any | None = None
-    ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
+    ) -> tuple[bool, Any, Any, Any]:
         is_bool_array, lhs, bool_key = self._has_single_boolean_array(
             key, is_set
         )
@@ -812,7 +812,7 @@ class DeferredArray(NumPyThunk):
             raise ValueError("Advanced indexing dimension mismatch")
 
     @staticmethod
-    def _unpack_ellipsis(key: tuple[Any, ...], ndim: int) -> tuple[Any, ...]:
+    def _unpack_ellipsis(key: Any, ndim: int) -> tuple[Any, ...]:
         num_ellipsis = sum(k is Ellipsis for k in key)
         num_newaxes = sum(k is np.newaxis for k in key)
 
@@ -839,7 +839,7 @@ class DeferredArray(NumPyThunk):
             if k is np.newaxis:
                 store = store.promote(dim + shift, 1)
             elif isinstance(k, slice):
-                _, store = self._slice_store(k, store, dim + shift)
+                k, store = self._slice_store(k, store, dim + shift)
             elif np.isscalar(k):
                 if k < 0:  # type: ignore [operator]
                     k += store.shape[dim + shift]  # type: ignore [operator]
@@ -904,9 +904,7 @@ class DeferredArray(NumPyThunk):
 
                 else:
                     result = runtime.create_empty_thunk(
-                        tuple(index_array.base.shape),
-                        self.base.type,
-                        inputs=[self],
+                        index_array.base.shape, self.base.type, inputs=[self]
                     )
 
                 legate_runtime.issue_gather(

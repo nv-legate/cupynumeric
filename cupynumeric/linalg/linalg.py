@@ -20,6 +20,18 @@ import numpy as np
 
 from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..runtime import runtime
+from cupynumeric._utils import is_np2
+
+if is_np2:
+    from numpy.lib.array_utils import normalize_axis_index
+    from numpy.lib.array_utils import normalize_axis_tuple
+else:
+    from numpy.core.multiarray import (  # type: ignore
+        normalize_axis_index,
+    )
+    from numpy.core.numeric import (  # type: ignore
+        normalize_axis_tuple,
+    )
 
 from legate.core import get_machine
 
