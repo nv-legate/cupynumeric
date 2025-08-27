@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Iterable, Sequence, Literal
 
 from ..config import ConvertCode
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     )
     from ..types import (
         BitOrder,
+        BoundsMode,
         CastingKind,
         ConvolveMethod,
         ConvolveMode,
@@ -74,7 +75,8 @@ class NumPyThunk(ABC):
 
     # Abstract methods
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def shape(self) -> NdShape: ...
 
     @abstractmethod
@@ -151,6 +153,15 @@ class NumPyThunk(ABC):
 
     @abstractmethod
     def flip(self, rhs: Any, axes: int | tuple[int, ...] | None) -> None: ...
+
+    @abstractmethod
+    def take(
+        self,
+        indices: Any,
+        axis: int | None = None,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any: ...
 
     @abstractmethod
     def contract(

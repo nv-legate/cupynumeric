@@ -151,6 +151,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/index/putmask.cc
   src/cupynumeric/index/repeat.cc
   src/cupynumeric/index/select.cc
+  src/cupynumeric/index/take.cc
   src/cupynumeric/index/wrap.cc
   src/cupynumeric/index/zip.cc
   src/cupynumeric/item/read.cc
@@ -221,6 +222,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/index/putmask_omp.cc
     src/cupynumeric/index/repeat_omp.cc
     src/cupynumeric/index/select_omp.cc
+    src/cupynumeric/index/take_omp.cc
     src/cupynumeric/index/wrap_omp.cc
     src/cupynumeric/index/zip_omp.cc
     src/cupynumeric/matrix/batched_cholesky_omp.cc
@@ -276,6 +278,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/index/putmask.cu
     src/cupynumeric/index/repeat.cu
     src/cupynumeric/index/select.cu
+    src/cupynumeric/index/take.cu
     src/cupynumeric/index/wrap.cu
     src/cupynumeric/index/zip.cu
     src/cupynumeric/item/read.cu

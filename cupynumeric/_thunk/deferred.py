@@ -25,6 +25,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Literal,
     ParamSpec,
     Sequence,
     TypeVar,
@@ -86,6 +87,7 @@ if TYPE_CHECKING:
     from ..config import BitGeneratorType, FFTDirection, FFTType, WindowOpCode
     from ..types import (
         BitOrder,
+        BoundsMode,
         CastingKind,
         ConvolveMethod as ConvolveMethodType,
         ConvolveMode,
@@ -1423,6 +1425,239 @@ class DeferredArray(NumPyThunk):
         # and we need to make sure the application doesn't mutate the value
         # so make a future result, this is immediate so no dependence
         self._fill(Scalar(value.tobytes(), self.base.type))
+
+    def _take_using_advanced_indexing(
+        self,
+        indices: Any,
+        axis: int,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any:
+        ub = self.shape[axis]
+        is_scalar = np.isscalar(indices)
+        if mode == "wrap" or mode == "clip":
+            if is_scalar:
+                if mode == "wrap":
+                    indices = indices % ub
+                else:
+                    indices = np.clip(indices, 0, ub - 1)
+            else:
+                if mode == "wrap":
+                    indices_array = indices._remainder(ub)
+                else:
+                    from .._array.array import ndarray
+
+                    indices_array = ndarray(
+                        indices.shape, indices.dtype, thunk=indices
+                    )
+                    indices_array = indices_array.clip(0, ub - 1)
+                indices = runtime.to_deferred_array(
+                    indices_array._thunk, read_only=True
+                )
+
+        point_indices = tuple(slice(None) for i in range(0, axis)) + (indices,)
+        result = self.get_item(point_indices)
+        if out is None and is_scalar:
+            # the result of get_item() is a view, but take returns a copy
+            out = runtime.create_empty_thunk(
+                result.shape, self.base.type, inputs=[self]
+            )
+        if out is not None:
+            out.copy(result, deep=True)
+            return out
+        return result
+
+    def _take_using_take_task(
+        self,
+        indices: Any,
+        axis: int,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any:
+        # specialize for the case of taking a 1D index on the middle dimension of a 3D array,
+        # and reshape to fit that special case
+        is_scalar = np.isscalar(indices)
+        ind_shape = () if is_scalar else indices.shape
+
+        j = int(np.prod(self.shape[:axis]))
+        k = self.shape[axis]
+        m = int(np.prod(ind_shape))
+        n = int(np.prod(self.shape[axis + 1 :]))
+        if (
+            axis != 1
+            or self.shape != (j, k, n)
+            or is_scalar
+            or ind_shape != (m,)
+            or (out is not None and out.shape != (j, m, n))
+        ):
+            out_shape = (
+                self.shape[:axis] + ind_shape + self.shape[(axis + 1) :]
+            )
+            src = runtime.to_deferred_array(
+                self.reshape((j, k, n), "C"), read_only=True
+            )
+            if is_scalar:
+                from .._array.util import convert_to_cupynumeric_ndarray
+
+                reshaped_indices = convert_to_cupynumeric_ndarray(
+                    [indices]
+                )._thunk
+            else:
+                reshaped_indices = indices.reshape((m,), "C")
+            indices = runtime.to_deferred_array(
+                reshaped_indices, read_only=True
+            )
+            result = src._take_using_take_task(indices, 1, out=None, mode=mode)
+            result = result.reshape(out_shape, order="C")
+            if out is not None:
+                out.copy(result)
+                return out
+            return result
+
+        # is_scalar case exited in the conditional above
+        assert not is_scalar
+
+        ind_store = indices.base
+
+        # promote input and output to have the same shape for alignment purposes
+        # TODO(tisaac): remove this when aligning on subsets of dimensions is possible
+        src_store = self.base.promote(2, m)
+        res_promoted = cast(
+            DeferredArray,
+            runtime.create_empty_thunk(
+                shape=(j, k, m, n),
+                dtype=self.base.type,
+                force_thunk="deferred",
+            ),
+        )
+        res_store = res_promoted.base
+        assert src_store.shape == res_store.shape
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.TAKE
+        )
+        p_res = task.add_output(res_store)
+        p_src = task.add_input(src_store)
+        p_ind = task.add_input(ind_store)
+
+        task.add_constraint(align(p_src, p_res))
+        # broadcast the incoming and outgoing dimensions so that any advanced indexing on these dimension can be done locally
+        task.add_constraint(broadcast(p_res, (1, 2)))
+        task.add_constraint(broadcast(p_ind))
+        task.add_scalar_arg(mode == "clip", ty.bool_)
+        task.execute()
+        # the results were written into the first index of the second dimension
+        output_index = (slice(None), 0, slice(None), slice(None))
+
+        if out is not None:
+            out[:] = res_promoted.get_item(output_index)
+            return out
+        result = res_promoted.get_item(output_index)
+        return result
+
+    def _take_decide_algorithm(
+        self, indices_tuple: tuple[int, ...], axis: int
+    ) -> Literal["index", "task"]:
+        # we will use the task that works by broadcasting the indices
+        # if it does not require any communication to reshape it for the task
+
+        if len(indices_tuple) == 0:
+            # for scalar indices, .get_item() doesn't require advanced indexing,
+            # so use "index"
+            return "index"
+        # filter out trivial dimensions from the indices
+        indices_shape = [a for a in indices_tuple if a != 1]
+        if len(indices_shape) == 0:
+            # a scalar index can be trivially promoted
+            indices_shape = [1]
+        if len(indices_shape) != 1:
+            # there may be nontrivial reshaping before the task,
+            # be conservative and select the index implementation
+            return "index"
+        src_shape = [(a, False) for a in self.shape]
+        # mark the targeted axis
+        src_shape[axis] = (src_shape[axis][0], True)
+        # filter out trivial dimensions (not including the target dimension)
+        src_shape = [a for a in src_shape if (a[0] != 1 or a[1])]
+        if src_shape[0][1]:
+            # if the target dimension is the first dimension, we can add a trivial leading dimesion
+            src_shape = [(1, False)] + src_shape
+        if src_shape[-1][1]:
+            # if the target dimension is the last dimension, we can add a trivial tailing dimesion
+            src_shape = [(1, False)] + src_shape
+        if len(src_shape) != 3 or not src_shape[1]:
+            # if, after the shape is standardized, there aren't three dimensions and the
+            # target axis isn't the middle dimension, then the task might require
+            # nontrivial reshaping, be conservative and select the index implementation
+            return "index"
+        # the task does not require reshaping of inputs, use the task
+        return "task"
+
+    def take(
+        self,
+        indices: Any,
+        axis: int | None = None,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any:
+        src = self
+        # each implementation needs axis to be an int
+        if axis is None:
+            src = runtime.to_deferred_array(
+                self.reshape((self.size,), order="C"), read_only=True
+            )
+            axis = 0
+
+        is_scalar = np.isscalar(indices)
+
+        # each implementation needs int64 indices
+        if not is_scalar and indices.dtype != np.int64:
+            ind_64 = cast(
+                DeferredArray,
+                runtime.create_empty_thunk(
+                    shape=indices.shape, dtype=ty.int64, force_thunk="deferred"
+                ),
+            )
+            ind_64.convert(indices, warn=False)
+            indices = ind_64
+
+        indices_shape: tuple[int, ...]
+        if not is_scalar:
+            indices = runtime.to_deferred_array(indices, read_only=True)
+            indices_shape = indices.shape
+        else:
+            indices_shape = ()
+
+        # neither implementation has checks on indices, so check them now
+        if mode == "raise":
+            lim = src.shape[axis]
+            if is_scalar:
+                if (indices < -lim) or (indices >= lim):
+                    raise IndexError("invalid index")
+            else:
+                if (
+                    indices._less(-lim).any()
+                    or indices._greater_equal(lim).any()
+                ):
+                    raise IndexError("invalid entry in indices array")
+
+        valid_algorithms = {"auto", "index", "task"}
+        alg = settings.take_default()
+        if alg not in valid_algorithms:
+            runtime.warn(
+                f'Invalid value for CUPYNUMERIC_TAKE_DEFAULT: "{alg}"'
+                'defaulting to "auto"',
+                category=RuntimeWarning,
+            )
+            alg = "auto"
+        if alg == "auto":
+            alg = self._take_decide_algorithm(indices_shape, axis)
+        if alg == "task":
+            return src._take_using_take_task(indices, axis, out=out, mode=mode)
+        else:
+            return src._take_using_advanced_indexing(
+                indices, axis, out=out, mode=mode
+            )
 
     @auto_convert("rhs1_thunk", "rhs2_thunk")
     def contract(

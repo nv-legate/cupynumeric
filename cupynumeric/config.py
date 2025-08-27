@@ -216,6 +216,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_SVD: int
     CUPYNUMERIC_SYEV: int
     CUPYNUMERIC_SYRK: int
+    CUPYNUMERIC_TAKE: int
     CUPYNUMERIC_TILE: int
     CUPYNUMERIC_TRANSPOSE_COPY_2D: int
     CUPYNUMERIC_TRILU: int
@@ -416,6 +417,7 @@ class CuPyNumericOpCode(IntEnum):
     SVD = _cupynumeric.CUPYNUMERIC_SVD
     SYRK = _cupynumeric.CUPYNUMERIC_SYRK
     SYEV = _cupynumeric.CUPYNUMERIC_SYEV
+    TAKE = _cupynumeric.CUPYNUMERIC_TAKE
     TILE = _cupynumeric.CUPYNUMERIC_TILE
     TRANSPOSE_COPY_2D = _cupynumeric.CUPYNUMERIC_TRANSPOSE_COPY_2D
     TRILU = _cupynumeric.CUPYNUMERIC_TRILU

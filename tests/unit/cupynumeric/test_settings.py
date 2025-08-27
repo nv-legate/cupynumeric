@@ -40,6 +40,7 @@ _expected_settings = (
     "report_coverage",
     "report_dump_callstack",
     "report_dump_csv",
+    "take_default",
     "test",
     "warn",
 )

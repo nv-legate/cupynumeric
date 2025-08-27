@@ -50,7 +50,7 @@ class TestMedianErrors:
         # msg="invalid value encountered in scalar divide"
         # with pytest.raises(expected_exc, match=msg):
         #    np.median([])
-        msg = "nvalid entry in indices array"
+        msg = "Cannot do a non-empty take\(\) from an empty axis."
         with pytest.raises(expected_exc, match=msg):
             num.median([])
 

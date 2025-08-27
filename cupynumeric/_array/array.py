@@ -1777,8 +1777,8 @@ class ndarray:
     @add_boilerplate()
     def take(
         self,
-        indices: Any,
-        axis: Any = None,
+        indices: int | npt.ArrayLike,
+        axis: int | None = None,
         out: ndarray | None = None,
         mode: BoundsMode = "raise",
     ) -> ndarray:
@@ -1797,63 +1797,68 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        if not np.isscalar(indices):
-            # if indices is a tuple or list, bring sub-tuples to the same shape
-            # and concatenate them
-            indices = convert_to_cupynumeric_ndarray(indices)
-
-        if axis is None:
-            self = self.ravel()
-            axis = 0
-        else:
+        # garbage check axis and indices early before temporary arrays might be created
+        if axis is not None:
             axis = normalize_axis_index(axis, self.ndim)
 
-        # TODO remove "raise" logic when bounds check for advanced
-        # indexing is implementd
-        if mode == "raise":
-            if np.isscalar(indices):
-                if (indices < -self.shape[axis]) or (
-                    indices >= self.shape[axis]
-                ):
-                    raise IndexError("invalid entry in indices array")
-            else:
-                if (indices < -self.shape[axis]).any() or (
-                    indices >= self.shape[axis]
-                ).any():
-                    raise IndexError("invalid entry in indices array")
-        elif mode == "wrap":
-            indices = indices % self.shape[axis]
-        elif mode == "clip":
-            if np.isscalar(indices):
-                if indices >= self.shape[axis]:
-                    indices = self.shape[axis] - 1
-                if indices < 0:
-                    indices = 0
-            else:
-                indices = indices.clip(0, self.shape[axis] - 1)
+        is_scalar = np.isscalar(indices)
+        ind_shape: tuple[int, ...]
+        ind_thunk: Any
+        if is_scalar:
+            # avoid converting indices to an array to avoid overhead
+            ind = indices
+            ind_dtype = np.dtype(type(indices))
+            ind_size = 1
+            ind_shape = ()
+            ind_thunk = indices
         else:
-            raise ValueError(
-                "Invalid mode '{}' for take operation".format(mode)
-            )
-        if self.shape[axis] == 0:
-            if indices.size != 0:
-                raise IndexError(
-                    "Cannot do a non-empty take() from an empty axis."
-                )
-            return self.copy()
+            ind = convert_to_cupynumeric_ndarray(indices)
+            ind_dtype = ind.dtype
+            ind_size = ind.size
+            ind_shape = ind.shape
+            ind_thunk = ind._thunk
+        if not np.issubdtype(ind_dtype, np.integer):
+            raise TypeError("indices array should be integers")
 
-        point_indices = tuple(slice(None) for i in range(0, axis))
-        point_indices += (indices,)
+        lim = self.size if axis is None else self.shape[axis]
+        if lim == 0 and ind_size != 0:
+            raise IndexError(
+                "Cannot do a non-empty take() from an empty axis."
+            )
+
+        if mode not in {"raise", "wrap", "clip"}:
+            raise ValueError(f"Invalid mode '{mode}' for take operation")
+
+        if axis is None:
+            out_shape = ind_shape
+        else:
+            in_shape = self.shape
+            out_shape = in_shape[:axis] + ind_shape + in_shape[(axis + 1) :]
+
+        out_thunk = None
         if out is not None:
+            if out.shape != out_shape:
+                raise ValueError(
+                    f"Shape mismatch: output array has shape {out.shape}, expected {out_shape}"
+                )
             if out.dtype != self.dtype:
                 raise TypeError("Type mismatch: out array has the wrong type")
-            out[:] = self[point_indices]
+            out_thunk = out._thunk
+
+        if np.prod(out_shape) == 0:
+            if out is None:
+                inputs = (self,) if is_scalar else (self, ind)
+                out = ndarray(shape=out_shape, dtype=self.dtype, inputs=inputs)
             return out
-        else:
-            res = self[point_indices]
-            if np.isscalar(indices):
-                res = res.copy()
-            return res
+
+        result_thunk = self._thunk.take(
+            ind_thunk, axis, out=out_thunk, mode=mode
+        )
+        if out is not None:
+            assert result_thunk is out_thunk
+            return out
+        result = ndarray(shape=out_shape, thunk=result_thunk)
+        return result
 
     @add_boilerplate()
     def choose(

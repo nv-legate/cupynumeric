@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from ..config import BitGeneratorType, FFTType
     from ..types import (
         BitOrder,
+        BoundsMode,
         CastingKind,
         ConvolveMethod,
         ConvolveMode,
@@ -683,6 +684,32 @@ class EagerArray(NumPyThunk):
         result = EagerArray(child, parent=self, key=("broadcast_to", shape))
         self.children.append(result)
         return result
+
+    def take(
+        self,
+        indices: Any,
+        axis: int | None = None,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any:
+        is_scalar = np.isscalar(indices)
+        if not is_scalar:
+            self.check_eager_args(indices)
+        if self.deferred is not None:
+            return self.deferred.take(indices, axis, out=out, mode=mode)
+        out_array = None
+        if out is not None:
+            out_array = out.__numpy_array__()
+        result = self.array.take(
+            indices if is_scalar else indices.array,
+            axis,
+            out=out_array,
+            mode=mode,
+        )
+        if out is not None:
+            assert result is out_array
+            return out
+        return EagerArray(result)
 
     def contract(
         self,

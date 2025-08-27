@@ -281,5 +281,17 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
+    take_default: EnvOnlySetting[str] = EnvOnlySetting(
+        "take_default",
+        "CUPYNUMERIC_TAKE_DEFAULT",
+        default="auto",
+        help="""
+        Default algorithm for deferred array.take():
+          - 'auto':  let cuPyNumeric decide which algorithm to use
+          - 'index': use advanced indexing
+          - 'task':  use a task that broadcasts the indices
+        """,
+    )
+
 
 settings = CupynumericRuntimeSettings()

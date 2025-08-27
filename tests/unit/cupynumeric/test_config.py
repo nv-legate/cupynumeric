@@ -142,6 +142,7 @@ def test_CuPyNumericOpCode() -> None:
         "SVD",
         "SYEV",
         "SYRK",
+        "TAKE",
         "TILE",
         "TRANSPOSE_COPY_2D",
         "TRILU",
