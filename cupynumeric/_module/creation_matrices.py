@@ -59,7 +59,7 @@ def diag(v: ndarray, k: int = 0) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
-    if v.ndim == 0:
+    if v is None or v.ndim == 0:
         raise ValueError("Input must be 1- or 2-d")
     elif v.ndim == 1:
         return v.diagonal(offset=k, axis1=0, axis2=1, extract=False)

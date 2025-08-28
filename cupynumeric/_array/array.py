@@ -23,6 +23,7 @@ import legate.core.types as ty
 import numpy as np
 from legate.core import Field, LogicalArray, Scalar
 from legate.core.utils import OrderedSet
+from numpy.exceptions import AxisError
 
 from .. import _ufunc
 from .._utils import is_np2
@@ -2256,9 +2257,7 @@ class ndarray:
             assert axes is not None
             N = len(axes)
             if len(axes) != len(OrderedSet(axes)):
-                raise ValueError(
-                    "axes passed to _diag_helper should be all different"
-                )
+                raise ValueError("axis1 and axis2 cannot be the same")
             if self.ndim < N:
                 raise ValueError(
                     "Dimension of input array shouldn't be less than number of axes"
@@ -2276,9 +2275,7 @@ class ndarray:
                     offset = -offset
 
                 if offset >= a.shape[self.ndim - 1]:
-                    raise ValueError(
-                        "'offset' for diag or diagonal must be in range"
-                    )
+                    return ndarray(shape=(0,))
 
                 diag_size = max(0, min(a.shape[-2], a.shape[-1] - offset))
             # more than 2 axes provided:
@@ -2370,6 +2367,16 @@ class ndarray:
                 raise ValueError("extract can be true only for Ndim >=2")
             axes = None
         else:
+            if axis1 is None or axis2 is None:
+                raise TypeError(
+                    "'NoneType' object cannot be interpreted as an integer"
+                )
+            if isinstance(axis1, float) or isinstance(axis2, float):
+                raise TypeError(
+                    "'float' object cannot be interpreted as an integer"
+                )
+            if isinstance(offset, float):
+                raise TypeError("integer argument expected, got float")
             axes = (axis1, axis2)
         return self._diag_helper(offset=offset, axes=axes, extract=extract)
 
@@ -3824,6 +3831,11 @@ class ndarray:
             return self
         if axes is None:
             axes = tuple(range(self.ndim - 1, -1, -1))
+        elif any(a >= self.ndim for a in axes):
+            raise AxisError(
+                "axis is out of bounds for array of dimension "
+                + str(self.ndim)
+            )
         elif len(axes) != self.ndim:
             raise ValueError(
                 "axes must be the same size as ndim for transpose"

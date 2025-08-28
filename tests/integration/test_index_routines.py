@@ -451,17 +451,11 @@ def test_diagonal():
 KS = (0, -1, 1, -2, 2)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("k", KS, ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize(
     "shape", ((5, 1), (1, 5)), ids=lambda shape: f"(shape={shape})"
 )
-def test_diagonal_offset(shape, k):
-    # for shape=(5, 1) and k=1, 2,
-    # for shape=(1, 5) and k=-1, -2,
-    # In cuPyNumeric,  raise ValueError: 'offset'
-    # for diag or diagonal must be in range
-    # In Numpy, pass and returns empty array
+def test_diagonal_offset(shape: tuple[int, ...], k: int) -> None:
     a = mk_seq_array(num, shape)
     an = mk_seq_array(np, shape)
 
@@ -471,15 +465,9 @@ def test_diagonal_offset(shape, k):
 
 
 @pytest.mark.parametrize(
-    "shape",
-    (pytest.param((3, 0), marks=pytest.mark.xfail), (0, 3)),
-    ids=lambda shape: f"(shape={shape})",
+    "shape", ((3, 0), (0, 3)), ids=lambda shape: f"(shape={shape})"
 )
-def test_diagonal_empty_array(shape):
-    # for shape=(3, 0) and k=0,
-    # In cuPyNumeric,  raise ValueError: 'offset'
-    # for diag or diagonal must be in range
-    # In Numpy, pass and returns empty array
+def test_diagonal_empty_array(shape: tuple[int, ...]) -> None:
     a = mk_seq_array(num, shape)
     an = mk_seq_array(np, shape)
 
@@ -488,15 +476,12 @@ def test_diagonal_empty_array(shape):
     assert np.array_equal(b, bn)
 
 
-@pytest.mark.xfail(reason="cuPyNumeric does not take single axis")
-def test_diagonal_axis1():
+def test_diagonal_axis1() -> None:
     shape = (3, 1, 2)
     a = mk_seq_array(num, shape)
     an = mk_seq_array(np, shape)
 
-    # cuPyNumeric hits AssertionError in _diag_helper: assert axes is not None
     b = num.diagonal(a, axis1=2)
-    # NumPy passes
     bn = np.diagonal(an, axis1=2)
     assert np.array_equal(b, bn)
 
@@ -528,20 +513,23 @@ class TestDiagonalErrors:
         with pytest.raises(ValueError, match=msg):
             num.diagonal(None)
 
-    @pytest.mark.parametrize(
-        "axes",
-        ((0, 0), pytest.param((0, -3), marks=pytest.mark.xfail)),
-        ids=lambda axes: f"(axes={axes})",
-    )
-    def test_axes_same(self, axes):
-        # For axes =  (0, -3),
-        # In cuPyNumeric, it raises ValueError:
-        # axes must be the same size as ndim for transpose
-        # In Numpy, it raises ValueError: axis1 and axis2 cannot be the same
-        axis1, axis2 = axes
-        msg = "axes passed to _diag_helper should be all different"
+    def test_axes_same1(self) -> None:
+        axis1, axis2 = (0, 0)
+        msg = "axis1 and axis2 cannot be the same"
         with pytest.raises(ValueError, match=msg):
             num.diagonal(self.a, 0, axis1, axis2)
+
+        with pytest.raises(ValueError, match=msg):
+            np.diagonal(self.an, 0, axis1, axis2)
+
+    def test_axes_same_negative_value(self) -> None:
+        axis1, axis2 = (0, -3)
+        msg = "axes must be the same size as ndim for transpose"
+        with pytest.raises(ValueError, match=msg):
+            num.diagonal(self.a, 0, axis1, axis2)
+
+        with pytest.raises(ValueError, match=msg):
+            np.diagonal(self.a, 0, axis1, axis2)
 
     @pytest.mark.xfail
     @pytest.mark.parametrize(
@@ -555,19 +543,19 @@ class TestDiagonalErrors:
         with pytest.raises(AxisError):
             num.diagonal(self.a, 0, axis1, axis2)
 
-    @pytest.mark.xfail
-    def test_axes_float(self):
-        # In Numpy, it raise TypeError
-        # In cuPyNumeric, it raises AssertionError
-        with pytest.raises(TypeError):
+    def test_axes_float(self) -> None:
+        msg = r"'float' object cannot be interpreted as an integer"
+        with pytest.raises(TypeError, match=msg):
             num.diagonal(self.a, 0, 0.0, 1)
+        with pytest.raises(TypeError, match=msg):
+            np.diagonal(self.an, 0, 0.0, 1)
 
-    @pytest.mark.xfail
-    def test_axes_none(self):
-        # In Numpy, it raise TypeError
-        # In cuPyNumeric, it raises AssertionError
-        with pytest.raises(TypeError):
+    def test_axes_none(self) -> None:
+        msg = r"'NoneType' object cannot be interpreted as an integer"
+        with pytest.raises(TypeError, match=msg):
             num.diagonal(self.a, 0, None, 0)
+        with pytest.raises(TypeError, match=msg):
+            np.diagonal(self.an, 0, None, 0)
 
     @pytest.mark.diff
     def test_extra_axes(self):
@@ -582,15 +570,8 @@ class TestDiagonalErrors:
         with pytest.raises(ValueError):
             self.a._diag_helper(offset=1, axes=(2, 1, 0))
 
-    @pytest.mark.parametrize(
-        "k",
-        (pytest.param(0.0, marks=pytest.mark.xfail), -1.5, 1.5),
-        ids=lambda k: f"(k={k})",
-    )
-    def test_k_float(self, k):
-        # for k=0.0,
-        # In cuPyNumeric, pass
-        # In Numpy, raises TypeError: integer argument expected, got float
+    @pytest.mark.parametrize("k", (0.0, -1.5, 1.5), ids=lambda k: f"(k={k})")
+    def test_k_float(self, k: float) -> None:
         with pytest.raises(TypeError):
             num.diagonal(self.a, k)
 
@@ -633,20 +614,10 @@ class TestDiagonalErrors:
 @pytest.mark.parametrize("k", KS, ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize(
     "shape",
-    (
-        (5,),
-        (3, 3),
-        pytest.param((5, 1), marks=pytest.mark.xfail),
-        pytest.param((1, 5), marks=pytest.mark.xfail),
-    ),
+    ((5,), (3, 3), (5, 1), (1, 5)),
     ids=lambda shape: f"(shape={shape})",
 )
-def test_diag(shape, k):
-    # for shape=(5, 1) and k=1, 2,
-    # for shape=(1, 5) and k=-1, -2,
-    # In cuPyNumeric,  raise ValueError:
-    # 'offset' for diag or diagonal must be in range
-    # In Numpy, pass and returns empty array
+def test_diag(shape: tuple[int, ...], k: int) -> None:
     a = mk_seq_array(num, shape)
     an = mk_seq_array(np, shape)
 
@@ -656,15 +627,9 @@ def test_diag(shape, k):
 
 
 @pytest.mark.parametrize(
-    "shape",
-    ((0,), pytest.param((3, 0), marks=pytest.mark.xfail), (0, 3)),
-    ids=lambda shape: f"(shape={shape})",
+    "shape", ((0,), (3, 0), (0, 3)), ids=lambda shape: f"(shape={shape})"
 )
-def test_diag_empty_array(shape):
-    # for shape=(3, 0) and k=0,
-    # In cuPyNumeric,  raise ValueError:
-    # 'offset' for diag or diagonal must be in range
-    # In Numpy, pass and returns empty array
+def test_diag_empty_array(shape: tuple[int, ...]) -> None:
     a = mk_seq_array(num, shape)
     an = mk_seq_array(np, shape)
 
@@ -686,23 +651,15 @@ class TestDiagErrors:
         with pytest.raises(ValueError):
             num.diag(a)
 
-    @pytest.mark.xfail
-    def test_array_none(self):
-        # In cuPyNumeric, it raises AttributeError,
-        # 'NoneType' object has no attribute 'ndim'
-        # In Numpy, it raises ValueError, Input must be 1- or 2-d.
-        with pytest.raises(ValueError):
+    def test_array_none(self) -> None:
+        msg = r"Input must be 1- or 2-d"
+        with pytest.raises(ValueError, match=msg):
             num.diag(None)
+        with pytest.raises(ValueError, match=msg):
+            np.diag(None)
 
-    @pytest.mark.parametrize(
-        "k",
-        (pytest.param(0.0, marks=pytest.mark.xfail), -1.5, 1.5),
-        ids=lambda k: f"(k={k})",
-    )
-    def test_k_float(self, k):
-        # for k=0.0,
-        # In cuPyNumeric, pass
-        # In Numpy, raises TypeError: integer argument expected, got float
+    @pytest.mark.parametrize("k", (0.0, -1.5, 1.5), ids=lambda k: f"(k={k})")
+    def test_k_float(self, k: float) -> None:
         shape = (3, 3)
         a = mk_seq_array(num, shape)
         with pytest.raises(TypeError):

@@ -87,22 +87,18 @@ class TestFillDiagonalErrors:
         with pytest.raises(expected_exc):
             num.fill_diagonal(arr_num, 10)
 
-    @pytest.mark.xfail
-    def test_val_none(self):
+    def test_val_none(self) -> None:
         shape = (3, 3, 3)
         val = None
         np_array = mk_seq_array(np, shape)
         num_array = num.array(np_array)
 
-        expected_exc = TypeError
-        with pytest.raises(expected_exc):
+        msg = "cannot convert float NaN to integer"
+        with pytest.raises(ValueError, match=msg):
             np.fill_diagonal(np_array, val)
-        # Numpy raises TypeError: int() argument must be a string,
-        # a bytes-like object or a real number, not 'NoneType'
-        with pytest.raises(expected_exc):
+
+        with pytest.raises(ValueError, match=msg):
             num.fill_diagonal(num_array, val)
-        # cuPyNumeric raises AttributeError:
-        # 'NoneType' object has no attribute 'size'
 
 
 if __name__ == "__main__":
