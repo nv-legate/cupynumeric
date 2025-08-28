@@ -355,6 +355,29 @@ def test_histogram_singleton_empty(src, bins):
     assert allclose(np_bins_out, num_bins_out, atol=eps)
 
 
+@pytest.mark.parametrize(
+    "src", ([[1, 2, 3], [4, 5, 6]], [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
+)
+@pytest.mark.parametrize("bins", (3, 5))
+def test_histogram_2d_array_flatten(
+    src: list[int] | list[float], bins: int
+) -> None:
+    eps = 1.0e-8
+    src_array = np.array(src)
+
+    assert src_array.ndim == 2
+
+    np_out, np_bins_out = np.histogram(src_array, bins)
+    num_out, num_bins_out = num.histogram(src_array, bins)
+
+    assert allclose(np_out, num_out, atol=eps)
+    assert allclose(np_bins_out, num_bins_out, atol=eps)
+
+    total_elements = src_array.size
+    assert abs(np_out.sum() - total_elements) < eps
+    assert abs(num_out.sum() - total_elements) < eps
+
+
 if __name__ == "__main__":
     import sys
 

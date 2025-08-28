@@ -186,6 +186,9 @@ def histogram(
     if np.ndim(bins) > 1:
         raise ValueError("`bins` must be 1d, when an array")
 
+    if x.ndim != 1:
+        x = x.flatten()
+
     # check isscalar(bins):
     #
     if np.ndim(bins) == 0:
@@ -230,9 +233,6 @@ def histogram(
             raise ValueError(
                 "`bins` must increase monotonically, when an array"
             )
-
-    if x.ndim != 1:
-        x = x.flatten()
 
     if weights is not None:
         if weights.shape != x.shape:
