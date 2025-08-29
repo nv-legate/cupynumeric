@@ -28,10 +28,8 @@ namespace cupynumeric {
 class NDArray {
   friend class CuPyNumericRuntime;
 
- private:
-  NDArray(legate::LogicalStore&& store);
-
  public:
+  NDArray(legate::LogicalStore&& store);
   NDArray(const NDArray&)            = default;
   NDArray& operator=(const NDArray&) = default;
 
