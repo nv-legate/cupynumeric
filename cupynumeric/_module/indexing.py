@@ -1194,7 +1194,7 @@ def fill_diagonal(a: ndarray, val: ndarray, wrap: bool = False) -> None:
     Multiple GPUs, Multiple CPUs
 
     """
-    if np.isnan(val).any():
+    if val is None or np.isnan(val).any():
         raise ValueError("cannot convert float NaN to integer")
 
     if val.size == 0 or a.size == 0:

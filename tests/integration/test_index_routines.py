@@ -520,7 +520,7 @@ class TestDiagonalErrors:
             num.diagonal(self.a, 0, axis1, axis2)
 
         with pytest.raises(ValueError, match=msg):
-            np.diagonal(self.an, 0, axis1, axis2)
+            np.diagonal(self.a, 0, axis1, axis2)
 
     def test_axes_same_negative_value(self) -> None:
         axis1, axis2 = (0, -3)
@@ -548,14 +548,14 @@ class TestDiagonalErrors:
         with pytest.raises(TypeError, match=msg):
             num.diagonal(self.a, 0, 0.0, 1)
         with pytest.raises(TypeError, match=msg):
-            np.diagonal(self.an, 0, 0.0, 1)
+            np.diagonal(self.a, 0, 0.0, 1)
 
     def test_axes_none(self) -> None:
         msg = r"'NoneType' object cannot be interpreted as an integer"
         with pytest.raises(TypeError, match=msg):
             num.diagonal(self.a, 0, None, 0)
         with pytest.raises(TypeError, match=msg):
-            np.diagonal(self.an, 0, None, 0)
+            np.diagonal(self.a, 0, None, 0)
 
     @pytest.mark.diff
     def test_extra_axes(self):

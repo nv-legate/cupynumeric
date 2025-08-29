@@ -94,7 +94,7 @@ class TestFillDiagonalErrors:
         num_array = num.array(np_array)
 
         msg = "cannot convert float NaN to integer"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(TypeError):
             np.fill_diagonal(np_array, val)
 
         with pytest.raises(ValueError, match=msg):
