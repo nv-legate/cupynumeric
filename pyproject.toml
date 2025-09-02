@@ -53,7 +53,7 @@ no_implicit_optional = true
 strict_optional = true
 
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_no_return = true
 warn_return_any = false
 warn_unreachable = true

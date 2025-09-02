@@ -32,6 +32,7 @@ from typing import (
     cast,
 )
 
+
 import legate.core.types as ty
 import numpy as np
 from legate.core import (
@@ -82,6 +83,7 @@ from .thunk import NumPyThunk
 if TYPE_CHECKING:
     import numpy.typing as npt
     from legate.core import LogicalStorePartition
+    from typing_extensions import CapsuleType
 
     from .._ufunc.ufunc import binary_ufunc, unary_ufunc
     from ..config import BitGeneratorType, FFTDirection, FFTType, WindowOpCode
@@ -298,6 +300,25 @@ class DeferredArray(NumPyThunk):
 
     def __str__(self) -> str:
         return f"DeferredArray(base: {self.base})"
+
+    def __dlpack__(
+        self,
+        stream: int | None = None,
+        max_version: tuple[int, int] | None = None,
+        dl_device: tuple[int, int] | None = None,
+        copy: bool | None = None,
+    ) -> CapsuleType:
+        store = self.base.get_physical_store()
+        return store.__dlpack__(  # type: ignore [attr-defined]
+            stream=stream,
+            max_version=max_version,
+            dl_device=dl_device,
+            copy=copy,
+        )
+
+    def __dlpack_device__(self) -> tuple[int, int]:
+        store = self.base.get_physical_store()
+        return store.__dlpack_device__()  # type: ignore [attr-defined]
 
     @property
     def shape(self) -> NdShape:

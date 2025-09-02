@@ -50,6 +50,7 @@ from .thunk import NumPyThunk
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from typing_extensions import CapsuleType
 
     from .._ufunc.ufunc import binary_ufunc, unary_ufunc
     from ..config import BitGeneratorType, FFTType
@@ -343,6 +344,34 @@ class EagerArray(NumPyThunk):
         # to be more careful in how we do our attach
         self.record_escape()
         return self.array.__array__()
+
+    def __dlpack__(
+        self,
+        stream: int | None = None,
+        max_version: tuple[int, int] | None = None,
+        dl_device: tuple[int, int] | None = None,
+        copy: bool | None = None,
+    ) -> CapsuleType:
+        if self.deferred is None:
+            return self.array.__dlpack__(
+                stream=stream,
+                max_version=max_version,
+                dl_device=dl_device,
+                copy=copy,
+            )
+
+        return self.deferred.__dlpack__(
+            stream=stream,
+            max_version=max_version,
+            dl_device=dl_device,
+            copy=copy,
+        )
+
+    def __dlpack_device__(self) -> tuple[int, int]:
+        if self.deferred is None:
+            return self.array.__dlpack_device__()
+
+        return self.deferred.__dlpack_device__()
 
     def record_escape(self) -> None:
         if self.parent is None:

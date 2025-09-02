@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import numpy.typing as npt
+    from typing_extensions import CapsuleType
 
     from .._thunk.thunk import NumPyThunk
     from ..types import (
@@ -172,6 +173,23 @@ class ndarray:
             field = Field("cuPyNumeric Array", dtype)
             self._legate_data["data"] = {field: array}
         return self._legate_data
+
+    def __dlpack__(
+        self,
+        stream: int | None = None,
+        max_version: tuple[int, int] | None = None,
+        dl_device: tuple[int, int] | None = None,
+        copy: bool | None = None,
+    ) -> CapsuleType:
+        return self._thunk.__dlpack__(
+            stream=stream,
+            max_version=max_version,
+            dl_device=dl_device,
+            copy=copy,
+        )
+
+    def __dlpack_device__(self) -> tuple[int, int]:
+        return self._thunk.__dlpack_device__()
 
     # Properties for ndarray
 
