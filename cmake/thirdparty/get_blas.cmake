@@ -140,28 +140,39 @@ function(cupynumeric_find_existing_blas found)
   #
   # Note also, these names are case-sensitive! These must match exactly what is set by
   # cmake, and if any of them change, we are screwed.
-  set(ALL_BLAS_VENDORS Accelerate
-    openblas
-    mkl
-    mkl_em64t
-    mkl_ia32
-    mkl_intel
-    mkl_intel_lp64
-    mkl_rt
-    blis
-    blas
-    acml
-    acml_mp
-    armpl_lp64
-    complib_sgimath
-    cxml
-    dxml
-    essl
-    f77blas
-    flexiblas
-    goto2
-    scs
-    sunperf)
+  set(ALL_BLAS_VENDORS
+    # Common hardware vendor implementations
+    Apple
+    Intel10_64lp # MKL threaded (we don't look for sequential mkl until later as a fallback)
+
+    # Turning off detecting ACML because FindBLAS.cmake has a bug when trying to detect it:
+    #
+    #   https://gitlab.kitware.com/cmake/cmake/-/issues/27141
+    #
+    # ACML         # AMD
+
+    IBMESSL
+    SunPerf
+    Arm
+    SCSL         # SGI
+    CXML         # Alpha
+    DXML
+
+    # Portable implementations
+    FLAME     # BLIS
+    OpenBLAS
+    SGIMath   # Complib
+    Goto
+    FlexiBLAS
+
+    # Fallbacks
+    Intel10_64lp_seq # MKL single-threaded
+    Generic          # reference
+    )
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.1")
+    list(PREPEND ALL_BLAS_VENDORS NVPL) # Nvidia ARM
+    # TODO(tisaac): we can ask for a specific threading model with BLA_THREAD in {SEQ, OMP, ANY}
+  endif()
 
   set(${found} FALSE PARENT_SCOPE)
   foreach(vendor IN LISTS ALL_BLAS_VENDORS)
@@ -172,6 +183,7 @@ function(cupynumeric_find_existing_blas found)
       INSTALL_EXPORT_SET cupynumeric-exports
     )
     if(BLAS_FOUND)
+      message(STATUS "Found BLAS: ${vendor}")
       string(TOUPPER "${vendor}" VENDOR)
       set(CUPYNUMERIC_BLAS_VENDOR ${VENDOR} PARENT_SCOPE)
       set(${found} TRUE PARENT_SCOPE)
@@ -188,6 +200,7 @@ function(find_blas)
       INSTALL_EXPORT_SET cupynumeric-exports
     )
     if(BLAS_FOUND)
+      message(STATUS "Found BLAS: ${BLA_VENDOR}")
       string(TOUPPER "${BLA_VENDOR}" VENDOR)
       set(CUPYNUMERIC_BLAS_VENDOR ${VENDOR} PARENT_SCOPE)
       return()
@@ -195,6 +208,7 @@ function(find_blas)
   else()
     cupynumeric_find_existing_blas(BLAS_FOUND)
     if(BLAS_FOUND)
+      message(STATUS "Found BLAS: ${CUPYNUMERIC_BLAS_VENDOR}")
       set(CUPYNUMERIC_BLAS_VENDOR "${CUPYNUMERIC_BLAS_VENDOR}" PARENT_SCOPE)
       return()
     endif()

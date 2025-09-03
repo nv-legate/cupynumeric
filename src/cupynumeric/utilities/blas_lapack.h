@@ -25,13 +25,13 @@ extern "C" {
 void openblas_set_num_threads(int);
 
 }  // extern "C"
-#elif CUPYNUMERIC_BLAS_VENDOR_ACCELERATE  // macos
+#elif CUPYNUMERIC_BLAS_VENDOR_APPLE  // macos
 #if __has_include(<vecLib/thread_api.h>)
 #include <vecLib/thread_api.h>
 
-#define CUPYNUMERIC_BLAS_VENDOR_ACCELERATE_HAVE_THREAD_API 1
+#define CUPYNUMERIC_BLAS_VENDOR_APPLE_HAVE_THREAD_API 1
 #else
-#define CUPYNUMERIC_BLAS_VENDOR_ACCELERATE_HAVE_THREAD_API 0
+#define CUPYNUMERIC_BLAS_VENDOR_APPLE_HAVE_THREAD_API 0
 #endif
 #endif
 
@@ -41,11 +41,11 @@ namespace cupynumeric {
 
 inline void blas_set_num_threads(std::int32_t threads) { openblas_set_num_threads(threads); }
 
-#elif CUPYNUMERIC_BLAS_VENDOR_ACCELERATE
+#elif CUPYNUMERIC_BLAS_VENDOR_APPLE
 
 inline void blas_set_num_threads(std::int32_t threads [[maybe_unused]])
 {
-#if CUPYNUMERIC_BLAS_VENDOR_ACCELERATE_HAVE_THREAD_API
+#if CUPYNUMERIC_BLAS_VENDOR_APPLE_HAVE_THREAD_API
   // Choices are:
   //
   // - SINGLE_THREADED: use only 1 thread
