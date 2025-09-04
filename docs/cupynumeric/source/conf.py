@@ -86,7 +86,7 @@ html_theme_options = {
         "version_match": BASE_VERSION,
     },
     "extra_footer": [
-        "This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.",  # NOQA
+        "The cuPyNumeric project is independent of the CuPy project. CuPy is a trademark of Preferred Networks, Inc, and the name 'cuPyNumeric' is used with their permission.",  # NOQA
         '<script type="text/javascript">if (typeof _satellite !== “undefined”){ _satellite.pageBottom();}</script>',  # NOQA
     ],
     "show_version_warning_banner": True,

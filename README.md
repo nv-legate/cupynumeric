@@ -74,4 +74,7 @@ the [community discussion forum](https://github.com/nv-legate/discussion).
 If you have other questions, please contact us at legate(at)nvidia.com.
 
 ## Note
-*This project, i.e., cuPyNumeric, is separate and independent of the CuPy project. CuPy is a registered trademark of Preferred Networks.*
+
+The cuPyNumeric project is independent of the CuPy project. CuPy is a trademark
+of Preferred Networks, Inc, and the name 'cuPyNumeric' is used with their
+permission.
