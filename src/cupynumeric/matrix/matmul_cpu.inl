@@ -28,6 +28,9 @@ using namespace legate;
 
 template <VariantKind KIND>
 struct MatMulImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -61,6 +64,9 @@ struct MatMulImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct MatMulImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -93,6 +99,9 @@ struct MatMulImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct MatMulImplBody<KIND, Type::Code::FLOAT16> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -140,6 +149,9 @@ struct MatMulImplBody<KIND, Type::Code::FLOAT16> {
 
 template <VariantKind KIND>
 struct MatMulImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -178,6 +190,9 @@ struct MatMulImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct MatMulImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,

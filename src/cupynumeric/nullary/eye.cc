@@ -23,6 +23,9 @@ using namespace legate;
 
 template <typename VAL>
 struct EyeImplBody<VariantKind::CPU, VAL> {
+  TaskContext context;
+  explicit EyeImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<VAL, 2>& out,
                   const Point<2>& start,
                   const coord_t distance) const

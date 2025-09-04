@@ -26,6 +26,9 @@ struct ScanGlobalImplBody;
 
 template <VariantKind KIND, ScanCode OP_CODE>
 struct ScanGlobalImpl {
+  TaskContext context;
+  explicit ScanGlobalImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(ScanGlobalArgs& args) const
   {
@@ -47,23 +50,27 @@ struct ScanGlobalImpl {
     auto sum_vals = args.sum_vals.read_accessor<VAL, DIM>(sum_vals_rect);
 
     OP func;
-    ScanGlobalImplBody<KIND, OP_CODE, CODE, DIM>()(func,
-                                                   out,
-                                                   sum_vals,
-                                                   out_pitches,
-                                                   out_rect,
-                                                   sum_vals_pitches,
-                                                   sum_vals_rect,
-                                                   args.partition_index);
+    ScanGlobalImplBody<KIND, OP_CODE, CODE, DIM>{context}(func,
+                                                          out,
+                                                          sum_vals,
+                                                          out_pitches,
+                                                          out_rect,
+                                                          sum_vals_pitches,
+                                                          sum_vals_rect,
+                                                          args.partition_index);
   }
 };
 
 template <VariantKind KIND>
 struct ScanGlobalDispatch {
+  TaskContext context;
+  explicit ScanGlobalDispatch(TaskContext context) : context(context) {}
+
   template <ScanCode OP_CODE>
   void operator()(ScanGlobalArgs& args) const
   {
-    return double_dispatch(args.out.dim(), args.out.code(), ScanGlobalImpl<KIND, OP_CODE>{}, args);
+    return double_dispatch(
+      args.out.dim(), args.out.code(), ScanGlobalImpl<KIND, OP_CODE>{context}, args);
   }
 };
 
@@ -73,7 +80,7 @@ static void scan_global_template(TaskContext& context)
   auto task_index = context.get_task_index();
   ScanGlobalArgs args{
     context.input(1), context.output(0), context.scalar(0).value<ScanCode>(), task_index};
-  op_dispatch(args.op_code, ScanGlobalDispatch<KIND>{}, args);
+  op_dispatch(args.op_code, ScanGlobalDispatch<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

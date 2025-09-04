@@ -30,6 +30,9 @@ struct BinaryOpImplBody;
 
 template <VariantKind KIND, BinaryOpCode OP_CODE>
 struct BinaryOpImpl {
+  TaskContext context;
+  explicit BinaryOpImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM, std::enable_if_t<BinaryOp<OP_CODE, CODE>::valid>* = nullptr>
   void operator()(BinaryOpArgs& args) const
   {
@@ -61,7 +64,7 @@ struct BinaryOpImpl {
 #endif
 
     OP func{args.args};
-    BinaryOpImplBody<KIND, OP_CODE, CODE, DIM>()(func, out, in1, in2, pitches, rect, dense);
+    BinaryOpImplBody<KIND, OP_CODE, CODE, DIM>{context}(func, out, in1, in2, pitches, rect, dense);
   }
 
   template <Type::Code CODE, int DIM, std::enable_if_t<!BinaryOp<OP_CODE, CODE>::valid>* = nullptr>
@@ -73,11 +76,14 @@ struct BinaryOpImpl {
 
 template <VariantKind KIND>
 struct BinaryOpDispatch {
+  TaskContext context;
+  explicit BinaryOpDispatch(TaskContext context) : context(context) {}
+
   template <BinaryOpCode OP_CODE>
   void operator()(BinaryOpArgs& args) const
   {
     auto dim = std::max(1, args.out.dim());
-    double_dispatch(dim, args.in1.code(), BinaryOpImpl<KIND, OP_CODE>{}, args);
+    double_dispatch(dim, args.in1.code(), BinaryOpImpl<KIND, OP_CODE>{context}, args);
   }
 };
 
@@ -91,7 +97,7 @@ static void binary_op_template(TaskContext& context)
 
   BinaryOpArgs args{
     context.input(0), context.input(1), context.output(0), op_code, std::move(scalars)};
-  op_dispatch(args.op_code, BinaryOpDispatch<KIND>{}, args);
+  op_dispatch(args.op_code, BinaryOpDispatch<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

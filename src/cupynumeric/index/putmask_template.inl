@@ -43,12 +43,13 @@ struct Putmask {
   Rect<DIM> rect;
   bool dense;
   size_t volume;
+  TaskContext context;
 
   struct DenseTag {};
   struct SparseTag {};
 
   // constructor:
-  Putmask(PutmaskArgs& args) : dense(false)
+  Putmask(PutmaskArgs& args, TaskContext tcontext) : dense(false), context(tcontext)
   {
     rect = args.input.shape<DIM>();
 
@@ -89,10 +90,10 @@ struct Putmask {
   {
 #if !LEGATE_DEFINED(LEGATE_BOUNDS_CHECKS)
     if (dense) {
-      return ParallelLoopPolicy<KIND, DenseTag>()(rect, *this);
+      return ParallelLoopPolicy<KIND, DenseTag>{context}(rect, *this);
     }
 #endif
-    return ParallelLoopPolicy<KIND, SparseTag>()(rect, *this);
+    return ParallelLoopPolicy<KIND, SparseTag>{context}(rect, *this);
   }
 };
 
@@ -100,10 +101,13 @@ using namespace legate;
 
 template <VariantKind KIND>
 struct PutmaskImpl {
+  TaskContext context;
+  explicit PutmaskImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(PutmaskArgs& args) const
   {
-    Putmask<KIND, CODE, DIM> putmask(args);
+    Putmask<KIND, CODE, DIM> putmask(args, context);
     putmask.execute();
   }
 };
@@ -114,7 +118,7 @@ static void putmask_template(TaskContext& context)
   auto inputs = context.inputs();
   PutmaskArgs args{context.output(0), inputs[1], inputs[2]};
   int dim = std::max(1, args.input.dim());
-  double_dispatch(dim, args.input.code(), PutmaskImpl<KIND>{}, args);
+  double_dispatch(dim, args.input.code(), PutmaskImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

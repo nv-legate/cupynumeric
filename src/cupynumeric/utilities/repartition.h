@@ -54,7 +54,8 @@ template <typename VAL>
   size_t tile_r,
   size_t tile_c,
   // communicator
-  legate::comm::Communicator comm);
+  legate::comm::Communicator comm,
+  legate::TaskContext context);
 
 /*
  * performs collective repartition from 2d block cyclic pattern
@@ -87,7 +88,8 @@ void repartition_matrix_block(
   size_t target_offset_r,
   size_t target_offset_c,
   // communicator
-  legate::comm::Communicator comm);
+  legate::comm::Communicator comm,
+  legate::TaskContext context);
 
 [[nodiscard]] std::tuple<size_t, size_t> elements_for_rank_in_dimension(
   size_t dim_length, size_t offset_id, size_t proc_id, size_t num_dim_procs, size_t tilesize);

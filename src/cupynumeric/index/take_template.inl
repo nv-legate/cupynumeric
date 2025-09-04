@@ -42,6 +42,9 @@ inline constexpr int64_t LEGATE_HOST_DEVICE mod(int64_t x, int64_t m)
 
 template <typename exec_policy_t, Type::Code CODE, bool clip>
 struct TakeImplBody {
+  TaskContext context;
+  explicit TakeImplBody(TaskContext context) : context(context) {}
+
   using VAL         = type_of<CODE>;
   using SourceArray = AccessorRO<VAL, 4>;
   using Indices     = AccessorRO<int64_t, 1>;
@@ -100,6 +103,9 @@ struct TakeImplBody {
 
 template <typename exec_policy_t>
 struct TakeImpl {
+  TaskContext context;
+  explicit TakeImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(TakeArgs& args, const exec_policy_t& policy) const
   {
@@ -117,9 +123,9 @@ struct TakeImpl {
     auto ind = args.ind.read_accessor<int64_t, 1>();
     auto res = args.res.write_accessor<VAL, 4>();
     if (args.clip) {
-      TakeImplBody<exec_policy_t, CODE, true>()(policy, src, ind, res, src_shape);
+      TakeImplBody<exec_policy_t, CODE, true>{context}(policy, src, ind, res, src_shape);
     } else {
-      TakeImplBody<exec_policy_t, CODE, false>()(policy, src, ind, res, src_shape);
+      TakeImplBody<exec_policy_t, CODE, false>{context}(policy, src, ind, res, src_shape);
     }
   }
 };
@@ -130,7 +136,7 @@ static void take_template(TaskContext& context, const exec_policy_t& policy)
   TakeArgs args{
     context.input(0), context.input(1), context.output(0), context.scalar(0).value<bool>()};
 
-  type_dispatch(args.res.code(), TakeImpl<exec_policy_t>{}, args, policy);
+  type_dispatch(args.res.code(), TakeImpl<exec_policy_t>{context}, args, policy);
 }
 
 }  // namespace cupynumeric

@@ -59,6 +59,9 @@ void assemble_complex(complex<T>* ew, complex<T>* ev, T* ew_r, T* ew_i, T* ev_r,
 
 template <VariantKind KIND>
 struct GeevImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t num_batches,
                   int32_t batch_stride_ew,
@@ -132,6 +135,9 @@ struct GeevImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct GeevImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t num_batches,
                   int32_t batch_stride_ew,
@@ -206,6 +212,9 @@ struct GeevImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct GeevImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t num_batches,
                   int32_t batch_stride_ew,
@@ -273,6 +282,9 @@ struct GeevImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct GeevImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t num_batches,
                   int32_t batch_stride_ew,

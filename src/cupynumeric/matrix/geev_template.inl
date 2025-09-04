@@ -54,6 +54,9 @@ struct complex_type<Type::Code::COMPLEX128> {
 
 template <VariantKind KIND>
 struct GeevImpl {
+  TaskContext context;
+  explicit GeevImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE,
             int32_t DIM,
             std::enable_if_t<support_geev<CODE>::value && DIM >= 2>* = nullptr>
@@ -132,7 +135,7 @@ struct GeevImpl {
     }
 #endif
 
-    GeevImplBody<KIND, CODE>()(m, batchsize_total, m, m * m, a_acc, ew_acc, ev_acc);
+    GeevImplBody<KIND, CODE>{context}(m, batchsize_total, m, m * m, a_acc, ew_acc, ev_acc);
   }
 
   template <Type::Code CODE,
@@ -148,7 +151,7 @@ template <VariantKind KIND>
 static void geev_template(TaskContext& context)
 {
   auto a_array = context.input(0);
-  double_dispatch(a_array.dim(), a_array.type().code(), GeevImpl<KIND>{}, context);
+  double_dispatch(a_array.dim(), a_array.type().code(), GeevImpl<KIND>{context}, context);
 }
 
 }  // namespace cupynumeric

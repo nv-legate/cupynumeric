@@ -48,6 +48,9 @@ static inline void complex_gemm_template(
 
 template <>
 struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit GemmImplBody(TaskContext context) : context(context) {}
+
   void operator()(float* lhs, const float* rhs1, const float* rhs2, int32_t m, int32_t n, int32_t k)
   {
     gemm_template(cblas_sgemm, lhs, rhs1, rhs2, m, n, k);
@@ -56,6 +59,9 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
 
 template <>
 struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit GemmImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     double* lhs, const double* rhs1, const double* rhs2, int32_t m, int32_t n, int32_t k)
   {
@@ -65,6 +71,9 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
 
 template <>
 struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit GemmImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<float>* lhs_,
                   const complex<float>* rhs1_,
                   const complex<float>* rhs2_,
@@ -82,6 +91,9 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
 
 template <>
 struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit GemmImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<double>* lhs_,
                   const complex<double>* rhs1_,
                   const complex<double>* rhs2_,

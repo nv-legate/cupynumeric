@@ -29,6 +29,9 @@ struct RepeatImplBody;
 
 template <VariantKind KIND>
 struct RepeatImpl {
+  TaskContext context;
+  explicit RepeatImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(RepeatArgs& args) const
   {
@@ -44,11 +47,12 @@ struct RepeatImpl {
     }
 
     if (args.scalar_repeats) {
-      RepeatImplBody<KIND, CODE, DIM>{}(
+      RepeatImplBody<KIND, CODE, DIM>{context}(
         args.output, input_arr, args.repeats, args.axis, input_rect);
     } else {
       auto repeats_arr = args.repeats_arr.read_accessor<int64_t, DIM>(input_rect);
-      RepeatImplBody<KIND, CODE, DIM>{}(args.output, input_arr, repeats_arr, args.axis, input_rect);
+      RepeatImplBody<KIND, CODE, DIM>{context}(
+        args.output, input_arr, repeats_arr, args.axis, input_rect);
     }
   }
 };
@@ -66,11 +70,11 @@ static void repeat_template(TaskContext& context)
                     repeats,
                     axis,
                     scalar_repeats};
-    double_dispatch(args.input.dim(), args.input.code(), RepeatImpl<KIND>{}, args);
+    double_dispatch(args.input.dim(), args.input.code(), RepeatImpl<KIND>{context}, args);
   } else {
     auto repeats = context.input(1);
     RepeatArgs args{context.output(0), context.input(0), repeats, 0, axis, scalar_repeats};
-    double_dispatch(args.input.dim(), args.input.code(), RepeatImpl<KIND>{}, args);
+    double_dispatch(args.input.dim(), args.input.code(), RepeatImpl<KIND>{context}, args);
   }
 }
 

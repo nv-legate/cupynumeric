@@ -31,6 +31,9 @@ struct FillImplBody;
 
 template <VariantKind KIND>
 struct FillImpl {
+  TaskContext context;
+  explicit FillImpl(TaskContext context) : context(context) {}
+
   template <typename VAL, int DIM>
   void fill(FillArgs& args) const
   {
@@ -53,7 +56,7 @@ struct FillImpl {
     // No dense execution if we're doing bounds checks
     bool dense = false;
 #endif
-    FillImplBody<KIND, VAL, DIM>{}(out, fill_value, pitches, rect, dense);
+    FillImplBody<KIND, VAL, DIM>{context}(out, fill_value, pitches, rect, dense);
   }
 
   template <Type::Code CODE, int DIM>
@@ -68,7 +71,8 @@ template <VariantKind KIND>
 static void fill_template(TaskContext& context)
 {
   FillArgs args{context.output(0), context.input(0)};
-  double_dispatch(std::max<int32_t>(args.out.dim(), 1), args.out.code(), FillImpl<KIND>{}, args);
+  double_dispatch(
+    std::max<int32_t>(args.out.dim(), 1), args.out.code(), FillImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

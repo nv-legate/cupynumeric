@@ -69,6 +69,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct SelectImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit SelectImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<VAL, DIM>& out,
@@ -85,7 +88,7 @@ struct SelectImplBody<VariantKind::GPU, CODE, DIM> {
 #endif
     const size_t blocks = (rect.volume() + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     if (dense) {
       auto cond_arr = create_buffer<const bool*>(condlist.size(), legate::Memory::Kind::Z_COPY_MEM);

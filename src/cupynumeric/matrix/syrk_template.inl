@@ -39,6 +39,9 @@ struct support_syrk<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct SyrkImpl {
+  TaskContext context;
+  explicit SyrkImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_syrk<CODE>::value>* = nullptr>
   void operator()(legate::PhysicalStore lhs_array, legate::PhysicalStore rhs_array) const
   {
@@ -61,7 +64,7 @@ struct SyrkImpl {
     auto n = static_cast<int32_t>(rhs_shape.hi[1] - rhs_shape.lo[1] + 1);
     assert(m > 0 && n > 0);
 
-    SyrkImplBody<KIND, CODE>()(lhs, rhs, m, n);
+    SyrkImplBody<KIND, CODE>{context}(lhs, rhs, m, n);
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_syrk<CODE>::value>* = nullptr>
@@ -77,7 +80,7 @@ static void syrk_template(TaskContext& context)
   auto lhs = context.output(0);
   auto rhs = context.input(0);
 
-  type_dispatch(lhs.type().code(), SyrkImpl<KIND>{}, lhs, rhs);
+  type_dispatch(lhs.type().code(), SyrkImpl<KIND>{context}, lhs, rhs);
 }
 
 }  // namespace cupynumeric

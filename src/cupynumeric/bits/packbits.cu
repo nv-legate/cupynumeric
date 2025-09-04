@@ -43,6 +43,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int32_t DIM, Bitorder BITORDER>
 struct PackbitsImplBody<VariantKind::GPU, CODE, DIM, BITORDER> {
+  TaskContext context;
+  explicit PackbitsImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<uint8_t, DIM>& out,
@@ -59,7 +62,7 @@ struct PackbitsImplBody<VariantKind::GPU, CODE, DIM, BITORDER> {
     Pack<BITORDER, true /* ALIGNED */> op{};
     Pack<BITORDER, false /* ALIGNED */> op_unaligned{};
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     if (aligned_volume > 0) {
       const size_t blocks = (aligned_volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
       generic_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(

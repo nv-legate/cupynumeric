@@ -29,6 +29,9 @@ struct In1dImplBody;
 
 template <VariantKind KIND>
 struct In1dImpl {
+  TaskContext context;
+  explicit In1dImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(legate::PhysicalStore output,
                   legate::PhysicalStore input1,
@@ -59,7 +62,7 @@ struct In1dImpl {
       return;
     }
 
-    In1dImplBody<KIND, CODE, 1>()(
+    In1dImplBody<KIND, CODE, 1>{context}(
       out, in1, in2, rect1, rect2, volume1, volume2, assume_unique, invert, kind, ar2_min, ar2_max);
   }
 };
@@ -77,7 +80,7 @@ static void in1d_template(TaskContext& context)
   auto ar2_max       = context.scalars().at(4).value<int64_t>();
 
   type_dispatch(input1.type().code(),
-                In1dImpl<KIND>{},
+                In1dImpl<KIND>{context},
                 output,
                 input1,
                 input2,

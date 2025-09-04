@@ -83,6 +83,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int DIM, typename OUT_TYPE>
 struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, DIM, OUT_TYPE> {
+  TaskContext context;
+  explicit AdvancedIndexingImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   int64_t compute_size(const AccessorRO<bool, DIM>& in,
@@ -126,7 +129,7 @@ struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, DIM, OUT_TYPE> {
   {
     size_t size         = 0;
     const size_t volume = rect.volume();
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     auto offsets        = create_buffer<int64_t, 1>(volume, legate::Memory::Kind::GPU_FB_MEM);
 
     size_t skip_size = 1;

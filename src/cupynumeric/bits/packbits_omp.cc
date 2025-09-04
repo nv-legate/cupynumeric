@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int32_t DIM, Bitorder BITORDER>
 struct PackbitsImplBody<VariantKind::OMP, CODE, DIM, BITORDER> {
+  TaskContext context;
+  explicit PackbitsImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<uint8_t, DIM>& out,

@@ -23,6 +23,9 @@ using namespace legate;
 
 template <int DIM>
 struct WrapImplBody<VariantKind::CPU, DIM> {
+  TaskContext context;
+  explicit WrapImplBody(TaskContext context) : context(context) {}
+
   template <typename IND>
   void operator()(const AccessorWO<Point<DIM>, 1>& out,
                   const Pitches<0>& pitches_out,

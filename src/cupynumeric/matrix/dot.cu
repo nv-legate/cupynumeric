@@ -45,6 +45,9 @@ static __global__ void __launch_bounds__(1, 1) copy_kernel(Buffer result, RedAcc
 
 template <Type::Code CODE>
 struct DotImplBody<VariantKind::GPU, CODE> {
+  TaskContext context;
+  explicit DotImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
   using ACC = acc_type_of<VAL>;
 
@@ -55,7 +58,7 @@ struct DotImplBody<VariantKind::GPU, CODE> {
                   const Rect<1>& rect,
                   bool dense)
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     const auto volume   = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;

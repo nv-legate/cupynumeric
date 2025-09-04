@@ -22,6 +22,9 @@ namespace cupynumeric {
 
 template <VariantKind KIND, class LG_OP, class Tag = void>
 struct ScalarReductionPolicy {
+  legate::TaskContext context;
+  ScalarReductionPolicy(legate::TaskContext tcontext) : context(tcontext) {}
+
   // No C++-20 yet. This is just here to illustrate the expected concept
   // that all kernels passed to this execution should have.
   struct KernelConcept {
@@ -38,6 +41,9 @@ struct ScalarReductionPolicy {
 
 template <class LG_OP, class Tag>
 struct ScalarReductionPolicy<VariantKind::CPU, LG_OP, Tag> {
+  legate::TaskContext context;
+  ScalarReductionPolicy(legate::TaskContext tcontext) : context(tcontext) {}
+
   template <class AccessorRD, class LHS, class Kernel>
   void operator()(size_t volume, AccessorRD& out, const LHS& identity, Kernel&& kernel)
   {

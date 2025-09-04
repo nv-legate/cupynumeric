@@ -26,6 +26,9 @@ using namespace legate;
 
 template <Type::Code CODE, int32_t DIM>
 struct NonzeroImplBody<VariantKind::OMP, CODE, DIM> {
+  TaskContext context;
+  explicit NonzeroImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(std::vector<Array>& outputs,

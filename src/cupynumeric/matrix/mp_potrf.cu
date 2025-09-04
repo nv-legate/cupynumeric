@@ -25,23 +25,29 @@ using namespace Legion;
 using namespace legate;
 
 template <typename VAL>
-static inline void mp_potrf_template(
-  cal_comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, VAL* array, int64_t lld)
+static inline void mp_potrf_template(cal_comm_t comm,
+                                     int nprow,
+                                     int npcol,
+                                     int64_t n,
+                                     int64_t nb,
+                                     VAL* array,
+                                     int64_t lld,
+                                     cudaStream_t ctx_stream)
 {
   const auto uplo = CUBLAS_FILL_MODE_LOWER;
 
-  auto context = get_cusolvermp();
+  auto handle = get_cusolvermp(ctx_stream);
 
   // synchronize all previous copies on default stream
   // cusolverMP has its unmodifiable stream to continue with
-  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(get_cached_stream()));
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(ctx_stream));
 
   cudaStream_t stream;
-  CHECK_CUSOLVER(cusolverMpGetStream(context, &stream));
+  CHECK_CUSOLVER(cusolverMpGetStream(handle, &stream));
 
   cusolverMpGrid_t grid = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateDeviceGrid(
-    context, &grid, comm, nprow, npcol, CUSOLVERMP_GRID_MAPPING_COL_MAJOR));
+    handle, &grid, comm, nprow, npcol, CUSOLVERMP_GRID_MAPPING_COL_MAJOR));
 
   cusolverMpMatrixDescriptor_t desc = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateMatrixDesc(
@@ -49,7 +55,7 @@ static inline void mp_potrf_template(
 
   size_t device_buffer_size = 0;
   size_t host_buffer_size   = 0;
-  CHECK_CUSOLVER(cusolverMpPotrf_bufferSize(context,
+  CHECK_CUSOLVER(cusolverMpPotrf_bufferSize(handle,
                                             uplo,
                                             n,
                                             array,
@@ -71,7 +77,7 @@ static inline void mp_potrf_template(
   // initialize to zero
   info[0] = 0;
 
-  CHECK_CUSOLVER(cusolverMpPotrf(context,
+  CHECK_CUSOLVER(cusolverMpPotrf(handle,
                                  uplo,
                                  n,
                                  array,
@@ -99,24 +105,35 @@ static inline void mp_potrf_template(
 
 template <>
 struct MpPotrfImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit MpPotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     cal_comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, float* array, int64_t lld)
   {
-    mp_potrf_template(comm, nprow, npcol, n, nb, array, lld);
+    auto stream = context.get_task_stream();
+    mp_potrf_template(comm, nprow, npcol, n, nb, array, lld, stream);
   }
 };
 
 template <>
 struct MpPotrfImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit MpPotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     cal_comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, double* array, int64_t lld)
   {
-    mp_potrf_template(comm, nprow, npcol, n, nb, array, lld);
+    auto stream = context.get_task_stream();
+    mp_potrf_template(comm, nprow, npcol, n, nb, array, lld, stream);
   }
 };
 
 template <>
 struct MpPotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit MpPotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
@@ -125,12 +142,16 @@ struct MpPotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   complex<float>* array,
                   int64_t lld)
   {
-    mp_potrf_template(comm, nprow, npcol, n, nb, reinterpret_cast<cuComplex*>(array), lld);
+    auto stream = context.get_task_stream();
+    mp_potrf_template(comm, nprow, npcol, n, nb, reinterpret_cast<cuComplex*>(array), lld, stream);
   }
 };
 
 template <>
 struct MpPotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit MpPotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
@@ -139,7 +160,9 @@ struct MpPotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   complex<double>* array,
                   int64_t lld)
   {
-    mp_potrf_template(comm, nprow, npcol, n, nb, reinterpret_cast<cuDoubleComplex*>(array), lld);
+    auto stream = context.get_task_stream();
+    mp_potrf_template(
+      comm, nprow, npcol, n, nb, reinterpret_cast<cuDoubleComplex*>(array), lld, stream);
   }
 };
 

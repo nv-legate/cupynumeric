@@ -47,6 +47,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int DIM>
 struct ArgWhereImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit ArgWhereImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(legate::PhysicalStore& out_array,
@@ -55,7 +58,7 @@ struct ArgWhereImplBody<VariantKind::GPU, CODE, DIM> {
                   const Rect<DIM>& rect,
                   size_t volume) const
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     auto offsets = create_buffer<int64_t>(volume, legate::Memory::Kind::GPU_FB_MEM);
     auto size    = compute_offsets(input, pitches, rect, volume, offsets, stream);

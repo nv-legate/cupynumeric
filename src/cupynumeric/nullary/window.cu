@@ -47,11 +47,14 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <WindowOpCode OP_CODE>
 struct WindowImplBody<VariantKind::GPU, OP_CODE> {
+  TaskContext context;
+  explicit WindowImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     const AccessorWO<double, 1>& out, const Rect<1>& rect, bool dense, int64_t M, double beta) const
   {
     WindowOp<OP_CODE> gen(M, beta);
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     auto volume         = static_cast<int64_t>(rect.volume());
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;

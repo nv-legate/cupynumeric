@@ -29,6 +29,9 @@ struct ScanLocalNanImplBody;
 
 template <VariantKind KIND, ScanCode OP_CODE, bool NAN_TO_IDENTITY>
 struct ScanLocalImpl {
+  TaskContext context;
+  explicit ScanLocalImpl(TaskContext context) : context(context) {}
+
   // Case where NANs are transformed
   template <Type::Code CODE,
             int DIM,
@@ -53,7 +56,8 @@ struct ScanLocalImpl {
     auto in  = args.in.read_accessor<VAL, DIM>(rect);
 
     OP func;
-    ScanLocalNanImplBody<KIND, OP_CODE, CODE, DIM>()(func, out, in, args.sum_vals, pitches, rect);
+    ScanLocalNanImplBody<KIND, OP_CODE, CODE, DIM>{context}(
+      func, out, in, args.sum_vals, pitches, rect);
   }
   // Case where NANs are as is
   template <Type::Code CODE,
@@ -79,17 +83,21 @@ struct ScanLocalImpl {
     auto in  = args.in.read_accessor<VAL, DIM>(rect);
 
     OP func;
-    ScanLocalImplBody<KIND, OP_CODE, CODE, DIM>()(func, out, in, args.sum_vals, pitches, rect);
+    ScanLocalImplBody<KIND, OP_CODE, CODE, DIM>{context}(
+      func, out, in, args.sum_vals, pitches, rect);
   }
 };
 
 template <VariantKind KIND>
 struct ScanLocalDispatch {
+  TaskContext context;
+  explicit ScanLocalDispatch(TaskContext context) : context(context) {}
+
   template <ScanCode OP_CODE, bool NAN_TO_IDENTITY>
   void operator()(ScanLocalArgs& args) const
   {
     return double_dispatch(
-      args.in.dim(), args.in.code(), ScanLocalImpl<KIND, OP_CODE, NAN_TO_IDENTITY>{}, args);
+      args.in.dim(), args.in.code(), ScanLocalImpl<KIND, OP_CODE, NAN_TO_IDENTITY>{context}, args);
   }
 };
 
@@ -101,7 +109,7 @@ static void scan_local_template(TaskContext& context)
                      context.output(1),
                      context.scalar(0).value<ScanCode>(),
                      context.scalar(1).value<bool>()};
-  op_dispatch(args.op_code, args.nan_to_identity, ScanLocalDispatch<KIND>{}, args);
+  op_dispatch(args.op_code, args.nan_to_identity, ScanLocalDispatch<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

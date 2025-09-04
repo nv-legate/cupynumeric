@@ -51,11 +51,12 @@ struct ScalarUnaryRed {
   bool dense;
   WHERE where;
   const bool* whereptr;
+  TaskContext context;
 
   struct DenseReduction {};
   struct SparseReduction {};
 
-  ScalarUnaryRed(ScalarUnaryRedArgs& args) : dense(false)
+  ScalarUnaryRed(ScalarUnaryRedArgs& args, TaskContext tcontext) : dense(false), context(tcontext)
   {
     rect   = args.in.shape<DIM>();
     origin = rect.lo;
@@ -154,22 +155,27 @@ struct ScalarUnaryRed {
     if constexpr (KIND != VariantKind::GPU) {
       // Check to see if this is dense or not
       if (dense) {
-        return ScalarReductionPolicy<KIND, LG_OP, DenseReduction>()(volume, out, identity, *this);
+        return ScalarReductionPolicy<KIND, LG_OP, DenseReduction>{context}(
+          volume, out, identity, *this);
       }
     }
 #endif
-    return ScalarReductionPolicy<KIND, LG_OP, SparseReduction>()(volume, out, identity, *this);
+    return ScalarReductionPolicy<KIND, LG_OP, SparseReduction>{context}(
+      volume, out, identity, *this);
   }
 };
 
 template <VariantKind KIND, UnaryRedCode OP_CODE, bool HAS_WHERE>
 struct ScalarUnaryRedImpl {
+  TaskContext context;
+  explicit ScalarUnaryRedImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(ScalarUnaryRedArgs& args) const
   {
     // The operation is always valid for contains
     if constexpr (UnaryRedOp<OP_CODE, CODE>::valid || OP_CODE == UnaryRedCode::CONTAINS) {
-      ScalarUnaryRed<KIND, OP_CODE, CODE, DIM, HAS_WHERE> red(args);
+      ScalarUnaryRed<KIND, OP_CODE, CODE, DIM, HAS_WHERE> red(args, context);
       red.execute();
     }
   }
@@ -177,14 +183,17 @@ struct ScalarUnaryRedImpl {
 
 template <VariantKind KIND>
 struct ScalarUnaryRedDispatch {
+  TaskContext context;
+  explicit ScalarUnaryRedDispatch(TaskContext context) : context(context) {}
+
   template <UnaryRedCode OP_CODE>
   void operator()(ScalarUnaryRedArgs& args, bool has_where) const
   {
     auto dim = std::max(1, args.in.dim());
     if (has_where) {
-      double_dispatch(dim, args.in.code(), ScalarUnaryRedImpl<KIND, OP_CODE, true>{}, args);
+      double_dispatch(dim, args.in.code(), ScalarUnaryRedImpl<KIND, OP_CODE, true>{context}, args);
     } else {
-      double_dispatch(dim, args.in.code(), ScalarUnaryRedImpl<KIND, OP_CODE, false>{}, args);
+      double_dispatch(dim, args.in.code(), ScalarUnaryRedImpl<KIND, OP_CODE, false>{context}, args);
     }
   }
 };
@@ -216,7 +225,7 @@ static void scalar_unary_red_template(TaskContext& context)
                           op_code,
                           shape,
                           std::move(extra_args)};
-  op_dispatch(args.op_code, ScalarUnaryRedDispatch<KIND>{}, args, has_where);
+  op_dispatch(args.op_code, ScalarUnaryRedDispatch<KIND>{context}, args, has_where);
 }
 
 }  // namespace cupynumeric

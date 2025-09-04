@@ -41,6 +41,9 @@ struct support_solve<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct SolveImpl {
+  TaskContext context;
+  explicit SolveImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE,
             int32_t DIM,
             std::enable_if_t<support_solve<CODE>::value && DIM >= 2>* = nullptr>
@@ -117,7 +120,7 @@ struct SolveImpl {
     }
 #endif
 
-    SolveImplBody<KIND, CODE>()(batchsize_total, m, n, nrhs, a, b, x);
+    SolveImplBody<KIND, CODE>{context}(batchsize_total, m, n, nrhs, a, b, x);
   }
 
   template <Type::Code CODE,
@@ -138,7 +141,7 @@ static void solve_template(TaskContext& context)
   auto b_array = context.input(1);
   auto x_array = context.output(0);
   double_dispatch(
-    a_array.dim(), a_array.type().code(), SolveImpl<KIND>{}, a_array, b_array, x_array);
+    a_array.dim(), a_array.type().code(), SolveImpl<KIND>{context}, a_array, b_array, x_array);
 }
 
 }  // namespace cupynumeric

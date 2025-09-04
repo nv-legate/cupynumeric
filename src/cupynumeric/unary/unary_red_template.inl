@@ -32,6 +32,9 @@ struct UnaryRedImplBody;
 
 template <VariantKind KIND, UnaryRedCode OP_CODE, bool HAS_WHERE>
 struct UnaryRedImpl {
+  TaskContext context;
+  explicit UnaryRedImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE,
             int DIM,
             std::enable_if_t<(DIM > 1) && UnaryRedOp<OP_CODE, CODE>::valid>* = nullptr>
@@ -56,7 +59,7 @@ struct UnaryRedImpl {
     if constexpr (HAS_WHERE) {
       where = args.where.read_accessor<bool, DIM>(rect);
     }
-    UnaryRedImplBody<KIND, OP_CODE, CODE, DIM, HAS_WHERE>()(
+    UnaryRedImplBody<KIND, OP_CODE, CODE, DIM, HAS_WHERE>{context}(
       lhs, rhs, where, rect, pitches, args.collapsed_dim, volume);
   }
 
@@ -71,11 +74,15 @@ struct UnaryRedImpl {
 
 template <VariantKind KIND, bool HAS_WHERE>
 struct UnaryRedDispatch {
+  TaskContext context;
+  explicit UnaryRedDispatch(TaskContext context) : context(context) {}
+
   template <UnaryRedCode OP_CODE>
   void operator()(UnaryRedArgs& args) const
   {
     auto dim = std::max(1, args.rhs.dim());
-    return double_dispatch(dim, args.rhs.code(), UnaryRedImpl<KIND, OP_CODE, HAS_WHERE>{}, args);
+    return double_dispatch(
+      dim, args.rhs.code(), UnaryRedImpl<KIND, OP_CODE, HAS_WHERE>{context}, args);
   }
 };
 
@@ -89,9 +96,9 @@ static void unary_red_template(TaskContext& context)
                     context.scalar(0).value<int32_t>(),
                     context.scalar(1).value<UnaryRedCode>()};
   if (has_where) {
-    op_dispatch(args.op_code, UnaryRedDispatch<KIND, true>{}, args);
+    op_dispatch(args.op_code, UnaryRedDispatch<KIND, true>{context}, args);
   } else {
-    op_dispatch(args.op_code, UnaryRedDispatch<KIND, false>{}, args);
+    op_dispatch(args.op_code, UnaryRedDispatch<KIND, false>{context}, args);
   }
 }
 

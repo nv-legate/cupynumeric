@@ -86,6 +86,9 @@ __global__ static void __launch_bounds__((TILE_DIM * BLOCK_ROWS), MIN_CTAS_PER_S
 
 template <Type::Code CODE>
 struct TransposeImplBody<VariantKind::GPU, CODE> {
+  TaskContext context;
+  explicit TransposeImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const Rect<2>& rect,
@@ -97,7 +100,7 @@ struct TransposeImplBody<VariantKind::GPU, CODE> {
     const dim3 blocks((n + TILE_DIM - 1) / TILE_DIM, (m + TILE_DIM - 1) / TILE_DIM, 1);
     const dim3 threads(TILE_DIM, BLOCK_ROWS, 1);
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     transpose_2d_physical<VAL><<<blocks, threads, 0, stream>>>(out, in, rect.lo, rect.hi);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }

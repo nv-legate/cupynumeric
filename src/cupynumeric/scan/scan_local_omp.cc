@@ -30,6 +30,9 @@ using namespace legate;
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanLocalImplBody<VariantKind::OMP, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit ScanLocalImplBody(TaskContext context) : context(context) {}
+
   using OP  = ScanOp<OP_CODE, CODE>;
   using VAL = type_of<CODE>;
 
@@ -66,6 +69,9 @@ struct ScanLocalImplBody<VariantKind::OMP, OP_CODE, CODE, DIM> {
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanLocalNanImplBody<VariantKind::OMP, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit ScanLocalNanImplBody(TaskContext context) : context(context) {}
+
   using OP  = ScanOp<OP_CODE, CODE>;
   using VAL = type_of<CODE>;
 

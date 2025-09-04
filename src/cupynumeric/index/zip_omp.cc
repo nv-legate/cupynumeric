@@ -23,6 +23,9 @@ using namespace legate;
 
 template <int DIM, int N>
 struct ZipImplBody<VariantKind::OMP, DIM, N> {
+  TaskContext context;
+  explicit ZipImplBody(TaskContext context) : context(context) {}
+
   using VAL = int64_t;
 
   template <size_t... Is>

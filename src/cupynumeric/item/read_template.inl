@@ -28,13 +28,16 @@ struct ReadImplBody;
 
 template <VariantKind KIND>
 struct ReadImpl {
+  TaskContext context;
+  explicit ReadImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(legate::PhysicalStore out_arr, legate::PhysicalStore in_arr) const
   {
     using VAL = type_of<CODE>;
     auto out  = out_arr.write_accessor<VAL, 1>();
     auto in   = in_arr.read_accessor<VAL, 1>();
-    ReadImplBody<KIND, VAL>()(out, in);
+    ReadImplBody<KIND, VAL>{context}(out, in);
   }
 };
 
@@ -43,7 +46,7 @@ static void read_template(TaskContext& context)
 {
   auto out = context.output(0);
   auto in  = context.input(0);
-  type_dispatch(in.type().code(), ReadImpl<KIND>{}, out, in);
+  type_dispatch(in.type().code(), ReadImpl<KIND>{context}, out, in);
 }
 
 }  // namespace cupynumeric

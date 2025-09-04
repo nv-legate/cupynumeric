@@ -29,6 +29,9 @@ struct WindowImplBody;
 
 template <VariantKind KIND>
 struct WindowImpl {
+  TaskContext context;
+  explicit WindowImpl(TaskContext context) : context(context) {}
+
   template <WindowOpCode OP_CODE>
   void operator()(legate::PhysicalStore output, int64_t M, double beta) const
   {
@@ -48,7 +51,7 @@ struct WindowImpl {
     bool dense = false;
 #endif
 
-    WindowImplBody<KIND, OP_CODE>{}(out, rect, dense, M, beta);
+    WindowImplBody<KIND, OP_CODE>{context}(out, rect, dense, M, beta);
   }
 };
 
@@ -60,7 +63,7 @@ static void window_template(TaskContext& context)
   auto M       = context.scalar(1).value<int64_t>();
   auto beta    = context.num_scalars() > 2 ? context.scalar(2).value<double>() : 0.0;
 
-  op_dispatch(op_code, WindowImpl<KIND>{}, output, M, beta);
+  op_dispatch(op_code, WindowImpl<KIND>{context}, output, M, beta);
 }
 
 }  // namespace cupynumeric

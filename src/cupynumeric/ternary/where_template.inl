@@ -29,6 +29,9 @@ struct WhereImplBody;
 
 template <VariantKind KIND>
 struct WhereImpl {
+  TaskContext context;
+  explicit WhereImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(WhereArgs& args) const
   {
@@ -57,7 +60,7 @@ struct WhereImpl {
     bool dense = false;
 #endif
 
-    WhereImplBody<KIND, CODE, DIM>()(out, mask, in1, in2, pitches, rect, dense);
+    WhereImplBody<KIND, CODE, DIM>{context}(out, mask, in1, in2, pitches, rect, dense);
   }
 };
 
@@ -67,7 +70,7 @@ static void where_template(TaskContext& context)
   auto inputs = context.inputs();
   WhereArgs args{context.output(0), inputs[0], inputs[1], inputs[2]};
   auto dim = std::max(1, args.out.dim());
-  double_dispatch(dim, args.out.code(), WhereImpl<KIND>{}, args);
+  double_dispatch(dim, args.out.code(), WhereImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

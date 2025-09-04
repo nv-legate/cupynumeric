@@ -23,6 +23,9 @@ using namespace legate;
 
 template <BinaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct BinaryOpImplBody<VariantKind::CPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit BinaryOpImplBody(TaskContext context) : context(context) {}
+
   using OP   = BinaryOp<OP_CODE, CODE>;
   using RHS1 = type_of<CODE>;
   using RHS2 = rhs2_of_binary_op<OP_CODE, CODE>;

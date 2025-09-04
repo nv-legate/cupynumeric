@@ -55,9 +55,9 @@ struct assembleEvs : public thrust::unary_function<VAL_COMPLEX, int64_t> {
 };
 
 template <typename VAL, typename VAL_COMPLEX>
-void assemble_complex_evs(VAL_COMPLEX* ev_out, VAL_COMPLEX* ew_in, VAL* ev_in, int64_t m)
+void assemble_complex_evs(
+  VAL_COMPLEX* ev_out, VAL_COMPLEX* ew_in, VAL* ev_in, int64_t m, cudaStream_t stream)
 {
-  auto stream = get_cached_stream();
   thrust::transform(DEFAULT_POLICY.on(stream),
                     thrust::make_counting_iterator<int64_t>(0),
                     thrust::make_counting_iterator<int64_t>(m * m),
@@ -66,11 +66,15 @@ void assemble_complex_evs(VAL_COMPLEX* ev_out, VAL_COMPLEX* ew_in, VAL* ev_in, i
 }
 
 template <typename VAL, typename DataType>
-static inline void geev_template(
-  DataType valTypeC, DataType valTypeA, int64_t m, const void* a, void* ew, void* ev)
+static inline void geev_template(DataType valTypeC,
+                                 DataType valTypeA,
+                                 int64_t m,
+                                 const void* a,
+                                 void* ew,
+                                 void* ev,
+                                 cudaStream_t stream)
 {
   auto handle       = get_cusolver();
-  auto stream       = get_cached_stream();
   auto geev_handles = get_cusolver_extra_symbols();
 
   bool compute_evs = ev != nullptr;
@@ -141,6 +145,9 @@ static inline void geev_template(
 
 template <>
 struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t num_batches,
                   int64_t batch_stride_ew,
@@ -149,6 +156,7 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   complex<float>* ew,
                   complex<float>* ev)
   {
+    auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     // for real input --> create real buffer and assemble afterwards
@@ -160,13 +168,15 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                            m,
                            a + batch_idx * batch_stride_ev,
                            reinterpret_cast<cuComplex*>(ew + batch_idx * batch_stride_ew),
-                           compute_evs ? reinterpret_cast<void*>(ev_tmp.ptr(0)) : nullptr);
+                           compute_evs ? reinterpret_cast<void*>(ev_tmp.ptr(0)) : nullptr,
+                           stream);
 
       if (compute_evs) {
         assemble_complex_evs(reinterpret_cast<cuComplex*>(ev + batch_idx * batch_stride_ev),
                              reinterpret_cast<cuComplex*>(ew + batch_idx * batch_stride_ew),
                              ev_tmp.ptr(0),
-                             m);
+                             m,
+                             stream);
       }
     }
   }
@@ -174,6 +184,9 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
 
 template <>
 struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t num_batches,
                   int64_t batch_stride_ew,
@@ -182,6 +195,7 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   complex<double>* ew,
                   complex<double>* ev)
   {
+    auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     // for real input --> create real buffer and assemble afterwards
@@ -193,13 +207,15 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                             m,
                             a + batch_idx * batch_stride_ev,
                             reinterpret_cast<cuDoubleComplex*>(ew + batch_idx * batch_stride_ew),
-                            compute_evs ? reinterpret_cast<void*>(ev_tmp.ptr(0)) : nullptr);
+                            compute_evs ? reinterpret_cast<void*>(ev_tmp.ptr(0)) : nullptr,
+                            stream);
 
       if (compute_evs) {
         assemble_complex_evs(reinterpret_cast<cuDoubleComplex*>(ev + batch_idx * batch_stride_ev),
                              reinterpret_cast<cuDoubleComplex*>(ew + batch_idx * batch_stride_ew),
                              ev_tmp.ptr(0),
-                             m);
+                             m,
+                             stream);
       }
     }
   }
@@ -207,6 +223,9 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
 
 template <>
 struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t num_batches,
                   int64_t batch_stride_ew,
@@ -215,6 +234,7 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   complex<float>* ew,
                   complex<float>* ev)
   {
+    auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
@@ -224,13 +244,17 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
         m,
         reinterpret_cast<const cuComplex*>(a + batch_idx * batch_stride_ev),
         reinterpret_cast<cuComplex*>(ew + batch_idx * batch_stride_ew),
-        compute_evs ? reinterpret_cast<cuComplex*>(ev + batch_idx * batch_stride_ev) : nullptr);
+        compute_evs ? reinterpret_cast<cuComplex*>(ev + batch_idx * batch_stride_ev) : nullptr,
+        stream);
     }
   }
 };
 
 template <>
 struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit GeevImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t num_batches,
                   int64_t batch_stride_ew,
@@ -239,6 +263,7 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   complex<double>* ew,
                   complex<double>* ev)
   {
+    auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
@@ -249,7 +274,8 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
         reinterpret_cast<const cuDoubleComplex*>(a + batch_idx * batch_stride_ev),
         reinterpret_cast<cuDoubleComplex*>(ew + batch_idx * batch_stride_ew),
         compute_evs ? reinterpret_cast<cuDoubleComplex*>(ev + batch_idx * batch_stride_ev)
-                    : nullptr);
+                    : nullptr,
+        stream);
     }
   }
 };

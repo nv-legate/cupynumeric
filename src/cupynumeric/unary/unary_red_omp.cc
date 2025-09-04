@@ -75,6 +75,9 @@ class Splitter {
 
 template <UnaryRedCode OP_CODE, Type::Code CODE, int DIM, bool HAS_WHERE>
 struct UnaryRedImplBody<VariantKind::OMP, OP_CODE, CODE, DIM, HAS_WHERE> {
+  TaskContext context;
+  explicit UnaryRedImplBody(TaskContext context) : context(context) {}
+
   using OP    = UnaryRedOp<OP_CODE, CODE>;
   using LG_OP = typename OP::OP;
   using RHS   = type_of<CODE>;

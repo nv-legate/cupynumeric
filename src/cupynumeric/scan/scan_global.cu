@@ -39,6 +39,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanGlobalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit ScanGlobalImplBody(TaskContext context) : context(context) {}
+
   using OP  = ScanOp<OP_CODE, CODE>;
   using VAL = type_of<CODE>;
 
@@ -59,7 +62,7 @@ struct ScanGlobalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
       return;
     }
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     auto stride         = out_rect.hi[DIM - 1] - out_rect.lo[DIM - 1] + 1;
     const size_t blocks = (stride + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;

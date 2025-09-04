@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct SelectImplBody<VariantKind::CPU, CODE, DIM> {
+  TaskContext context;
+  explicit SelectImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<VAL, DIM>& out,

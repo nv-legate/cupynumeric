@@ -26,6 +26,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct ConvolveImplBody<VariantKind::OMP, CODE, DIM> {
+  TaskContext context;
+  explicit ConvolveImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(AccessorWO<VAL, DIM> out,

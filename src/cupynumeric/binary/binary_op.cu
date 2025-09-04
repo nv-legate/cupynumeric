@@ -57,6 +57,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <BinaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct BinaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit BinaryOpImplBody(TaskContext context) : context(context) {}
+
   using OP   = BinaryOp<OP_CODE, CODE>;
   using RHS1 = type_of<CODE>;
   using RHS2 = rhs2_of_binary_op<OP_CODE, CODE>;
@@ -72,7 +75,7 @@ struct BinaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
   {
     size_t volume       = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     if (dense) {
       auto outptr = out.ptr(rect);
       auto in1ptr = in1.ptr(rect);

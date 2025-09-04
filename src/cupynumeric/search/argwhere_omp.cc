@@ -25,6 +25,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct ArgWhereImplBody<VariantKind::OMP, CODE, DIM> {
+  TaskContext context;
+  explicit ArgWhereImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(legate::PhysicalStore& out_array,

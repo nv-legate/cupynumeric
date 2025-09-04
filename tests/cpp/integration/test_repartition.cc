@@ -110,7 +110,8 @@ void repartition_2dbc_test(legate::AccessorRO<int32_t, 2> input,
                            int32_t tile_r,
                            int32_t tile_c,
                            int32_t local_rank,
-                           legate::comm::Communicator comm)
+                           legate::comm::Communicator comm,
+                           legate::TaskContext context)
 {
   const int32_t* input_ptr = input.ptr(in_rect.lo);
   size_t input_volume      = in_rect.volume();
@@ -129,7 +130,8 @@ void repartition_2dbc_test(legate::AccessorRO<int32_t, 2> input,
                                                                                    proc_c,
                                                                                    tile_r,
                                                                                    tile_c,
-                                                                                   comm);
+                                                                                   comm,
+                                                                                   context);
 
   int32_t* output_ptr    = output.ptr(out_rect.lo);
   size_t output_volume   = out_rect.volume();
@@ -166,7 +168,8 @@ void repartition_2dbc_test(legate::AccessorRO<int32_t, 2> input,
                                         out_row_major,
                                         output_offset_r,
                                         output_offset_c,
-                                        comm);
+                                        comm,
+                                        context);
 }
 #endif
 
@@ -253,7 +256,8 @@ template <bool I_ROW_MAJOR, bool O_ROW_MAJOR>
                         tile_r,
                         tile_c,
                         local_rank,
-                        context.communicator(0));
+                        context.communicator(0),
+                        context);
 #endif
 }
 

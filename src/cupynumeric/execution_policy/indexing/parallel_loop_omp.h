@@ -26,6 +26,9 @@ namespace cupynumeric {
 
 template <class Tag>
 struct ParallelLoopPolicy<VariantKind::OMP, Tag> {
+  legate::TaskContext context;
+  ParallelLoopPolicy(legate::TaskContext tcontext) : context(tcontext) {}
+
   template <class RECT, class KERNEL>
   void operator()(const RECT& rect, KERNEL&& kernel)
   {

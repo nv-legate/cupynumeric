@@ -29,6 +29,9 @@ namespace cupynumeric {
 
 template <>
 struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -43,7 +46,7 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   bool lhs_overwritable)
   {
     auto cublas_handle = get_cublas();
-    auto task_stream   = get_cached_stream();
+    auto task_stream   = context.get_task_stream();
     CHECK_CUBLAS(cublasSetStream(cublas_handle, task_stream));
 
     const float alpha = 1.0;
@@ -74,6 +77,9 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
 
 template <>
 struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -88,7 +94,7 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   bool lhs_overwritable)
   {
     auto cublas_handle = get_cublas();
-    auto task_stream   = get_cached_stream();
+    auto task_stream   = context.get_task_stream();
     CHECK_CUBLAS(cublasSetStream(cublas_handle, task_stream));
 
     const double alpha = 1.0;
@@ -115,6 +121,9 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
 
 template <>
 struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -129,7 +138,7 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
                   bool lhs_overwritable)
   {
     auto cublas_handle = get_cublas();
-    auto task_stream   = get_cached_stream();
+    auto task_stream   = context.get_task_stream();
     CHECK_CUBLAS(cublasSetStream(cublas_handle, task_stream));
 
     const float alpha = 1.0;
@@ -159,6 +168,9 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
 
 template <>
 struct MatMulImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -177,7 +189,7 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
     const cuComplex* rhs2 = reinterpret_cast<const cuComplex*>(rhs2_);
 
     auto cublas_handle = get_cublas();
-    auto task_stream   = get_cached_stream();
+    auto task_stream   = context.get_task_stream();
     CHECK_CUBLAS(cublasSetStream(cublas_handle, task_stream));
 
     const cuComplex alpha = make_float2(1.0, 0.0);
@@ -207,6 +219,9 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
 
 template <>
 struct MatMulImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit MatMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   size_t k,
@@ -225,7 +240,7 @@ struct MatMulImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
     const cuDoubleComplex* rhs2 = reinterpret_cast<const cuDoubleComplex*>(rhs2_);
 
     auto cublas_handle = get_cublas();
-    auto task_stream   = get_cached_stream();
+    auto task_stream   = context.get_task_stream();
     CHECK_CUBLAS(cublasSetStream(cublas_handle, task_stream));
 
     const cuDoubleComplex alpha = make_double2(1.0, 0.0);

@@ -79,11 +79,11 @@ __host__ void contract(T* lhs_data,
                        int64_t* rhs2_shape,
                        int64_t* rhs2_strides,
                        int32_t* rhs2_modes,
-                       bool lhs_overwritable)
+                       bool lhs_overwritable,
+                       cudaStream_t task_stream)
 {
   // Initialization
-  auto handle      = get_cutensor();
-  auto task_stream = get_cached_stream();
+  auto handle = get_cutensor();
 
   // Create tensor descriptors
   constexpr auto data_type_code = contract_helper<T>::data_type_code;
@@ -155,6 +155,9 @@ __host__ void contract(T* lhs_data,
 
 template <>
 struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
+  TaskContext context;
+  explicit ContractImplBody(TaskContext context) : context(context) {}
+
   void operator()(__half* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
@@ -172,6 +175,7 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
                   int32_t* rhs2_modes,
                   bool lhs_overwritable)
   {
+    auto task_stream = context.get_task_stream();
     contract(lhs_data,
              lhs_ndim,
              lhs_shape,
@@ -187,12 +191,16 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
              rhs2_shape,
              rhs2_strides,
              rhs2_modes,
-             lhs_overwritable);
+             lhs_overwritable,
+             task_stream);
   }
 };
 
 template <>
 struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit ContractImplBody(TaskContext context) : context(context) {}
+
   void operator()(float* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
@@ -210,6 +218,7 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   int32_t* rhs2_modes,
                   bool lhs_overwritable)
   {
+    auto task_stream = context.get_task_stream();
     contract(lhs_data,
              lhs_ndim,
              lhs_shape,
@@ -225,12 +234,16 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
              rhs2_shape,
              rhs2_strides,
              rhs2_modes,
-             lhs_overwritable);
+             lhs_overwritable,
+             task_stream);
   }
 };
 
 template <>
 struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit ContractImplBody(TaskContext context) : context(context) {}
+
   void operator()(double* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
@@ -248,6 +261,7 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   int32_t* rhs2_modes,
                   bool lhs_overwritable)
   {
+    auto task_stream = context.get_task_stream();
     contract(lhs_data,
              lhs_ndim,
              lhs_shape,
@@ -263,12 +277,16 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
              rhs2_shape,
              rhs2_strides,
              rhs2_modes,
-             lhs_overwritable);
+             lhs_overwritable,
+             task_stream);
   }
 };
 
 template <>
 struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit ContractImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<float>* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
@@ -286,6 +304,7 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int32_t* rhs2_modes,
                   bool lhs_overwritable)
   {
+    auto task_stream = context.get_task_stream();
     contract(lhs_data,
              lhs_ndim,
              lhs_shape,
@@ -301,12 +320,16 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
              rhs2_shape,
              rhs2_strides,
              rhs2_modes,
-             lhs_overwritable);
+             lhs_overwritable,
+             task_stream);
   }
 };
 
 template <>
 struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit ContractImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<double>* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
@@ -324,6 +347,7 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int32_t* rhs2_modes,
                   bool lhs_overwritable)
   {
+    auto task_stream = context.get_task_stream();
     contract(lhs_data,
              lhs_ndim,
              lhs_shape,
@@ -339,7 +363,8 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
              rhs2_shape,
              rhs2_strides,
              rhs2_modes,
-             lhs_overwritable);
+             lhs_overwritable,
+             task_stream);
   }
 };
 

@@ -73,6 +73,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <UnaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct UnaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit UnaryOpImplBody(TaskContext context) : context(context) {}
+
   using OP  = UnaryOp<OP_CODE, CODE>;
   using ARG = typename OP::T;
   using RES = std::result_of_t<OP(ARG)>;
@@ -86,7 +89,7 @@ struct UnaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
   {
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     if (dense) {
       auto outptr = out.ptr(rect);
       auto inptr  = in.ptr(rect);
@@ -101,6 +104,9 @@ struct UnaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
 
 template <typename VAL, int DIM>
 struct PointCopyImplBody<VariantKind::GPU, VAL, DIM> {
+  TaskContext context;
+  explicit PointCopyImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, DIM> out,
                   AccessorRO<VAL, DIM> in,
                   const Pitches<DIM - 1>& pitches,
@@ -109,7 +115,7 @@ struct PointCopyImplBody<VariantKind::GPU, VAL, DIM> {
   {
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     if (dense) {
       auto outptr = out.ptr(rect);
       auto inptr  = in.ptr(rect);
@@ -157,6 +163,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <UnaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct MultiOutUnaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit MultiOutUnaryOpImplBody(TaskContext context) : context(context) {}
+
   using OP   = MultiOutUnaryOp<OP_CODE, CODE>;
   using RHS1 = typename OP::RHS1;
   using RHS2 = typename OP::RHS2;
@@ -172,7 +181,7 @@ struct MultiOutUnaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
   {
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     if (dense) {
       auto lhsptr  = lhs.ptr(rect);
       auto rhs1ptr = rhs1.ptr(rect);

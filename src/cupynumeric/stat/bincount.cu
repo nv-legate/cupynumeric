@@ -155,6 +155,9 @@ static __global__ void weighted_bincount_kernel_rd_global(
 
 template <Type::Code CODE>
 struct BincountImplBody<VariantKind::GPU, CODE> {
+  TaskContext context;
+  explicit BincountImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(AccessorRD<SumReduction<int64_t>, false, 1> lhs,
@@ -165,7 +168,7 @@ struct BincountImplBody<VariantKind::GPU, CODE> {
     const auto volume   = rect.volume();
     const auto num_bins = lhs_rect.volume();
     const auto bin_size = num_bins * sizeof(int32_t);
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
 
     int32_t num_ctas = 0;
     cudaOccupancyMaxActiveBlocksPerMultiprocessor(
@@ -195,7 +198,7 @@ struct BincountImplBody<VariantKind::GPU, CODE> {
     const auto volume   = rect.volume();
     const auto num_bins = lhs_rect.volume();
     const auto bin_size = num_bins * sizeof(double);
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
 
     int32_t num_ctas = 0;
     cudaOccupancyMaxActiveBlocksPerMultiprocessor(

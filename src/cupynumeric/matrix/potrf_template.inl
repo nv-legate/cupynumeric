@@ -28,21 +28,33 @@ struct PotrfImplBody;
 
 template <VariantKind KIND>
 struct PotrfImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit PotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(float* array, int32_t m, int32_t n);
 };
 
 template <VariantKind KIND>
 struct PotrfImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit PotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(double* array, int32_t m, int32_t n);
 };
 
 template <VariantKind KIND>
 struct PotrfImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit PotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<float>* array, int32_t m, int32_t n);
 };
 
 template <VariantKind KIND>
 struct PotrfImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit PotrfImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<double>* array, int32_t m, int32_t n);
 };
 
@@ -59,6 +71,9 @@ struct support_potrf<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct PotrfImpl {
+  TaskContext context;
+  explicit PotrfImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_potrf<CODE>::value>* = nullptr>
   void operator()(legate::PhysicalStore array) const
   {
@@ -77,7 +92,7 @@ struct PotrfImpl {
     auto n   = static_cast<int32_t>(shape.hi[1] - shape.lo[1] + 1);
     assert(m > 0 && n > 0);
 
-    PotrfImplBody<KIND, CODE>()(arr, m, n);
+    PotrfImplBody<KIND, CODE>{context}(arr, m, n);
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_potrf<CODE>::value>* = nullptr>
@@ -91,7 +106,7 @@ template <VariantKind KIND>
 static void potrf_template(TaskContext& context)
 {
   auto array = context.output(0);
-  type_dispatch(array.type().code(), PotrfImpl<KIND>{}, array);
+  type_dispatch(array.type().code(), PotrfImpl<KIND>{context}, array);
 }
 
 }  // namespace cupynumeric

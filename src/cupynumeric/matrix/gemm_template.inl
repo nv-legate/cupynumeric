@@ -39,6 +39,9 @@ struct support_gemm<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct GemmImpl {
+  TaskContext context;
+  explicit GemmImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_gemm<CODE>::value>* = nullptr>
   void operator()(legate::PhysicalStore lhs_array,
                   legate::PhysicalStore rhs1_array,
@@ -68,7 +71,7 @@ struct GemmImpl {
     assert(rhs2_shape.hi[0] - rhs2_shape.lo[0] + 1 == n);
     assert(rhs2_shape.hi[1] - rhs2_shape.lo[1] + 1 == k);
 
-    GemmImplBody<KIND, CODE>()(lhs, rhs1, rhs2, m, n, k);
+    GemmImplBody<KIND, CODE>{context}(lhs, rhs1, rhs2, m, n, k);
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_gemm<CODE>::value>* = nullptr>
@@ -90,7 +93,7 @@ static void gemm_template(TaskContext& context)
   auto& rhs1 = inputs[0];
   auto& rhs2 = inputs[1];
 
-  type_dispatch(lhs.type().code(), GemmImpl<KIND>{}, lhs, rhs1, rhs2);
+  type_dispatch(lhs.type().code(), GemmImpl<KIND>{context}, lhs, rhs1, rhs2);
 }
 
 }  // namespace cupynumeric

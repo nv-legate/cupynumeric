@@ -25,6 +25,9 @@ namespace cupynumeric {
 
 template <class LG_OP, class Tag>
 struct ScalarReductionPolicy<VariantKind::OMP, LG_OP, Tag> {
+  legate::TaskContext context;
+  ScalarReductionPolicy(legate::TaskContext tcontext) : context(tcontext) {}
+
   template <class AccessorRD, class LHS, class Kernel>
   void operator()(size_t volume, AccessorRD& out, const LHS& identity, Kernel&& kernel)
   {

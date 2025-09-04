@@ -34,6 +34,9 @@ struct FFTImplBody;
 
 template <VariantKind KIND, CuPyNumericFFTType FFT_TYPE>
 struct FFTImpl {
+  TaskContext context;
+  explicit FFTImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE_IN,
             int32_t DIM,
             std::enable_if_t<(FFT<FFT_TYPE, CODE_IN>::valid)>* = nullptr>
@@ -51,7 +54,7 @@ struct FFTImpl {
     auto input  = args.input.read_accessor<INPUT_TYPE, DIM>(in_rect);
     auto output = args.output.write_accessor<OUTPUT_TYPE, DIM>(out_rect);
 
-    FFTImplBody<KIND, FFT_TYPE, FFT<FFT_TYPE, CODE_IN>::CODE_OUT, CODE_IN, DIM>()(
+    FFTImplBody<KIND, FFT_TYPE, FFT<FFT_TYPE, CODE_IN>::CODE_OUT, CODE_IN, DIM>{context}(
       output, input, out_rect, in_rect, args.axes, args.direction, args.operate_over_axes);
   }
 
@@ -67,13 +70,16 @@ struct FFTImpl {
 
 template <VariantKind KIND>
 struct FFTDispatch {
+  TaskContext context;
+  explicit FFTDispatch(TaskContext context) : context(context) {}
+
   template <CuPyNumericFFTType FFT_TYPE>
   void operator()(FFTArgs& args) const
   {
     // Not expecting changing dimensions, at least for now
     assert(args.input.dim() == args.output.dim());
 
-    double_dispatch(args.input.dim(), args.input.code(), FFTImpl<KIND, FFT_TYPE>{}, args);
+    double_dispatch(args.input.dim(), args.input.code(), FFTImpl<KIND, FFT_TYPE>{context}, args);
   }
 };
 
@@ -94,6 +100,6 @@ static void fft_template(TaskContext& context)
     args.axes.push_back(context.scalar(i).value<int64_t>());
   }
 
-  fft_dispatch(args.type, FFTDispatch<KIND>{}, args);
+  fft_dispatch(args.type, FFTDispatch<KIND>{context}, args);
 }
 }  // namespace cupynumeric

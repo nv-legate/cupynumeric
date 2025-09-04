@@ -77,6 +77,9 @@ void print_ptr(const char* title, const T* vals, size_t len)
 
 template <VariantKind KIND>
 struct ContractImpl {
+  TaskContext context;
+  explicit ContractImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM, std::enable_if_t<support_contract<CODE>::value>* = nullptr>
   void operator()(ContractArgs& args) const
   {
@@ -174,22 +177,22 @@ struct ContractImpl {
     std::cout.flush();
 #endif
 
-    ContractImplBody<KIND, CODE>()(lhs_data,
-                                   lhs_shape.size(),
-                                   lhs_shape.data(),
-                                   lhs_strides.data(),
-                                   lhs_modes.data(),
-                                   rhs1_data,
-                                   rhs1_shape.size(),
-                                   rhs1_shape.data(),
-                                   rhs1_strides.data(),
-                                   rhs1_modes.data(),
-                                   rhs2_data,
-                                   rhs2_shape.size(),
-                                   rhs2_shape.data(),
-                                   rhs2_strides.data(),
-                                   rhs2_modes.data(),
-                                   args.lhs.is_readable());
+    ContractImplBody<KIND, CODE>{context}(lhs_data,
+                                          lhs_shape.size(),
+                                          lhs_shape.data(),
+                                          lhs_strides.data(),
+                                          lhs_modes.data(),
+                                          rhs1_data,
+                                          rhs1_shape.size(),
+                                          rhs1_shape.data(),
+                                          rhs1_strides.data(),
+                                          rhs1_modes.data(),
+                                          rhs2_data,
+                                          rhs2_shape.size(),
+                                          rhs2_shape.data(),
+                                          rhs2_strides.data(),
+                                          rhs2_modes.data(),
+                                          args.lhs.is_readable());
 
 #if 0  // debugging output
     std::cout << "end contract kernel:" << std::endl;
@@ -231,7 +234,7 @@ static void contract_template(legate::TaskContext& context)
   assert(code == args.rhs2.code());
 #endif
 
-  double_dispatch(dim, code, ContractImpl<KIND>{}, args);
+  double_dispatch(dim, code, ContractImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

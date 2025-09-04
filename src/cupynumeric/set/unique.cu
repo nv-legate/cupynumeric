@@ -143,6 +143,9 @@ static Piece<VAL> tree_reduce(legate::PhysicalStore& output,
 
 template <Type::Code CODE, int32_t DIM>
 struct UniqueImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit UniqueImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(legate::PhysicalStore& output,
@@ -154,7 +157,7 @@ struct UniqueImplBody<VariantKind::GPU, CODE, DIM> {
                   const DomainPoint& point,
                   const Domain& launch_domain)
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     // Make a copy of the input as we're going to sort it
     auto temp = create_buffer<VAL>(volume);

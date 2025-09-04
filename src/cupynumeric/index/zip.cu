@@ -124,6 +124,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <int DIM, int N>
 struct ZipImplBody<VariantKind::GPU, DIM, N> {
+  TaskContext context;
+  explicit ZipImplBody(TaskContext context) : context(context) {}
+
   using VAL = int64_t;
 
   void check_out_of_bounds(const Buffer<AccessorRO<int64_t, DIM>, 1>& index_arrays,
@@ -165,7 +168,7 @@ struct ZipImplBody<VariantKind::GPU, DIM, N> {
                   const DomainPoint& shape,
                   std::index_sequence<Is...>) const
   {
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 

@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct WhereImplBody<VariantKind::OMP, CODE, DIM> {
+  TaskContext context;
+  explicit WhereImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(AccessorWO<VAL, DIM> out,

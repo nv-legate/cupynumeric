@@ -23,6 +23,9 @@ using namespace legate;
 
 template <UnaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct UnaryOpImplBody<VariantKind::CPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit UnaryOpImplBody(TaskContext context) : context(context) {}
+
   using OP  = UnaryOp<OP_CODE, CODE>;
   using ARG = typename OP::T;
   using RES = std::result_of_t<OP(ARG)>;
@@ -52,6 +55,9 @@ struct UnaryOpImplBody<VariantKind::CPU, OP_CODE, CODE, DIM> {
 
 template <typename VAL, int DIM>
 struct PointCopyImplBody<VariantKind::CPU, VAL, DIM> {
+  TaskContext context;
+  explicit PointCopyImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, DIM> out,
                   AccessorRO<VAL, DIM> in,
                   const Pitches<DIM - 1>& pitches,
@@ -76,6 +82,9 @@ struct PointCopyImplBody<VariantKind::CPU, VAL, DIM> {
 
 template <UnaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct MultiOutUnaryOpImplBody<VariantKind::CPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit MultiOutUnaryOpImplBody(TaskContext context) : context(context) {}
+
   using OP   = MultiOutUnaryOp<OP_CODE, CODE>;
   using RHS1 = typename OP::RHS1;
   using RHS2 = typename OP::RHS2;

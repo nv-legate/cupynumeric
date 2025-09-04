@@ -41,6 +41,9 @@ struct support_qr<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct QrImpl {
+  TaskContext context;
+  explicit QrImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_qr<CODE>::value>* = nullptr>
   void operator()(legate::PhysicalStore a_array,
                   legate::PhysicalStore q_array,
@@ -78,7 +81,8 @@ struct QrImpl {
     assert(m > 0 && n > 0 && k > 0);
 #endif
 
-    QrImplBody<KIND, CODE>()(m, n, k, a_acc.ptr(a_shape), q_acc.ptr(q_shape), r_acc.ptr(r_shape));
+    QrImplBody<KIND, CODE>{context}(
+      m, n, k, a_acc.ptr(a_shape), q_acc.ptr(q_shape), r_acc.ptr(r_shape));
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_qr<CODE>::value>* = nullptr>
@@ -96,7 +100,7 @@ static void qr_template(TaskContext& context)
   auto a_array = context.input(0);
   auto q_array = context.output(0);
   auto r_array = context.output(1);
-  type_dispatch(a_array.type().code(), QrImpl<KIND>{}, a_array, q_array, r_array);
+  type_dispatch(a_array.type().code(), QrImpl<KIND>{context}, a_array, q_array, r_array);
 }
 
 }  // namespace cupynumeric

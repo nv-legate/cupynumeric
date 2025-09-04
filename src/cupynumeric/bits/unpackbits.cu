@@ -43,6 +43,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <int32_t DIM, Bitorder BITORDER>
 struct UnpackbitsImplBody<VariantKind::GPU, DIM, BITORDER> {
+  TaskContext context;
+  explicit UnpackbitsImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<uint8_t, DIM>& out,
                   const AccessorRO<uint8_t, DIM>& in,
                   const Rect<DIM>& in_rect,
@@ -51,7 +54,7 @@ struct UnpackbitsImplBody<VariantKind::GPU, DIM, BITORDER> {
                   uint32_t axis) const
   {
     Unpack<BITORDER> unpack{};
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     const size_t blocks = (in_volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     generic_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       in_volume, unpack, out, in, in_pitches, in_rect.lo, axis);

@@ -29,6 +29,9 @@ struct ChooseImplBody;
 
 template <VariantKind KIND>
 struct ChooseImpl {
+  TaskContext context;
+  explicit ChooseImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(ChooseArgs& args) const
   {
@@ -59,7 +62,7 @@ struct ChooseImpl {
       choices.push_back(args.inputs[i].read_accessor<VAL, DIM>(rect_c));
       dense = dense && choices[i - 1].accessor.is_dense_row_major(out_rect);
     }
-    ChooseImplBody<KIND, CODE, DIM>()(out, index_arr, choices, out_rect, pitches, dense);
+    ChooseImplBody<KIND, CODE, DIM>{context}(out, index_arr, choices, out_rect, pitches, dense);
   }
 };
 
@@ -71,7 +74,7 @@ static void choose_template(TaskContext& context)
     inputs.emplace_back(input);
   }
   ChooseArgs args{context.output(0), std::move(inputs)};
-  double_dispatch(args.inputs[0].dim(), args.inputs[0].code(), ChooseImpl<KIND>{}, args);
+  double_dispatch(args.inputs[0].dim(), args.inputs[0].code(), ChooseImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

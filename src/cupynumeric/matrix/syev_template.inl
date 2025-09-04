@@ -54,6 +54,9 @@ struct real_type<Type::Code::COMPLEX128> {
 
 template <VariantKind KIND>
 struct SyevImpl {
+  TaskContext context;
+  explicit SyevImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE,
             int32_t DIM,
             std::enable_if_t<support_syev<CODE>::value && DIM >= 2>* = nullptr>
@@ -133,7 +136,7 @@ struct SyevImpl {
     }
 #endif
 
-    SyevImplBody<KIND, CODE>()(uplo_l, m, batchsize_total, m, m * m, a_acc, ew_acc, ev_acc);
+    SyevImplBody<KIND, CODE>{context}(uplo_l, m, batchsize_total, m, m * m, a_acc, ew_acc, ev_acc);
   }
 
   template <Type::Code CODE,
@@ -149,7 +152,7 @@ template <VariantKind KIND>
 static void syev_template(TaskContext& context)
 {
   auto a_array = context.input(0);
-  double_dispatch(a_array.dim(), a_array.type().code(), SyevImpl<KIND>{}, context);
+  double_dispatch(a_array.dim(), a_array.type().code(), SyevImpl<KIND>{context}, context);
 }
 
 }  // namespace cupynumeric

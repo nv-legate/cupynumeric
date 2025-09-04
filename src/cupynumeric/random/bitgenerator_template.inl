@@ -30,20 +30,23 @@ struct BitGeneratorImplBody;
 
 template <VariantKind KIND>
 struct BitGeneratorImpl {
+  TaskContext context;
+  explicit BitGeneratorImpl(TaskContext context) : context(context) {}
+
   void operator()(BitGeneratorArgs& args) const
   {
-    BitGeneratorImplBody<KIND>{}(args.bitgen_op,
-                                 args.generatorID,
-                                 args.generatorType,
-                                 args.seed,
-                                 args.flags,
-                                 args.distribution,
-                                 args.strides,
-                                 args.intparams,
-                                 args.floatparams,
-                                 args.doubleparams,
-                                 args.output,
-                                 args.args);
+    BitGeneratorImplBody<KIND>{context}(args.bitgen_op,
+                                        args.generatorID,
+                                        args.generatorType,
+                                        args.seed,
+                                        args.flags,
+                                        args.distribution,
+                                        args.strides,
+                                        args.intparams,
+                                        args.floatparams,
+                                        args.doubleparams,
+                                        args.output,
+                                        args.args);
   }
 };
 
@@ -110,7 +113,7 @@ static void bitgenerator_template(TaskContext& context)
   // destroy ?
   for (auto& idx : todestroy) {
     auto dargs = BitGeneratorArgs::destroy(idx);
-    BitGeneratorImpl<KIND>{}(dargs);
+    BitGeneratorImpl<KIND>{context}(dargs);
   }
 
   BitGeneratorArgs args(bitgen_op,
@@ -125,7 +128,7 @@ static void bitgenerator_template(TaskContext& context)
                         std::move(doubleparams),
                         std::move(optional_output),
                         std::move(extra_args));
-  BitGeneratorImpl<KIND>{}(args);
+  BitGeneratorImpl<KIND>{context}(args);
 }
 
 }  // namespace cupynumeric

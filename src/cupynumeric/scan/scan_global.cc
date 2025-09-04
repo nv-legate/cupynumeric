@@ -26,6 +26,9 @@ using namespace legate;
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanGlobalImplBody<VariantKind::CPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit ScanGlobalImplBody(TaskContext context) : context(context) {}
+
   using OP  = ScanOp<OP_CODE, CODE>;
   using VAL = type_of<CODE>;
 

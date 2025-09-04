@@ -25,6 +25,9 @@ using namespace legate;
 
 template <Type::Code CODE, int32_t DIM>
 struct UniqueImplBody<VariantKind::OMP, CODE, DIM> {
+  TaskContext context;
+  explicit UniqueImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(legate::PhysicalStore& output,

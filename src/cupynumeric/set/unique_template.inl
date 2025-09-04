@@ -29,6 +29,9 @@ struct UniqueImplBody;
 
 template <VariantKind KIND>
 struct UniqueImpl {
+  TaskContext context;
+  explicit UniqueImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int32_t DIM>
   void operator()(legate::PhysicalStore output,
                   legate::PhysicalStore input,
@@ -43,7 +46,7 @@ struct UniqueImpl {
     size_t volume = pitches.flatten(rect);
 
     auto in = input.read_accessor<VAL, DIM>(rect);
-    UniqueImplBody<KIND, CODE, DIM>()(
+    UniqueImplBody<KIND, CODE, DIM>{context}(
       output, in, pitches, rect, volume, comms, point, launch_domain);
   }
 };
@@ -56,7 +59,7 @@ static void unique_template(TaskContext& context)
   auto comms  = context.communicators();
   double_dispatch(input.dim(),
                   input.type().code(),
-                  UniqueImpl<KIND>{},
+                  UniqueImpl<KIND>{context},
                   output,
                   input,
                   comms,

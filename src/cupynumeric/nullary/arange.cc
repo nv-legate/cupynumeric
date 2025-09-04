@@ -23,6 +23,9 @@ using namespace legate;
 
 template <typename VAL>
 struct ArangeImplBody<VariantKind::CPU, VAL> {
+  TaskContext context;
+  explicit ArangeImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<VAL, 1>& out,
                   const Rect<1>& rect,
                   const VAL start,

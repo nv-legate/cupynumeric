@@ -47,6 +47,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int32_t DIM>
 struct FlipImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit FlipImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(AccessorWO<VAL, DIM> out,
@@ -63,7 +66,7 @@ struct FlipImplBody<VariantKind::GPU, CODE, DIM> {
     for (uint32_t idx = 0; idx < num_axes; ++idx) {
       gpu_axes[idx] = axes[idx];
     }
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     flip_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       volume, out, in, pitches, rect, gpu_axes, num_axes);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);

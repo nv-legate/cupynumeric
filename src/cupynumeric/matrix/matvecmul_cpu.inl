@@ -28,6 +28,9 @@ using namespace legate;
 
 template <VariantKind KIND>
 struct MatVecMulImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit MatVecMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   float* lhs,
@@ -46,6 +49,9 @@ struct MatVecMulImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct MatVecMulImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit MatVecMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   double* lhs,
@@ -63,6 +69,9 @@ struct MatVecMulImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct MatVecMulImplBody<KIND, Type::Code::FLOAT16> {
+  TaskContext context;
+  explicit MatVecMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   float* lhs,
@@ -80,13 +89,16 @@ struct MatVecMulImplBody<KIND, Type::Code::FLOAT16> {
     half_matrix_to_float(mat_copy, mat, m, n, mat_stride);
     half_vector_to_float(vec_copy, vec, vec_size);
 
-    MatVecMulImplBody<KIND, Type::Code::FLOAT32>{}(
+    MatVecMulImplBody<KIND, Type::Code::FLOAT32>{context}(
       m, n, lhs, mat_copy, vec_copy, n, transpose_mat, lhs_overwritable);
   }
 };
 
 template <VariantKind KIND>
 struct MatVecMulImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit MatVecMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   complex<float>* lhs_,
@@ -109,6 +121,9 @@ struct MatVecMulImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct MatVecMulImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit MatVecMulImplBody(TaskContext context) : context(context) {}
+
   void operator()(size_t m,
                   size_t n,
                   complex<double>* lhs_,

@@ -77,6 +77,9 @@ static inline void qr_template(
 
 template <VariantKind KIND>
 struct QrImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m, int32_t n, int32_t k, const float* a, float* q, float* r)
   {
     qr_template(sgeqrf_, sorgqr_, m, n, k, a, q, r);
@@ -85,6 +88,9 @@ struct QrImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct QrImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m, int32_t n, int32_t k, const double* a, double* q, double* r)
   {
     qr_template(dgeqrf_, dorgqr_, m, n, k, a, q, r);
@@ -93,6 +99,9 @@ struct QrImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct QrImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     int32_t m, int32_t n, int32_t k, const complex<float>* a, complex<float>* q, complex<float>* r)
   {
@@ -109,6 +118,9 @@ struct QrImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct QrImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,

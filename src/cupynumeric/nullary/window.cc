@@ -23,6 +23,9 @@ using namespace legate;
 
 template <WindowOpCode OP_CODE>
 struct WindowImplBody<VariantKind::CPU, OP_CODE> {
+  TaskContext context;
+  explicit WindowImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     const AccessorWO<double, 1>& out, const Rect<1>& rect, bool dense, int64_t M, double beta) const
   {

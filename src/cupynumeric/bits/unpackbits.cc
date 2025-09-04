@@ -23,6 +23,9 @@ using namespace legate;
 
 template <int32_t DIM, Bitorder BITORDER>
 struct UnpackbitsImplBody<VariantKind::CPU, DIM, BITORDER> {
+  TaskContext context;
+  explicit UnpackbitsImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<uint8_t, DIM>& out,
                   const AccessorRO<uint8_t, DIM>& in,
                   const Rect<DIM>& in_rect,

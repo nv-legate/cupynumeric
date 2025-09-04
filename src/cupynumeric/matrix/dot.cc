@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE>
 struct DotImplBody<VariantKind::CPU, CODE> {
+  TaskContext context;
+  explicit DotImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
   using ACC = acc_type_of<VAL>;
 

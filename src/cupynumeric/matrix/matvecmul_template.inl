@@ -52,6 +52,9 @@ struct support_matvecmul<Type::Code::COMPLEX128> : std::true_type {
 
 template <VariantKind KIND>
 struct MatVecMulImpl {
+  TaskContext context;
+  explicit MatVecMulImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_matvecmul<CODE>::value>* = nullptr>
   void operator()(MatVecMulArgs& args) const
   {
@@ -86,7 +89,7 @@ struct MatVecMulImpl {
     assert(lhs_strides[0] == 1 && lhs_strides[1] == 0);
 #endif
 
-    MatVecMulImplBody<KIND, CODE>()(
+    MatVecMulImplBody<KIND, CODE>{context}(
       m, n, lhs, mat, vec, mat_stride, transpose_mat, args.lhs.is_readable());
   }
 
@@ -106,7 +109,7 @@ static void matvecmul_template(TaskContext& context)
   MatVecMulArgs args{reductions[0], inputs[0], inputs[1]};
   // Note that we can't dispatch on the lhs's type,
   // as the lhs can have a different type than the rhs'
-  type_dispatch(args.rhs1.code(), MatVecMulImpl<KIND>{}, args);
+  type_dispatch(args.rhs1.code(), MatVecMulImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

@@ -29,6 +29,9 @@ struct WrapImplBody;
 
 template <VariantKind KIND>
 struct WrapImpl {
+  TaskContext context;
+  explicit WrapImpl(TaskContext context) : context(context) {}
+
   template <int DIM>
   void operator()(WrapArgs& args) const
   {
@@ -68,12 +71,12 @@ struct WrapImpl {
 #ifdef DEBUG_CUPYNUMERIC
       assert(rect_in == rect_out);
 #endif
-      WrapImplBody<KIND, DIM>()(
+      WrapImplBody<KIND, DIM>{context}(
         out, pitches_out, rect_out, pitches_base, rect_base, dense, args.check_bounds, in);
 
     } else {
       bool tmp = false;
-      WrapImplBody<KIND, DIM>()(
+      WrapImplBody<KIND, DIM>{context}(
         out, pitches_out, rect_out, pitches_base, rect_base, dense, args.check_bounds, tmp);
     }  // else
   }
@@ -89,7 +92,7 @@ static void wrap_template(TaskContext& context)
   legate::PhysicalStore tmp_array{nullptr};
   WrapArgs args{
     context.output(0), shape, has_input, check_bounds, has_input ? context.input(0) : tmp_array};
-  dim_dispatch(dim, WrapImpl<KIND>{}, args);
+  dim_dispatch(dim, WrapImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

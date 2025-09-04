@@ -41,6 +41,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanLocalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit ScanLocalImplBody(TaskContext context) : context(context) {}
+
   using OP  = ScanOp<OP_CODE, CODE>;
   using VAL = type_of<CODE>;
 
@@ -57,7 +60,7 @@ struct ScanLocalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
 
     auto stride = rect.hi[DIM - 1] - rect.lo[DIM - 1] + 1;
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     Point<DIM> extents = rect.hi - rect.lo + Point<DIM>::ONES();
     extents[DIM - 1]   = 1;  // one element along scan axis
@@ -81,6 +84,9 @@ struct ScanLocalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanLocalNanImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit ScanLocalNanImplBody(TaskContext context) : context(context) {}
+
   using OP  = ScanOp<OP_CODE, CODE>;
   using VAL = type_of<CODE>;
 
@@ -104,7 +110,7 @@ struct ScanLocalNanImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
 
     auto stride = rect.hi[DIM - 1] - rect.lo[DIM - 1] + 1;
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     Point<DIM> extents = rect.hi - rect.lo + Point<DIM>::ONES();
     extents[DIM - 1]   = 1;  // one element along scan axis

@@ -33,10 +33,10 @@ static inline void svd_template(DataType valTypeC,
                                 const void* a,
                                 void* u,
                                 void* s,
-                                void* vh)
+                                void* vh,
+                                cudaStream_t stream)
 {
   auto handle = get_cusolver();
-  auto stream = get_cached_stream();
 
   auto a_copy = create_buffer<VAL>(m * n, Memory::Kind::GPU_FB_MEM);
   CUPYNUMERIC_CHECK_CUDA(
@@ -110,6 +110,9 @@ static inline void svd_template(DataType valTypeC,
 
 template <>
 struct SvdImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t n,
                   int64_t k,
@@ -119,12 +122,16 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   float* s,
                   float* vh)
   {
-    svd_template<float>(CUDA_R_32F, CUDA_R_32F, m, n, k, full_matrices, a, u, s, vh);
+    auto stream = context.get_task_stream();
+    svd_template<float>(CUDA_R_32F, CUDA_R_32F, m, n, k, full_matrices, a, u, s, vh, stream);
   }
 };
 
 template <>
 struct SvdImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t n,
                   int64_t k,
@@ -134,12 +141,16 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   double* s,
                   double* vh)
   {
-    svd_template<double>(CUDA_R_64F, CUDA_R_64F, m, n, k, full_matrices, a, u, s, vh);
+    auto stream = context.get_task_stream();
+    svd_template<double>(CUDA_R_64F, CUDA_R_64F, m, n, k, full_matrices, a, u, s, vh, stream);
   }
 };
 
 template <>
 struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t n,
                   int64_t k,
@@ -149,6 +160,7 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   float* s,
                   complex<float>* vh)
   {
+    auto stream = context.get_task_stream();
     svd_template<complex<float>>(CUDA_C_32F,
                                  CUDA_R_32F,
                                  m,
@@ -158,12 +170,16 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                                  reinterpret_cast<const cuComplex*>(a),
                                  reinterpret_cast<cuComplex*>(u),
                                  s,
-                                 reinterpret_cast<cuComplex*>(vh));
+                                 reinterpret_cast<cuComplex*>(vh),
+                                 stream);
   }
 };
 
 template <>
 struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int64_t m,
                   int64_t n,
                   int64_t k,
@@ -173,6 +189,7 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   double* s,
                   complex<double>* vh)
   {
+    auto stream = context.get_task_stream();
     svd_template<complex<double>>(CUDA_C_64F,
                                   CUDA_R_64F,
                                   m,
@@ -182,7 +199,8 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                                   reinterpret_cast<const cuDoubleComplex*>(a),
                                   reinterpret_cast<cuDoubleComplex*>(u),
                                   s,
-                                  reinterpret_cast<cuDoubleComplex*>(vh));
+                                  reinterpret_cast<cuDoubleComplex*>(vh),
+                                  stream);
   }
 };
 

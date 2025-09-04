@@ -25,6 +25,9 @@ using namespace legate;
 
 template <Type::Code CODE>
 struct BincountImplBody<VariantKind::OMP, CODE> {
+  TaskContext context;
+  explicit BincountImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   std::vector<std::vector<int64_t>> _bincount(const AccessorRO<VAL, 1>& rhs,

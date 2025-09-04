@@ -56,6 +56,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int32_t DIM, bool LOWER>
 struct TriluImplBody<VariantKind::GPU, CODE, DIM, LOWER> {
+  TaskContext context;
+  explicit TriluImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   template <bool C_ORDER>
@@ -67,7 +70,7 @@ struct TriluImplBody<VariantKind::GPU, CODE, DIM, LOWER> {
                   int32_t k) const
   {
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     trilu_kernel<VAL, DIM, LOWER, C_ORDER>
       <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(out, in, pitches, lo, volume, k);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);

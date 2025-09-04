@@ -36,6 +36,9 @@ void remove_diag_imag(complex<T>* a_inout, size_t m)
 
 template <VariantKind KIND>
 struct SyevImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit SyevImplBody(TaskContext context) : context(context) {}
+
   void operator()(bool uplo_l,
                   int32_t m,
                   int32_t num_batches,
@@ -92,6 +95,9 @@ struct SyevImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct SyevImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit SyevImplBody(TaskContext context) : context(context) {}
+
   void operator()(bool uplo_l,
                   int32_t m,
                   int32_t num_batches,
@@ -149,6 +155,9 @@ struct SyevImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct SyevImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit SyevImplBody(TaskContext context) : context(context) {}
+
   void operator()(bool uplo_l,
                   int32_t m,
                   int32_t num_batches,
@@ -212,6 +221,9 @@ struct SyevImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct SyevImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit SyevImplBody(TaskContext context) : context(context) {}
+
   void operator()(bool uplo_l,
                   int32_t m,
                   int32_t num_batches,

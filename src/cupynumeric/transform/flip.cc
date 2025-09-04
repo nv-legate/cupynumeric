@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int32_t DIM>
 struct FlipImplBody<VariantKind::CPU, CODE, DIM> {
+  TaskContext context;
+  explicit FlipImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(AccessorWO<VAL, DIM> out,

@@ -52,6 +52,9 @@ struct support_matmul<Type::Code::COMPLEX128> : std::true_type {
 
 template <VariantKind KIND>
 struct MatMulImpl {
+  TaskContext context;
+  explicit MatMulImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_matmul<CODE>::value>* = nullptr>
   void operator()(MatMulArgs& args) const
   {
@@ -112,18 +115,18 @@ struct MatMulImpl {
     size_t stride_rhs1 = stride_for_blas(m, k, strides_rhs1[0], strides_rhs1[1], transposed_rhs1);
     size_t stride_rhs2 = stride_for_blas(k, n, strides_rhs2[0], strides_rhs2[1], transposed_rhs2);
 
-    MatMulImplBody<KIND, CODE>()(m,
-                                 n,
-                                 k,
-                                 lhs,
-                                 rhs1,
-                                 rhs2,
-                                 strides_lhs[0],
-                                 stride_rhs1,
-                                 stride_rhs2,
-                                 transposed_rhs1,
-                                 transposed_rhs2,
-                                 /*args.lhs.is_readable()*/ false);
+    MatMulImplBody<KIND, CODE>{context}(m,
+                                        n,
+                                        k,
+                                        lhs,
+                                        rhs1,
+                                        rhs2,
+                                        strides_lhs[0],
+                                        stride_rhs1,
+                                        stride_rhs2,
+                                        transposed_rhs1,
+                                        transposed_rhs2,
+                                        /*args.lhs.is_readable()*/ false);
   }
 
   template <Type::Code CODE>
@@ -167,18 +170,18 @@ struct MatMulImpl {
     size_t rhs1_stride = stride_for_blas(m, k, rhs1_strides[0], rhs1_strides[1], rhs1_transposed);
     size_t rhs2_stride = stride_for_blas(k, n, rhs2_strides[1], rhs2_strides[2], rhs2_transposed);
 
-    MatMulImplBody<KIND, CODE>()(m,
-                                 n,
-                                 k,
-                                 lhs,
-                                 rhs1,
-                                 rhs2,
-                                 lhs_strides[0],
-                                 rhs1_stride,
-                                 rhs2_stride,
-                                 rhs1_transposed,
-                                 rhs2_transposed,
-                                 args.lhs.is_readable());
+    MatMulImplBody<KIND, CODE>{context}(m,
+                                        n,
+                                        k,
+                                        lhs,
+                                        rhs1,
+                                        rhs2,
+                                        lhs_strides[0],
+                                        rhs1_stride,
+                                        rhs2_stride,
+                                        rhs1_transposed,
+                                        rhs2_transposed,
+                                        args.lhs.is_readable());
   }
 };
 
@@ -200,7 +203,7 @@ static void matmul_template(TaskContext& context)
 
     // Note that we can't dispatch on the lhs's type,
     // as the lhs can have a different type than the rhs'
-    type_dispatch(args.rhs1.code(), MatMulImpl<KIND>{}, args);
+    type_dispatch(args.rhs1.code(), MatMulImpl<KIND>{context}, args);
   } else {
     auto reductions = context.reductions();
 #ifdef DEBUG_CUPYNUMERIC
@@ -211,7 +214,7 @@ static void matmul_template(TaskContext& context)
 
     // Note that we can't dispatch on the lhs's type,
     // as the lhs can have a different type than the rhs'
-    type_dispatch(args.rhs1.code(), MatMulImpl<KIND>{}, args);
+    type_dispatch(args.rhs1.code(), MatMulImpl<KIND>{context}, args);
   }
 }
 

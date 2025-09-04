@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct DiagImplBody<VariantKind::CPU, CODE, DIM, true> {
+  TaskContext context;
+  explicit DiagImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorRD<SumReduction<VAL>, true, DIM>& out,
@@ -58,6 +61,9 @@ struct DiagImplBody<VariantKind::CPU, CODE, DIM, true> {
 // not extract (create a new 2D matrix with diagonal from vector)
 template <Type::Code CODE>
 struct DiagImplBody<VariantKind::CPU, CODE, 2, false> {
+  TaskContext context;
+  explicit DiagImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorRO<VAL, 2>& in,

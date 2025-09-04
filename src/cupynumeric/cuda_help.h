@@ -413,18 +413,16 @@ struct CuSolverExtraSymbols {
 
 // Defined in cudalibs.cu
 
-// Return a cached stream for the current GPU
-CUstream_st* get_cached_stream();
 int get_device_ordinal();
 const cudaDeviceProp& get_device_properties();
 cublasHandle_t get_cublas();
 cusolverDnHandle_t get_cusolver();
 CuSolverExtraSymbols* get_cusolver_extra_symbols();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-cusolverMpHandle_t get_cusolvermp();
+cusolverMpHandle_t get_cusolvermp(cudaStream_t stream);
 #endif
 [[nodiscard]] const cutensorHandle_t& get_cutensor();
-cufftContext get_cufft_plan(cufftType type, const cufftPlanParams& params);
+cufftContext get_cufft_plan(cufftType type, const cufftPlanParams& params, cudaStream_t stream);
 
 template <typename T>
 __device__ __forceinline__ T shuffle(unsigned mask, T var, int laneMask, int width)

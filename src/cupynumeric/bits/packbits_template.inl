@@ -29,6 +29,9 @@ struct PackbitsImplBody;
 
 template <VariantKind KIND, Bitorder BITORDER>
 struct PackbitsImpl {
+  TaskContext context;
+  explicit PackbitsImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int32_t DIM, std::enable_if_t<is_integral<CODE>::value>* = nullptr>
   void operator()(legate::PhysicalStore output, legate::PhysicalStore input, uint32_t axis) const
   {
@@ -64,16 +67,16 @@ struct PackbitsImpl {
     auto aligned_volume   = aligned_pitches.flatten(aligned_rect);
     auto unaligned_volume = unaligned_pitches.flatten(unaligned_rect);
 
-    PackbitsImplBody<KIND, CODE, DIM, BITORDER>{}(out,
-                                                  in,
-                                                  aligned_rect,
-                                                  unaligned_rect,
-                                                  aligned_pitches,
-                                                  unaligned_pitches,
-                                                  aligned_volume,
-                                                  unaligned_volume,
-                                                  in_rect.hi[axis],
-                                                  axis);
+    PackbitsImplBody<KIND, CODE, DIM, BITORDER>{context}(out,
+                                                         in,
+                                                         aligned_rect,
+                                                         unaligned_rect,
+                                                         aligned_pitches,
+                                                         unaligned_pitches,
+                                                         aligned_volume,
+                                                         unaligned_volume,
+                                                         in_rect.hi[axis],
+                                                         axis);
   }
 
   template <Type::Code CODE, int32_t DIM, std::enable_if_t<!is_integral<CODE>::value>* = nullptr>
@@ -95,12 +98,13 @@ static void packbits_template(TaskContext& context)
   auto code = input.code();
   switch (bitorder) {
     case Bitorder::BIG: {
-      double_dispatch(input.dim(), code, PackbitsImpl<KIND, Bitorder::BIG>{}, output, input, axis);
+      double_dispatch(
+        input.dim(), code, PackbitsImpl<KIND, Bitorder::BIG>{context}, output, input, axis);
       break;
     }
     case Bitorder::LITTLE: {
       double_dispatch(
-        input.dim(), code, PackbitsImpl<KIND, Bitorder::LITTLE>{}, output, input, axis);
+        input.dim(), code, PackbitsImpl<KIND, Bitorder::LITTLE>{context}, output, input, axis);
       break;
     }
   }

@@ -98,6 +98,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int DIM>
 struct RepeatImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit RepeatImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(legate::PhysicalStore& out_array,
@@ -116,7 +119,7 @@ struct RepeatImplBody<VariantKind::GPU, CODE, DIM> {
     }
     const auto blocks = (out_volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     repeat_kernel<VAL, DIM><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       out, in, repeats, axis, out_rect.lo, pitches, out_volume);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
@@ -128,7 +131,7 @@ struct RepeatImplBody<VariantKind::GPU, CODE, DIM> {
                   const int32_t axis,
                   const Rect<DIM>& in_rect) const
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     Pitches<DIM - 1> pitches{};
     const auto volume = pitches.flatten(in_rect);

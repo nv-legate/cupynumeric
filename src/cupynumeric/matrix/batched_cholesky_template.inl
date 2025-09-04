@@ -30,11 +30,17 @@ using namespace legate;
 
 template <VariantKind KIND>
 struct CopyBlockImpl {
+  TaskContext context;
+  explicit CopyBlockImpl(TaskContext context) : context(context) {}
+
   void operator()(void* dst, const void* src, size_t n);
 };
 
 template <VariantKind KIND, Type::Code CODE>
 struct BatchedTransposeImplBody {
+  TaskContext context;
+  explicit BatchedTransposeImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(VAL* array, int32_t n);
@@ -48,6 +54,9 @@ struct _cholesky_supported {
 
 template <VariantKind KIND>
 struct BatchedCholeskyImpl {
+  TaskContext context;
+  explicit BatchedCholeskyImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int32_t DIM, std::enable_if_t<(DIM > 2)>* = nullptr>
   void operator()(Array& input_array, Array& output_array) const
   {
@@ -102,15 +111,15 @@ struct BatchedCholeskyImpl {
 
     for (int32_t i = 0; i < num_blocks; ++i) {
       if constexpr (_cholesky_supported<CODE>::value) {
-        CopyBlockImpl<KIND>()(output, input, sizeof(VAL) * block_stride);
-        PotrfImplBody<KIND, CODE>()(output, m, n);
+        CopyBlockImpl<KIND>{context}(output, input, sizeof(VAL) * block_stride);
+        PotrfImplBody<KIND, CODE>{context}(output, m, n);
         // Implicit assumption here about the cholesky code created.
         // We assume the output has C layout, but each subblock
         // will be generated in Fortran layout. Transpose the Fortran
         // subblock into C layout.
         // CHANGE: If this code is changed, please make sure all changes
         // are consistent with those found in mapper.cc.
-        BatchedTransposeImplBody<KIND, CODE>()(output, n);
+        BatchedTransposeImplBody<KIND, CODE>{context}(output, n);
         input += block_stride;
         output += block_stride;
       }
@@ -142,7 +151,7 @@ static void batched_cholesky_task_context_dispatch(TaskContext& context)
   }
   double_dispatch(batched_input.dim(),
                   batched_input.type().code(),
-                  BatchedCholeskyImpl<KIND>{},
+                  BatchedCholeskyImpl<KIND>{context},
                   batched_input,
                   batched_output);
 }

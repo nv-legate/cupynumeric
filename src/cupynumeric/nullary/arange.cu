@@ -35,6 +35,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM) ara
 
 template <typename VAL>
 struct ArangeImplBody<VariantKind::GPU, VAL> {
+  TaskContext context;
+  explicit ArangeImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<VAL, 1>& out,
                   const Rect<1>& rect,
                   const VAL start,
@@ -42,7 +45,7 @@ struct ArangeImplBody<VariantKind::GPU, VAL> {
   {
     const auto distance = rect.hi[0] - rect.lo[0] + 1;
     const size_t blocks = (distance + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     arange_kernel<VAL>
       <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(out, rect.lo[0], start, step, distance);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);

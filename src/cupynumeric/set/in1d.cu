@@ -67,6 +67,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE>
 struct In1dImplBody<VariantKind::GPU, CODE, 1> {
+  TaskContext context;
+  explicit In1dImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<bool, 1>& result,
@@ -82,7 +85,7 @@ struct In1dImplBody<VariantKind::GPU, CODE, 1> {
                   int64_t ar2_min,
                   int64_t ar2_max)
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     const VAL* in1_ptr = in1.ptr(rect1);
     const VAL* in2_ptr = in2.ptr(rect2);

@@ -42,6 +42,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <typename VAL, int32_t OUT_DIM, int32_t IN_DIM>
 struct TileImplBody<VariantKind::GPU, VAL, OUT_DIM, IN_DIM> {
+  TaskContext context;
+  explicit TileImplBody(TaskContext context) : context(context) {}
+
   void operator()(const Rect<OUT_DIM>& out_rect,
                   const Pitches<OUT_DIM - 1>& out_pitches,
                   size_t out_volume,
@@ -50,7 +53,7 @@ struct TileImplBody<VariantKind::GPU, VAL, OUT_DIM, IN_DIM> {
                   const AccessorRO<VAL, IN_DIM>& in) const
   {
     const size_t blocks = (out_volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     tile_kernel<VAL, OUT_DIM, IN_DIM><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       out_rect, out_pitches, out_volume, in_strides, out, in);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);

@@ -48,6 +48,9 @@ static __global__ void __launch_bounds__(1, 1) copy_kernel(Buffer result, RedAcc
 
 template <class LG_OP, class Tag>
 struct ScalarReductionPolicy<VariantKind::GPU, LG_OP, Tag> {
+  TaskContext context;
+  ScalarReductionPolicy(TaskContext tcontext) : context(tcontext) {}
+
   template <class AccessorRD, class LHS, class Kernel>
   void __attribute__((visibility("hidden"))) operator()(size_t volume,
                                                         AccessorRD& out,
@@ -58,7 +61,7 @@ struct ScalarReductionPolicy<VariantKind::GPU, LG_OP, Tag> {
       return;
     }
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     DeviceScalarReductionBuffer<LG_OP> result(stream);

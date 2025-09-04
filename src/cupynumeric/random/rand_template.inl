@@ -31,6 +31,9 @@ struct RandImplBody;
 
 template <RandGenCode GEN_CODE, VariantKind KIND>
 struct RandImpl {
+  TaskContext context;
+  explicit RandImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE,
             int DIM,
             std::enable_if_t<RandomGenerator<GEN_CODE, CODE>::valid>* = nullptr>
@@ -52,7 +55,7 @@ struct RandImpl {
     Point<DIM> strides(args.strides);
 
     RNG rng(args.epoch, args.args);
-    RandImplBody<KIND, RNG, VAL, DIM>{}(out, rng, strides, pitches, rect);
+    RandImplBody<KIND, RNG, VAL, DIM>{context}(out, rng, strides, pitches, rect);
   }
 
   template <Type::Code CODE,
@@ -66,10 +69,13 @@ struct RandImpl {
 
 template <VariantKind KIND>
 struct RandDispatch {
+  TaskContext context;
+  explicit RandDispatch(TaskContext context) : context(context) {}
+
   template <RandGenCode GEN_CODE>
   void operator()(RandArgs& args) const
   {
-    double_dispatch(args.out.dim(), args.out.code(), RandImpl<GEN_CODE, KIND>{}, args);
+    double_dispatch(args.out.dim(), args.out.code(), RandImpl<GEN_CODE, KIND>{context}, args);
   }
 };
 
@@ -86,7 +92,7 @@ static void rand_template(TaskContext& context)
   }
 
   RandArgs args{context.output(0), gen_code, epoch, strides, std::move(extra_args)};
-  op_dispatch(args.gen_code, RandDispatch<KIND>{}, args);
+  op_dispatch(args.gen_code, RandDispatch<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

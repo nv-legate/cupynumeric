@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM>
 struct RepeatImplBody<VariantKind::CPU, CODE, DIM> {
+  TaskContext context;
+  explicit RepeatImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(legate::PhysicalStore& out_array,

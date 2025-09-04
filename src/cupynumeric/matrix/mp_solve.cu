@@ -34,22 +34,23 @@ static inline void mp_solve_template(cal_comm_t comm,
                                      VAL* a_array,
                                      int64_t llda,
                                      VAL* b_array,
-                                     int64_t lldb)
+                                     int64_t lldb,
+                                     cudaStream_t ctx_stream)
 {
   const auto trans = CUBLAS_OP_N;
 
-  auto context = get_cusolvermp();
+  auto handle = get_cusolvermp(ctx_stream);
 
   // synchronize all previous copies on default stream
   // cusolverMP has its unmodifiable stream to continue with
-  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(get_cached_stream()));
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(ctx_stream));
 
   cudaStream_t stream;
-  CHECK_CUSOLVER(cusolverMpGetStream(context, &stream));
+  CHECK_CUSOLVER(cusolverMpGetStream(handle, &stream));
 
   cusolverMpGrid_t grid = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateDeviceGrid(
-    context, &grid, comm, nprow, npcol, CUSOLVERMP_GRID_MAPPING_COL_MAJOR));
+    handle, &grid, comm, nprow, npcol, CUSOLVERMP_GRID_MAPPING_COL_MAJOR));
 
   cusolverMpMatrixDescriptor_t a_desc = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateMatrixDesc(
@@ -61,7 +62,7 @@ static inline void mp_solve_template(cal_comm_t comm,
 
   size_t getrf_device_buffer_size = 0;
   size_t getrf_host_buffer_size   = 0;
-  CHECK_CUSOLVER(cusolverMpGetrf_bufferSize(context,
+  CHECK_CUSOLVER(cusolverMpGetrf_bufferSize(handle,
                                             n,
                                             n,
                                             a_array,
@@ -75,7 +76,7 @@ static inline void mp_solve_template(cal_comm_t comm,
 
   size_t getrs_device_buffer_size = 0;
   size_t getrs_host_buffer_size   = 0;
-  CHECK_CUSOLVER(cusolverMpGetrs_bufferSize(context,
+  CHECK_CUSOLVER(cusolverMpGetrs_bufferSize(handle,
                                             trans,
                                             n,
                                             nrhs,
@@ -104,7 +105,7 @@ static inline void mp_solve_template(cal_comm_t comm,
   // initialize to zero
   info[0] = 0;
 
-  CHECK_CUSOLVER(cusolverMpGetrf(context,
+  CHECK_CUSOLVER(cusolverMpGetrf(handle,
                                  n,
                                  n,
                                  a_array,
@@ -123,7 +124,7 @@ static inline void mp_solve_template(cal_comm_t comm,
     throw legate::TaskException("Matrix is singular");
   }
 
-  CHECK_CUSOLVER(cusolverMpGetrs(context,
+  CHECK_CUSOLVER(cusolverMpGetrs(handle,
                                  trans,
                                  n,
                                  nrhs,
@@ -159,6 +160,9 @@ static inline void mp_solve_template(cal_comm_t comm,
 
 template <>
 struct MpSolveImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit MpSolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
@@ -170,12 +174,16 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   float* b_array,
                   int64_t lldb)
   {
-    mp_solve_template(comm, nprow, npcol, n, nrhs, nb, a_array, llda, b_array, lldb);
+    auto stream = context.get_task_stream();
+    mp_solve_template(comm, nprow, npcol, n, nrhs, nb, a_array, llda, b_array, lldb, stream);
   }
 };
 
 template <>
 struct MpSolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit MpSolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
@@ -187,12 +195,16 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   double* b_array,
                   int64_t lldb)
   {
-    mp_solve_template(comm, nprow, npcol, n, nrhs, nb, a_array, llda, b_array, lldb);
+    auto stream = context.get_task_stream();
+    mp_solve_template(comm, nprow, npcol, n, nrhs, nb, a_array, llda, b_array, lldb, stream);
   }
 };
 
 template <>
 struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit MpSolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
@@ -204,6 +216,7 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   complex<float>* b_array,
                   int64_t lldb)
   {
+    auto stream = context.get_task_stream();
     mp_solve_template(comm,
                       nprow,
                       npcol,
@@ -213,12 +226,16 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                       reinterpret_cast<cuComplex*>(a_array),
                       llda,
                       reinterpret_cast<cuComplex*>(b_array),
-                      lldb);
+                      lldb,
+                      stream);
   }
 };
 
 template <>
 struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit MpSolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
@@ -230,6 +247,7 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   complex<double>* b_array,
                   int64_t lldb)
   {
+    auto stream = context.get_task_stream();
     mp_solve_template(comm,
                       nprow,
                       npcol,
@@ -239,7 +257,8 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                       reinterpret_cast<cuDoubleComplex*>(a_array),
                       llda,
                       reinterpret_cast<cuDoubleComplex*>(b_array),
-                      lldb);
+                      lldb,
+                      stream);
   }
 };
 

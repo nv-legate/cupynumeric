@@ -28,6 +28,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM, typename OUT_TYPE>
 struct AdvancedIndexingImplBody<VariantKind::OMP, CODE, DIM, OUT_TYPE> {
+  TaskContext context;
+  explicit AdvancedIndexingImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   size_t compute_output_offsets(ThreadLocalStorage<int64_t>& offsets,

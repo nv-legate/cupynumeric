@@ -25,6 +25,9 @@ using namespace legate;
 
 template <VariantKind KIND>
 struct SvdImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,
@@ -80,6 +83,9 @@ struct SvdImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct SvdImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,
@@ -136,6 +142,9 @@ struct SvdImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct SvdImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,
@@ -196,6 +205,9 @@ struct SvdImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct SvdImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit SvdImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,

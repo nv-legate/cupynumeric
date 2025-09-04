@@ -28,6 +28,9 @@ struct BincountImplBody;
 
 template <VariantKind KIND>
 struct BincountImpl {
+  TaskContext context;
+  explicit BincountImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<is_integral<CODE>::value>* = nullptr>
   void operator()(BincountArgs& args) const
   {
@@ -44,11 +47,11 @@ struct BincountImpl {
       auto weights = args.weights.read_accessor<double, 1>(rect);
       auto lhs =
         args.lhs.reduce_accessor<SumReduction<double>, KIND != VariantKind::GPU, 1>(lhs_rect);
-      BincountImplBody<KIND, CODE>()(lhs, rhs, weights, rect, lhs_rect);
+      BincountImplBody<KIND, CODE>{context}(lhs, rhs, weights, rect, lhs_rect);
     } else {
       auto lhs =
         args.lhs.reduce_accessor<SumReduction<int64_t>, KIND != VariantKind::GPU, 1>(lhs_rect);
-      BincountImplBody<KIND, CODE>()(lhs, rhs, rect, lhs_rect);
+      BincountImplBody<KIND, CODE>{context}(lhs, rhs, rect, lhs_rect);
     }
   }
 
@@ -75,7 +78,7 @@ static void bincount_template(TaskContext& context)
     args.has_weights = false;
   }
 
-  type_dispatch(args.rhs.code(), BincountImpl<KIND>{}, args);
+  type_dispatch(args.rhs.code(), BincountImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

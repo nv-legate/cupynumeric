@@ -29,6 +29,9 @@ struct ZipImplBody;
 
 template <VariantKind KIND>
 struct ZipImpl {
+  TaskContext context;
+  explicit ZipImpl(TaskContext context) : context(context) {}
+
   template <int DIM, int N>
   void operator()(ZipArgs& args) const
   {
@@ -52,15 +55,15 @@ struct ZipImpl {
       dense = dense && index_arrays[i].accessor.is_dense_row_major(out_rect);
     }
 
-    ZipImplBody<KIND, DIM, N>()(out,
-                                index_arrays,
-                                out_rect,
-                                pitches,
-                                dense,
-                                args.key_dim,
-                                args.start_index,
-                                args.shape,
-                                std::make_index_sequence<N>());
+    ZipImplBody<KIND, DIM, N>{context}(out,
+                                       index_arrays,
+                                       out_rect,
+                                       pitches,
+                                       dense,
+                                       args.key_dim,
+                                       args.start_index,
+                                       args.shape,
+                                       std::make_index_sequence<N>());
   }
 };
 
@@ -105,7 +108,7 @@ static void zip_template(TaskContext& context)
     dim = 1;
   }
 
-  double_dispatch(dim, N, ZipImpl<KIND>{}, args);
+  double_dispatch(dim, N, ZipImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

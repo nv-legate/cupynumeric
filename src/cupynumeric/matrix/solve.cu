@@ -32,12 +32,12 @@ static inline void solve_template(GetrfBufferSize getrf_buffer_size,
                                   int32_t nrhs,
                                   const VAL* a,
                                   const VAL* b,
-                                  VAL* x)
+                                  VAL* x,
+                                  cudaStream_t stream)
 {
   const auto trans = CUBLAS_OP_N;
 
   auto handle = get_cusolver();
-  auto stream = get_cached_stream();
 
   // copy inputs for in-place compute
   auto a_copy = create_buffer<VAL>(m * n, Memory::Kind::GPU_FB_MEM);
@@ -79,10 +79,10 @@ static inline void solve_template_batched(GetrfBatched getrfbatched,
                                           int32_t nrhs,
                                           const VAL* a,
                                           const VAL* b,
-                                          VAL* x)
+                                          VAL* x,
+                                          cudaStream_t stream)
 {
   auto cublas_handle = get_cublas();
-  auto stream        = get_cached_stream();
 
   // copy inputs for in-place compute
   auto a_copy = create_buffer<VAL>(batchsize * n * n, Memory::Kind::GPU_FB_MEM);
@@ -137,20 +137,36 @@ static inline void solve_template_batched(GetrfBatched getrfbatched,
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     int32_t batchsize, int32_t m, int32_t n, int32_t nrhs, const float* a, const float* b, float* x)
   {
+    auto stream = context.get_task_stream();
     if (batchsize > 1) {
-      solve_template_batched(cublasSgetrfBatched, cublasSgetrsBatched, batchsize, n, nrhs, a, b, x);
+      solve_template_batched(
+        cublasSgetrfBatched, cublasSgetrsBatched, batchsize, n, nrhs, a, b, x, stream);
     } else {
-      solve_template(
-        cusolverDnSgetrf_bufferSize, cusolverDnSgetrf, cusolverDnSgetrs, m, n, nrhs, a, b, x);
+      solve_template(cusolverDnSgetrf_bufferSize,
+                     cusolverDnSgetrf,
+                     cusolverDnSgetrs,
+                     m,
+                     n,
+                     nrhs,
+                     a,
+                     b,
+                     x,
+                     stream);
     }
   }
 };
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t batchsize,
                   int32_t m,
                   int32_t n,
@@ -159,17 +175,30 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   const double* b,
                   double* x)
   {
+    auto stream = context.get_task_stream();
     if (batchsize > 1) {
-      solve_template_batched(cublasDgetrfBatched, cublasDgetrsBatched, batchsize, n, nrhs, a, b, x);
+      solve_template_batched(
+        cublasDgetrfBatched, cublasDgetrsBatched, batchsize, n, nrhs, a, b, x, stream);
     } else {
-      solve_template(
-        cusolverDnDgetrf_bufferSize, cusolverDnDgetrf, cusolverDnDgetrs, m, n, nrhs, a, b, x);
+      solve_template(cusolverDnDgetrf_bufferSize,
+                     cusolverDnDgetrf,
+                     cusolverDnDgetrs,
+                     m,
+                     n,
+                     nrhs,
+                     a,
+                     b,
+                     x,
+                     stream);
     }
   }
 };
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t batchsize,
                   int32_t m,
                   int32_t n,
@@ -178,6 +207,7 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   const complex<float>* b,
                   complex<float>* x)
   {
+    auto stream = context.get_task_stream();
     if (batchsize > 1) {
       solve_template_batched(cublasCgetrfBatched,
                              cublasCgetrsBatched,
@@ -186,7 +216,8 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                              nrhs,
                              reinterpret_cast<const cuComplex*>(a),
                              reinterpret_cast<const cuComplex*>(b),
-                             reinterpret_cast<cuComplex*>(x));
+                             reinterpret_cast<cuComplex*>(x),
+                             stream);
     } else {
       solve_template(cusolverDnCgetrf_bufferSize,
                      cusolverDnCgetrf,
@@ -196,13 +227,17 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                      nrhs,
                      reinterpret_cast<const cuComplex*>(a),
                      reinterpret_cast<const cuComplex*>(b),
-                     reinterpret_cast<cuComplex*>(x));
+                     reinterpret_cast<cuComplex*>(x),
+                     stream);
     }
   }
 };
 
 template <>
 struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t batchsize,
                   int32_t m,
                   int32_t n,
@@ -211,6 +246,7 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   const complex<double>* b,
                   complex<double>* x)
   {
+    auto stream = context.get_task_stream();
     if (batchsize > 1) {
       solve_template_batched(cublasZgetrfBatched,
                              cublasZgetrsBatched,
@@ -219,7 +255,8 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                              nrhs,
                              reinterpret_cast<const cuDoubleComplex*>(a),
                              reinterpret_cast<const cuDoubleComplex*>(b),
-                             reinterpret_cast<cuDoubleComplex*>(x));
+                             reinterpret_cast<cuDoubleComplex*>(x),
+                             stream);
     } else {
       solve_template(cusolverDnZgetrf_bufferSize,
                      cusolverDnZgetrf,
@@ -229,7 +266,8 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                      nrhs,
                      reinterpret_cast<const cuDoubleComplex*>(a),
                      reinterpret_cast<const cuDoubleComplex*>(b),
-                     reinterpret_cast<cuDoubleComplex*>(x));
+                     reinterpret_cast<cuDoubleComplex*>(x),
+                     stream);
     }
   }
 };

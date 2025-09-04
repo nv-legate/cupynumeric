@@ -23,6 +23,9 @@ using namespace legate;
 
 template <typename VAL>
 struct ReadImplBody<VariantKind::CPU, VAL> {
+  TaskContext context;
+  explicit ReadImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, 1> out, AccessorRO<VAL, 1> in) const { out[0] = in[0]; }
 };
 

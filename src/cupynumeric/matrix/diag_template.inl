@@ -29,6 +29,9 @@ struct DiagImplBody;
 
 template <VariantKind KIND>
 struct DiagImpl {
+  TaskContext context;
+  explicit DiagImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(DiagArgs& args) const
   {
@@ -58,7 +61,7 @@ struct DiagImpl {
       auto in  = args.matrix.read_accessor<VAL, DIM>(shape_in);
       auto out = args.diag.reduce_accessor<SumReduction<VAL>, true, DIM>(shape_out);
 
-      DiagImplBody<KIND, CODE, DIM, true>()(
+      DiagImplBody<KIND, CODE, DIM, true>{context}(
         out, in, start, pitches_in, shape_in, args.naxes, distance);
 
     } else {  // extract=False version: returning diagonal matrix from 1d array
@@ -99,7 +102,7 @@ struct DiagImpl {
 
       auto in  = args.diag.read_accessor<VAL, 2>(shape_in);
       auto out = args.matrix.read_write_accessor<VAL, 2>(shape_out);
-      DiagImplBody<KIND, CODE, 2, false>()(in, out, start, distance);
+      DiagImplBody<KIND, CODE, 2, false>{context}(in, out, start, distance);
     }
   }
 };
@@ -112,7 +115,7 @@ static void diag_template(TaskContext& context)
   legate::PhysicalStore matrix = extract ? context.input(0) : context.output(0);
   legate::PhysicalStore diag   = extract ? context.reduction(0) : context.input(0);
   DiagArgs args{naxes, extract, matrix, diag};
-  double_dispatch(matrix.dim(), matrix.code(), DiagImpl<KIND>{}, args);
+  double_dispatch(matrix.dim(), matrix.code(), DiagImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

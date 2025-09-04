@@ -48,6 +48,9 @@ struct support_mp_solve<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct MpSolveImpl {
+  TaskContext context;
+  explicit MpSolveImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_mp_solve<CODE>::value>* = nullptr>
   void operator()(int64_t n,
                   int64_t nrhs,
@@ -114,26 +117,46 @@ struct MpSolveImpl {
     auto a_offset_c = a_shape.lo[1];
     auto a_volume   = a_shape.empty() ? 0 : llda * (a_shape.hi[1] - a_shape.lo[1] + 1);
 
-    auto [a_buffer_2dbc, a_volume_2dbc, a_lld_2dbc] = repartition_matrix_2dbc(
-      a_arr, a_volume, false, a_offset_r, a_offset_c, llda, nprow, npcol, nb, nb, nccl_comm);
+    auto [a_buffer_2dbc, a_volume_2dbc, a_lld_2dbc] = repartition_matrix_2dbc(a_arr,
+                                                                              a_volume,
+                                                                              false,
+                                                                              a_offset_r,
+                                                                              a_offset_c,
+                                                                              llda,
+                                                                              nprow,
+                                                                              npcol,
+                                                                              nb,
+                                                                              nb,
+                                                                              nccl_comm,
+                                                                              context);
 
     auto b_offset_r = b_shape.lo[0];
     auto b_offset_c = b_shape.lo[1];
     auto b_volume   = b_shape.empty() ? 0 : lldb * (b_shape.hi[1] - b_shape.lo[1] + 1);
 
-    auto [b_buffer_2dbc, b_volume_2dbc, b_lld_2dbc] = repartition_matrix_2dbc(
-      b_arr, b_volume, false, b_offset_r, b_offset_c, lldb, nprow, npcol, nb, nb, nccl_comm);
+    auto [b_buffer_2dbc, b_volume_2dbc, b_lld_2dbc] = repartition_matrix_2dbc(b_arr,
+                                                                              b_volume,
+                                                                              false,
+                                                                              b_offset_r,
+                                                                              b_offset_c,
+                                                                              lldb,
+                                                                              nprow,
+                                                                              npcol,
+                                                                              nb,
+                                                                              nb,
+                                                                              nccl_comm,
+                                                                              context);
 
-    MpSolveImplBody<KIND, CODE>()(cal_comm,
-                                  nprow,
-                                  npcol,
-                                  n,
-                                  nrhs,
-                                  nb,
-                                  a_buffer_2dbc.ptr(0),
-                                  a_lld_2dbc,
-                                  b_buffer_2dbc.ptr(0),
-                                  b_lld_2dbc);
+    MpSolveImplBody<KIND, CODE>{context}(cal_comm,
+                                         nprow,
+                                         npcol,
+                                         n,
+                                         nrhs,
+                                         nb,
+                                         a_buffer_2dbc.ptr(0),
+                                         a_lld_2dbc,
+                                         b_buffer_2dbc.ptr(0),
+                                         b_lld_2dbc);
 
     auto b_num_rows = b_shape.hi[0] < b_shape.lo[0] ? 0 : b_shape.hi[0] - b_shape.lo[0] + 1;
     auto b_num_cols = b_shape.hi[1] < b_shape.lo[1] ? 0 : b_shape.hi[1] - b_shape.lo[1] + 1;
@@ -154,7 +177,8 @@ struct MpSolveImpl {
                              false,  // x_shape is enforced col-major
                              b_offset_r,
                              b_offset_c,
-                             nccl_comm);
+                             nccl_comm,
+                             context);
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_mp_solve<CODE>::value>* = nullptr>
@@ -181,7 +205,7 @@ static void mp_solve_template(TaskContext& context)
   auto nrhs                     = context.scalar(1).value<int64_t>();
   auto nb                       = context.scalar(2).value<int64_t>();
   type_dispatch(a_array.code(),
-                MpSolveImpl<KIND>{},
+                MpSolveImpl<KIND>{context},
                 n,
                 nrhs,
                 nb,

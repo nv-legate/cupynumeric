@@ -331,6 +331,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <UnaryRedCode OP_CODE, Type::Code CODE, int DIM, bool HAS_WHERE>
 struct UnaryRedImplBody<VariantKind::GPU, OP_CODE, CODE, DIM, HAS_WHERE> {
+  TaskContext context;
+  explicit UnaryRedImplBody(TaskContext context) : context(context) {}
+
   using OP    = UnaryRedOp<OP_CODE, CODE>;
   using LG_OP = typename OP::OP;
   using RHS   = type_of<CODE>;
@@ -345,7 +348,7 @@ struct UnaryRedImplBody<VariantKind::GPU, OP_CODE, CODE, DIM, HAS_WHERE> {
                   size_t volume) const
   {
     auto Kernel = reduce_with_rd_acc<OP, LG_OP, LHS, RHS, DIM, HAS_WHERE>;
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     ThreadBlocks<DIM> blocks;
     blocks.initialize(rect, collapsed_dim);

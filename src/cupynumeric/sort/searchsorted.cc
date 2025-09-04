@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int32_t DIM>
 struct SearchSortedImplBody<VariantKind::CPU, CODE, DIM> {
+  TaskContext context;
+  explicit SearchSortedImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const PhysicalStore& input_array,

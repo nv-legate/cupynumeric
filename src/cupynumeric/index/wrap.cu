@@ -123,6 +123,9 @@ void check_out_of_bounds(const AccessorRO<int64_t, 1>& indices,
 
 template <int DIM>
 struct WrapImplBody<VariantKind::GPU, DIM> {
+  TaskContext context;
+  explicit WrapImplBody(TaskContext context) : context(context) {}
+
   template <typename IND>
   void operator()(const AccessorWO<Point<DIM>, 1>& out,
                   const Pitches<0>& pitches_out,
@@ -133,7 +136,7 @@ struct WrapImplBody<VariantKind::GPU, DIM> {
                   const bool check_bounds,
                   const IND& indices) const
   {
-    auto stream            = get_cached_stream();
+    auto stream            = context.get_task_stream();
     const int64_t start    = rect_out.lo[0];
     const int64_t volume   = rect_out.volume();
     const auto volume_base = rect_base.volume();

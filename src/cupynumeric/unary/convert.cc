@@ -23,6 +23,9 @@ using namespace legate;
 
 template <ConvertCode NAN_OP, Type::Code DST_TYPE, Type::Code SRC_TYPE, int DIM>
 struct ConvertImplBody<VariantKind::CPU, NAN_OP, DST_TYPE, SRC_TYPE, DIM> {
+  TaskContext context;
+  explicit ConvertImplBody(TaskContext context) : context(context) {}
+
   using OP  = ConvertOp<NAN_OP, DST_TYPE, SRC_TYPE>;
   using SRC = type_of<SRC_TYPE>;
   using DST = type_of<DST_TYPE>;

@@ -28,13 +28,16 @@ struct WriteImplBody;
 
 template <VariantKind KIND>
 struct WriteImpl {
+  TaskContext context;
+  explicit WriteImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(legate::PhysicalStore out_arr, legate::PhysicalStore in_arr) const
   {
     using VAL = type_of<CODE>;
     auto out  = out_arr.write_accessor<VAL, 1>();
     auto in   = in_arr.read_accessor<VAL, DIM>();
-    WriteImplBody<KIND, VAL, DIM>()(out, in);
+    WriteImplBody<KIND, VAL, DIM>{context}(out, in);
   }
 };
 
@@ -44,7 +47,7 @@ static void write_template(TaskContext& context)
   auto in  = context.input(0);
   auto out = context.output(0);
   auto dim = std::max(1, in.dim());
-  legate::double_dispatch(dim, out.type().code(), WriteImpl<KIND>(), out, in);
+  legate::double_dispatch(dim, out.type().code(), WriteImpl<KIND>{context}, out, in);
 }
 
 }  // namespace cupynumeric

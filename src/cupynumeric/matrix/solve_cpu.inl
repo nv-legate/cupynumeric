@@ -24,6 +24,9 @@ using namespace legate;
 
 template <VariantKind KIND>
 struct SolveImplBody<KIND, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     int32_t batchsize, int32_t m, int32_t n, int32_t nrhs, const float* a, const float* b, float* x)
   {
@@ -45,6 +48,9 @@ struct SolveImplBody<KIND, Type::Code::FLOAT32> {
 
 template <VariantKind KIND>
 struct SolveImplBody<KIND, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t batchsize,
                   int32_t m,
                   int32_t n,
@@ -71,6 +77,9 @@ struct SolveImplBody<KIND, Type::Code::FLOAT64> {
 
 template <VariantKind KIND>
 struct SolveImplBody<KIND, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t batchsize,
                   int32_t m,
                   int32_t n,
@@ -100,6 +109,9 @@ struct SolveImplBody<KIND, Type::Code::COMPLEX64> {
 
 template <VariantKind KIND>
 struct SolveImplBody<KIND, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit SolveImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t batchsize,
                   int32_t m,
                   int32_t n,

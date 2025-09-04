@@ -23,6 +23,9 @@ using namespace legate;
 
 template <typename VAL, int DIM>
 struct WriteImplBody<VariantKind::CPU, VAL, DIM> {
+  TaskContext context;
+  explicit WriteImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<VAL, 1>& out, const AccessorRO<VAL, DIM>& value) const
   {
     out[0] = value[Point<DIM>::ZEROES()];

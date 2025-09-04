@@ -29,6 +29,9 @@ struct TriluImplBody;
 
 template <VariantKind KIND>
 struct TriluImpl {
+  TaskContext context;
+  explicit TriluImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int32_t DIM, std::enable_if_t<(DIM >= 2)>* = nullptr>
   void operator()(TriluArgs& args) const
   {
@@ -47,18 +50,18 @@ struct TriluImpl {
       size_t volume = pitches.flatten(shape);
 
       if (args.lower) {
-        TriluImplBody<KIND, CODE, DIM, true>()(out, in, pitches, shape.lo, volume, args.k);
+        TriluImplBody<KIND, CODE, DIM, true>{context}(out, in, pitches, shape.lo, volume, args.k);
       } else {
-        TriluImplBody<KIND, CODE, DIM, false>()(out, in, pitches, shape.lo, volume, args.k);
+        TriluImplBody<KIND, CODE, DIM, false>{context}(out, in, pitches, shape.lo, volume, args.k);
       }
     } else {
       Pitches<DIM - 1> pitches{};
       size_t volume = pitches.flatten(shape);
 
       if (args.lower) {
-        TriluImplBody<KIND, CODE, DIM, true>()(out, in, pitches, shape.lo, volume, args.k);
+        TriluImplBody<KIND, CODE, DIM, true>{context}(out, in, pitches, shape.lo, volume, args.k);
       } else {
-        TriluImplBody<KIND, CODE, DIM, false>()(out, in, pitches, shape.lo, volume, args.k);
+        TriluImplBody<KIND, CODE, DIM, false>{context}(out, in, pitches, shape.lo, volume, args.k);
       }
     }
   }
@@ -78,7 +81,7 @@ static void trilu_template(TaskContext& context)
   auto input  = context.input(0);
   auto output = context.output(0);
   TriluArgs args{lower, k, output, input};
-  double_dispatch(args.output.dim(), args.output.type().code(), TriluImpl<KIND>{}, args);
+  double_dispatch(args.output.dim(), args.output.type().code(), TriluImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

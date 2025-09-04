@@ -33,6 +33,9 @@ void CopyBlockImpl<VariantKind::CPU>::operator()(void* dst, const void* src, siz
 
 template <Type::Code CODE>
 struct BatchedTransposeImplBody<VariantKind::CPU, CODE> {
+  TaskContext context;
+  explicit BatchedTransposeImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   static constexpr int tile_size = 64;

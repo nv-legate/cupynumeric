@@ -31,6 +31,9 @@ struct ArangeImplBody;
 
 template <VariantKind KIND>
 struct ArangeImpl {
+  TaskContext context;
+  explicit ArangeImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(ArangeArgs& args) const
   {
@@ -47,7 +50,7 @@ struct ArangeImpl {
     const auto start = args.start.value<VAL>();
     const auto step  = args.step.value<VAL>();
 
-    ArangeImplBody<KIND, VAL>{}(out, rect, start, step);
+    ArangeImplBody<KIND, VAL>{context}(out, rect, start, step);
   }
 };
 
@@ -55,7 +58,7 @@ template <VariantKind KIND>
 static void arange_template(TaskContext& context)
 {
   ArangeArgs args{context.output(0), context.scalar(0), context.scalar(1)};
-  type_dispatch(args.out.code(), ArangeImpl<KIND>{}, args);
+  type_dispatch(args.out.code(), ArangeImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

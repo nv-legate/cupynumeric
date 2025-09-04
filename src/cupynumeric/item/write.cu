@@ -29,9 +29,12 @@ static __global__ void __launch_bounds__(1, 1)
 
 template <typename VAL, int DIM>
 struct WriteImplBody<VariantKind::GPU, VAL, DIM> {
+  TaskContext context;
+  explicit WriteImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<VAL, 1>& out, const AccessorRO<VAL, DIM>& value) const
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     write_value<VAL, DIM><<<1, 1, 0, stream>>>(out, value);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }

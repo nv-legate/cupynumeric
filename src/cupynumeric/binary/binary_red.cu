@@ -56,6 +56,9 @@ static __global__ void __launch_bounds__(1, 1) copy_kernel(Buffer result, RedAcc
 
 template <BinaryOpCode OP_CODE, Type::Code CODE, int DIM>
 struct BinaryRedImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
+  TaskContext context;
+  explicit BinaryRedImplBody(TaskContext context) : context(context) {}
+
   using OP  = BinaryOp<OP_CODE, CODE>;
   using ARG = type_of<CODE>;
 
@@ -70,7 +73,7 @@ struct BinaryRedImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
   {
     size_t volume       = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     DeviceScalarReductionBuffer<ProdReduction<bool>> result(stream);
     if (dense) {
       auto in1ptr = in1.ptr(rect);

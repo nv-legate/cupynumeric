@@ -30,6 +30,9 @@ struct ConvertImplBody;
 
 template <VariantKind KIND, ConvertCode NAN_OP, Type::Code SRC_TYPE>
 struct ConvertImpl {
+  TaskContext context;
+  explicit ConvertImpl(TaskContext context) : context(context) {}
+
   template <Type::Code DST_TYPE, int DIM, std::enable_if_t<SRC_TYPE != DST_TYPE>* = nullptr>
   void operator()(ConvertArgs& args) const
   {
@@ -58,7 +61,8 @@ struct ConvertImpl {
 #endif
 
     OP func{};
-    ConvertImplBody<KIND, NAN_OP, DST_TYPE, SRC_TYPE, DIM>()(func, out, in, pitches, rect, dense);
+    ConvertImplBody<KIND, NAN_OP, DST_TYPE, SRC_TYPE, DIM>{context}(
+      func, out, in, pitches, rect, dense);
   }
 
   template <Type::Code DST_TYPE, int DIM, std::enable_if_t<SRC_TYPE == DST_TYPE>* = nullptr>
@@ -70,6 +74,9 @@ struct ConvertImpl {
 
 template <VariantKind KIND, Type::Code SRC_TYPE>
 struct ConvertDispatch {
+  TaskContext context;
+  explicit ConvertDispatch(TaskContext context) : context(context) {}
+
   template <ConvertCode NAN_OP,
             std::enable_if_t<(legate::is_floating_point<SRC_TYPE>::value ||
                               legate::is_complex<SRC_TYPE>::value) ||
@@ -77,7 +84,7 @@ struct ConvertDispatch {
   void operator()(ConvertArgs& args) const
   {
     auto dim = std::max(1, args.out.dim());
-    double_dispatch(dim, args.out.code(), ConvertImpl<KIND, NAN_OP, SRC_TYPE>{}, args);
+    double_dispatch(dim, args.out.code(), ConvertImpl<KIND, NAN_OP, SRC_TYPE>{context}, args);
   }
 
   template <ConvertCode NAN_OP,
@@ -92,10 +99,13 @@ struct ConvertDispatch {
 
 template <VariantKind KIND>
 struct SourceTypeDispatch {
+  TaskContext context;
+  explicit SourceTypeDispatch(TaskContext context) : context(context) {}
+
   template <Type::Code SRC_TYPE>
   void operator()(ConvertArgs& args) const
   {
-    op_dispatch(args.nan_op, ConvertDispatch<KIND, SRC_TYPE>{}, args);
+    op_dispatch(args.nan_op, ConvertDispatch<KIND, SRC_TYPE>{context}, args);
   }
 };
 
@@ -103,7 +113,7 @@ template <VariantKind KIND>
 static void convert_template(TaskContext& context)
 {
   ConvertArgs args{context.output(0), context.input(0), context.scalar(0).value<ConvertCode>()};
-  type_dispatch(args.in.code(), SourceTypeDispatch<KIND>{}, args);
+  type_dispatch(args.in.code(), SourceTypeDispatch<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

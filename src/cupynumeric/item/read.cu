@@ -29,9 +29,12 @@ static __global__ void __launch_bounds__(1, 1)
 
 template <typename VAL>
 struct ReadImplBody<VariantKind::GPU, VAL> {
+  TaskContext context;
+  explicit ReadImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, 1> out, AccessorRO<VAL, 1> in) const
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     read_value<VAL><<<1, 1, 0, stream>>>(out, in);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }

@@ -29,6 +29,9 @@ struct NonzeroImplBody;
 
 template <VariantKind KIND>
 struct NonzeroImpl {
+  TaskContext context;
+  explicit NonzeroImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int32_t DIM>
   void operator()(NonzeroArgs& args) const
   {
@@ -47,7 +50,7 @@ struct NonzeroImpl {
     }
 
     auto in = args.input.read_accessor<VAL, DIM>(rect);
-    NonzeroImplBody<KIND, CODE, DIM>()(args.results, in, pitches, rect, volume);
+    NonzeroImplBody<KIND, CODE, DIM>{context}(args.results, in, pitches, rect, volume);
   }
 };
 
@@ -59,7 +62,7 @@ static void nonzero_template(TaskContext& context)
     outputs.emplace_back(output);
   }
   NonzeroArgs args{context.input(0), std::move(outputs)};
-  double_dispatch(args.input.dim(), args.input.code(), NonzeroImpl<KIND>{}, args);
+  double_dispatch(args.input.dim(), args.input.code(), NonzeroImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

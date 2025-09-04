@@ -29,6 +29,9 @@ struct UnpackbitsImplBody;
 
 template <VariantKind KIND, Bitorder BITORDER>
 struct UnpackbitsImpl {
+  TaskContext context;
+  explicit UnpackbitsImpl(TaskContext context) : context(context) {}
+
   template <int32_t DIM>
   void operator()(PhysicalStore output, PhysicalStore input, uint32_t axis) const
   {
@@ -46,7 +49,7 @@ struct UnpackbitsImpl {
     Pitches<DIM - 1> in_pitches{};
     auto in_volume = in_pitches.flatten(in_rect);
 
-    UnpackbitsImplBody<KIND, DIM, BITORDER>{}(out, in, in_rect, in_pitches, in_volume, axis);
+    UnpackbitsImplBody<KIND, DIM, BITORDER>{context}(out, in, in_rect, in_pitches, in_volume, axis);
   }
 
   template <Type::Code CODE, int32_t DIM, std::enable_if_t<!is_integral<CODE>::value>* = nullptr>
@@ -67,11 +70,12 @@ static void unpackbits_template(TaskContext& context)
 
   switch (bitorder) {
     case Bitorder::BIG: {
-      dim_dispatch(input.dim(), UnpackbitsImpl<KIND, Bitorder::BIG>{}, output, input, axis);
+      dim_dispatch(input.dim(), UnpackbitsImpl<KIND, Bitorder::BIG>{context}, output, input, axis);
       break;
     }
     case Bitorder::LITTLE: {
-      dim_dispatch(input.dim(), UnpackbitsImpl<KIND, Bitorder::LITTLE>{}, output, input, axis);
+      dim_dispatch(
+        input.dim(), UnpackbitsImpl<KIND, Bitorder::LITTLE>{context}, output, input, axis);
       break;
     }
   }

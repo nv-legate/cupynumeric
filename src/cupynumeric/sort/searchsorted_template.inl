@@ -29,6 +29,9 @@ struct SearchSortedImplBody;
 
 template <VariantKind KIND>
 struct SearchSortedImpl {
+  TaskContext context;
+  explicit SearchSortedImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int32_t DIM>
   void operator()(SearchSortedArgs& args) const
   {
@@ -50,17 +53,17 @@ struct SearchSortedImpl {
     assert(rect_values_in == rect_values_out);
     assert(num_values == pitches_values.flatten(rect_values_out));
 
-    SearchSortedImplBody<KIND, CODE, DIM>()(args.input_base,
-                                            args.input_values,
-                                            args.output_reduction,
-                                            rect_base,
-                                            rect_values_in,
-                                            pitches_values,
-                                            args.left,
-                                            args.is_index_space,
-                                            volume,
-                                            args.global_volume,
-                                            num_values);
+    SearchSortedImplBody<KIND, CODE, DIM>{context}(args.input_base,
+                                                   args.input_values,
+                                                   args.output_reduction,
+                                                   rect_base,
+                                                   rect_values_in,
+                                                   pitches_values,
+                                                   args.left,
+                                                   args.is_index_space,
+                                                   volume,
+                                                   args.global_volume,
+                                                   num_values);
   }
 };
 
@@ -78,8 +81,10 @@ static void searchsorted_template(TaskContext& context)
   assert(args.input_base.code() == args.input_values.code());
   assert(args.input_values.dim() == args.output_reduction.dim());
 
-  double_dispatch(
-    std::max(1, args.input_values.dim()), args.input_base.code(), SearchSortedImpl<KIND>{}, args);
+  double_dispatch(std::max(1, args.input_values.dim()),
+                  args.input_base.code(),
+                  SearchSortedImpl<KIND>{context},
+                  args);
 }
 
 }  // namespace cupynumeric

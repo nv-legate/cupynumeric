@@ -45,6 +45,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int32_t DIM>
 struct NonzeroImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit NonzeroImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void populate_nonzeros(const AccessorRO<VAL, DIM>& in,
@@ -72,7 +75,7 @@ struct NonzeroImplBody<VariantKind::GPU, CODE, DIM> {
                   const Rect<DIM>& rect,
                   const size_t volume)
   {
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     auto offsets =
       create_buffer<std::int64_t>(volume, legate::Memory::Kind::GPU_FB_MEM, sizeof(std::int64_t));

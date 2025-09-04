@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int32_t DIM, bool LOWER>
 struct TriluImplBody<VariantKind::OMP, CODE, DIM, LOWER> {
+  TaskContext context;
+  explicit TriluImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   template <bool C_ORDER>

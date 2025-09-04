@@ -681,7 +681,8 @@ __host__ static inline void launch_small_tile_kernel(AccessorWO<VAL, DIM> out,
                                                      const unsigned centers[DIM],
                                                      Point<DIM>& tile,
                                                      unsigned smem_size,
-                                                     size_t max_smem_size)
+                                                     size_t max_smem_size,
+                                                     cudaStream_t stream)
 {
   // Make the tile as big as possible so that it fits in shared memory
   // Try to keep it rectangular to minimize surface-to-volume ratio
@@ -726,7 +727,6 @@ __host__ static inline void launch_small_tile_kernel(AccessorWO<VAL, DIM> out,
   args.tile_volume  = tile_pitch;
   args.input_volume = input_pitch;
   assert((input_pitch * sizeof(VAL)) == smem_size);
-  auto stream = get_cached_stream();
   if (halved) {
     if (tile_pitch < 512) {
       convolution_small_tile1<VAL, DIM><<<blocks, tile_pitch, smem_size, stream>>>(
@@ -753,7 +753,8 @@ __host__ void direct_convolution(AccessorWO<VAL, DIM> out,
                                  AccessorRO<VAL, DIM> in,
                                  const Rect<DIM>& root_rect,
                                  const Rect<DIM>& subrect,
-                                 const Rect<DIM>& filter_rect)
+                                 const Rect<DIM>& filter_rect,
+                                 cudaStream_t stream)
 {
   constexpr int THREADVALS = THREAD_OUTPUTS(VAL);
   // Get the maximum amount of shared memory per threadblock
@@ -828,7 +829,8 @@ __host__ void direct_convolution(AccessorWO<VAL, DIM> out,
                                        centers,
                                        tile,
                                        smem_size,
-                                       max_smem_size);
+                                       max_smem_size,
+                                       stream);
   } else {
     // Large tile case:
     // If we're going to do this, we need to initialize the output to zeros
@@ -1108,7 +1110,6 @@ __host__ void direct_convolution(AccessorWO<VAL, DIM> out,
     }
     // Launch as many kernels as we need to walk over the entire filter
     // Given the L2 filter tile that we came up with
-    auto stream                     = get_cached_stream();
     const Point<DIM, unsigned> zero = Point<DIM, unsigned>::ZEROES();
     const Point<DIM, unsigned> one  = Point<DIM, unsigned>::ONES();
     if (total_l2_filters > 1) {
@@ -1300,7 +1301,8 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
                                               const Rect<DIM>& root_rect,
                                               const Rect<DIM>& subrect,
                                               const Rect<DIM>& filter_rect,
-                                              CuPyNumericConvolveMethod method)
+                                              CuPyNumericConvolveMethod method,
+                                              cudaStream_t stream)
 {
   int device           = get_device_ordinal();
   auto& properties     = get_device_properties();
@@ -1367,13 +1369,14 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
                                        centers,
                                        tile,
                                        smem_size,
-                                       max_smem_size);
+                                       max_smem_size,
+                                       stream);
   } else {
     // Instead of doing the large tile case, we can instead do this
     // by transforming both the input and the filter to the frequency
     // domain using an FFT, perform the convolution with a point-wise
     // multiplication, and then transform the result back to the spatial domain
-    auto stream = get_cached_stream();
+
     // First compute how big our temporary allocation needs to be
     // We'll need two of them to store the zero-padded data for the inputs
     const Point<DIM> zero = Point<DIM>::ZEROES();
@@ -1435,8 +1438,10 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
 
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
-    auto forward_plan  = get_cufft_plan(ForwardPlanType<VAL>::value, cufftPlanParams(fftsize));
-    auto backward_plan = get_cufft_plan(BackwardPlanType<VAL>::value, cufftPlanParams(fftsize));
+    auto forward_plan =
+      get_cufft_plan(ForwardPlanType<VAL>::value, cufftPlanParams(fftsize), stream);
+    auto backward_plan =
+      get_cufft_plan(BackwardPlanType<VAL>::value, cufftPlanParams(fftsize), stream);
 
     // Set the working area for the plans
     auto workarea_size = std::max(forward_plan.workareaSize(), backward_plan.workareaSize());
@@ -1522,6 +1527,9 @@ struct CanUseCUFFT {
 
 template <Type::Code CODE, int DIM>
 struct ConvolveImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit ConvolveImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   template <typename _VAL,
@@ -1535,10 +1543,12 @@ struct ConvolveImplBody<VariantKind::GPU, CODE, DIM> {
                          const Rect<_DIM>& filter_rect,
                          CuPyNumericConvolveMethod method) const
   {
+    auto stream = context.get_task_stream();
     if (method == CUPYNUMERIC_CONVOLVE_DIRECT) {
-      direct_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect);
+      direct_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect, stream);
     } else {
-      cufft_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect, method);
+      cufft_convolution<_VAL, _DIM>(
+        out, filter, in, root_rect, subrect, filter_rect, method, stream);
     }
   }
 
@@ -1553,7 +1563,8 @@ struct ConvolveImplBody<VariantKind::GPU, CODE, DIM> {
                          const Rect<_DIM>& filter_rect,
                          CuPyNumericConvolveMethod method) const
   {
-    direct_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect);
+    auto stream = context.get_task_stream();
+    direct_convolution<_VAL, _DIM>(out, filter, in, root_rect, subrect, filter_rect, stream);
   }
 
   __host__ void operator()(AccessorWO<VAL, DIM> out,

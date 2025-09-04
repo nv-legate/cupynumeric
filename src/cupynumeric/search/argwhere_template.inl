@@ -29,6 +29,9 @@ struct ArgWhereImplBody;
 
 template <VariantKind KIND>
 struct ArgWhereImpl {
+  TaskContext context;
+  explicit ArgWhereImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(ArgWhereArgs& args) const
   {
@@ -45,7 +48,7 @@ struct ArgWhereImpl {
     }
 
     auto in = args.in.read_accessor<VAL, DIM>(rect_in);
-    ArgWhereImplBody<KIND, CODE, DIM>()(args.out, in, pitches, rect_in, volume);
+    ArgWhereImplBody<KIND, CODE, DIM>{context}(args.out, in, pitches, rect_in, volume);
   }
 };
 
@@ -53,7 +56,7 @@ template <VariantKind KIND>
 static void argwhere_template(TaskContext& context)
 {
   ArgWhereArgs args{context.output(0), context.input(0)};
-  double_dispatch(args.in.dim(), args.in.code(), ArgWhereImpl<KIND>{}, args);
+  double_dispatch(args.in.dim(), args.in.code(), ArgWhereImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

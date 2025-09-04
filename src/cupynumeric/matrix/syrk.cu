@@ -24,60 +24,80 @@ namespace cupynumeric {
 using namespace legate;
 
 template <typename Syrk, typename VAL, typename CONS>
-static inline void syrk_template(
-  Syrk syrk, VAL* lhs, const VAL* rhs, int32_t m, int32_t n, CONS _fake_param_for_type_inference)
+static inline void syrk_template(Syrk syrk,
+                                 VAL* lhs,
+                                 const VAL* rhs,
+                                 int32_t m,
+                                 int32_t n,
+                                 CONS _fake_param_for_type_inference,
+                                 cudaStream_t stream)
 {
-  auto context = get_cublas();
-  auto stream  = get_cached_stream();
-  CHECK_CUBLAS(cublasSetStream(context, stream));
+  auto cu_context = get_cublas();
+  CHECK_CUBLAS(cublasSetStream(cu_context, stream));
 
   auto uplo  = CUBLAS_FILL_MODE_LOWER;
   auto trans = CUBLAS_OP_N;
   CONS alpha = -1.0;
   CONS beta  = 1.0;
 
-  CHECK_CUBLAS(syrk(context, uplo, trans, m, n, &alpha, rhs, m, &beta, lhs, m));
+  CHECK_CUBLAS(syrk(cu_context, uplo, trans, m, n, &alpha, rhs, m, &beta, lhs, m));
 
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 }
 
 template <>
 struct SyrkImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit SyrkImplBody(TaskContext context) : context(context) {}
+
   void operator()(float* lhs, const float* rhs, int32_t m, int32_t n)
   {
-    syrk_template(cublasSsyrk, lhs, rhs, m, n, static_cast<float>(0));
+    auto stream = context.get_task_stream();
+    syrk_template(cublasSsyrk, lhs, rhs, m, n, static_cast<float>(0), stream);
   }
 };
 
 template <>
 struct SyrkImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit SyrkImplBody(TaskContext context) : context(context) {}
+
   void operator()(double* lhs, const double* rhs, int32_t m, int32_t n)
   {
-    syrk_template(cublasDsyrk, lhs, rhs, m, n, static_cast<double>(0));
+    auto stream = context.get_task_stream();
+    syrk_template(cublasDsyrk, lhs, rhs, m, n, static_cast<double>(0), stream);
   }
 };
 
 template <>
 struct SyrkImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit SyrkImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<float>* lhs_, const complex<float>* rhs_, int32_t m, int32_t n)
   {
-    auto lhs = reinterpret_cast<cuComplex*>(lhs_);
-    auto rhs = reinterpret_cast<const cuComplex*>(rhs_);
+    auto stream = context.get_task_stream();
+    auto lhs    = reinterpret_cast<cuComplex*>(lhs_);
+    auto rhs    = reinterpret_cast<const cuComplex*>(rhs_);
 
-    syrk_template(cublasCherk, lhs, rhs, m, n, static_cast<float>(0));
+    syrk_template(cublasCherk, lhs, rhs, m, n, static_cast<float>(0), stream);
   }
 };
 
 template <>
 struct SyrkImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit SyrkImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<double>* lhs_, const complex<double>* rhs_, int32_t m, int32_t n)
   {
-    auto lhs = reinterpret_cast<cuDoubleComplex*>(lhs_);
-    auto rhs = reinterpret_cast<const cuDoubleComplex*>(rhs_);
+    auto stream = context.get_task_stream();
+    auto lhs    = reinterpret_cast<cuDoubleComplex*>(lhs_);
+    auto rhs    = reinterpret_cast<const cuDoubleComplex*>(rhs_);
 
     // TODO: We're not actually calling syrk but calling hekr instead here,
     //       as this task is used only for Cholesky factorization.
-    syrk_template(cublasZherk, lhs, rhs, m, n, static_cast<double>(0));
+    syrk_template(cublasZherk, lhs, rhs, m, n, static_cast<double>(0), stream);
   }
 };
 

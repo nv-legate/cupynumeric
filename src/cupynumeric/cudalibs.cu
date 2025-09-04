@@ -138,7 +138,7 @@ struct cufftPlanCache {
   ~cufftPlanCache();
 
  public:
-  cufftPlan* get_cufft_plan(const cufftPlanParams& params);
+  cufftPlan* get_cufft_plan(const cufftPlanParams& params, cudaStream_t stream);
 
  private:
   using Cache = std::array<LRUEntry, MAX_PLANS>;
@@ -168,7 +168,7 @@ cufftPlanCache::~cufftPlanCache()
   }
 }
 
-cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params)
+cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params, cudaStream_t stream)
 {
   cache_requests_++;
   int32_t match = -1;
@@ -231,7 +231,6 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params)
     entry.params = std::make_unique<cufftPlanParams>(params);
     result       = entry.plan.get();
 
-    auto stream = get_cached_stream();
     CHECK_CUFFT(cufftCreate(&result->handle));
     CHECK_CUFFT(cufftSetAutoAllocation(result->handle, 0 /*we'll do the allocation*/));
     // this should always be the correct stream, as we have a cache per GPU-proc
@@ -266,7 +265,6 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params)
       }
       entry.lru_index = 0;
     }
-    auto stream = get_cached_stream();
     CHECK_CUFFT(cufftSetStream(result->handle, stream));
   }
   return result;
@@ -419,8 +417,6 @@ const cudaDeviceProp& CUDALibraries::get_device_properties()
   return *device_prop_;
 }
 
-CUstream_st* get_cached_stream() { return Realm::Cuda::get_task_cuda_stream(); }
-
 cublasHandle_t CUDALibraries::get_cublas()
 {
   if (nullptr == cublas_) {
@@ -446,12 +442,12 @@ cusolverDnHandle_t CUDALibraries::get_cusolver()
 }
 
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-cusolverMpHandle_t CUDALibraries::get_cusolvermp()
+cusolverMpHandle_t CUDALibraries::get_cusolvermp(cudaStream_t stream)
 {
   if (nullptr == cusolvermp_) {
     int device = -1;
     CUPYNUMERIC_CHECK_CUDA(cudaGetDevice(&device));
-    CHECK_CUSOLVER(cusolverMpCreate(&cusolvermp_, device, get_cached_stream()));
+    CHECK_CUSOLVER(cusolverMpCreate(&cusolvermp_, device, stream));
   }
   return cusolvermp_;
 }
@@ -465,7 +461,9 @@ const cutensorHandle_t& CUDALibraries::get_cutensor()
   return *cutensor_;
 }
 
-cufftContext CUDALibraries::get_cufft_plan(cufftType type, const cufftPlanParams& params)
+cufftContext CUDALibraries::get_cufft_plan(cufftType type,
+                                           const cufftPlanParams& params,
+                                           cudaStream_t stream)
 {
   auto finder = plan_caches_.find(type);
   cufftPlanCache* cache{nullptr};
@@ -476,7 +474,7 @@ cufftContext CUDALibraries::get_cufft_plan(cufftType type, const cufftPlanParams
   } else {
     cache = finder->second;
   }
-  return cufftContext(cache->get_cufft_plan(params));
+  return cufftContext(cache->get_cufft_plan(params, stream));
 }
 
 static CUDALibraries& get_cuda_libraries(legate::Processor proc)
@@ -517,11 +515,11 @@ CuSolverExtraSymbols* get_cusolver_extra_symbols()
 }
 
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-cusolverMpHandle* get_cusolvermp()
+cusolverMpHandle* get_cusolvermp(cudaStream_t stream)
 {
   const auto proc = legate::Processor::get_executing_processor();
   auto& lib       = get_cuda_libraries(proc);
-  return lib.get_cusolvermp();
+  return lib.get_cusolvermp(stream);
 }
 #endif
 
@@ -532,11 +530,11 @@ const cutensorHandle_t& get_cutensor()
   return lib.get_cutensor();
 }
 
-cufftContext get_cufft_plan(cufftType type, const cufftPlanParams& params)
+cufftContext get_cufft_plan(cufftType type, const cufftPlanParams& params, cudaStream_t stream)
 {
   const auto proc = legate::Processor::get_executing_processor();
   auto& lib       = get_cuda_libraries(proc);
-  return lib.get_cufft_plan(type, params);
+  return lib.get_cufft_plan(type, params, stream);
 }
 
 const cudaDeviceProp& get_device_properties()
@@ -567,7 +565,7 @@ class LoadCUDALibsTask : public CuPyNumericTask<LoadCUDALibsTask> {
     lib.get_cusolver();
     auto* extra = get_cusolver_extra_symbols();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-    lib.get_cusolvermp();
+    lib.get_cusolvermp(context.get_task_stream());
 #endif
     static_cast<void>(lib.get_cutensor());
   }

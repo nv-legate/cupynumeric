@@ -387,7 +387,8 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
                                                                 size_t p_c,
                                                                 size_t tile_r,
                                                                 size_t tile_c,
-                                                                comm::Communicator comm_wrapper)
+                                                                comm::Communicator comm_wrapper,
+                                                                TaskContext context)
 {
   assert(volume == 0 || is_device_only_ptr(input));
 
@@ -396,7 +397,7 @@ std::tuple<Buffer<VAL>, size_t, size_t> repartition_matrix_2dbc(const VAL* input
   size_t num_rows = row_major ? volume / lld : lld;
 
   auto comm   = comm_wrapper.get<ncclComm_t*>();
-  auto stream = get_cached_stream();
+  auto stream = context.get_task_stream();
 
   int nccl_rank  = -1;
   int nccl_ranks = -1;
@@ -593,12 +594,13 @@ void repartition_matrix_block(
   // TODO optimize -- we would like to provide a global mapping to skip additional communication
   size_t target_offset_r,
   size_t target_offset_c,
-  comm::Communicator comm_wrapper)
+  comm::Communicator comm_wrapper,
+  TaskContext context)
 {
   auto num_ranks = p_r * p_c;
 
   auto comm   = comm_wrapper.get<ncclComm_t*>();
-  auto stream = get_cached_stream();
+  auto stream = context.get_task_stream();
 
   size_t num_input_rows = input_volume > 0 ? input_lld : 0;
   size_t num_input_cols = input_volume > 0 ? input_volume / input_lld : 0;
@@ -966,7 +968,8 @@ repartition_matrix_2dbc<type_of<Type::Code::BOOL>>(const type_of<Type::Code::BOO
                                                    size_t,
                                                    size_t,
                                                    size_t,
-                                                   comm::Communicator);
+                                                   comm::Communicator,
+                                                   TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::BOOL>>(Buffer<type_of<Type::Code::BOOL>>,
                                                                   size_t,
                                                                   size_t,
@@ -983,7 +986,8 @@ template void repartition_matrix_block<type_of<Type::Code::BOOL>>(Buffer<type_of
                                                                   bool,
                                                                   size_t,
                                                                   size_t,
-                                                                  comm::Communicator);
+                                                                  comm::Communicator,
+                                                                  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::INT8>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::INT8>>(const type_of<Type::Code::INT8>*,
                                                    size_t,
@@ -995,7 +999,8 @@ repartition_matrix_2dbc<type_of<Type::Code::INT8>>(const type_of<Type::Code::INT
                                                    size_t,
                                                    size_t,
                                                    size_t,
-                                                   comm::Communicator);
+                                                   comm::Communicator,
+                                                   TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::INT8>>(Buffer<type_of<Type::Code::INT8>>,
                                                                   size_t,
                                                                   size_t,
@@ -1012,7 +1017,8 @@ template void repartition_matrix_block<type_of<Type::Code::INT8>>(Buffer<type_of
                                                                   bool,
                                                                   size_t,
                                                                   size_t,
-                                                                  comm::Communicator);
+                                                                  comm::Communicator,
+                                                                  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::INT16>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::INT16>>(const type_of<Type::Code::INT16>*,
                                                     size_t,
@@ -1024,7 +1030,8 @@ repartition_matrix_2dbc<type_of<Type::Code::INT16>>(const type_of<Type::Code::IN
                                                     size_t,
                                                     size_t,
                                                     size_t,
-                                                    comm::Communicator);
+                                                    comm::Communicator,
+                                                    TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::INT16>>(
   Buffer<type_of<Type::Code::INT16>>,
   size_t,
@@ -1042,7 +1049,8 @@ template void repartition_matrix_block<type_of<Type::Code::INT16>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::INT32>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::INT32>>(const type_of<Type::Code::INT32>*,
                                                     size_t,
@@ -1054,7 +1062,8 @@ repartition_matrix_2dbc<type_of<Type::Code::INT32>>(const type_of<Type::Code::IN
                                                     size_t,
                                                     size_t,
                                                     size_t,
-                                                    comm::Communicator);
+                                                    comm::Communicator,
+                                                    TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::INT32>>(
   Buffer<type_of<Type::Code::INT32>>,
   size_t,
@@ -1072,7 +1081,8 @@ template void repartition_matrix_block<type_of<Type::Code::INT32>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::INT64>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::INT64>>(const type_of<Type::Code::INT64>*,
                                                     size_t,
@@ -1084,7 +1094,8 @@ repartition_matrix_2dbc<type_of<Type::Code::INT64>>(const type_of<Type::Code::IN
                                                     size_t,
                                                     size_t,
                                                     size_t,
-                                                    comm::Communicator);
+                                                    comm::Communicator,
+                                                    TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::INT64>>(
   Buffer<type_of<Type::Code::INT64>>,
   size_t,
@@ -1102,7 +1113,8 @@ template void repartition_matrix_block<type_of<Type::Code::INT64>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::UINT8>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::UINT8>>(const type_of<Type::Code::UINT8>*,
                                                     size_t,
@@ -1114,7 +1126,8 @@ repartition_matrix_2dbc<type_of<Type::Code::UINT8>>(const type_of<Type::Code::UI
                                                     size_t,
                                                     size_t,
                                                     size_t,
-                                                    comm::Communicator);
+                                                    comm::Communicator,
+                                                    TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::UINT8>>(
   Buffer<type_of<Type::Code::UINT8>>,
   size_t,
@@ -1132,7 +1145,8 @@ template void repartition_matrix_block<type_of<Type::Code::UINT8>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::UINT16>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::UINT16>>(const type_of<Type::Code::UINT16>*,
                                                      size_t,
@@ -1144,7 +1158,8 @@ repartition_matrix_2dbc<type_of<Type::Code::UINT16>>(const type_of<Type::Code::U
                                                      size_t,
                                                      size_t,
                                                      size_t,
-                                                     comm::Communicator);
+                                                     comm::Communicator,
+                                                     TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::UINT16>>(
   Buffer<type_of<Type::Code::UINT16>>,
   size_t,
@@ -1162,7 +1177,8 @@ template void repartition_matrix_block<type_of<Type::Code::UINT16>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::UINT32>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::UINT32>>(const type_of<Type::Code::UINT32>*,
                                                      size_t,
@@ -1174,7 +1190,8 @@ repartition_matrix_2dbc<type_of<Type::Code::UINT32>>(const type_of<Type::Code::U
                                                      size_t,
                                                      size_t,
                                                      size_t,
-                                                     comm::Communicator);
+                                                     comm::Communicator,
+                                                     TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::UINT32>>(
   Buffer<type_of<Type::Code::UINT32>>,
   size_t,
@@ -1192,7 +1209,8 @@ template void repartition_matrix_block<type_of<Type::Code::UINT32>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::UINT64>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::UINT64>>(const type_of<Type::Code::UINT64>*,
                                                      size_t,
@@ -1204,7 +1222,8 @@ repartition_matrix_2dbc<type_of<Type::Code::UINT64>>(const type_of<Type::Code::U
                                                      size_t,
                                                      size_t,
                                                      size_t,
-                                                     comm::Communicator);
+                                                     comm::Communicator,
+                                                     TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::UINT64>>(
   Buffer<type_of<Type::Code::UINT64>>,
   size_t,
@@ -1222,7 +1241,8 @@ template void repartition_matrix_block<type_of<Type::Code::UINT64>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::FLOAT16>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::FLOAT16>>(const type_of<Type::Code::FLOAT16>*,
                                                       size_t,
@@ -1234,7 +1254,8 @@ repartition_matrix_2dbc<type_of<Type::Code::FLOAT16>>(const type_of<Type::Code::
                                                       size_t,
                                                       size_t,
                                                       size_t,
-                                                      comm::Communicator);
+                                                      comm::Communicator,
+                                                      TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::FLOAT16>>(
   Buffer<type_of<Type::Code::FLOAT16>>,
   size_t,
@@ -1252,7 +1273,8 @@ template void repartition_matrix_block<type_of<Type::Code::FLOAT16>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::FLOAT32>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::FLOAT32>>(const type_of<Type::Code::FLOAT32>*,
                                                       size_t,
@@ -1264,7 +1286,8 @@ repartition_matrix_2dbc<type_of<Type::Code::FLOAT32>>(const type_of<Type::Code::
                                                       size_t,
                                                       size_t,
                                                       size_t,
-                                                      comm::Communicator);
+                                                      comm::Communicator,
+                                                      TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::FLOAT32>>(
   Buffer<type_of<Type::Code::FLOAT32>>,
   size_t,
@@ -1282,7 +1305,8 @@ template void repartition_matrix_block<type_of<Type::Code::FLOAT32>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::FLOAT64>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::FLOAT64>>(const type_of<Type::Code::FLOAT64>*,
                                                       size_t,
@@ -1294,7 +1318,8 @@ repartition_matrix_2dbc<type_of<Type::Code::FLOAT64>>(const type_of<Type::Code::
                                                       size_t,
                                                       size_t,
                                                       size_t,
-                                                      comm::Communicator);
+                                                      comm::Communicator,
+                                                      TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::FLOAT64>>(
   Buffer<type_of<Type::Code::FLOAT64>>,
   size_t,
@@ -1312,7 +1337,8 @@ template void repartition_matrix_block<type_of<Type::Code::FLOAT64>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::COMPLEX64>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::COMPLEX64>>(const type_of<Type::Code::COMPLEX64>*,
                                                         size_t,
@@ -1324,7 +1350,8 @@ repartition_matrix_2dbc<type_of<Type::Code::COMPLEX64>>(const type_of<Type::Code
                                                         size_t,
                                                         size_t,
                                                         size_t,
-                                                        comm::Communicator);
+                                                        comm::Communicator,
+                                                        TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::COMPLEX64>>(
   Buffer<type_of<Type::Code::COMPLEX64>>,
   size_t,
@@ -1342,7 +1369,8 @@ template void repartition_matrix_block<type_of<Type::Code::COMPLEX64>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 template std::tuple<Buffer<type_of<Type::Code::COMPLEX128>>, size_t, size_t>
 repartition_matrix_2dbc<type_of<Type::Code::COMPLEX128>>(const type_of<Type::Code::COMPLEX128>*,
                                                          size_t,
@@ -1354,7 +1382,8 @@ repartition_matrix_2dbc<type_of<Type::Code::COMPLEX128>>(const type_of<Type::Cod
                                                          size_t,
                                                          size_t,
                                                          size_t,
-                                                         comm::Communicator);
+                                                         comm::Communicator,
+                                                         TaskContext context);
 template void repartition_matrix_block<type_of<Type::Code::COMPLEX128>>(
   Buffer<type_of<Type::Code::COMPLEX128>>,
   size_t,
@@ -1372,6 +1401,7 @@ template void repartition_matrix_block<type_of<Type::Code::COMPLEX128>>(
   bool,
   size_t,
   size_t,
-  comm::Communicator);
+  comm::Communicator,
+  TaskContext context);
 
 }  // namespace cupynumeric

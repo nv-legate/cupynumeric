@@ -40,6 +40,9 @@ struct TileImplBody;
 
 template <VariantKind KIND, typename VAL>
 struct TileImpl {
+  TaskContext context;
+  explicit TileImpl(TaskContext context) : context(context) {}
+
   template <int32_t OUT_DIM, int32_t IN_DIM, std::enable_if_t<IN_DIM <= OUT_DIM>* = nullptr>
   void operator()(TileArgs& args) const
   {
@@ -57,7 +60,7 @@ struct TileImpl {
     auto out = args.out.write_accessor<VAL, OUT_DIM>();
     auto in  = args.in.read_accessor<VAL, IN_DIM>();
 
-    TileImplBody<KIND, VAL, OUT_DIM, IN_DIM>{}(
+    TileImplBody<KIND, VAL, OUT_DIM, IN_DIM>{context}(
       out_rect, out_pitches, out_volume, in_strides, out, in);
   }
 
@@ -70,11 +73,14 @@ struct TileImpl {
 
 template <VariantKind KIND>
 struct TileDispatch {
+  TaskContext context;
+  explicit TileDispatch(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(TileArgs& args) const
   {
     using VAL = type_of<CODE>;
-    double_dispatch(args.out.dim(), args.in.dim(), TileImpl<KIND, VAL>{}, args);
+    double_dispatch(args.out.dim(), args.in.dim(), TileImpl<KIND, VAL>{context}, args);
   }
 };
 
@@ -82,7 +88,7 @@ template <VariantKind KIND>
 static void tile_template(TaskContext& context)
 {
   TileArgs args{context.input(0), context.output(0)};
-  type_dispatch(args.in.code(), TileDispatch<KIND>{}, args);
+  type_dispatch(args.in.code(), TileDispatch<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

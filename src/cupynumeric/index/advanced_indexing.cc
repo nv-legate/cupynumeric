@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE, int DIM, typename OUT_TYPE>
 struct AdvancedIndexingImplBody<VariantKind::CPU, CODE, DIM, OUT_TYPE> {
+  TaskContext context;
+  explicit AdvancedIndexingImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   template <typename OUT_T>

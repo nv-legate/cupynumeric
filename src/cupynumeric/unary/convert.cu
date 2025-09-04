@@ -46,6 +46,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <ConvertCode NAN_OP, Type::Code DST_TYPE, Type::Code SRC_TYPE, int DIM>
 struct ConvertImplBody<VariantKind::GPU, NAN_OP, DST_TYPE, SRC_TYPE, DIM> {
+  TaskContext context;
+  explicit ConvertImplBody(TaskContext context) : context(context) {}
+
   using OP  = ConvertOp<NAN_OP, DST_TYPE, SRC_TYPE>;
   using SRC = type_of<SRC_TYPE>;
   using DST = type_of<DST_TYPE>;
@@ -59,7 +62,7 @@ struct ConvertImplBody<VariantKind::GPU, NAN_OP, DST_TYPE, SRC_TYPE, DIM> {
   {
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     if (dense) {
       auto outptr = out.ptr(rect);
       auto inptr  = in.ptr(rect);

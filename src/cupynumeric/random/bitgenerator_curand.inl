@@ -1334,6 +1334,9 @@ struct generator_map {
 
 template <VariantKind kind>
 struct BitGeneratorImplBody {
+  TaskContext context;
+  explicit BitGeneratorImplBody(TaskContext context) : context(context) {}
+
   using generator_map_t = generator_map<kind>;
 
   static std::mutex lock_generators;

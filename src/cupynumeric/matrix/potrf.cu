@@ -24,22 +24,25 @@ namespace cupynumeric {
 using namespace legate;
 
 template <typename PotrfBufferSize, typename Potrf, typename VAL>
-static inline void potrf_template(
-  PotrfBufferSize potrfBufferSize, Potrf potrf, VAL* array, int32_t m, int32_t n)
+static inline void potrf_template(PotrfBufferSize potrfBufferSize,
+                                  Potrf potrf,
+                                  VAL* array,
+                                  int32_t m,
+                                  int32_t n,
+                                  cudaStream_t stream)
 {
   auto uplo = CUBLAS_FILL_MODE_LOWER;
 
-  auto context = get_cusolver();
-  auto stream  = get_cached_stream();
-  CHECK_CUSOLVER(cusolverDnSetStream(context, stream));
+  auto cu_context = get_cusolver();
+  CHECK_CUSOLVER(cusolverDnSetStream(cu_context, stream));
 
   int32_t bufferSize;
-  CHECK_CUSOLVER(potrfBufferSize(context, uplo, n, array, m, &bufferSize));
+  CHECK_CUSOLVER(potrfBufferSize(cu_context, uplo, n, array, m, &bufferSize));
 
   auto buffer = create_buffer<VAL>(bufferSize, Memory::Kind::GPU_FB_MEM);
   auto info   = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
 
-  CHECK_CUSOLVER(potrf(context, uplo, n, array, m, buffer.ptr(0), bufferSize, info.ptr(0)));
+  CHECK_CUSOLVER(potrf(cu_context, uplo, n, array, m, buffer.ptr(0), bufferSize, info.ptr(0)));
 
   // TODO: We need a deferred exception to avoid this synchronization
   CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
@@ -55,7 +58,8 @@ void PotrfImplBody<VariantKind::GPU, Type::Code::FLOAT32>::operator()(float* arr
                                                                       int32_t m,
                                                                       int32_t n)
 {
-  potrf_template(cusolverDnSpotrf_bufferSize, cusolverDnSpotrf, array, m, n);
+  auto stream = context.get_task_stream();
+  potrf_template(cusolverDnSpotrf_bufferSize, cusolverDnSpotrf, array, m, n, stream);
 }
 
 template <>
@@ -63,7 +67,8 @@ void PotrfImplBody<VariantKind::GPU, Type::Code::FLOAT64>::operator()(double* ar
                                                                       int32_t m,
                                                                       int32_t n)
 {
-  potrf_template(cusolverDnDpotrf_bufferSize, cusolverDnDpotrf, array, m, n);
+  auto stream = context.get_task_stream();
+  potrf_template(cusolverDnDpotrf_bufferSize, cusolverDnDpotrf, array, m, n, stream);
 }
 
 template <>
@@ -71,8 +76,13 @@ void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64>::operator()(complex<
                                                                         int32_t m,
                                                                         int32_t n)
 {
-  potrf_template(
-    cusolverDnCpotrf_bufferSize, cusolverDnCpotrf, reinterpret_cast<cuComplex*>(array), m, n);
+  auto stream = context.get_task_stream();
+  potrf_template(cusolverDnCpotrf_bufferSize,
+                 cusolverDnCpotrf,
+                 reinterpret_cast<cuComplex*>(array),
+                 m,
+                 n,
+                 stream);
 }
 
 template <>
@@ -80,8 +90,13 @@ void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX128>::operator()(complex
                                                                          int32_t m,
                                                                          int32_t n)
 {
-  potrf_template(
-    cusolverDnZpotrf_bufferSize, cusolverDnZpotrf, reinterpret_cast<cuDoubleComplex*>(array), m, n);
+  auto stream = context.get_task_stream();
+  potrf_template(cusolverDnZpotrf_bufferSize,
+                 cusolverDnZpotrf,
+                 reinterpret_cast<cuDoubleComplex*>(array),
+                 m,
+                 n,
+                 stream);
 }
 
 /*static*/ void PotrfTask::gpu_variant(TaskContext context)

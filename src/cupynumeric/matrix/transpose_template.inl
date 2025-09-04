@@ -28,6 +28,9 @@ struct TransposeImplBody;
 
 template <VariantKind KIND>
 struct TransposeImpl {
+  TaskContext context;
+  explicit TransposeImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(TransposeArgs& args) const
   {
@@ -41,7 +44,7 @@ struct TransposeImpl {
     auto out = args.out.write_accessor<VAL, 2>();
     auto in  = args.in.read_accessor<VAL, 2>();
 
-    TransposeImplBody<KIND, CODE>{}(rect, out, in);
+    TransposeImplBody<KIND, CODE>{context}(rect, out, in);
   }
 };
 
@@ -52,7 +55,7 @@ static void transpose_template(TaskContext& context)
   auto input  = context.input(0);
 
   TransposeArgs args{output, input};
-  type_dispatch(input.type().code(), TransposeImpl<KIND>{}, args);
+  type_dispatch(input.type().code(), TransposeImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

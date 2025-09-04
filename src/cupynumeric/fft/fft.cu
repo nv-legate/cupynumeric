@@ -69,10 +69,9 @@ __host__ static inline void cufft_operation(AccessorWO<OUTPUT_TYPE, DIM> out,
                                             const Rect<DIM>& in_rect,
                                             std::vector<int64_t>& axes,
                                             CuPyNumericFFTType type,
-                                            CuPyNumericFFTDirection direction)
+                                            CuPyNumericFFTDirection direction,
+                                            cudaStream_t stream)
 {
-  auto stream = get_cached_stream();
-
   size_t num_elements;
   dim_t n[DIM];
   dim_t inembed[DIM];
@@ -92,8 +91,8 @@ __host__ static inline void cufft_operation(AccessorWO<OUTPUT_TYPE, DIM> out,
   }
 
   // get plan from cache
-  auto cufft_context =
-    get_cufft_plan((cufftType)type, cufftPlanParams(DIM, n, inembed, 1, 1, onembed, 1, 1, 1));
+  auto cufft_context = get_cufft_plan(
+    (cufftType)type, cufftPlanParams(DIM, n, inembed, 1, 1, onembed, 1, 1, 1), stream);
 
   if (cufft_context.workareaSize() > 0) {
     auto workarea_buffer =
@@ -125,10 +124,9 @@ __host__ static inline void cufft_over_axes_c2c(INOUT_TYPE* out,
                                                 const Rect<DIM>& inout_rect,
                                                 std::vector<int64_t>& axes,
                                                 CuPyNumericFFTType type,
-                                                CuPyNumericFFTDirection direction)
+                                                CuPyNumericFFTDirection direction,
+                                                cudaStream_t stream)
 {
-  auto stream = get_cached_stream();
-
   dim_t n[DIM];
 
   // Full volume dimensions / strides
@@ -171,8 +169,10 @@ __host__ static inline void cufft_over_axes_c2c(INOUT_TYPE* out,
     dim_t dist = (axis == DIM - 1) ? size_1d : 1;
 
     // get plan from cache
-    auto cufft_context = get_cufft_plan(
-      (cufftType)type, cufftPlanParams(1, &size_1d, n, stride, dist, n, stride, dist, batches));
+    auto cufft_context =
+      get_cufft_plan((cufftType)type,
+                     cufftPlanParams(1, &size_1d, n, stride, dist, n, stride, dist, batches),
+                     stream);
 
     if (cufft_context.workareaSize() > 0) {
       if (cufft_context.workareaSize() > last_workarea_size) {
@@ -205,10 +205,9 @@ __host__ static inline void cufft_r2c_c2r(OUTPUT_TYPE* out,
                                           const Rect<DIM>& in_rect,
                                           const int64_t axis,
                                           CuPyNumericFFTType type,
-                                          CuPyNumericFFTDirection direction)
+                                          CuPyNumericFFTDirection direction,
+                                          cudaStream_t stream)
 {
-  auto stream = get_cached_stream();
-
   dim_t n[DIM];
   dim_t inembed[DIM];
   dim_t onembed[DIM];
@@ -254,7 +253,8 @@ __host__ static inline void cufft_r2c_c2r(OUTPUT_TYPE* out,
   // get plan from cache
   auto cufft_context = get_cufft_plan(
     (cufftType)type,
-    cufftPlanParams(1, &size_1d, inembed, istride, idist, onembed, ostride, odist, batches));
+    cufftPlanParams(1, &size_1d, inembed, istride, idist, onembed, ostride, odist, batches),
+    stream);
 
   if (cufft_context.workareaSize() > 0) {
     auto workarea_buffer =
@@ -283,7 +283,8 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
                                             const Rect<DIM>& in_rect,
                                             std::vector<int64_t>& axes,
                                             CuPyNumericFFTType type,
-                                            CuPyNumericFFTDirection direction)
+                                            CuPyNumericFFTDirection direction,
+                                            cudaStream_t stream)
 {
   bool is_c2c = (type == CUPYNUMERIC_FFT_Z2Z || type == CUPYNUMERIC_FFT_C2C);
   bool is_r2c = !is_c2c && (type == CUPYNUMERIC_FFT_D2Z || type == CUPYNUMERIC_FFT_R2C);
@@ -309,7 +310,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
       auto input_buffer = create_buffer<INPUT_TYPE, DIM>(fft_size_in, Memory::Kind::GPU_FB_MEM);
       in_ptr            = input_buffer.ptr(Point<DIM>::ZEROES());
     }
-    copy_into_buffer<DIM, INPUT_TYPE>(in_ptr, in, in_rect, num_elements_in, get_cached_stream());
+    copy_into_buffer<DIM, INPUT_TYPE>(in_ptr, in, in_rect, num_elements_in, stream);
   }
 
   std::vector<int64_t> c2c_axes(axes.begin(), axes.end() - (is_c2c ? 0 : 1));
@@ -317,31 +318,34 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
   if (is_r2c) {
     // pre-process r2c on last axis
     cufft_r2c_c2r<DIM, OUTPUT_TYPE, INPUT_TYPE>(
-      out.ptr(out_rect.lo), in_ptr, out_rect, in_rect, axes.back(), type, direction);
+      out.ptr(out_rect.lo), in_ptr, out_rect, in_rect, axes.back(), type, direction, stream);
     // run c2c on remaining axes (inplace)
     if (!c2c_axes.empty()) {
       cufft_over_axes_c2c<DIM, OUTPUT_TYPE>(
-        out_ptr, out_ptr, out_rect, c2c_axes, c2c_subtype, direction);
+        out_ptr, out_ptr, out_rect, c2c_axes, c2c_subtype, direction, stream);
     }
   } else if (is_c2c) {
     assert(!c2c_axes.empty());
     // run c2c on all axes (INPUT_TYPE == OUTPUT_TYPE)
     cufft_over_axes_c2c<DIM, INPUT_TYPE>(
-      (INPUT_TYPE*)out_ptr, in_ptr, in_rect, c2c_axes, type, direction);
+      (INPUT_TYPE*)out_ptr, in_ptr, in_rect, c2c_axes, type, direction, stream);
   } else if (is_c2r) {
     // run c2c on all but last axis (inplace)
     if (!c2c_axes.empty()) {
       cufft_over_axes_c2c<DIM, INPUT_TYPE>(
-        in_ptr, in_ptr, in_rect, c2c_axes, c2c_subtype, direction);
+        in_ptr, in_ptr, in_rect, c2c_axes, c2c_subtype, direction, stream);
     }
     // run c2r on last axis
     cufft_r2c_c2r<DIM, OUTPUT_TYPE, INPUT_TYPE>(
-      out_ptr, in_ptr, out_rect, in_rect, axes.back(), type, direction);
+      out_ptr, in_ptr, out_rect, in_rect, axes.back(), type, direction, stream);
   }
 }
 
 template <CuPyNumericFFTType FFT_TYPE, Type::Code CODE_OUT, Type::Code CODE_IN, int32_t DIM>
 struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
+  TaskContext context;
+  explicit FFTImplBody(TaskContext context) : context(context) {}
+
   using INPUT_TYPE  = type_of<CODE_IN>;
   using OUTPUT_TYPE = type_of<CODE_OUT>;
 
@@ -353,19 +357,20 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
                            CuPyNumericFFTDirection direction,
                            bool operate_over_axes) const
   {
+    auto stream = context.get_task_stream();
     assert(out.accessor.is_dense_row_major(out_rect));
     // FFTs are computed as 1D over different axes. Slower than performing the full FFT in a single
     // step.
     if (operate_over_axes || DIM > 3) {
       cufft_over_axes<DIM, OUTPUT_TYPE, INPUT_TYPE>(
-        out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
+        out, in, out_rect, in_rect, axes, FFT_TYPE, direction, stream);
     }
     // If we have one axis per dimension, then it can be done as a single operation (more
     // performant). Only available for DIM <= 3
     else {
       // FFTs are computed as a single step of DIM
       cufft_operation<DIM, OUTPUT_TYPE, INPUT_TYPE>(
-        out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
+        out, in, out_rect, in_rect, axes, FFT_TYPE, direction, stream);
     }
   }
 };

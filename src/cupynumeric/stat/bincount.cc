@@ -23,6 +23,9 @@ using namespace legate;
 
 template <Type::Code CODE>
 struct BincountImplBody<VariantKind::CPU, CODE> {
+  TaskContext context;
+  explicit BincountImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(AccessorRD<SumReduction<int64_t>, true, 1> lhs,

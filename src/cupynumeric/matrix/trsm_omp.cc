@@ -50,6 +50,9 @@ static inline void complex_trsm_template(Trsm trsm, VAL* lhs, const VAL* rhs, in
 
 template <>
 struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit TrsmImplBody(TaskContext context) : context(context) {}
+
   void operator()(float* lhs, const float* rhs, int32_t m, int32_t n)
   {
     trsm_template(cblas_strsm, lhs, rhs, m, n);
@@ -58,6 +61,9 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
 
 template <>
 struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit TrsmImplBody(TaskContext context) : context(context) {}
+
   void operator()(double* lhs, const double* rhs, int32_t m, int32_t n)
   {
     trsm_template(cblas_dtrsm, lhs, rhs, m, n);
@@ -66,6 +72,9 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
 
 template <>
 struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit TrsmImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<float>* lhs_, const complex<float>* rhs_, int32_t m, int32_t n)
   {
     auto lhs = reinterpret_cast<__complex__ float*>(lhs_);
@@ -77,6 +86,9 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
 
 template <>
 struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit TrsmImplBody(TaskContext context) : context(context) {}
+
   void operator()(complex<double>* lhs_, const complex<double>* rhs_, int32_t m, int32_t n)
   {
     auto lhs = reinterpret_cast<__complex__ double*>(lhs_);

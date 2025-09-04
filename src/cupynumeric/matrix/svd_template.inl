@@ -54,6 +54,9 @@ struct real_type<Type::Code::COMPLEX128> {
 
 template <VariantKind KIND>
 struct SvdImpl {
+  TaskContext context;
+  explicit SvdImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_svd<CODE>::value>* = nullptr>
   void operator()(legate::PhysicalStore a_array,
                   legate::PhysicalStore u_array,
@@ -104,14 +107,14 @@ struct SvdImpl {
     assert(m > 0 && n > 0 && k > 0);
 #endif
 
-    SvdImplBody<KIND, CODE>()(m,
-                              n,
-                              k,
-                              full_matrices,
-                              a_acc.ptr(a_shape),
-                              u_acc.ptr(u_shape),
-                              s_acc.ptr(s_shape),
-                              vh_acc.ptr(vh_shape));
+    SvdImplBody<KIND, CODE>{context}(m,
+                                     n,
+                                     k,
+                                     full_matrices,
+                                     a_acc.ptr(a_shape),
+                                     u_acc.ptr(u_shape),
+                                     s_acc.ptr(s_shape),
+                                     vh_acc.ptr(vh_shape));
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_svd<CODE>::value>* = nullptr>
@@ -131,7 +134,7 @@ static void svd_template(TaskContext& context)
   auto u_array  = context.output(0);
   auto s_array  = context.output(1);
   auto vh_array = context.output(2);
-  type_dispatch(a_array.type().code(), SvdImpl<KIND>{}, a_array, u_array, s_array, vh_array);
+  type_dispatch(a_array.type().code(), SvdImpl<KIND>{context}, a_array, u_array, s_array, vh_array);
 }
 
 }  // namespace cupynumeric

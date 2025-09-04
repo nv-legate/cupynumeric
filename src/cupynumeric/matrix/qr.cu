@@ -37,10 +37,10 @@ static inline void qr_template(GeqrfBufferSize geqrf_buffer_size,
                                int32_t k,
                                const VAL* a,
                                VAL* q,
-                               VAL* r)
+                               VAL* r,
+                               cudaStream_t stream)
 {
   auto handle = get_cusolver();
-  auto stream = get_cached_stream();
 
   // m>=n : a[m][n], q[m][n] r[n][n]
   // m<n  : a[m][n], q[m][m] r[m][n]
@@ -113,8 +113,12 @@ static inline void qr_template(GeqrfBufferSize geqrf_buffer_size,
 
 template <>
 struct QrImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m, int32_t n, int32_t k, const float* a, float* q, float* r)
   {
+    auto stream = context.get_task_stream();
     qr_template(cusolverDnSgeqrf_bufferSize,
                 cusolverDnSorgqr_bufferSize,
                 cusolverDnSgeqrf,
@@ -124,14 +128,19 @@ struct QrImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                 k,
                 a,
                 q,
-                r);
+                r,
+                stream);
   }
 };
 
 template <>
 struct QrImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m, int32_t n, int32_t k, const double* a, double* q, double* r)
   {
+    auto stream = context.get_task_stream();
     qr_template(cusolverDnDgeqrf_bufferSize,
                 cusolverDnDorgqr_bufferSize,
                 cusolverDnDgeqrf,
@@ -141,15 +150,20 @@ struct QrImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                 k,
                 a,
                 q,
-                r);
+                r,
+                stream);
   }
 };
 
 template <>
 struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(
     int32_t m, int32_t n, int32_t k, const complex<float>* a, complex<float>* q, complex<float>* r)
   {
+    auto stream = context.get_task_stream();
     qr_template(cusolverDnCgeqrf_bufferSize,
                 cusolverDnCungqr_bufferSize,
                 cusolverDnCgeqrf,
@@ -159,12 +173,16 @@ struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                 k,
                 reinterpret_cast<const cuComplex*>(a),
                 reinterpret_cast<cuComplex*>(q),
-                reinterpret_cast<cuComplex*>(r));
+                reinterpret_cast<cuComplex*>(r),
+                stream);
   }
 };
 
 template <>
 struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
+  TaskContext context;
+  explicit QrImplBody(TaskContext context) : context(context) {}
+
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,
@@ -172,6 +190,7 @@ struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   complex<double>* q,
                   complex<double>* r)
   {
+    auto stream = context.get_task_stream();
     qr_template(cusolverDnZgeqrf_bufferSize,
                 cusolverDnZungqr_bufferSize,
                 cusolverDnZgeqrf,
@@ -181,7 +200,8 @@ struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                 k,
                 reinterpret_cast<const cuDoubleComplex*>(a),
                 reinterpret_cast<cuDoubleComplex*>(q),
-                reinterpret_cast<cuDoubleComplex*>(r));
+                reinterpret_cast<cuDoubleComplex*>(r),
+                stream);
   }
 };
 

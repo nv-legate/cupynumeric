@@ -23,6 +23,9 @@ using namespace legate;
 
 template <typename RNG, typename VAL, int32_t DIM>
 struct RandImplBody<VariantKind::CPU, RNG, VAL, DIM> {
+  TaskContext context;
+  explicit RandImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, DIM> out,
                   const RNG& rng,
                   const Point<DIM>& strides,

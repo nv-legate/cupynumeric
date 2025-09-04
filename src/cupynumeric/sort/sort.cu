@@ -1799,7 +1799,7 @@ struct SortImplBody<VariantKind::GPU, CODE, DIM> {
     // we allow empty domains for distributed sorting
     assert(rect.empty() || input.accessor.is_dense_row_major(rect));
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     bool is_unbound_1d_storage = output_array.is_unbound_store();
     bool need_distributed_sort = segment_size_l != segment_size_g || is_unbound_1d_storage;

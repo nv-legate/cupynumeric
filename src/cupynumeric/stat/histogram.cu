@@ -40,6 +40,9 @@ namespace cupynumeric {
 
 template <Type::Code CODE>
 struct HistogramImplBody<VariantKind::GPU, CODE> {
+  TaskContext context;
+  explicit HistogramImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   // for now, it has been decided to hardcode these types:
@@ -60,7 +63,7 @@ struct HistogramImplBody<VariantKind::GPU, CODE> {
                   const AccessorRD<SumReduction<WeightType>, true, 1>& result,
                   const Rect<1>& result_rect) const
   {
-    auto stream          = get_cached_stream();
+    auto stream          = context.get_task_stream();
     cudaStream_t stream_ = static_cast<cudaStream_t>(stream);
     auto exe_pol         = DEFAULT_POLICY.on(stream);
 

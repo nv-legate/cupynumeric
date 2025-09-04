@@ -46,6 +46,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <typename VAL, int32_t DIM>
 struct FillImplBody<VariantKind::GPU, VAL, DIM> {
+  TaskContext context;
+  explicit FillImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, DIM> out,
                   AccessorRO<VAL, 1> in,
                   const Pitches<DIM - 1>& pitches,
@@ -54,7 +57,7 @@ struct FillImplBody<VariantKind::GPU, VAL, DIM> {
   {
     size_t volume       = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     if (dense) {
       auto outptr = out.ptr(rect);
       dense_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, outptr, in);

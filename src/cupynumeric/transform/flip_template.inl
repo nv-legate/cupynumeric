@@ -29,6 +29,9 @@ struct FlipImplBody;
 
 template <VariantKind KIND>
 struct FlipImpl {
+  TaskContext context;
+  explicit FlipImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(FlipArgs& args) const
   {
@@ -46,7 +49,7 @@ struct FlipImpl {
     auto out = args.out.write_accessor<VAL, DIM>(rect);
     auto in  = args.in.read_accessor<VAL, DIM>(rect);
 
-    FlipImplBody<KIND, CODE, DIM>()(out, in, pitches, rect, args.axes);
+    FlipImplBody<KIND, CODE, DIM>{context}(out, in, pitches, rect, args.axes);
   }
 };
 
@@ -54,7 +57,7 @@ template <VariantKind KIND>
 static void flip_template(TaskContext& context)
 {
   FlipArgs args{context.input(0), context.output(0), context.scalar(0).values<int32_t>()};
-  double_dispatch(args.in.dim(), args.in.code(), FlipImpl<KIND>{}, args);
+  double_dispatch(args.in.dim(), args.in.code(), FlipImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

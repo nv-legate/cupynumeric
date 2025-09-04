@@ -31,6 +31,9 @@ using namespace legate;
 
 template <typename exe_pol_t>
 struct UniqueReduceImpl {
+  TaskContext context;
+  explicit UniqueReduceImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(legate::PhysicalStore output,
                   const std::vector<legate::PhysicalArray>& input_arrs,
@@ -69,7 +72,8 @@ static void unique_reduce_template(TaskContext& context, const exe_pol_t& exe_po
 {
   auto inputs = context.inputs();
   auto output = context.output(0);
-  type_dispatch(output.type().code(), UniqueReduceImpl<exe_pol_t>{}, output, inputs, exe_pol);
+  type_dispatch(
+    output.type().code(), UniqueReduceImpl<exe_pol_t>{context}, output, inputs, exe_pol);
 }
 
 }  // namespace cupynumeric

@@ -48,6 +48,9 @@ struct support_mp_potrf<Type::Code::COMPLEX128> : std::true_type {};
 
 template <VariantKind KIND>
 struct MpPotrfImpl {
+  TaskContext context;
+  explicit MpPotrfImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, std::enable_if_t<support_mp_potrf<CODE>::value>* = nullptr>
   void operator()(int64_t n,
                   int64_t nb,
@@ -112,9 +115,10 @@ struct MpPotrfImpl {
     auto volume   = num_rows * num_cols;
 
     auto [buffer_2dbc, volume_2dbc, lld_2dbc] = repartition_matrix_2dbc(
-      input_arr, volume, false, offset_r, offset_c, lld, nprow, npcol, nb, nb, nccl_comm);
+      input_arr, volume, false, offset_r, offset_c, lld, nprow, npcol, nb, nb, nccl_comm, context);
 
-    MpPotrfImplBody<KIND, CODE>()(cal_comm, nprow, npcol, n, nb, buffer_2dbc.ptr(0), lld_2dbc);
+    MpPotrfImplBody<KIND, CODE>{context}(
+      cal_comm, nprow, npcol, n, nb, buffer_2dbc.ptr(0), lld_2dbc);
 
     repartition_matrix_block(buffer_2dbc,
                              volume_2dbc,
@@ -132,7 +136,8 @@ struct MpPotrfImpl {
                              false,
                              offset_r,
                              offset_c,
-                             nccl_comm);
+                             nccl_comm,
+                             context);
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_mp_potrf<CODE>::value>* = nullptr>
@@ -155,7 +160,7 @@ static void mp_potrf_template(TaskContext& context)
   auto n                             = context.scalar(0).value<int64_t>();
   auto nb                            = context.scalar(1).value<int64_t>();
   type_dispatch(input_array.code(),
-                MpPotrfImpl<KIND>{},
+                MpPotrfImpl<KIND>{context},
                 n,
                 nb,
                 input_array,

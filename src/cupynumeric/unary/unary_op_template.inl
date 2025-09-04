@@ -35,6 +35,9 @@ struct MultiOutUnaryOpImplBody;
 
 template <VariantKind KIND, UnaryOpCode OP_CODE>
 struct UnaryOpImpl {
+  TaskContext context;
+  explicit UnaryOpImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM, std::enable_if_t<UnaryOp<OP_CODE, CODE>::valid>* = nullptr>
   void operator()(UnaryOpArgs& args) const
   {
@@ -63,7 +66,7 @@ struct UnaryOpImpl {
 #endif
 
     OP func{args.args};
-    UnaryOpImplBody<KIND, OP_CODE, CODE, DIM>()(func, out, in, pitches, rect, dense);
+    UnaryOpImplBody<KIND, OP_CODE, CODE, DIM>{context}(func, out, in, pitches, rect, dense);
   }
 
   template <Type::Code CODE, int DIM, std::enable_if_t<!UnaryOp<OP_CODE, CODE>::valid>* = nullptr>
@@ -75,6 +78,9 @@ struct UnaryOpImpl {
 
 template <VariantKind KIND, UnaryOpCode OP_CODE>
 struct MultiOutUnaryOpImpl {
+  TaskContext context;
+  explicit MultiOutUnaryOpImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE,
             int DIM,
             std::enable_if_t<MultiOutUnaryOp<OP_CODE, CODE>::valid>* = nullptr>
@@ -108,7 +114,7 @@ struct MultiOutUnaryOpImpl {
 #endif
 
     OP func{};
-    MultiOutUnaryOpImplBody<KIND, OP_CODE, CODE, DIM>()(
+    MultiOutUnaryOpImplBody<KIND, OP_CODE, CODE, DIM>{context}(
       func, lhs, rhs1, rhs2, pitches, rect, dense);
   }
 
@@ -123,6 +129,9 @@ struct MultiOutUnaryOpImpl {
 
 template <VariantKind KIND>
 struct UnaryCopyImpl {
+  TaskContext context;
+  explicit UnaryCopyImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(UnaryOpArgs& args) const
   {
@@ -160,22 +169,25 @@ struct UnaryCopyImpl {
     bool dense = false;
 #endif
 
-    PointCopyImplBody<KIND, VAL, DIM>()(out, in, pitches, rect, dense);
+    PointCopyImplBody<KIND, VAL, DIM>{context}(out, in, pitches, rect, dense);
   }
 };
 
 template <VariantKind KIND>
 struct UnaryOpDispatch {
+  TaskContext context;
+  explicit UnaryOpDispatch(TaskContext context) : context(context) {}
+
   template <UnaryOpCode OP_CODE>
   void operator()(UnaryOpArgs& args) const
   {
     auto dim = std::max(args.in.dim(), 1);
     if ((OP_CODE == UnaryOpCode::COPY) && (args.in.code() == Type::Code::FIXED_ARRAY)) {
       auto type = args.in.type().as_fixed_array_type();
-      cupynumeric::double_dispatch(dim, type.num_elements(), UnaryCopyImpl<KIND>{}, args);
+      cupynumeric::double_dispatch(dim, type.num_elements(), UnaryCopyImpl<KIND>{context}, args);
     } else {
       auto code = OP_CODE == UnaryOpCode::GETARG ? args.out.code() : args.in.code();
-      legate::double_dispatch(dim, code, UnaryOpImpl<KIND, OP_CODE>{}, args);
+      legate::double_dispatch(dim, code, UnaryOpImpl<KIND, OP_CODE>{context}, args);
     }
   }
 };
@@ -189,14 +201,14 @@ static void unary_op_template(TaskContext& context)
       MultiOutUnaryOpArgs args{context.input(0), context.output(0), context.output(1), op_code};
       auto dim = std::max(args.in.dim(), 1);
       legate::double_dispatch(
-        dim, args.in.code(), MultiOutUnaryOpImpl<KIND, UnaryOpCode::FREXP>{}, args);
+        dim, args.in.code(), MultiOutUnaryOpImpl<KIND, UnaryOpCode::FREXP>{context}, args);
       break;
     }
     case UnaryOpCode::MODF: {
       MultiOutUnaryOpArgs args{context.input(0), context.output(0), context.output(1), op_code};
       auto dim = std::max(args.in.dim(), 1);
       legate::double_dispatch(
-        dim, args.in.code(), MultiOutUnaryOpImpl<KIND, UnaryOpCode::MODF>{}, args);
+        dim, args.in.code(), MultiOutUnaryOpImpl<KIND, UnaryOpCode::MODF>{context}, args);
       break;
     }
     default: {
@@ -209,7 +221,7 @@ static void unary_op_template(TaskContext& context)
       }
 
       UnaryOpArgs args{context.input(0), context.output(0), op_code, std::move(extra_args)};
-      op_dispatch(args.op_code, UnaryOpDispatch<KIND>{}, args);
+      op_dispatch(args.op_code, UnaryOpDispatch<KIND>{context}, args);
       break;
     }
   }

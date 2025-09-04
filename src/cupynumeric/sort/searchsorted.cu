@@ -74,6 +74,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int32_t DIM>
 struct SearchSortedImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit SearchSortedImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const PhysicalStore& input_array,
@@ -94,7 +97,7 @@ struct SearchSortedImplBody<VariantKind::GPU, CODE, DIM> {
     size_t offset = rect_base.lo[0];
 
     const size_t num_blocks_desired = (num_values + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream                     = get_cached_stream();
+    auto stream                     = context.get_task_stream();
     if (left) {
       auto output_reduction =
         output_positions.reduce_accessor<MinReduction<int64_t>, false, DIM>(rect_values);

@@ -51,6 +51,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM) cho
 
 template <Type::Code CODE, int DIM>
 struct ChooseImplBody<VariantKind::GPU, CODE, DIM> {
+  TaskContext context;
+  explicit ChooseImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<VAL, DIM>& out,
@@ -63,7 +66,7 @@ struct ChooseImplBody<VariantKind::GPU, CODE, DIM> {
     const size_t volume = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     if (dense) {
       auto ch_arr = create_buffer<const VAL*>(choices.size(), legate::Memory::Kind::Z_COPY_MEM);
       for (uint32_t idx = 0; idx < choices.size(); ++idx) {

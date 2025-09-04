@@ -30,7 +30,7 @@ using namespace legate;
 template <>
 void CopyBlockImpl<VariantKind::GPU>::operator()(void* dst, const void* src, size_t size)
 {
-  cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToDevice, get_cached_stream());
+  cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToDevice, context.get_task_stream());
 }
 
 template <typename VAL>
@@ -88,6 +88,9 @@ __global__ static void __launch_bounds__((TILE_DIM * BLOCK_ROWS), MIN_CTAS_PER_S
 
 template <Type::Code CODE>
 struct BatchedTransposeImplBody<VariantKind::GPU, CODE> {
+  TaskContext context;
+  explicit BatchedTransposeImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(VAL* out, int n) const
@@ -95,7 +98,7 @@ struct BatchedTransposeImplBody<VariantKind::GPU, CODE> {
     const dim3 blocks((n + TILE_DIM - 1) / TILE_DIM, (n + TILE_DIM - 1) / TILE_DIM, 1);
     const dim3 threads(TILE_DIM, BLOCK_ROWS, 1);
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
 
     // CUDA Potrf produces the full matrix, we only want
     // the lower diagonal

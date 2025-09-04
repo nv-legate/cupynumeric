@@ -33,12 +33,15 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <typename VAL>
 struct EyeImplBody<VariantKind::GPU, VAL> {
+  TaskContext context;
+  explicit EyeImplBody(TaskContext context) : context(context) {}
+
   void operator()(const AccessorWO<VAL, 2>& out,
                   const Point<2>& start,
                   const coord_t distance) const
   {
     const size_t blocks = (distance + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     eye_kernel<VAL><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(out, start, distance);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }

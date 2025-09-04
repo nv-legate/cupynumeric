@@ -29,6 +29,9 @@ struct SelectImplBody;
 
 template <VariantKind KIND>
 struct SelectImpl {
+  TaskContext context;
+  explicit SelectImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM>
   void operator()(SelectArgs& args) const
   {
@@ -71,7 +74,7 @@ struct SelectImpl {
     }
 
     VAL default_value = args.default_value.value<VAL>();
-    SelectImplBody<KIND, CODE, DIM>()(
+    SelectImplBody<KIND, CODE, DIM>{context}(
       out, condlist, choicelist, default_value, out_rect, pitches, dense);
   }
 };
@@ -80,7 +83,7 @@ template <VariantKind KIND>
 static void select_template(TaskContext& context)
 {
   SelectArgs args{context.output(0), context.inputs(), context.scalar(0)};
-  double_dispatch(args.out.dim(), args.out.type().code(), SelectImpl<KIND>{}, args);
+  double_dispatch(args.out.dim(), args.out.type().code(), SelectImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

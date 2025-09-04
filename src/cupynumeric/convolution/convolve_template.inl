@@ -31,6 +31,9 @@ struct ConvolveImplBody;
 
 template <VariantKind KIND>
 struct ConvolveImpl {
+  TaskContext context;
+  explicit ConvolveImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE, int DIM, std::enable_if_t<(DIM <= 3)>* = nullptr>
   void operator()(ConvolveArgs& args) const
   {
@@ -54,7 +57,7 @@ struct ConvolveImpl {
     auto input = args.inputs[0].read_accessor<VAL, DIM>(input_subrect);
 
     Rect<DIM> root_rect(args.root_domain);
-    ConvolveImplBody<KIND, CODE, DIM>()(
+    ConvolveImplBody<KIND, CODE, DIM>{context}(
       out, filter, input, root_rect, subrect, filter_rect, args.method);
   }
 
@@ -88,7 +91,7 @@ static void convolve_template(TaskContext& context)
 
   args.method = static_cast<CuPyNumericConvolveMethod>(context.scalar(1).value<std::int32_t>());
 
-  double_dispatch(args.out.dim(), args.out.code(), ConvolveImpl<KIND>{}, args);
+  double_dispatch(args.out.dim(), args.out.code(), ConvolveImpl<KIND>{context}, args);
 }
 
 template <typename VAL, int DIM>

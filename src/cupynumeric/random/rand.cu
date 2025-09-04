@@ -39,6 +39,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM) ran
 
 template <typename RNG, typename VAL, int32_t DIM>
 struct RandImplBody<VariantKind::GPU, RNG, VAL, DIM> {
+  TaskContext context;
+  explicit RandImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, DIM> out,
                   const RNG& rng,
                   const Point<DIM>& strides,
@@ -47,7 +50,7 @@ struct RandImplBody<VariantKind::GPU, RNG, VAL, DIM> {
   {
     size_t volume       = rect.volume();
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     rand_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       volume, out, rng, strides, pitches, rect.lo);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);

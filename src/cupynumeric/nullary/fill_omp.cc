@@ -28,6 +28,9 @@ struct Identity {
 
 template <typename VAL, int32_t DIM>
 struct FillImplBody<VariantKind::OMP, VAL, DIM> {
+  TaskContext context;
+  explicit FillImplBody(TaskContext context) : context(context) {}
+
   void operator()(AccessorWO<VAL, DIM> out,
                   AccessorRO<VAL, 1> in,
                   const Pitches<DIM - 1>& pitches,

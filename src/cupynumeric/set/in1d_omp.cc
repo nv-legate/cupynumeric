@@ -32,6 +32,9 @@ using namespace legate;
 
 template <Type::Code CODE>
 struct In1dImplBody<VariantKind::OMP, CODE, 1> {
+  TaskContext context;
+  explicit In1dImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorWO<bool, 1>& result,

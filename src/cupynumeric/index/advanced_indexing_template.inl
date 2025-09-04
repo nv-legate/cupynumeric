@@ -29,6 +29,9 @@ struct AdvancedIndexingImplBody;
 
 template <VariantKind KIND>
 struct AdvancedIndexingImpl {
+  TaskContext context;
+  explicit AdvancedIndexingImpl(TaskContext context) : context(context) {}
+
   // current implementaion of the ND-output regions requires all regions
   // to have the same DIM.
   template <Type::Code CODE, int DIM>
@@ -55,10 +58,10 @@ struct AdvancedIndexingImpl {
     }
 
     if (args.is_set) {
-      AdvancedIndexingImplBody<KIND, CODE, DIM, Point<DIM>>{}(
+      AdvancedIndexingImplBody<KIND, CODE, DIM, Point<DIM>>{context}(
         args.output, input_arr, index_arr, input_pitches, input_rect, args.key_dim);
     } else {
-      AdvancedIndexingImplBody<KIND, CODE, DIM, VAL>{}(
+      AdvancedIndexingImplBody<KIND, CODE, DIM, VAL>{context}(
         args.output, input_arr, index_arr, input_pitches, input_rect, args.key_dim);
     }
   }
@@ -72,7 +75,7 @@ static void advanced_indexing_template(TaskContext& context)
   int64_t key_dim = context.scalar(1).value<int64_t>();
   AdvancedIndexingArgs args{context.output(0), context.input(0), context.input(1), is_set, key_dim};
   double_dispatch(
-    args.input_array.dim(), args.input_array.code(), AdvancedIndexingImpl<KIND>{}, args);
+    args.input_array.dim(), args.input_array.code(), AdvancedIndexingImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

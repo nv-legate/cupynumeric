@@ -66,6 +66,9 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 
 template <Type::Code CODE, int DIM>
 struct DiagImplBody<VariantKind::GPU, CODE, DIM, true> {
+  TaskContext context;
+  explicit DiagImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorRD<SumReduction<VAL>, true, DIM>& out,
@@ -90,7 +93,7 @@ struct DiagImplBody<VariantKind::GPU, CODE, DIM, true> {
 
     const size_t blocks = (loop_size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
-    auto stream = get_cached_stream();
+    auto stream = context.get_task_stream();
     diag_extract<VAL><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       out, in, distance, volume, skip_size, start, naxes, m_pitches, m_shape);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
@@ -100,6 +103,9 @@ struct DiagImplBody<VariantKind::GPU, CODE, DIM, true> {
 // not extract (create a new 2D matrix with diagonal from vector)
 template <Type::Code CODE>
 struct DiagImplBody<VariantKind::GPU, CODE, 2, false> {
+  TaskContext context;
+  explicit DiagImplBody(TaskContext context) : context(context) {}
+
   using VAL = type_of<CODE>;
 
   void operator()(const AccessorRO<VAL, 2>& in,
@@ -108,7 +114,7 @@ struct DiagImplBody<VariantKind::GPU, CODE, 2, false> {
                   const size_t distance)
   {
     const size_t blocks = (distance + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    auto stream         = get_cached_stream();
+    auto stream         = context.get_task_stream();
     diag_populate<VAL><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(out, in, distance, start);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }

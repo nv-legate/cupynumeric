@@ -23,6 +23,9 @@ using namespace legate;
 
 template <typename VAL, int32_t OUT_DIM, int32_t IN_DIM>
 struct TileImplBody<VariantKind::OMP, VAL, OUT_DIM, IN_DIM> {
+  TaskContext context;
+  explicit TileImplBody(TaskContext context) : context(context) {}
+
   void operator()(const Rect<OUT_DIM>& out_rect,
                   const Pitches<OUT_DIM - 1>& out_pitches,
                   size_t out_volume,

@@ -41,6 +41,9 @@ using acc_type_of = typename AccTypeOf<VAL>::type;
 
 template <VariantKind KIND>
 struct DotImpl {
+  TaskContext context;
+  explicit DotImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(DotArgs& args) const
   {
@@ -67,7 +70,7 @@ struct DotImpl {
     bool dense = false;
 #endif
 
-    DotImplBody<KIND, CODE>()(lhs, rhs1, rhs2, rect, dense);
+    DotImplBody<KIND, CODE>{context}(lhs, rhs1, rhs2, rect, dense);
   }
 };
 
@@ -76,7 +79,7 @@ static void dot_template(TaskContext& context)
 {
   auto inputs = context.inputs();
   DotArgs args{context.reduction(0), inputs[0], inputs[1]};
-  type_dispatch(args.rhs1.code(), DotImpl<KIND>{}, args);
+  type_dispatch(args.rhs1.code(), DotImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

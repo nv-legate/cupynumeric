@@ -31,6 +31,9 @@ struct EyeImplBody;
 
 template <VariantKind KIND>
 struct EyeImpl {
+  TaskContext context;
+  explicit EyeImpl(TaskContext context) : context(context) {}
+
   template <Type::Code CODE>
   void operator()(EyeArgs& args) const
   {
@@ -64,7 +67,7 @@ struct EyeImpl {
     // Should be the same along both dimensions
     assert(distance == ((stop[1] - start[1]) + 1));
 
-    EyeImplBody<KIND, VAL>{}(out, start, distance);
+    EyeImplBody<KIND, VAL>{context}(out, start, distance);
   }
 };
 
@@ -72,7 +75,7 @@ template <VariantKind KIND>
 static void eye_template(TaskContext& context)
 {
   EyeArgs args{context.output(0), context.scalar(0).value<int32_t>()};
-  type_dispatch(args.out.code(), EyeImpl<KIND>{}, args);
+  type_dispatch(args.out.code(), EyeImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric
