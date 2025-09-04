@@ -154,7 +154,7 @@ requirements:
     - legate ={{ legate_version }}=*{{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cuda-cccl
-    - cutensor >=2.0 =*_*
+    - cutensor >=2.0,<2.3.0.6 =*_*
     - libcublas-dev
     - libcusolver-dev
     - libcufft-dev
@@ -182,7 +182,7 @@ requirements:
     - {{ pin_compatible('libcusolver',  min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufile',    min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
-    - cutensor >=2.0 =*_*              # versioned independently of CUDA
+    - cutensor >=2.0,<2.3.0.6 =*_*     # versioned independently of CUDA; pin to avoid 2.3.0.6 bug
     - nccl >=2.0,<3
     - cupy
     - libnvjitlink

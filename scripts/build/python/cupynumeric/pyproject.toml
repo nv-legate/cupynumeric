@@ -36,7 +36,7 @@ dependencies = [
     "cffi",
     "opt_einsum",
     "legate==25.9.*,>=0.0.0a0",
-    "cutensor-cu12; sys_platform == 'linux'",
+    "cutensor-cu12>=2.0,<2.3.0.6; sys_platform == 'linux'",
     "nvidia-cublas-cu12; sys_platform == 'linux'",
     "nvidia-cufft-cu12; sys_platform == 'linux'",
     "nvidia-cusolver-cu12; sys_platform == 'linux'",
