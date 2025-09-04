@@ -3,7 +3,7 @@
 cmake>=3.26.4,!=3.30.0
 ninja
 nvidia-nccl-cu12
-cutensor-cu12
+cutensor-cu12>=2.0,<2.3.0.6
 scikit-build
 scikit-build-core[pyproject]>=0.10.0
 setuptools_scm
