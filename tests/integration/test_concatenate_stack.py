@@ -114,8 +114,12 @@ def test_concatenate_with_out():
     out_num = num.array(out_np)
 
     np.concatenate((np.array(a), np.array(b)), axis=axis, out=out_np)
-    num.concatenate((num.array(a), num.array(b)), axis=axis, out=out_num)
+    result = num.concatenate(
+        (num.array(a), num.array(b)), axis=axis, out=out_num
+    )
     assert np.array_equal(out_np, out_num)
+    assert np.array_equal(out_num, result)
+    assert isinstance(result, num.ndarray)
 
 
 @pytest.mark.parametrize(

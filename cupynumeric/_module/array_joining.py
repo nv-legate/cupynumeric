@@ -25,6 +25,7 @@ from ..lib.array_utils import normalize_axis_index
 from .array_dimension import _atleast_nd
 from .array_transpose import moveaxis
 from .creation_ranges import arange
+from .creation_data import array
 from .creation_shape import empty, ones, zeros
 from .ssc_searching import flatnonzero
 
@@ -418,13 +419,14 @@ def concatenate(
     try:
         eager_inputs = [_eager(x) for x in inputs]
         eager_out = _eager(out)
-        return np.concatenate(
+        result = np.concatenate(
             eager_inputs,
             axis=axis,
             out=eager_out,
             dtype=dtype,
             casting=casting,
         )
+        return array(result)
     except Exception:
         pass
 
