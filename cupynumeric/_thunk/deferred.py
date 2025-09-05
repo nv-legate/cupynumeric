@@ -52,6 +52,7 @@ from legate.core.utils import OrderedSet
 
 from .. import _ufunc
 from ..lib.array_utils import normalize_axis_tuple
+from .._array.doctor import doctor
 from .._utils.array import (
     is_advanced_indexing,
     max_identity,
@@ -356,6 +357,9 @@ class DeferredArray(NumPyThunk):
             # Return an empty array with the right number of dimensions
             # and type
             return np.empty(shape=self.shape, dtype=self.dtype)
+
+        if settings.doctor():
+            doctor.diagnose("__numpy_array__", (), {})
 
         return np.asarray(
             self.base.get_physical_store().get_inline_allocation()

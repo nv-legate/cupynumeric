@@ -247,7 +247,7 @@ class RepeatedItemOps(Checkup):
         Check for repeated scalar accesses to arrays.
 
         Args:
-            name (str):
+            func (str):
                 Name of the function being invoked
             args (tuple):
                 Any positional arguments the function is being called with
@@ -275,7 +275,56 @@ class RepeatedItemOps(Checkup):
         return None
 
 
-ALL_CHECKS: Final[tuple[Type[Checkup], ...]] = (RepeatedItemOps,)
+class ArrayGatherCheck(Checkup):
+    """
+    Attempt to detect and warn about inefficient full-array gathers.
+
+    """
+
+    description = (
+        "entire cuPyNumeric array is being gathered into one memory, "
+        "and blocking on related outstanding asynchronous work"
+    )
+    reference = None
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        """
+        Check for expensive array gathers of deferred arrays.
+
+        Args:
+            func (str):
+                Name of the function being invoked
+            args (tuple):
+                Any positional arguments the function is being called with
+            kwargs (dict):
+                Any keyword arguments the function is being called with
+
+        Returns:
+            a ``Diagnostic`` in case a new detection at the current location
+            is reported, otherwise None
+
+        """
+        # We are abusing the doctor API a bit here. Usually intended for func
+        # to be a numpy API name. But "bad" gathers happen in a __numpy_array__
+        # method on thunks. We've made it so that __numpy_array__ will only
+        # invoke doctor.diagnose in case the expensive gather is actually
+        # definitely happening, so there is nothing to check here besides func
+        if func == "__numpy_array__":
+            # if we can't find a user frame, then it is probably due to a
+            # detection inside cupynumeric itself. Either way, there is no
+            # actionable information to provide users, so just punt here.
+            if (locator := self.locate()) is None:
+                return None
+
+            return self.report(locator)
+
+        return None
+
+
+ALL_CHECKS: Final[tuple[Type[Checkup], ...]] = (
+    RepeatedItemOps,
+    ArrayGatherCheck,
+)
 
 
 class Doctor:

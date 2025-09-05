@@ -221,7 +221,7 @@ class TestRepeatedItemOps:
 
 
 def test_ALL_CHECKS() -> None:
-    assert m.ALL_CHECKS == (m.RepeatedItemOps,)
+    assert m.ALL_CHECKS == (m.RepeatedItemOps, m.ArrayGatherCheck)
 
 
 def test_doctor() -> None:
