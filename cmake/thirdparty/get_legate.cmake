@@ -56,7 +56,7 @@ function(cupynumeric_maybe_override_legate user_repository user_branch user_vers
   rapids_cpm_package_override("${legate_overrides_json}")
 endfunction()
 
-function(find_or_configure_legate)
+function(find_legate)
   set(options)
   set(oneValueArgs VERSION REPOSITORY BRANCH EXCLUDE_FROM_ALL)
   set(multiValueArgs)
@@ -77,62 +77,18 @@ function(find_or_configure_legate)
     set(git_repo "${PKG_REPOSITORY}")
   endif()
 
-  # CCCL (which will be imported for us by legate -- though cupyumeric should *really* be
-  # handling this stuff by itself...) will try to use CUDA by default, so we need to tell
-  # it not to for CPU-only or OpenMP builds.
-  #
-  # Legate has the same (or similar) logic, but it does not export this, since Legate
-  # should not impose a particular device system on downstream libraries. So we must also
-  # do it here.
-  if(NOT DEFINED CCCL_THRUST_DEVICE_SYSTEM)
-    if(Legion_USE_CUDA)
-      set(CCCL_THRUST_DEVICE_SYSTEM CUDA)
-    elseif(Legion_USE_OpenMP)
-      set(CCCL_THRUST_DEVICE_SYSTEM OMP)
-    else()
-      set(CCCL_THRUST_DEVICE_SYSTEM CPP)
-    endif()
-  endif()
-
   set(FIND_PKG_ARGS
       GLOBAL_TARGETS     legate::legate
       BUILD_EXPORT_SET   cupynumeric-exports
       INSTALL_EXPORT_SET cupynumeric-exports)
 
-  # First try to find legate via find_package()
-  # so the `Legion_USE_*` variables are visible
-  # Use QUIET find by default.
-  set(_find_mode QUIET)
-  # If legate_DIR/legate_ROOT or CUPYNUMERIC_BUILD_PIP_WHEELS are defined as
-  # something other than empty or NOTFOUND use a REQUIRED find so that the
-  # build does not silently download legate.
-  if(legate_DIR OR legate_ROOT OR CUPYNUMERIC_BUILD_PIP_WHEELS)
-    set(_find_mode REQUIRED)
-  endif()
-  rapids_find_package(legate ${version} EXACT CONFIG ${_find_mode} ${FIND_PKG_ARGS})
+  rapids_find_package(legate ${version} EXACT CONFIG REQUIRED ${FIND_PKG_ARGS})
 
-  if(legate_FOUND)
-    message(STATUS "CPM: using local package legate@${version}")
-  else()
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/cpm_helpers.cmake)
-    get_cpm_git_args(legate_cpm_git_args REPOSITORY ${git_repo} BRANCH ${git_branch})
-
-    message(VERBOSE "cupynumeric: legate version: ${version}")
-    message(VERBOSE "cupynumeric: legate git_repo: ${git_repo}")
-    message(VERBOSE "cupynumeric: legate git_branch: ${git_branch}")
-    message(VERBOSE "cupynumeric: legate exclude_from_all: ${exclude_from_all}")
-    message(VERBOSE "cupynumeric: legate legate_cpm_git_args: ${legate_cpm_git_args}")
-
-    rapids_cpm_find(legate ${version} ${FIND_PKG_ARGS}
-        CPM_ARGS
-          ${legate_cpm_git_args}
-          FIND_PACKAGE_ARGUMENTS EXACT
-          EXCLUDE_FROM_ALL       ${exclude_from_all}
-    )
-  endif()
+  message(STATUS "Found legate@${version}")
 
   # Workaround for https://github.com/NVIDIA/cccl/issues/5002
   if(Legion_USE_OpenMP)
+    rapids_find_package(OpenMP GLOBAL_TARGETS OpenMP::OpenMP_CXX)
     get_target_property(opts OpenMP::OpenMP_CXX INTERFACE_COMPILE_OPTIONS)
     message(STATUS "openmp interface options ${opts}")
     string(REPLACE [[-Xcompiler=SHELL:]] [[SHELL:-Xcompiler=]] opts "${opts}")
@@ -166,8 +122,8 @@ foreach(_var IN ITEMS "cupynumeric_LEGATE_VERSION"
   endif()
 endforeach()
 
-find_or_configure_legate(VERSION          ${cupynumeric_LEGATE_VERSION}
-                         REPOSITORY       ${cupynumeric_LEGATE_REPOSITORY}
-                         BRANCH           ${cupynumeric_LEGATE_BRANCH}
-                         EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_LEGATE_FROM_ALL}
+find_legate(VERSION          ${cupynumeric_LEGATE_VERSION}
+            REPOSITORY       ${cupynumeric_LEGATE_REPOSITORY}
+            BRANCH           ${cupynumeric_LEGATE_BRANCH}
+            EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_LEGATE_FROM_ALL}
 )

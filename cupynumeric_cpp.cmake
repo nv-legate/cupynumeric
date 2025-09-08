@@ -56,32 +56,17 @@ endif()
 # add third party dependencies using CPM
 rapids_cpm_init(OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/versions.json)
 
-rapids_find_package(OpenMP GLOBAL_TARGETS OpenMP::OpenMP_CXX)
-rapids_find_package(CUDAToolkit)
-
-option(Legion_USE_CUDA "Use CUDA" ${CUDAToolkit_FOUND})
-option(Legion_USE_OpenMP "Use OpenMP" ${OpenMP_FOUND})
-option(Legion_BOUNDS_CHECKS "Build cuPyNumeric with bounds checks (expensive)" OFF)
-
 ###
-# If we find legate already configured on the system, it will report
-# whether it was compiled with bounds checking (Legion_BOUNDS_CHECKS),
-# CUDA (Legion_USE_CUDA), and OpenMP (Legion_USE_OpenMP).
-#
-# We use the same variables as legate because we want to enable/disable
-# each of these features based on how legate was configured (it doesn't
-# make sense to build cuPyNumeric's CUDA bindings if legate wasn't built
-# with CUDA support).
+# We require a configured and built legate, and inherit several settings.
 ###
 include(thirdparty/get_legate)
 
-# Use of DEFINED is deliberate. CMAKE_CUDA_ARCHITECTURES may be OFF which we want to leave
-# in place. Legion_CUDA_ARCH is defined by Legate.
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES "${Legion_CUDA_ARCH}")
-endif()
-
 if(Legion_USE_CUDA)
+  # Use of DEFINED is deliberate. CMAKE_CUDA_ARCHITECTURES may be OFF which we
+  # want to leave in place. Legion_CUDA_ARCH is defined by Legate.
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "${Legion_CUDA_ARCH}")
+  endif()
   include(Modules/cuda_arch_helpers)
   # Needs to run before `rapids_cuda_init_architectures`
   set_cuda_arch_from_names()
@@ -421,10 +406,18 @@ set_target_properties(cupynumeric
                       CUDA_STANDARD_REQUIRED              ON
                       LIBRARY_OUTPUT_DIRECTORY            lib)
 
+# Create the right thrust target for the configuration we are building here.
+if(Legion_USE_CUDA)
+  set(_thrust_device CUDA)
+else()
+  set(_thrust_device CPP)
+endif()
+thrust_create_target(cupynumeric::Thrust DEVICE "${_thrust_device}")
+
 target_link_libraries(cupynumeric
   PUBLIC legate::legate
           $<TARGET_NAME_IF_EXISTS:NCCL::NCCL>
-  PRIVATE CCCL::Thrust
+  PRIVATE cupynumeric::Thrust
           BLAS::BLAS
           tblis::tblis
           # Add Conda library and include paths
