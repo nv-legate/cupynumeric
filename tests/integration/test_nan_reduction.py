@@ -363,6 +363,12 @@ class TestNanReductions:
         out_num = num.nanmin(arr, where=True, initial=10)
         assert allclose(out_np, out_num)
 
+    def test_nanmin_non_nan(self) -> None:
+        arr = np.array([3, 1, 2], dtype=np.int32)
+        result_num = num.nanmin(arr)
+        result_np = np.nanmin(arr)
+        assert result_num == result_np
+
 
 class TestCornerCases:
     """

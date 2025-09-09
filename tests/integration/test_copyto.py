@@ -419,6 +419,14 @@ def test_unsafe_casting_high_to_low_precision(dtype1, dtype2):
     assert allclose(dst_dtype2, num_dst_dtype2)
 
 
+def test_copyto_invalid_casting() -> None:
+    dst = num.array([1, 2, 3], dtype="float64")
+    src = num.array([4, 5, 6], dtype="float64")
+    expected_msg = "casting must be one of 'no', 'equiv', 'safe', 'same_kind', or 'unsafe'"
+    with pytest.raises(ValueError, match=expected_msg):
+        num.copyto(dst, src, casting="invalid_cast")
+
+
 if __name__ == "__main__":
     import sys
 

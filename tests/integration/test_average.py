@@ -93,6 +93,13 @@ def test_exception_raising():
         num.average(in_num, axis=0, weights=[0, 0])
 
 
+def test_average_weights_sum_to_zero() -> None:
+    a = num.array([1, 2, 3], dtype=np.float64)
+    w = num.array([0, 0, 0], dtype=np.float64)
+    with pytest.raises(ZeroDivisionError, match="Weights along axis sum to 0"):
+        num.average(a, weights=w)
+
+
 if __name__ == "__main__":
     import sys
 
