@@ -28,8 +28,7 @@ from .array_shape import ravel
 from .creation_matrices import diag
 from .creation_shape import ones, zeros
 from .indexing import putmask
-from .logic_array_type import isreal
-from .logic_truth import all as all_func, any
+from .logic_truth import any
 from .ssc_searching import nonzero
 
 if TYPE_CHECKING:
@@ -368,13 +367,20 @@ def roots(p: ndarray) -> ndarray:
         p = _warn_and_convert(p, np.dtype(float))
 
     N = len(p)
+    # Check for constant polynomials
+    if N == 1:
+        # A non-zero constant polynomial has no roots.
+        return zeros(0, dtype=np.float64)
     if N > 1:
         # build companion matrix and find its eigenvalues (the roots)
         A = diag(ones((N - 2,), p.dtype), -1)
         A[0, :] = -p[1:] / p[0]
         roots_result = eigvals(A)
+        # Force roots_result to be complex, as that is the type that
+        # eigvals often returns
+        roots_result = roots_result.astype(np.complex128)
     else:
-        roots_result = zeros(0, dtype=p.dtype)
+        roots_result = zeros(0, dtype=np.complex128)
 
     # tack any zeros onto the back of the array
     if trailing_zeros > 0:
@@ -382,8 +388,7 @@ def roots(p: ndarray) -> ndarray:
             (roots_result, zeros(trailing_zeros, roots_result.dtype))
         )
 
-    if all_func(isreal(roots_result)):
-        # Convert to real float64 to match NumPy's behavior
+    if np.all(roots_result.imag == 0):
         roots_result = roots_result.real.astype(np.float64)
 
     return roots_result
