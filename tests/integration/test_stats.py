@@ -440,6 +440,15 @@ def test_cov_invalidsize_aweights() -> None:
         num.cov(num_in, aweights=num_aweights)
 
 
+def test_cov_rowvar_false_y_transpose() -> None:
+    m = np.random.rand(2, 5)
+    y = np.random.rand(2, 5)
+    cov_cupy = num.cov(m, y, rowvar=False)
+    cov_numpy = np.cov(m, y, rowvar=False)
+    assert cov_cupy.shape == cov_numpy.shape
+    np.testing.assert_allclose(cov_cupy, cov_numpy, rtol=1e-6)
+
+
 if __name__ == "__main__":
     import sys
 
