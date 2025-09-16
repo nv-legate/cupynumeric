@@ -63,6 +63,8 @@ def run_tssvd(m, n, perform_check, timing):
     if timing:
         print(f"TSSVD elapsed Time: {total:.3f} ms")
 
+    return total
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -1513,9 +1513,6 @@ class NumPyThunk(ABC):
     ) -> None: ...
 
     @abstractmethod
-    def ts_matmul(self, rhs1_thunk: Any, rhs2_thunk: Any) -> Any: ...
-
-    @abstractmethod
     def in1d(
         self,
         ar2: NumPyThunk,

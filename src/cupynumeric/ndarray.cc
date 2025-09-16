@@ -585,56 +585,84 @@ void NDArray::dot_MM(const legate::LogicalStore& rhs1_store, const legate::Logic
   auto n = rhs2_store.shape()[1];
   auto k = rhs1_store.shape()[1];
 
-  static constexpr std::size_t MIN_MATRIX_SIZE = 1 << 20;
-
-  auto get_color_shape =
-    [&](const std::vector<std::uint64_t>& shape) -> std::vector<std::uint64_t> {
-    if (!is_in_test_mode() && shape[0] * shape[1] <= MIN_MATRIX_SIZE) {
-      return {1, 1};
-    }
-    auto color_shape = std::vector<std::uint64_t>{num_procs, 1};
-
-    while ((shape[0] / color_shape[0] < 2 * shape[1] / color_shape[1]) && color_shape[0] % 2 == 0) {
-      color_shape[0] /= 2;
-      color_shape[1] *= 2;
+  auto use_legacy_matmul = [&]() -> bool {
+    // single processing does not benefit from batching
+    if (is_single_proc) {
+      return true;
     }
 
-    return color_shape;
-  };
-
-  auto get_batchsize = [&](const std::vector<std::uint64_t>& tilesize, std::uint64_t k) {
+    // approximate whether batching would actually be triggered here
     uint64_t typesize = legate::type_dispatch(type().code(), get_typesize_fn{});
-    // default corresponds to 128MB (to store A and B tile)
-    uint64_t max_elements_per_tile = cupynumeric_matmul_cache_size() / typesize;
-    uint64_t total_elements_rhs    = (tilesize[0] + tilesize[1]) * k;
-    uint64_t num_batches           = ceildiv(total_elements_rhs, max_elements_per_tile);
-    uint64_t batch_size            = ceildiv(k, num_batches);
-    return batch_size;
+    return (m + n) * k * typesize < cupynumeric_matmul_cache_size() * num_procs;
   };
 
-  auto initial_color_shape = get_color_shape({m, n});
-  auto tile_shape          = std::vector<std::uint64_t>{ceildiv(m, initial_color_shape[0]),
-                                                        ceildiv(n, initial_color_shape[1])};
-  auto color_shape =
-    legate::tuple<std::uint64_t>{ceildiv(m, tile_shape[0]), ceildiv(n, tile_shape[1])};
+  auto use_3d_matmul = use_legacy_matmul();
 
-  std::uint64_t k_batch_size = is_single_proc ? k : get_batchsize(tile_shape, k);
+  if (use_3d_matmul) {
+    auto lhs_s  = store_.promote(1, k);
+    auto rhs1_s = rhs1_store.promote(2, n);
+    auto rhs2_s = rhs2_store.promote(0, m);
 
-  std::vector<std::uint64_t> tile_shape_rhs1 = {tile_shape[0], k_batch_size};
-  std::vector<std::uint64_t> tile_shape_rhs2 = {k_batch_size, tile_shape[1]};
-  auto color_k                               = ceildiv(k, k_batch_size);
+    auto task = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_MATMUL);
 
-  auto p_lhs  = store_.partition_by_tiling(tile_shape);
-  auto p_rhs1 = rhs1_store.partition_by_tiling(tile_shape_rhs1);
-  auto p_rhs2 = rhs2_store.partition_by_tiling(tile_shape_rhs2);
+    auto p_lhs  = task.add_reduction(lhs_s, get_reduction_op(UnaryRedCode::SUM));
+    auto p_rhs1 = task.add_input(rhs1_s);
+    auto p_rhs2 = task.add_input(rhs2_s);
 
-  for (std::uint64_t i = 0; i < color_k; ++i) {
-    auto task = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_MATMUL, color_shape);
-    task.add_output(p_lhs);
-    task.add_input(p_lhs);
-    task.add_input(p_rhs1, legate::SymbolicPoint{legate::dimension(0), legate::constant(i)});
-    task.add_input(p_rhs2, legate::SymbolicPoint{legate::constant(i), legate::dimension(1)});
+    int32_t unbatched = 1;
+    task.add_scalar_arg(legate::Scalar(unbatched));
+
+    task.add_constraint(align(p_lhs, p_rhs1));
+    task.add_constraint(align(p_rhs1, p_rhs2));
     runtime->submit(std::move(task));
+  } else {
+    auto get_color_shape =
+      [&](const std::vector<std::uint64_t>& shape) -> std::vector<std::uint64_t> {
+      auto color_shape = std::vector<std::uint64_t>{num_procs, 1};
+
+      while ((shape[0] / color_shape[0] < 2 * shape[1] / color_shape[1]) &&
+             color_shape[0] % 2 == 0) {
+        color_shape[0] /= 2;
+        color_shape[1] *= 2;
+      }
+
+      return color_shape;
+    };
+
+    auto get_batchsize = [&](const std::vector<std::uint64_t>& tilesize, std::uint64_t k) {
+      uint64_t typesize = legate::type_dispatch(type().code(), get_typesize_fn{});
+      // default corresponds to 128MB (to store A and B tile)
+      uint64_t max_elements_per_tile = cupynumeric_matmul_cache_size() / typesize;
+      uint64_t total_elements_rhs    = (tilesize[0] + tilesize[1]) * k;
+      uint64_t num_batches           = ceildiv(total_elements_rhs, max_elements_per_tile);
+      uint64_t batch_size            = ceildiv(k, num_batches);
+      return batch_size;
+    };
+
+    auto initial_color_shape = get_color_shape({m, n});
+    auto tile_shape          = std::vector<std::uint64_t>{ceildiv(m, initial_color_shape[0]),
+                                                          ceildiv(n, initial_color_shape[1])};
+    auto color_shape =
+      legate::tuple<std::uint64_t>{ceildiv(m, tile_shape[0]), ceildiv(n, tile_shape[1])};
+
+    std::uint64_t k_batch_size = is_single_proc ? k : get_batchsize(tile_shape, k);
+
+    std::vector<std::uint64_t> tile_shape_rhs1 = {tile_shape[0], k_batch_size};
+    std::vector<std::uint64_t> tile_shape_rhs2 = {k_batch_size, tile_shape[1]};
+    auto color_k                               = ceildiv(k, k_batch_size);
+
+    auto p_lhs  = store_.partition_by_tiling(tile_shape);
+    auto p_rhs1 = rhs1_store.partition_by_tiling(tile_shape_rhs1);
+    auto p_rhs2 = rhs2_store.partition_by_tiling(tile_shape_rhs2);
+
+    for (std::uint64_t i = 0; i < color_k; ++i) {
+      auto task = runtime->create_task(CuPyNumericOpCode::CUPYNUMERIC_MATMUL, color_shape);
+      task.add_output(p_lhs);
+      task.add_input(p_lhs);
+      task.add_input(p_rhs1, legate::SymbolicPoint{legate::dimension(0), legate::constant(i)});
+      task.add_input(p_rhs2, legate::SymbolicPoint{legate::constant(i), legate::dimension(1)});
+      runtime->submit(std::move(task));
+    }
   }
 }
 

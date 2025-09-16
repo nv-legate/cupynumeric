@@ -39,7 +39,7 @@ from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module import dot, empty_like, eye, matmul, ndarray
 from .._module.array_rearrange import flip
 from .._module.creation_matrices import diag
-from .._module.creation_shape import empty, zeros, zeros_like
+from .._module.creation_shape import zeros, zeros_like
 from .._module.ssc_sorting import argsort
 from .._ufunc.math import add, sqrt as _sqrt
 from ._exception import LinAlgError
@@ -1573,25 +1573,10 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     if a.ndim != 2 or a.size <= 1:
         raise ValueError(f"Invalid input shape for tssvd: {a.shape}")
 
-    m_info = get_machine()
-
     # A.T*A:
     #
-    # unbatched way (there's a bug resulting in 0-matrix, it seems):
-    # {
-    m = a.shape[0]
-    n = a.shape[1]
-
     # TODO: Grammian API:
-    #
-    a2 = empty(shape=(n, n), dtype=a.dtype)
-    ah = a.transpose().conj()
-    a2._thunk.ts_matmul(ah._thunk, a._thunk)
-    # }
-    #
-    # batched way (slower, but passes):
-    #
-    # a2 = matmul(a.transpose().conj(), a)
+    a2 = a.transpose().conj() @ a
 
     # eigen-vals, eigen-vecs of A.T*A:
     #
@@ -1610,14 +1595,7 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     # generate index permutation, pi
     # via sort-by-key decreasingly:
     #
-    d_indices = zeros(shape=(n,), dtype=np.int64)
-    with m_info[0]:  # !
-        d_indices = argsort(svals)
-        #
-        # reverse:
-        #
-        # d_indices = d_indices[::-1] # Error: not implemented
-        d_indices = flip(d_indices)
+    d_indices = flip(argsort(svals))
 
     # V.T:
     #
@@ -1628,14 +1606,7 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
 
     # U = A*V*inv(S):
     #
-    # B = matmul(ev, Sinv)
-    # u = matmul(a, B)
-
-    B = empty(shape=(n, n), dtype=a.dtype)
-    B._thunk.ts_matmul(ev._thunk, Sinv._thunk)
-
-    u = empty(shape=(m, n), dtype=a.dtype)
-    u._thunk.ts_matmul(a._thunk, B._thunk)
+    u = a @ (ev @ Sinv)
 
     # re-arrange svals decreasingly:
     #
@@ -1644,7 +1615,7 @@ def tssvd(a: ndarray) -> tuple[ndarray, ...]:
     # permute columns of U with pi:
     #
     # u = u[:, d_indices]
-    u = matmul(u, eye(u.shape[1])[d_indices].T)
+    u = u @ eye(u.shape[1])[d_indices].T
 
     # permute rows of V.T with pi:
     #
