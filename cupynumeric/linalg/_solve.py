@@ -92,7 +92,6 @@ def mp_solve(
     task.add_scalar_arg(nrhs, ty.int64)
     task.add_scalar_arg(nb, ty.int64)
     task.add_nccl_communicator()  # for repartitioning
-    task.add_cal_communicator()
     task.execute()
 
 

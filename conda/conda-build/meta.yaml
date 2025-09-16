@@ -161,8 +161,7 @@ requirements:
     - libcurand-dev
     - libcufile-dev
     - cuda-version ={{ cuda_version }}
-    - libcusolvermp-dev
-    - libcal-dev
+    - libcusolvermp-dev >=0.7
 {% endif %}
 
   run:
