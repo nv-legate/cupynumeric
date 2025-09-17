@@ -106,6 +106,13 @@ def test_full(value):
         assert xf.dtype == yf.dtype
 
 
+def test_full_overflow_uint8() -> None:
+    with pytest.raises(OverflowError):
+        num.full((2, 2), 300, dtype="uint8")
+    with pytest.raises(OverflowError):
+        np.full((2, 2), 300, dtype="uint8")
+
+
 SHAPES_NEGATIVE = [-1, (-1, 2, 3), np.array([2, -3, 4])]
 
 
