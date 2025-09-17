@@ -469,16 +469,14 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       }
     }
     case CUPYNUMERIC_NONZERO: {
-      auto&& input      = task.input(0);
-      auto&& output     = task.output(0);
-      auto in_count     = input.domain().get_volume();
-      auto max_out_size = in_count * output.type().size() * input.dim();
+      auto&& input  = task.input(0);
+      auto&& output = task.output(0);
       switch (memory_kind) {
         case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
-        case legate::mapping::StoreTarget::SOCKETMEM: {
-          return max_out_size;
-        }
+        case legate::mapping::StoreTarget::SOCKETMEM: [[fallthrough]];
         case legate::mapping::StoreTarget::FBMEM: {
+          // allocate maximum available memory to prevent fragmentation
+          // https://github.com/nv-legate/legate/issues/985
           return std::nullopt;
         }
         case legate::mapping::StoreTarget::ZCMEM: {
