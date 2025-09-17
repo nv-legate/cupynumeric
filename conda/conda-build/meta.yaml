@@ -136,8 +136,8 @@ requirements:
     - ninja
     - cmake {{ cmake_version }}
     - {{ stdlib("c") }}
-    - {{ compiler('c') }} =11.2
-    - {{ compiler('cxx') }} =11.2
+    - {{ compiler('c') }} =14
+    - {{ compiler('cxx') }} =14
     # the nvcc requirement is necessary because it contains crt/host_config.h used by cuda runtime. This is a packaging bug that has been reported.
     - cuda-nvcc
     # cudart needed for CPU and GPU builds because of curand
