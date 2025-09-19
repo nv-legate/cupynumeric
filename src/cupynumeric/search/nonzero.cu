@@ -16,31 +16,86 @@
 
 #include "cupynumeric/search/nonzero.h"
 #include "cupynumeric/search/nonzero_template.inl"
-#include "cupynumeric/search/nonzero.cuh"
+
+#include "cupynumeric/cuda_help.h"
+
+#include "cupynumeric/utilities/thrust_util.h"
+
+#include <thrust/count.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/transform.h>
+
+#include <cuda/std/utility>
 
 namespace cupynumeric {
 
-template <typename Pitches, typename Point, typename VAL, int32_t DIM>
-static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  nonzero_kernel(size_t volume,
-                 AccessorRO<VAL, DIM> in,
-                 Pitches pitches,
-                 Point origin,
-                 Buffer<int64_t> offsets,
-                 Buffer<int64_t*> p_results)
+template <typename Pitches, typename VAL, int32_t DIM>
+static void nonzeros(size_t volume,
+                     const AccessorRO<VAL, DIM>& in,
+                     std::vector<Array>& outputs,
+                     Pitches pitches,
+                     Point<DIM> origin,
+                     cudaStream_t stream)
 {
-  const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid >= volume) {
-    return;
+  // step 1:
+  // count nonzeros:
+  //
+  auto point_lambda = [pitches, origin] __host__ __device__(int64_t indx) -> Point<DIM> {
+    return pitches.unflatten(indx, origin);
+  };
+
+  auto point_iter_begin =
+    thrust::make_transform_iterator(thrust::make_counting_iterator<int64_t>(0), point_lambda);
+
+  auto count_nz = thrust::count_if(DEFAULT_POLICY.on(stream),
+                                   point_iter_begin,
+                                   point_iter_begin + volume,
+                                   [in] __device__(auto&& point) { return (in[point] != VAL{0}); });
+
+  // step 2:
+  // allocate output accordingly:
+  //
+  std::vector<Buffer<int64_t>> results;
+  for (auto& output : outputs) {
+    results.push_back(output.create_output_buffer<int64_t, 1>(Point<1>(count_nz), true));
   }
 
-  auto point = pitches.unflatten(tid, origin);
-  if (in[point] != VAL(0)) {
-    auto offset = offsets[tid];
-    for (int32_t dim = 0; dim < DIM; ++dim) {
-      p_results[dim][offset] = point[dim];
-    }
+  auto p_results = create_buffer<int64_t*>(DIM, legate::Memory::Kind::Z_COPY_MEM);
+  for (int32_t dim = 0; dim < DIM; ++dim) {
+    p_results[dim] = results[dim].ptr(0);
   }
+
+  // step 3:
+  // copy non-zero points into output's 1st dimension buffer,
+  // repurposed as scratch-space:
+  //
+  thrust::copy_if(DEFAULT_POLICY.on(stream),
+                  thrust::make_counting_iterator<int64_t>(0),
+                  thrust::make_counting_iterator<int64_t>(volume),
+                  p_results[0],  // use 1st dimension range as scratch space to hold linear indices
+                  [in, pitches, origin] __device__(int64_t indx) {
+                    auto point = pitches.unflatten(indx, origin);
+                    return (in[point] != VAL{0});
+                  });
+
+  // step 4:
+  // transform output by "scattering" its 1st dimension's linear index (from previous step)
+  // to multi-dimensional indices acrross each of the output's dimensions:
+  //
+  thrust::for_each(DEFAULT_POLICY.on(stream),
+                   thrust::make_counting_iterator<int64_t>(0),
+                   thrust::make_counting_iterator<int64_t>(count_nz),
+                   [pitches, origin, p_results] __device__(int64_t indx) mutable {
+                     auto nz_indx = p_results[0][indx];
+                     auto point   = pitches.unflatten(nz_indx, origin);
+
+                     for (auto dim = 0; dim < DIM; ++dim) {
+                       p_results[dim][indx] = point[dim];
+                     }
+                   });
 }
 
 template <Type::Code CODE, int32_t DIM>
@@ -50,25 +105,6 @@ struct NonzeroImplBody<VariantKind::GPU, CODE, DIM> {
 
   using VAL = type_of<CODE>;
 
-  void populate_nonzeros(const AccessorRO<VAL, DIM>& in,
-                         const Pitches<DIM - 1>& pitches,
-                         const Rect<DIM>& rect,
-                         const size_t volume,
-                         std::vector<Buffer<int64_t>>& results,
-                         Buffer<int64_t>& offsets,
-                         cudaStream_t stream)
-  {
-    auto ndims     = static_cast<int32_t>(results.size());
-    auto p_results = create_buffer<int64_t*>(ndims, legate::Memory::Kind::Z_COPY_MEM);
-    for (int32_t dim = 0; dim < ndims; ++dim) {
-      p_results[dim] = results[dim].ptr(0);
-    }
-
-    const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    nonzero_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-      volume, in, pitches, rect.lo, offsets, p_results);
-  }
-
   void operator()(std::vector<Array>& outputs,
                   const AccessorRO<VAL, DIM>& in,
                   const Pitches<DIM - 1>& pitches,
@@ -76,19 +112,7 @@ struct NonzeroImplBody<VariantKind::GPU, CODE, DIM> {
                   const size_t volume)
   {
     auto stream = context.get_task_stream();
-
-    auto offsets =
-      create_buffer<std::int64_t>(volume, legate::Memory::Kind::GPU_FB_MEM, sizeof(std::int64_t));
-    auto size = compute_offsets(in, pitches, rect, volume, offsets, stream);
-
-    std::vector<Buffer<int64_t>> results;
-    for (auto& output : outputs) {
-      results.push_back(output.create_output_buffer<int64_t, 1>(Point<1>(size), true));
-    }
-
-    if (size > 0) {
-      populate_nonzeros(in, pitches, rect, volume, results, offsets, stream);
-    }
+    nonzeros(volume, in, outputs, pitches, rect.lo, stream);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }
 };
