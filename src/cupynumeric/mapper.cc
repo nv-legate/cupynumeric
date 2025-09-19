@@ -334,8 +334,31 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
 
   switch (task_id) {
     case CUPYNUMERIC_ADVANCED_INDEXING: {
-      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
-        return 0;
+      auto&& input       = task.input(0);
+      auto&& index_array = task.input(1);
+      auto input_volume  = input.domain().get_volume();
+      auto input_dim     = input.dim();
+
+      // In worst case, all boolean indices are true, so we need space for:
+      // - input_volume elements in first dimension
+      // - spatial dimensions from remaining input dims
+      // - element size from output type
+      auto max_output_volume = input_volume * input_dim;  // Conservative upper bound
+      auto element_size      = task.output(0).type().size();
+      auto max_out_size      = max_output_volume * element_size;
+
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
+        case legate::mapping::StoreTarget::SOCKETMEM: {
+          return max_out_size;
+        }
+        case legate::mapping::StoreTarget::FBMEM: {
+          // Add extra buffer for intermediate calculations (offsets array)
+          return max_out_size + input_volume * sizeof(std::int64_t);
+        }
+        case legate::mapping::StoreTarget::ZCMEM: {
+          return 0;
+        }
       }
       return std::nullopt;
     }
