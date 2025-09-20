@@ -41,7 +41,7 @@ jobs:
       legate-gh-ci-tag: "v1.38"
       build-mode: ${{ inputs.build-mode }}
       network: "ucx"
-      setup-python-proxy-cache: true
+      setup-python-proxy-cache: ${{ inputs.target-device != 'gpu' }}
       timeout: 90
     secrets: inherit
 
@@ -69,7 +69,7 @@ jobs:
       runs-on: ${{ (inputs.platform == 'linux' && 'linux-amd64-gpu-l4-latest-1') || (inputs.platform == 'mac' && 'macos-latest') }}
       target-device: ${{ inputs.target-device }}
       test-options: docs
-      setup-python-proxy-cache: true
+      setup-python-proxy-cache: ${{ inputs.target-device != 'gpu' }}
       timeout: 30
     secrets: inherit
 

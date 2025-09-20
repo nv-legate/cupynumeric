@@ -140,10 +140,10 @@ jobs:
                 TEST_OPTIONS=${CONFIG_INFO[1]}
                 TEST_TARGET_DEVICE=${CONFIG_INFO[2]}
 
-                if [[ "${RUNNER_DEVICE}" != "2gpu" ]]; then
-                  SETUP_PYTHON_PROXY_CACHE=true
-                else
+                if [[ "${RUNNER_TYPE}" == "gpu" ]]; then
                   SETUP_PYTHON_PROXY_CACHE=false
+                else
+                  SETUP_PYTHON_PROXY_CACHE=true
                 fi
 
                 # Note: we don't have enough linux-aarch64 GPU runners to
