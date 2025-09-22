@@ -1233,6 +1233,8 @@ class DeferredArray(NumPyThunk):
                     if len(src_g) > 1 and len(tgt_g) > 1:
                         src = src.delinearize(src_dim, tgt_g)
                         src_dim += len(tgt_g)
+                    else:
+                        src_dim += 1
 
                 assert src.shape == newshape
                 src_array = DeferredArray(src)
@@ -1547,15 +1549,17 @@ class DeferredArray(NumPyThunk):
         # promote input and output to have the same shape for alignment purposes
         # TODO(tisaac): remove this when aligning on subsets of dimensions is possible
         src_store = self.base.promote(2, m)
-        res_promoted = cast(
-            DeferredArray,
-            runtime.create_empty_thunk(
-                shape=(j, k, m, n),
-                dtype=self.base.type,
-                force_thunk="deferred",
-            ),
-        )
-        res_store = res_promoted.base
+
+        if out is None:
+            out = cast(
+                DeferredArray,
+                runtime.create_empty_thunk(
+                    shape=(j, m, n),
+                    dtype=self.base.type,
+                    force_thunk="deferred",
+                ),
+            )
+        res_store = out.base.promote(1, k)
         assert src_store.shape == res_store.shape
 
         task = legate_runtime.create_auto_task(
@@ -1571,14 +1575,7 @@ class DeferredArray(NumPyThunk):
         task.add_constraint(broadcast(p_ind))
         task.add_scalar_arg(mode == "clip", ty.bool_)
         task.execute()
-        # the results were written into the first index of the second dimension
-        output_index = (slice(None), 0, slice(None), slice(None))
-
-        if out is not None:
-            out[:] = res_promoted.get_item(output_index)
-            return out
-        result = res_promoted.get_item(output_index)
-        return result
+        return out
 
     def _take_decide_algorithm(
         self, indices_tuple: tuple[int, ...], axis: int
