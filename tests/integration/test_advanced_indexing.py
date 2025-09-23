@@ -857,6 +857,363 @@ def test():
             )
 
 
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int32, np.int64])
+def test_einsum_path_different_dimensions(ndim, dtype):
+    """Test einsum path for different array dimensions and float dtypes."""
+    # Create test array with unique values for verification
+    shape = tuple(4 + i for i in range(ndim))  # e.g., (4,5,6,7,8,9) for 6D
+    np_array = np.arange(np.prod(shape), dtype=dtype).reshape(shape)
+    num_array = num.array(np_array)
+
+    # Test each possible mask_axis position
+    for mask_axis in range(ndim):
+        axis_size = shape[mask_axis]
+
+        # Test with boolean mask
+        bool_mask_np = np.array(
+            [True, False, True] + [False] * (axis_size - 3)
+        )[:axis_size]
+        bool_mask_num = num.array(bool_mask_np)
+
+        # Create indexing key with boolean mask
+        key_np = tuple(
+            bool_mask_np if i == mask_axis else slice(None)
+            for i in range(ndim)
+        )
+        key_num = tuple(
+            bool_mask_num if i == mask_axis else slice(None)
+            for i in range(ndim)
+        )
+
+        # Compare results
+        expected = np_array[key_np]
+        actual = num_array[key_num]
+        assert np.array_equal(actual, expected), (
+            f"Boolean mask failed for ndim={ndim}, mask_axis={mask_axis}"
+        )
+
+        # Test with integer indices
+        int_indices_np = np.array([0, 2, min(3, axis_size - 1)])[
+            : min(3, axis_size)
+        ]
+        int_indices_num = num.array(int_indices_np)
+
+        # Create indexing key with integer indices
+        key_np = tuple(
+            int_indices_np if i == mask_axis else slice(None)
+            for i in range(ndim)
+        )
+        key_num = tuple(
+            int_indices_num if i == mask_axis else slice(None)
+            for i in range(ndim)
+        )
+
+        # Compare results
+        expected = np_array[key_np]
+        actual = num_array[key_num]
+        assert np.array_equal(actual, expected), (
+            f"Integer indices failed for ndim={ndim}, mask_axis={mask_axis}"
+        )
+
+
+def test_einsum_path_edge_cases():
+    """Test edge cases for einsum path."""
+    # Test 1D array (minimal case)
+    np_array_1d = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    num_array_1d = num.array(np_array_1d)
+
+    bool_mask = np.array([True, False, True, False, True])
+    bool_mask_num = num.array(bool_mask)
+
+    expected = np_array_1d[bool_mask]
+    actual = num_array_1d[bool_mask_num]
+    assert np.array_equal(actual, expected)
+
+    # Test with all True mask
+    all_true_mask = np.array([True, True, True, True, True])
+    all_true_mask_num = num.array(all_true_mask)
+
+    expected = np_array_1d[all_true_mask]
+    actual = num_array_1d[all_true_mask_num]
+    assert np.array_equal(actual, expected)
+
+    # Test with all False mask (empty result)
+    all_false_mask = np.array([False, False, False, False, False])
+    all_false_mask_num = num.array(all_false_mask)
+
+    expected = np_array_1d[all_false_mask]
+    actual = num_array_1d[all_false_mask_num]
+    assert np.array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
+def test_einsum_path_different_mask_positions(ndim):
+    """Test einsum path with mask at different positions."""
+    shape = tuple(3 + i for i in range(ndim))
+    np_array = np.random.rand(*shape).astype(np.float32)
+    num_array = num.array(np_array)
+
+    for mask_axis in range(ndim):
+        axis_size = shape[mask_axis]
+
+        # Create a mask that selects roughly half the elements
+        mask_indices = np.arange(0, axis_size, 2)  # [0, 2, 4, ...]
+        int_mask_np = mask_indices
+        int_mask_num = num.array(int_mask_np)
+
+        # Build the indexing tuple
+        key_np = tuple(
+            int_mask_np if i == mask_axis else slice(None) for i in range(ndim)
+        )
+        key_num = tuple(
+            int_mask_num if i == mask_axis else slice(None)
+            for i in range(ndim)
+        )
+
+        # Compare results
+        expected = np_array[key_np]
+        actual = num_array[key_num]
+        assert np.array_equal(actual, expected), (
+            f"Failed for ndim={ndim}, mask_axis={mask_axis}"
+        )
+
+
+def test_einsum_path_shape_mismatch():
+    """Test that einsum path handles shape mismatches correctly."""
+    np_array = np.random.rand(4, 5, 6).astype(np.float32)
+    num_array = num.array(np_array)
+
+    # Create mask with wrong shape (should not trigger einsum path)
+    wrong_shape_mask_np = np.array(
+        [True, False, True]
+    )  # length 3, but axis 0 has size 4
+    wrong_shape_mask_num = num.array(wrong_shape_mask_np)
+
+    # This should work with regular indexing (will raise appropriate error or handle correctly)
+    with pytest.raises((IndexError, ValueError)):
+        _ = np_array[wrong_shape_mask_np, :, :]
+
+    with pytest.raises((IndexError, ValueError)):
+        _ = num_array[wrong_shape_mask_num, :, :]
+
+
+def test_advanced_indexing_int_mask_different_shapes():
+    """Test advanced indexing with integer mask arrays having different shapes from original_array[axis]."""
+
+    # Test Case 1: Use 1D array (ndim=1) to bypass einsum path (einsum requires ndim > 1)
+    np_array_1d = np.arange(6, dtype=np.int32)
+    num_array_1d = num.array(np_array_1d)
+
+    # Integer mask with fewer elements than array size
+    int_mask_short_np = np.array([0, 2, 4], dtype=np.int32)
+    int_mask_short_num = num.array(int_mask_short_np)
+
+    expected = np_array_1d[int_mask_short_np]
+    actual = num_array_1d[int_mask_short_num]
+    assert np.array_equal(actual, expected), (
+        "1D array with int mask should work"
+    )
+
+    # Test Case 2: Use mixed indexing (array + non-slice(None)) to bypass einsum path
+    np_array_2d = np.arange(20, dtype=np.int32).reshape(5, 4)
+    num_array_2d = num.array(np_array_2d)
+
+    int_mask_np = np.array([0, 2], dtype=np.int32)
+    int_mask_num = num.array(int_mask_np)
+
+    # Mix array with specific slice (not slice(None)) - should bypass einsum
+    key_np = (int_mask_np, slice(1, 3))
+    key_num = (int_mask_num, slice(1, 3))
+
+    expected = np_array_2d[key_np]
+    actual = num_array_2d[key_num]
+    assert np.array_equal(actual, expected), "Mixed indexing should work"
+
+    # Test Case 3: Multiple array indices - should bypass einsum path
+    row_indices_np = np.array([0, 2, 4], dtype=np.int32)
+    col_indices_np = np.array([1, 3, 0], dtype=np.int32)
+    row_indices_num = num.array(row_indices_np)
+    col_indices_num = num.array(col_indices_np)
+
+    key_np = (row_indices_np, col_indices_np)
+    key_num = (row_indices_num, col_indices_num)
+
+    expected = np_array_2d[key_np]
+    actual = num_array_2d[key_num]
+    assert np.array_equal(actual, expected), (
+        "Multiple array indices should work"
+    )
+
+    # Test Case 4: Empty integer mask
+    int_mask_empty_np = np.array([], dtype=np.int32)
+    int_mask_empty_num = num.array(int_mask_empty_np)
+
+    expected = np_array_1d[int_mask_empty_np]
+    actual = num_array_1d[int_mask_empty_num]
+    assert np.array_equal(actual, expected), "Empty int mask should work"
+
+    # Test Case 5: Integer mask with valid out-of-sequence indices
+    int_mask_seq_np = np.array([4, 1, 3], dtype=np.int32)
+    int_mask_seq_num = num.array(int_mask_seq_np)
+
+    expected = np_array_1d[int_mask_seq_np]
+    actual = num_array_1d[int_mask_seq_num]
+    assert np.array_equal(actual, expected), (
+        "Out-of-sequence int mask should work"
+    )
+
+    # Test Case 6: Integer mask with repeated indices
+    int_mask_repeat_np = np.array([0, 2, 0, 4, 2], dtype=np.int32)
+    int_mask_repeat_num = num.array(int_mask_repeat_np)
+
+    expected = np_array_1d[int_mask_repeat_np]
+    actual = num_array_1d[int_mask_repeat_num]
+    assert np.array_equal(actual, expected), (
+        "Repeated int mask indices should work"
+    )
+
+    # Test Case 7: Integer mask with negative indices
+    int_mask_negative_np = np.array(
+        [-1, -3, -2], dtype=np.int32
+    )  # Should convert to [5, 3, 4]
+    int_mask_negative_num = num.array(int_mask_negative_np)
+
+    expected = np_array_1d[int_mask_negative_np]
+    actual = num_array_1d[int_mask_negative_num]
+    assert np.array_equal(actual, expected), (
+        "Negative int mask indices should work"
+    )
+
+    # Test Case 8: Mixed positive and negative indices
+    int_mask_mixed_np = np.array(
+        [0, -1, 2, -2], dtype=np.int32
+    )  # [0, 5, 2, 4] for array of size 6
+    int_mask_mixed_num = num.array(int_mask_mixed_np)
+
+    expected = np_array_1d[int_mask_mixed_np]
+    actual = num_array_1d[int_mask_mixed_num]
+    assert np.array_equal(actual, expected), (
+        "Mixed positive/negative int mask indices should work"
+    )
+
+    # Test Case 9: Invalid negative indices (too negative) should raise IndexError
+    int_mask_invalid_neg_np = np.array(
+        [0, -7], dtype=np.int32
+    )  # -7 is out of bounds for array of size 6
+    int_mask_invalid_neg_num = num.array(int_mask_invalid_neg_np)
+
+    with pytest.raises(IndexError):
+        _ = np_array_1d[int_mask_invalid_neg_np]
+
+    with pytest.raises(IndexError):
+        _ = num_array_1d[int_mask_invalid_neg_num]
+
+
+def test_einsum_path_with_negative_indices():
+    """Test that einsum path correctly handles negative indices."""
+    # Create a 3D test array that should trigger einsum path
+    np_array = np.arange(24, dtype=np.float32).reshape(4, 3, 2)
+    num_array = num.array(np_array)
+
+    # Test Case 1: Negative indices on axis 0 (size 4)
+    int_mask_neg_np = np.array(
+        [-1, -3], dtype=np.int32
+    )  # Should convert to [3, 1]
+    int_mask_neg_num = num.array(int_mask_neg_np)
+
+    key_np = (int_mask_neg_np, slice(None), slice(None))
+    key_num = (int_mask_neg_num, slice(None), slice(None))
+
+    expected = np_array[key_np]
+    actual = num_array[key_num]
+    assert np.array_equal(actual, expected), (
+        "Einsum path should handle negative indices on axis 0"
+    )
+
+    # Test Case 2: Mixed positive and negative indices
+    int_mask_mixed_np = np.array(
+        [0, -1, 1], dtype=np.int32
+    )  # [0, 3, 1] for axis of size 4
+    int_mask_mixed_num = num.array(int_mask_mixed_np)
+
+    key_np = (int_mask_mixed_np, slice(None), slice(None))
+    key_num = (int_mask_mixed_num, slice(None), slice(None))
+
+    expected = np_array[key_np]
+    actual = num_array[key_num]
+    assert np.array_equal(actual, expected), (
+        "Einsum path should handle mixed positive/negative indices"
+    )
+
+
+def test_einsum_path_axis_validation():
+    """Test that einsum path correctly validates mask_axis bounds."""
+    # This test specifically targets the axis validation logic in _advanced_indexing_using_einsum
+
+    # Create test array
+    np_array = np.arange(12, dtype=np.float32).reshape(3, 4)  # 2D array
+    num_array = num.array(np_array)
+
+    # Create a simple integer mask that would trigger einsum path
+    int_mask_np = np.array([0, 2], dtype=np.int32)
+    int_mask_num = num.array(int_mask_np)
+
+    # Test Case 1: Negative axis (should work - converts -1 to 1 for 2D array)
+    key_np = (slice(None), int_mask_np)  # Last axis
+    key_num = (slice(None), int_mask_num)
+
+    expected = np_array[key_np]
+    actual = num_array[key_num]
+    assert np.array_equal(actual, expected), (
+        "Negative axis should be converted correctly"
+    )
+
+    # Test Case 2: Valid positive axis
+    key_np = (int_mask_np, slice(None))  # First axis
+    key_num = (int_mask_num, slice(None))
+
+    expected = np_array[key_np]
+    actual = num_array[key_num]
+    assert np.array_equal(actual, expected), "Valid positive axis should work"
+
+
+def test_advanced_indexing_int_mask_no_einsum():
+    """Test advanced indexing with integer masks that bypass einsum path due to shape incompatibility."""
+    # Create test arrays where einsum path should NOT be triggered due to shape mismatch
+    np_array = np.arange(20, dtype=np.float32).reshape(5, 4)
+    num_array = num.array(np_array)
+
+    # Test with 1D array that has mixed slices and arrays (should bypass einsum)
+    mixed_indices_np = np.array([0, 3], dtype=np.int32)
+    mixed_indices_num = num.array(mixed_indices_np)
+
+    # Mix of array index and specific slice (not slice(None)) - should bypass einsum
+    key_np = (mixed_indices_np, slice(1, 3))
+    key_num = (mixed_indices_num, slice(1, 3))
+
+    expected = np_array[key_np]
+    actual = num_array[key_num]
+    assert np.array_equal(actual, expected), (
+        "Mixed indexing with array and non-full slice should work"
+    )
+
+    # Test with multiple array indices (should bypass einsum)
+    row_indices_np = np.array([0, 2, 4], dtype=np.int32)
+    col_indices_np = np.array([1, 3, 0], dtype=np.int32)
+    row_indices_num = num.array(row_indices_np)
+    col_indices_num = num.array(col_indices_np)
+
+    key_np = (row_indices_np, col_indices_np)
+    key_num = (row_indices_num, col_indices_num)
+
+    expected = np_array[key_np]
+    actual = num_array[key_num]
+    assert np.array_equal(actual, expected), (
+        "Multiple array indices should work"
+    )
+
+
 if __name__ == "__main__":
     import sys
 

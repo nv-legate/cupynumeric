@@ -740,13 +740,207 @@ class DeferredArray(NumPyThunk):
                     out = out._copy_store(out_tmp)
             return is_set, rhs, out, self
 
+    def _check_if_can_use_einsum(
+        self, computed_key: tuple[Any, ...]
+    ) -> tuple[bool, int, Any]:
+        """
+        Check if we can use einsum optimization path for indexing.
+        """
+        can_use_einsum_path = False
+        mask_axis = -1
+        mask_array = None
+
+        if all(dim > 0 for dim in self.shape):  # no zero-size dimensions
+            array_positions = []
+
+            # Find all positions with arrays and check that everythingig else is slice(None)
+            all_others_are_slices = True
+            for i, element in enumerate(computed_key):
+                if isinstance(element, NumPyThunk):
+                    array_positions.append(i)
+                elif not (
+                    isinstance(element, slice) and element == slice(None)
+                ):
+                    all_others_are_slices = False
+                    break
+
+            # Check if we have exactly one array and everything else is slice(None)
+            if len(array_positions) == 1 and all_others_are_slices:
+                mask_axis = array_positions[0]
+                array_element = computed_key[mask_axis]
+
+                # Check if array shape is compatible for einsum optimization
+                # For boolean arrays: shape must match (self.shape[mask_axis],)
+                # For integer arrays: should be 1D and size > 0
+                # We set the limit to self.ndim<5 as the complexity of the
+                # internal C++ tensor contraction logic grows exponentially
+                # with the number of dimensions and seems to segfault for some
+                # of the advanced indexing examples
+
+                if array_element.size > 0 and self.ndim < 5:
+                    if array_element.dtype == bool:
+                        # Boolean arrays must have exact shape match
+                        if array_element.shape == (self.shape[mask_axis],):
+                            can_use_einsum_path = True
+                            mask_array = array_element
+                    else:
+                        # Integer arrays should be 1D for einsum optimization
+                        if array_element.ndim == 1:
+                            can_use_einsum_path = True
+                            mask_array = array_element
+
+        return can_use_einsum_path, mask_axis, mask_array
+
+    def _advanced_indexing_using_einsum(
+        self, mask_axis: int, mask_array: Any
+    ) -> tuple[bool, Any, Any, Any]:
+        """
+        Simulate advanced indexing a[mask, :, :] (or similar) using einsum.
+        """
+        from .._module.linalg_mvp import einsum
+        from .._module.ssc_searching import argwhere
+        from .._module.creation_ranges import arange
+        from .._module.creation_shape import zeros, empty
+        from .._module.ssc_searching import where
+
+        a = self
+
+        # Build einsum subscripts dynamically
+        ndim = a.ndim
+        input_subs = [chr(ord("i") + d) for d in range(ndim)]
+        masked_axis_sub = chr(
+            ord("i") + ndim
+        )  # Use next available letter for mask dimension
+        masked_axis_original = input_subs[
+            mask_axis
+        ]  # Store original letter for masked axis
+
+        # Create mask tensor using argwhere logic to avoid advanced indexing
+        axis_size = a.shape[mask_axis]
+
+        if mask_array.dtype == bool:
+            # For boolean masks, get indices of True values
+            if mask_array.shape != (a.shape[mask_axis],):
+                raise ValueError(
+                    "boolean array of indices should have the same shape as the input array[axis]"
+                )
+            argwhere_result = argwhere(mask_array)
+            if argwhere_result.size == 0:
+                # Handle empty case: no True values in mask
+                mask_tensor = zeros((0, axis_size), dtype=np.float32)
+            else:
+                mask_tensor = (
+                    argwhere_result[:, 0, np.newaxis]
+                    == arange(axis_size)[np.newaxis, :]
+                ).astype(np.float32)  # Use float32 for einsum compatibility
+        else:
+            # Convert negative indices to positive equivalents
+            # negative indices should be converted as: axis_size + negative_index
+            # Find negative indices and convert them
+            negative_mask = mask_array._less(0)
+            if negative_mask.any():
+                # For negative indices, add axis_size to convert to positive
+                positive_equivalent = mask_array._add(axis_size)
+                # Use the functional where: where(condition, if_true, if_false)
+                mask_array = where(
+                    negative_mask, positive_equivalent, mask_array
+                )
+                if (mask_array >= axis_size).any():
+                    raise IndexError("indices are out of bounds of the array")
+            else:
+                # Now check if the converted indices are within bounds [0, axis_size)
+                if (
+                    mask_array._less(0).any()
+                    or mask_array._greater_equal(axis_size).any()
+                ):
+                    raise IndexError("indices are out of bounds of the array")
+
+            # Ensure mask_array is a DeferredArray (convert EagerArray if needed)
+            if hasattr(mask_array, "_thunk"):
+                # Already a DeferredArray
+                mask_deferred = mask_array._thunk
+            elif hasattr(mask_array, "base"):
+                mask_deferred = mask_array
+            else:
+                # Convert EagerArray to DeferredArray
+                mask_deferred = mask_array.to_deferred_array(read_only=True)
+
+            mask_2d = DeferredArray(
+                mask_deferred.base.promote(1, 1)
+            )  # Add dimension: shape (N,) -> (N, 1)
+            range_1d = arange(axis_size)  # Create range array directly
+
+            # Ensure range_1d is a DeferredArray (convert EagerArray if needed)
+            if hasattr(range_1d._thunk, "base"):
+                # Already a DeferredArray
+                range_1d_deferred = range_1d._thunk
+            else:
+                # Convert EagerArray to DeferredArray
+                range_1d_deferred = range_1d._thunk.to_deferred_array(  # type: ignore
+                    read_only=True
+                )
+
+            range_2d = DeferredArray(
+                range_1d_deferred.base.promote(0, 1)  # Now we can use .base
+            )  # Add dimension: shape (M,) -> (1, M)
+
+            mask_tensor_store = mask_2d._equal(range_2d)
+            mask_tensor = mask_tensor_store.astype(
+                np.float32
+            )  # Use float32 for einsum compatibility
+
+        # Build einsum subscript strings
+        # mask_tensor has shape (num_selected, axis_size) -> uses masked_axis_sub + masked_axis_original
+        # input array keeps its original subscripts
+        a_subscript = "".join(input_subs)
+
+        # output array replaces the masked axis with the new dimension
+        output_subscript_list = input_subs.copy()
+        output_subscript_list[mask_axis] = masked_axis_sub
+        output_subscript = "".join(output_subscript_list)
+
+        einsum_str = f"{masked_axis_sub}{masked_axis_original},{a_subscript}->{output_subscript}"
+
+        # Safety check: if mask_tensor is empty (no selections), return empty result directly
+        if mask_tensor.shape[0] == 0:
+            # Create empty result with correct shape
+            result_shape = list(a.shape)
+            result_shape[mask_axis] = (
+                0  # No selections means 0 elements in masked axis
+            )
+            empty_result = empty(tuple(result_shape), dtype=a.dtype)
+            result = empty_result._thunk
+        else:
+            # Convert DeferredArray to ndarray for einsum
+            from .._array.array import ndarray
+
+            a_ndarray = ndarray(shape=a.shape, thunk=a)
+            einsum_result = einsum(einsum_str, mask_tensor, a_ndarray)
+
+            # Preserve original dtype - einsum may promote types, but we want same dtype as input
+            # This is especially important when input is integer type but mask_tensor is float32
+            if einsum_result.dtype != a.dtype:
+                # For integer types, we may need to round to avoid precision issues
+                if np.issubdtype(a.dtype, np.integer) and np.issubdtype(
+                    einsum_result.dtype, np.floating
+                ):
+                    # Round before converting to integer to handle any floating point precision issues
+                    einsum_result = einsum_result.round().astype(a.dtype)
+                else:
+                    einsum_result = einsum_result.astype(a.dtype)
+
+            result = einsum_result._thunk
+
+        # Return in the expected format (is_set, rhs, out, self)
+        # For advanced indexing, typically is_set=False, and we return the result
+        return False, result, result, self
+
     def _create_indexing_array(
         self, key: Any, is_set: bool = False, set_value: Any | None = None
     ) -> tuple[bool, Any, Any, Any]:
         is_bool_array, lhs, bool_key = self._has_single_boolean_array(
             key, is_set
         )
-
         # the case when single boolean array is passed to the advanced
         # indexing operation
         if is_bool_array:
@@ -754,7 +948,6 @@ class DeferredArray(NumPyThunk):
                 bool_key, is_set, set_value
             )
         # general advanced indexing case
-
         store = self.base
         rhs = self
         computed_key: tuple[Any, ...]
@@ -764,6 +957,14 @@ class DeferredArray(NumPyThunk):
             computed_key = key
         assert isinstance(computed_key, tuple)
         computed_key = self._unpack_ellipsis(computed_key, self.ndim)
+
+        # Check for einsum optimization patterns
+        can_take_einsum_path, mask_axis, mask_array = (
+            self._check_if_can_use_einsum(computed_key)
+        )
+
+        if can_take_einsum_path and not is_set and self.ndim > 1:
+            return self._advanced_indexing_using_einsum(mask_axis, mask_array)
 
         # the index where the first index_array is passed to the [] operator
         start_index = -1

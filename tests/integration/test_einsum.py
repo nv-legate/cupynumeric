@@ -21,6 +21,7 @@ import pytest
 from legate.core.utils import OrderedSet
 from utils.comparisons import allclose
 from utils.generators import mk_0to1_array, permutes_to
+from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
 
@@ -304,6 +305,93 @@ def test_negative() -> None:
     msg = r"Non-alphabetic mode labels"
     with pytest.raises(NotImplementedError, match=msg):
         num.einsum("ik,1j->ij", a, b)
+
+
+@pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
+def test_large_arrays_high_dimensions(ndim):
+    """Test einsum on large arrays with varying dimensions from ONE_MAX_DIM_RANGE."""
+    # Create reasonably sized dimensions to avoid memory issues while still testing large arrays
+    # For higher dimensions, use smaller per-dimension size
+    if ndim <= 2:
+        dim_size = 32  # 32x32 for 2D = 1,024 elements
+    elif ndim <= 4:
+        dim_size = 8  # 8^4 = 4,096 elements
+    elif ndim <= 6:
+        dim_size = 4  # 4^6 = 4,096 elements
+    else:
+        dim_size = 2  # 2^n for very high dimensions
+
+    shape = (dim_size,) * ndim
+
+    # Test Case 1: Simple trace-like operation (sum over all dimensions)
+    # This creates an einsum expression that contracts all dimensions
+    if ndim == 1:
+        # For 1D: just sum all elements
+        expr = "i->"
+        np_a = np.random.rand(*shape).astype(np.float32)
+        num_a = num.array(np_a)
+
+        np_result = np.einsum(expr, np_a)
+        num_result = num.einsum(expr, num_a)
+        assert allclose(np_result, num_result, rtol=1e-5)
+
+    elif ndim == 2:
+        # For 2D: test matrix multiplication and trace
+        np_a = np.random.rand(*shape).astype(np.float32)
+        np_b = np.random.rand(*shape).astype(np.float32)
+        num_a = num.array(np_a)
+        num_b = num.array(np_b)
+
+        # Matrix multiplication: ik,kj->ij
+        np_result = np.einsum("ik,kj->ij", np_a, np_b)
+        num_result = num.einsum("ik,kj->ij", num_a, num_b)
+        assert allclose(np_result, num_result, rtol=1e-5)
+
+        # Trace: ii->
+        np_result = np.einsum("ii->", np_a)
+        num_result = num.einsum("ii->", num_a)
+        assert allclose(np_result, num_result, rtol=1e-5)
+
+    else:
+        # For higher dimensions: test tensor contraction
+        # Create two tensors with same shape
+        np_a = np.random.rand(*shape).astype(np.float32)
+        np_b = np.random.rand(*shape).astype(np.float32)
+        num_a = num.array(np_a)
+        num_b = num.array(np_b)
+
+        # Create einsum expression for element-wise multiplication and sum
+        # e.g., for 3D: "ijk,ijk->" (sum of element-wise product)
+        indices = "".join(chr(ord("i") + i) for i in range(ndim))
+        expr = f"{indices},{indices}->"
+
+        np_result = np.einsum(expr, np_a, np_b)
+        num_result = num.einsum(expr, num_a, num_b)
+        assert allclose(np_result, num_result, rtol=1e-5)
+
+        # Test partial contraction - contract first dimension only
+        # e.g., for 3D: "ijk,ijk->jk"
+        if ndim >= 2:
+            remaining_indices = indices[1:]
+            expr_partial = f"{indices},{indices}->{remaining_indices}"
+
+            np_result_partial = np.einsum(expr_partial, np_a, np_b)
+            num_result_partial = num.einsum(expr_partial, num_a, num_b)
+            assert allclose(np_result_partial, num_result_partial, rtol=1e-5)
+
+    # Test Case 2: Single array operations (sum over specific dimensions)
+    np_a = np.random.rand(*shape).astype(np.float32)
+    num_a = num.array(np_a)
+
+    # Sum over first dimension
+    if ndim >= 2:
+        indices = "".join(chr(ord("i") + i) for i in range(ndim))
+        remaining_indices = indices[1:]  # Remove first index
+        sum_expr = f"{indices}->{remaining_indices}"
+
+        np_sum_result = np.einsum(sum_expr, np_a)
+        num_sum_result = num.einsum(sum_expr, num_a)
+        assert allclose(np_sum_result, num_sum_result, rtol=1e-5)
 
 
 if __name__ == "__main__":
