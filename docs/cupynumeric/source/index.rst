@@ -24,6 +24,7 @@ good weak scaling.
   api/index
   faqs
   developer/index
+  changes/index
 
 
 Indices and tables

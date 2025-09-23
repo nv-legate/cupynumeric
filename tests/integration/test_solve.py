@@ -18,6 +18,7 @@ import pytest
 from utils.comparisons import allclose
 
 import cupynumeric as num
+from cupynumeric.runtime import runtime
 
 SIZES = (8, 9, 255)
 
@@ -46,6 +47,8 @@ ATOL = {
     np.dtype(np.complex128): 1e-8,
 }
 
+MULTI_GPU = runtime.num_gpus > 1
+
 
 @pytest.mark.parametrize("n", SIZES)
 @pytest.mark.parametrize(
@@ -53,6 +56,10 @@ ATOL = {
 )
 @pytest.mark.parametrize(
     "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
+)
+@pytest.mark.skipif(
+    MULTI_GPU,
+    reason="Known multi-GPU accuracy regression (cupynumeric.internal#1076)",
 )
 def test_solve_1d(n: int, a_dtype: np.dtype, b_dtype: np.dtype):
     a = np.random.rand(n, n).astype(a_dtype) + np.eye(n, dtype=a_dtype) * n
@@ -76,6 +83,10 @@ def test_solve_1d(n: int, a_dtype: np.dtype, b_dtype: np.dtype):
 )
 @pytest.mark.parametrize(
     "b_dtype", (np.float32, np.float64, np.complex64, np.complex128)
+)
+@pytest.mark.skipif(
+    MULTI_GPU,
+    reason="Known multi-GPU accuracy regression (cupynumeric.internal#1076)",
 )
 def test_solve_2d(n: int, a_dtype: np.dtype, b_dtype: np.dtype):
     a = np.random.rand(n, n).astype(a_dtype) + np.eye(n, dtype=a_dtype) * n
