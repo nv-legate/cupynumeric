@@ -14,10 +14,14 @@
 #
 from __future__ import annotations
 
+import itertools
 import warnings
 from dataclasses import dataclass
 from enum import Enum
-from functools import WRAPPER_ASSIGNMENTS, wraps
+import numpy
+from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import WRAPPER_ASSIGNMENTS, cache, wraps
 from types import BuiltinFunctionType, ModuleType
 from typing import (
     Any,
@@ -28,9 +32,10 @@ from typing import (
     Protocol,
     TypeVar,
     cast,
+    Iterator,
 )
 
-from legate.core import track_provenance
+from legate.core import track_provenance, get_legate_runtime
 from legate.core.utils import OrderedSet
 
 from ..runtime import runtime
@@ -53,6 +58,89 @@ FALLBACK_WARNING = (
 MOD_INTERNAL = {"__dir__", "__getattr__"}
 
 UFUNC_METHODS = ("at", "accumulate", "outer", "reduce", "reduceat")
+
+upr_result: ContextVar[object] = ContextVar("upr_result", default=None)
+
+
+def compute_fallback_and_mode(
+    result: Any, input_type: type, fallback_reason: str | None
+) -> tuple[str | None, str]:
+    if result is None:
+        return None, "none"
+    elif hasattr(result, "_thunk"):
+        is_deferred = runtime.is_deferred_array(result._thunk)
+        mode = "deferred" if is_deferred else "eager"
+
+        if not isinstance(result, numpy.ndarray):
+            return None, mode
+        elif input_type == numpy.ndarray and isinstance(result, numpy.ndarray):
+            return None, mode
+        return fallback_reason, mode
+
+    elif isinstance(result, numpy.ndarray):
+        mode = "eager"
+        if input_type == numpy.ndarray:
+            return None, mode
+        return fallback_reason, mode
+    else:
+        return None, "eager"
+
+
+@contextmanager
+def ProfileRange(
+    name: str,
+    location: str,
+    input_type: type,
+    fallback_reason: str | None = None,
+) -> Iterator[None]:
+    get_legate_runtime().start_profiling_range()  # type: ignore
+    token = upr_result.set(None)
+    try:
+        yield
+    finally:
+        result = upr_result.get()
+
+        fallback_reason, mode = compute_fallback_and_mode(
+            result, input_type, fallback_reason
+        )
+
+        if fallback_reason:
+            fallback = (
+                f" > numpy fallback | Fallback Reason: {fallback_reason}"
+            )
+        else:
+            fallback = ""
+
+        provenance = f"{name.replace('numpy.', 'cupynumeric.')} [mode: {mode}{fallback}] on {location}"
+
+        upr_result.reset(token)
+        get_legate_runtime().stop_profiling_range(provenance)  # type: ignore
+
+
+@cache
+def _profiling_enabled() -> bool:
+    return get_legate_runtime().config().profile  # type: ignore
+
+
+def _get_fallback_reason(*args: Any, **kwargs: Any) -> str | None:
+    if settings.test():
+        return "LEGATE_TEST=1"
+
+    if settings.force_thunk() == "eager":
+        return "forced_eager"
+
+    for arg in itertools.chain(args, kwargs.values()):
+        if getattr(arg, "size", 0) == 0:
+            return "empty_array"
+
+        if (
+            hasattr(arg, "_thunk")
+            and arg.size <= runtime.max_eager_volume
+            and not runtime.is_deferred_array(arg._thunk)
+        ):
+            return "size_threshold"
+
+    return None
 
 
 def issue_fallback_warning(what: str) -> None:
@@ -151,27 +239,41 @@ def implemented(
 
     wrapper: CuWrapped
 
-    if reporting:
-
-        @wraps(func)
-        @track_provenance()
-        @_fixup_co_name(func, "implemented")
-        def _wrapper(*args: Any, **kwargs: Any) -> Any:
+    @wraps(func)
+    @track_provenance()
+    @_fixup_co_name(func, "implemented")
+    def _wrapper(*args: Any, **kwargs: Any) -> Any:
+        if reporting:
             location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
             )
-            runtime.record_api_call(
-                name=name, location=location, implemented=True
-            )
-            return func(*args, **kwargs)
 
-    else:
+            def run_func(args: Any, kwargs: Any) -> Any:
+                runtime.record_api_call(
+                    name=name, location=location, implemented=True
+                )
+                return func(*args, **kwargs)
 
-        @wraps(func)
-        @track_provenance()
-        @_fixup_co_name(func, "implemented")
-        def _wrapper(*args: Any, **kwargs: Any) -> Any:
-            return func(*args, **kwargs)
+            if not _profiling_enabled():
+                return run_func(args, kwargs)
+
+            fallback_reason = _get_fallback_reason(*args, **kwargs)
+            with ProfileRange(name, location, type(args[0]), fallback_reason):
+                result = run_func(args, kwargs)
+                upr_result.set(result)
+                return result
+
+        else:
+            if not _profiling_enabled():
+                return func(*args, **kwargs)
+
+            location = find_last_user_line_numbers(True)
+            fallback_reason = _get_fallback_reason(*args, **kwargs)
+
+            with ProfileRange(name, location, type(args[0]), fallback_reason):
+                result = func(*args, **kwargs)
+                upr_result.set(result)
+                return result
 
     wrapper = cast(CuWrapped, _wrapper)
 
@@ -217,32 +319,53 @@ def unimplemented(
 
     wrapper: CuWrapped
 
-    if reporting:
-
-        @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
-        @_fixup_co_name(func, "unimplemented")
-        def _wrapper(*args: Any, **kwargs: Any) -> Any:
+    @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
+    @_fixup_co_name(func, "unimplemented")
+    def _wrapper(*args: Any, **kwargs: Any) -> Any:
+        if reporting:
             location = find_last_user_line_numbers(
                 not settings.report_dump_callstack()
             )
-            runtime.record_api_call(
-                name=name, location=location, implemented=False
-            )
-            if fallback:
-                args = deep_apply(args, fallback)
-                kwargs = deep_apply(kwargs, fallback)
-            return func(*args, **kwargs)
 
-    else:
+            def run_func(args: Any, kwargs: Any) -> Any:
+                runtime.record_api_call(
+                    name=name, location=location, implemented=False
+                )
+                if fallback:
+                    args = deep_apply(args, fallback)
+                    kwargs = deep_apply(kwargs, fallback)
+                return func(*args, **kwargs)
 
-        @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
-        @_fixup_co_name(func, "unimplemented")
-        def _wrapper(*args: Any, **kwargs: Any) -> Any:
-            issue_fallback_warning(what=name)
-            if fallback:
-                args = deep_apply(args, fallback)
-                kwargs = deep_apply(kwargs, fallback)
-            return func(*args, **kwargs)
+            fallback_reason = _get_fallback_reason(*args, **kwargs)
+
+            if _profiling_enabled():
+                with ProfileRange(
+                    name, location, type(args[0]), fallback_reason
+                ):
+                    result = run_func(*args, **kwargs)
+                    upr_result.set(result)
+                    return result
+            return run_func(args, kwargs)
+
+        else:
+
+            def run_func_with_fallback(args: Any, kwargs: Any) -> Any:
+                issue_fallback_warning(what=name)
+                if fallback:
+                    args = deep_apply(args, fallback)
+                    kwargs = deep_apply(kwargs, fallback)
+                return func(*args, **kwargs)
+
+            if not _profiling_enabled():
+                return run_func_with_fallback(args, kwargs)
+
+            fallback_reason = _get_fallback_reason(*args, **kwargs)
+            location = find_last_user_line_numbers(True)
+
+            with ProfileRange(name, location, type(args[0]), fallback_reason):
+                result = run_func_with_fallback(*args, **kwargs)
+                upr_result.set(result)
+                return result
 
     wrapper = cast(CuWrapped, _wrapper)
 
@@ -395,6 +518,7 @@ def clone_class(
     """
 
     class_name = f"{origin_class.__module__}.{origin_class.__name__}"
+
     clean_omit_names = OrderedSet() if omit_names is None else omit_names
 
     def _clone_class(cls: T) -> T:

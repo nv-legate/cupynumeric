@@ -410,6 +410,7 @@ class Runtime(object):
                     + "how to attach to array views that are not affine "
                     + "transforms of their parent array."
                 )
+
             parent_thunk = self.find_or_create_array_thunk(
                 array.base, transfer, read_only, defer
             )
