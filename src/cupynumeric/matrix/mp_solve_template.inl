@@ -25,8 +25,6 @@
 #include "cupynumeric/cuda_help.h"
 #include "cupynumeric/utilities/repartition.h"
 
-#include <cal.h>
-
 namespace cupynumeric {
 
 using namespace Legion;
@@ -63,13 +61,13 @@ struct MpSolveImpl {
   {
     using VAL = type_of<CODE>;
 
-    auto nccl_comm = comms[0];
-    auto cal_comm  = comms[1].get<cal_comm_t>();
-
+    auto* p_nccl_comm = comms[0].get<ncclComm_t*>();
     int rank, num_ranks;
-    assert(cal_comm);
-    CHECK_CAL(cal_comm_get_rank(cal_comm, &rank));
-    CHECK_CAL(cal_comm_get_size(cal_comm, &num_ranks));
+    assert(p_nccl_comm);
+    auto nccl_comm = *p_nccl_comm;
+    CHECK_NCCL(ncclCommUserRank(nccl_comm, &rank));
+    CHECK_NCCL(ncclCommCount(nccl_comm, &num_ranks));
+
     assert(launch_domain.get_volume() == num_ranks);
     assert(launch_domain.get_dim() <= 2);
 
@@ -127,7 +125,7 @@ struct MpSolveImpl {
                                                                               npcol,
                                                                               nb,
                                                                               nb,
-                                                                              nccl_comm,
+                                                                              comms[0],
                                                                               context);
 
     auto b_offset_r = b_shape.lo[0];
@@ -144,10 +142,10 @@ struct MpSolveImpl {
                                                                               npcol,
                                                                               nb,
                                                                               nb,
-                                                                              nccl_comm,
+                                                                              comms[0],
                                                                               context);
 
-    MpSolveImplBody<KIND, CODE>{context}(cal_comm,
+    MpSolveImplBody<KIND, CODE>{context}(nccl_comm,
                                          nprow,
                                          npcol,
                                          n,
@@ -177,7 +175,7 @@ struct MpSolveImpl {
                              false,  // x_shape is enforced col-major
                              b_offset_r,
                              b_offset_c,
-                             nccl_comm,
+                             comms[0],
                              context);
   }
 
