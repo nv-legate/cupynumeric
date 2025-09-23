@@ -54,8 +54,6 @@ def solve_batched(
     task.add_output(tiled_x, partition)
     task.execute()
 
-    task.execute()
-
 
 MIN_SOLVE_TILE_SIZE = 16 if settings.test() else 512
 MIN_SOLVE_MATRIX_SIZE = 32 if settings.test() else 2048
