@@ -19,6 +19,10 @@
 #include "cupynumeric/cupynumeric_task.h"
 #include "cupynumeric/ndarray.h"
 
+#include <type_traits>
+
+#include <cuda/std/cmath>
+
 namespace cupynumeric {
 
 enum class BinaryOpCode : int {
@@ -839,7 +843,11 @@ struct BinaryOp<BinaryOpCode::POWER, CODE> {
   BinaryOp(const std::vector<legate::Scalar>&) {}
   constexpr VAL operator()(const VAL& a, const VAL& b) const
   {
-    return std::pow(static_cast<double>(a), static_cast<double>(b));
+    if constexpr (std::is_integral_v<std::decay_t<VAL>>) {
+      return cuda::std::round(cuda::std::pow(a, b));
+    } else {
+      return cuda::std::pow(static_cast<double>(a), static_cast<double>(b));
+    }
   }
 };
 

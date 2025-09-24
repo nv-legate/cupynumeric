@@ -243,6 +243,16 @@ def test_power_ops_scalar_scalar(op) -> None:
     check_op(op, (scalars[4], scalars[0]))
 
 
+def test_int_power_1() -> None:
+    a = np.array(
+        [2, 3, 5, 7, 11, 13, 17, 19, 117, np.iinfo(np.int32).max],
+        dtype="int32",
+    )
+    b = np.array([1] * 10, dtype="int32")
+    c = a**b
+    assert all(a == c)
+
+
 div_ops = ["%", "remainder"]
 
 
