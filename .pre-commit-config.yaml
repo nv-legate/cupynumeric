@@ -32,22 +32,6 @@ repos:
       - id: ruff-format
       - id: ruff
         args: ["--config=./pyproject.toml", "--fix"]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.17.1'
-    hooks:
-      - id: mypy
-        pass_filenames: false
-        args: ['cupynumeric']
-        additional_dependencies: [
-          legate,
-          jinja2,
-          docutils,
-          types-docutils,
-          sphinx,
-          numpy,
-          scipy-stubs,
-          opt_einsum,
-        ]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: 'v16.0.6'  # Use the sha / tag you want to point at
     hooks:
