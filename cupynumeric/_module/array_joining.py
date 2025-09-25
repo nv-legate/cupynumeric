@@ -25,7 +25,6 @@ from ..lib.array_utils import normalize_axis_index
 from .array_dimension import _atleast_nd
 from .array_transpose import moveaxis
 from .creation_ranges import arange
-from .creation_data import array
 from .creation_shape import empty, ones, zeros
 from .ssc_searching import flatnonzero
 
@@ -245,15 +244,12 @@ def _concatenate(
             shape=out_shape, dtype=common_info.dtype, inputs=inputs
         )
     else:
-        out = convert_to_cupynumeric_ndarray(out)
-        if not isinstance(out, ndarray):
-            raise TypeError("out should be ndarray")
-        elif list(out.shape) != out_shape:
+        out_array = convert_to_cupynumeric_ndarray(out)
+        if list(out_array.shape) != out_shape:
             raise ValueError(
                 f"out.shape({out.shape}) is not matched "
                 f"to the result shape of concatenation ({out_shape})"
             )
-        out_array = out
 
     for dest, src in zip(slices, inputs):
         out_array[(Ellipsis,) + dest] = src
@@ -426,7 +422,7 @@ def concatenate(
             dtype=dtype,
             casting=casting,
         )
-        return array(result)
+        return convert_to_cupynumeric_ndarray(result)
     except Exception:
         pass
 

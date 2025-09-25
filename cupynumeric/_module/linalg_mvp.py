@@ -20,7 +20,7 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
-import opt_einsum as oe  # type: ignore
+import opt_einsum as oe  # type: ignore [import-untyped]
 
 from .._array.array import ndarray
 from .._array.util import (
@@ -752,7 +752,7 @@ def einsum(
         computed_operands.append(sub_result)
 
     assert len(computed_operands) == 1
-    return computed_operands[0]
+    return convert_to_cupynumeric_ndarray(computed_operands[0])
 
 
 def einsum_path(

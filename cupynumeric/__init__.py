@@ -51,9 +51,9 @@ def _fixup_version() -> str:
     from . import _version
 
     if hasattr(_version, "get_versions"):
-        return _version.get_versions()["version"]  # type: ignore [no-untyped-call]
+        return str(_version.get_versions()["version"])  # type: ignore [no-untyped-call]
     if hasattr(_version, "__version__"):
-        return _version.__version__
+        return str(_version.__version__)
 
     raise RuntimeError("Failed to determine version")
 

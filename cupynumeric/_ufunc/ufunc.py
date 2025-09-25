@@ -463,9 +463,10 @@ class unary_ufunc(ufunc[UnaryOpCode]):
                     "cannot specify 'out' as both a positional and keyword argument"
                 )
             out = args[self.nin]
-        return getattr(x._thunk, f"_{self._name}")(
+        result = getattr(x._thunk, f"_{self._name}")(
             out=out, where=where, casting=casting, order=order, dtype=dtype
         )
+        return convert_to_cupynumeric_ndarray(result)
 
     def _call_full(
         self,
