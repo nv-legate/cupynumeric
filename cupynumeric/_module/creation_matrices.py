@@ -18,10 +18,12 @@ from typing import TYPE_CHECKING
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
-from .creation_shape import ones
+from .creation_shape import empty, ones
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+
+import math
 
 
 @add_boilerplate("v")
@@ -123,8 +125,32 @@ def tri(
     if like is not None:
         raise ValueError("like parameter is currently not supported")
 
+    try:
+        k = int(k)
+    except (TypeError, ValueError) as e:
+        raise TypeError("k parameter must be an integer.") from e
+
+    def shape_to_int(val: int | float) -> int:
+        return int(math.ceil(val)) if isinstance(val, float) else int(val)
+
+    try:
+        N = shape_to_int(N)
+    except (TypeError, ValueError) as e:
+        raise TypeError("N parameter must be an integer.") from e
     if M is None:
         M = N
+    else:
+        try:
+            M = shape_to_int(M)
+        except (TypeError, ValueError) as e:
+            raise TypeError("M parameter must be integer or None.") from e
+
+    if dtype is None:
+        dtype = float
+
+    if N < 0 or M < 0:
+        out = empty((max(N, 0), max(M, 0)), dtype=dtype)
+        return tril(out, k)
 
     out = ones((N, M), dtype=dtype)
     return tril(out, k)

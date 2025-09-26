@@ -59,83 +59,30 @@ def test_trilu_indices_m(func, m):
     check_module_function(func, [N], {"m": m}, print_msg)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("k", (-10.5, 0.0, 10.5), ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES)
-def test_trilu_indices_float_k(func, k):
-    # cuPyNumeric: struct.error: required argument is not an integer
-    # Numpy: pass
+def test_trilu_indices_float_k(func, k: float) -> None:
     print_msg = f"np & cupynumeric.{func}({N}, k={k})"
     check_module_function(func, [N], {"k": k}, print_msg)
 
 
+@pytest.mark.parametrize("n", (-100, -10.5, 0.0, 10.5))
+def test_n_DIVERGENCE(n: int | float) -> None:
+    np_res = np.tril_indices(n)
+    num_res = num.tril_indices(n)
+    assert np.array_equal(np_res, num_res)
+
+
+@pytest.mark.parametrize("m", (-100, -10.5, 0.0, 10.5))
+def test_float_m_DIVERGENCE(m: int | float) -> None:
+    np_res = np.tril_indices(N, m=m)
+    num_res = num.tril_indices(N, m=m)
+    assert np.array_equal(np_res, num_res)
+
+
 class TestTriluIndicesErrors:
-    def test_negative_n(self):
-        with pytest.raises(ValueError):
-            num.tril_indices(-100)
-
-    @pytest.mark.xfail
-    def test_negative_n_DIVERGENCE(self):
-        # np.tril_indices(-100) returns empty array, dtype=int64
-        # num.tril_indices(-100) raises ValueError
-        n = -100
-        np_res = np.tril_indices(n)
-        num_res = num.tril_indices(n)
-        assert np.array_equal(np_res, num_res)
-
-    @pytest.mark.parametrize("n", (-10.5, 0.0, 10.5))
-    def test_float_n(self, n):
-        msg = "expected a sequence of integers or a single integer"
-        with pytest.raises(TypeError, match=msg):
-            num.tril_indices(n)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("n", (-10.5, 0.0, 10.5))
-    def test_float_n_DIVERGENCE(self, n):
-        # np.tril_indices(-10.5) returns empty array, dtype=int64
-        # np.tril_indices(0.0) returns empty array, dtype=int64
-        # np.tril_indices(10.5) returns array, dtype=int64
-        # num.tril_indices(-10.5) raises TypeError
-        # num.tril_indices(0.0) raises TypeError
-        # num.tril_indices(10.5) raises TypeError
-        np_res = np.tril_indices(n)
-        num_res = num.tril_indices(n)
-        assert np.array_equal(np_res, num_res)
-
-    def test_negative_m(self):
-        with pytest.raises(ValueError):
-            num.tril_indices(N, m=-10)
-
-    @pytest.mark.xfail
-    def test_negative_m_DIVERGENCE(self):
-        # np.tril_indices(100, m=-10) returns empty array, dtype=int64
-        # num.tril_indices(100, m=-10) raises ValueError
-        m = -10
-        np_res = np.tril_indices(N, m=m)
-        num_res = num.tril_indices(N, m=m)
-        assert np.array_equal(np_res, num_res)
-
-    @pytest.mark.parametrize("m", (-10.5, 0.0, 10.5))
-    def test_float_m(self, m):
-        msg = "expected a sequence of integers or a single integer"
-        with pytest.raises(TypeError, match=msg):
-            num.tril_indices(N, m=m)
-
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("m", (-10.5, 0.0, 10.5))
-    def test_float_m_DIVERGENCE(self, m):
-        # np.tril_indices(100, m=-10.5) returns empty array, dtype=int64
-        # np.tril_indices(100, m=0.0) returns empty array, dtype=int64
-        # np.tril_indices(100, m=10.5) returns array, dtype=int64
-        # num.tril_indices(100, m=-10.5) raises TypeError
-        # num.tril_indices(100, m=0.0) raises TypeError
-        # num.tril_indices(100, m=10.5) raises TypeError
-        np_res = np.tril_indices(N, m=m)
-        num_res = num.tril_indices(N, m=m)
-        assert np.array_equal(np_res, num_res)
-
     def test_n_none(self):
-        msg = "expected a sequence of integers or a single integer"
+        msg = "N parameter must be an integer."
         with pytest.raises(TypeError, match=msg):
             num.tril_indices(None)
 
@@ -170,12 +117,9 @@ def test_trilu_indices_from_empty_array(func, shape):
     _test_from(func, shape, k)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("k", (-10.5, 0.0, 10.5), ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize("func", FUNCTIONS_INDICES_FROM)
 def test_trilu_indices_from_float_k(func, k):
-    # cuPyNumeric: struct.error: required argument is not an integer
-    # Numpy: pass
     shape = (10, 10)
     _test_from(func, shape, k)
 
