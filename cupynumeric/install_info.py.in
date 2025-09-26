@@ -35,6 +35,9 @@ def get_libpath():
             return libdir
         return None
 
+    if ret := find_libcupynumeric("@CUPYNUMERIC_LIBDIR@"):
+        return ret
+
     for libdir in ("lib", "lib64"):
         if ret := find_libcupynumeric(join(cn_path, "build", libdir)):
             return ret

@@ -43,9 +43,32 @@ if(NOT cupynumeric_FOUND)
   set(SKBUILD ON)
 endif()
 
+add_library(cupynumeric_python INTERFACE)
+add_library(cupynumeric::cupynumeric_python ALIAS cupynumeric_python)
+target_link_libraries(cupynumeric_python INTERFACE legate::legate)
+
+
+get_target_property(cn_is_imported cupynumeric::cupynumeric IMPORTED)
+if(cn_is_imported)
+    get_target_property(cn_lib cupynumeric::cupynumeric IMPORTED_LOCATION)
+    if(NOT cn_lib)
+        # Try configuration-specific locations
+        foreach(config RELEASE DDEBUG RELWITHDEBINFO MINSIZEREL)
+            get_target_property(cn_lib cupynumeric::cupynumeric IMPORTED_LOCATION_${config})
+            if(cn_lib)
+                break()
+            endif()
+        endforeach()
+    endif()
+    if(cn_lib)
+      get_filename_component(cn_libdir "${cn_lib}" DIRECTORY)
+    endif()
+endif()
+
 add_custom_target("generate_install_info_py" ALL
   COMMAND ${CMAKE_COMMAND}
           -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+          -DCUPYNUMERIC_LIBDIR=${cn_libdir}
           -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_install_info_py.cmake"
   COMMENT "Generate install_info.py"
   VERBATIM
