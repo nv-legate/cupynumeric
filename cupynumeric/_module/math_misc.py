@@ -379,8 +379,6 @@ def roots(p: ndarray) -> ndarray:
         # Force roots_result to be complex, as that is the type that
         # eigvals often returns
         roots_result = roots_result.astype(np.complex128)
-    else:
-        roots_result = zeros(0, dtype=np.complex128)
 
     # tack any zeros onto the back of the array
     if trailing_zeros > 0:

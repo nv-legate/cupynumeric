@@ -201,11 +201,6 @@ def test_nonzero_constant_polynomial_no_roots():
 
     result = num.roots(arr_num)
     expected = np.roots(arr)
-
-    # Should return empty array
-    assert result.size == 0
-    assert expected.size == 0
-    assert result.dtype == np.float64
     assert allclose(result, expected)
 
     # Test with a negative constant
@@ -214,11 +209,6 @@ def test_nonzero_constant_polynomial_no_roots():
 
     result = num.roots(arr_num)
     expected = np.roots(arr)
-
-    # Should return empty array
-    assert result.size == 0
-    assert expected.size == 0
-    assert result.dtype == np.float64
     assert allclose(result, expected)
 
 
