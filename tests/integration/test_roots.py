@@ -107,7 +107,10 @@ def test_repeated_roots():
 
     result = num.roots(arr_num)
     expected = np.roots(arr)
-    assert allclose(result, expected)
+    # we need to increase tolerance since there is a numerical
+    # instability for the result of eigvals when different BLAS
+    # libraries are used
+    assert allclose(result, expected, rtol=1e-5, atol=1e-8)
 
 
 def test_large_coefficients():
@@ -184,6 +187,24 @@ def test_trailing_zeros():
 
 def test_single_zero_coefficient():
     arr = np.array([0])
+    arr_num = num.array(arr)
+
+    result = num.roots(arr_num)
+    expected = np.roots(arr)
+    assert allclose(result, expected)
+
+
+def test_nonzero_constant_polynomial_no_roots():
+    # Test with a positive constant
+    arr = np.array([7.5])
+    arr_num = num.array(arr)
+
+    result = num.roots(arr_num)
+    expected = np.roots(arr)
+    assert allclose(result, expected)
+
+    # Test with a negative constant
+    arr = np.array([-3.2])
     arr_num = num.array(arr)
 
     result = num.roots(arr_num)
