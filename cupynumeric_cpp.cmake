@@ -365,6 +365,7 @@ if(cupynumeric_USE_CUSOLVERMP)
   target_sources(cupynumeric PRIVATE
     src/cupynumeric/matrix/mp_potrf.cu
     src/cupynumeric/matrix/mp_solve.cu
+    src/cupynumeric/matrix/mp_qr.cu
   )
 endif()
 

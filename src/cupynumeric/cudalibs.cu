@@ -330,13 +330,7 @@ void CuSolverExtraSymbols::finalize()
 CuSolverExtraSymbols::~CuSolverExtraSymbols() { finalize(); }
 
 CUDALibraries::CUDALibraries()
-  : finalized_(false),
-    cublas_(nullptr),
-    cusolver_(nullptr),
-#if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-    cusolvermp_(nullptr),
-#endif
-    plan_caches_()
+  : finalized_(false), cublas_(nullptr), cusolver_(nullptr), plan_caches_()
 {
 }
 
@@ -355,9 +349,7 @@ void CUDALibraries::finalize()
   }
 
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-  if (cusolvermp_ != nullptr) {
-    finalize_cusolvermp();
-  }
+  finalize_cusolvermp();
 #endif
   if (cutensor_ != nullptr) {
     finalize_cutensor();
@@ -383,8 +375,10 @@ void CUDALibraries::finalize_cusolver()
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
 void CUDALibraries::finalize_cusolvermp()
 {
-  CHECK_CUSOLVER(cusolverMpDestroy(cusolvermp_));
-  cusolvermp_ = nullptr;
+  for (auto& [_, handle] : cusolvermp_handle_map_) {
+    CHECK_CUSOLVER(cusolverMpDestroy(handle));
+  }
+  cusolvermp_handle_map_.clear();
 }
 #endif
 
@@ -442,14 +436,23 @@ cusolverDnHandle_t CUDALibraries::get_cusolver()
 }
 
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-cusolverMpHandle_t CUDALibraries::get_cusolvermp(cudaStream_t stream)
+cusolverMpHandle_t CUDALibraries::get_cusolvermp(cudaStream_t stream, int nprow, int npcol)
 {
-  if (nullptr == cusolvermp_) {
+  cusolverMpHandle* cusolvermp_h{nullptr};
+  auto key = std::make_pair(nprow, npcol);
+
+  if (auto pos = cusolvermp_handle_map_.find(key);
+      pos != cusolvermp_handle_map_.end() && pos->second != nullptr) {
+    cusolvermp_h = pos->second;
+  } else {
     int device = -1;
     CUPYNUMERIC_CHECK_CUDA(cudaGetDevice(&device));
-    CHECK_CUSOLVER(cusolverMpCreate(&cusolvermp_, device, stream));
+    CHECK_CUSOLVER(cusolverMpCreate(&cusolvermp_h, device, stream));
+
+    cusolvermp_handle_map_.insert(std::make_pair(key, cusolvermp_h));
   }
-  return cusolvermp_;
+
+  return cusolvermp_h;
 }
 #endif
 
@@ -515,11 +518,11 @@ CuSolverExtraSymbols* get_cusolver_extra_symbols()
 }
 
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-cusolverMpHandle* get_cusolvermp(cudaStream_t stream)
+cusolverMpHandle* get_cusolvermp(cudaStream_t stream, int nprow, int npcol)
 {
   const auto proc = legate::Processor::get_executing_processor();
   auto& lib       = get_cuda_libraries(proc);
-  return lib.get_cusolvermp(stream);
+  return lib.get_cusolvermp(stream, nprow, npcol);
 }
 #endif
 
@@ -565,7 +568,7 @@ class LoadCUDALibsTask : public CuPyNumericTask<LoadCUDALibsTask> {
     lib.get_cusolver();
     auto* extra = get_cusolver_extra_symbols();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-    lib.get_cusolvermp(context.get_task_stream());
+    lib.get_cusolvermp(context.get_task_stream(), 0, 0);
 #endif
     static_cast<void>(lib.get_cutensor());
   }

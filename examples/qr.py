@@ -28,6 +28,11 @@ def check_result(a, q, r):
     else:
         print("FAIL!")
 
+        qtq = num.matmul(q.T, q)
+        qtq_err = num.eye(q.shape[1]) - qtq
+        q_max = num.max(qtq_err)
+        print(f"cunumeric I-qTq max: {q_max}")
+
 
 def qr(m, n, dtype, perform_check, timing):
     a = num.random.rand(m, n).astype(dtype=dtype)
@@ -58,7 +63,7 @@ if __name__ == "__main__":
         "-m",
         "--rows",
         type=int,
-        default=10,
+        default=1000,
         dest="m",
         help="number of rows in the matrix",
     )
@@ -66,7 +71,7 @@ if __name__ == "__main__":
         "-n",
         "--cols",
         type=int,
-        default=10,
+        default=1000,
         dest="n",
         help="number of cols in the matrix",
     )

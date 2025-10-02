@@ -394,7 +394,7 @@ cublasHandle_t get_cublas();
 cusolverDnHandle_t get_cusolver();
 CuSolverExtraSymbols* get_cusolver_extra_symbols();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-cusolverMpHandle_t get_cusolvermp(cudaStream_t stream);
+cusolverMpHandle_t get_cusolvermp(cudaStream_t stream, int nprow, int npcol);
 #endif
 [[nodiscard]] const cutensorHandle_t& get_cutensor();
 cufftContext get_cufft_plan(cufftType type, const cufftPlanParams& params, cudaStream_t stream);

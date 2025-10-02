@@ -39,7 +39,7 @@ static inline void mp_solve_template(comm_t comm,
 {
   const auto trans = CUBLAS_OP_N;
 
-  auto handle = get_cusolvermp(ctx_stream);
+  auto handle = get_cusolvermp(ctx_stream, nprow, npcol);
 
   // synchronize all previous copies on default stream
   // cusolverMP has its unmodifiable stream to continue with

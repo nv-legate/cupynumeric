@@ -16,10 +16,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from legate.core import get_legate_runtime
+import legate.core.types as ty
+from legate.core import get_legate_runtime, dimension
 
 from cupynumeric.config import CuPyNumericOpCode
-
+from ..runtime import runtime
+from ..settings import settings
 from ._exception import LinAlgError
 
 if TYPE_CHECKING:
@@ -44,7 +46,64 @@ def qr_single(
     task.execute()
 
 
+QR_TILE_SIZE = 4 if settings.test() else 128
+MIN_QR_MATRIX_SIZE = 32 if settings.test() else 1048576
+
+
+def mp_qr(
+    library: Library,
+    m: int,
+    n: int,
+    mb: int,
+    nb: int,
+    a: LogicalStore,
+    q: LogicalStore,
+    r: LogicalStore,
+) -> None:
+    initial_color_shape_x = runtime.num_gpus
+    tilesize_x = (m + initial_color_shape_x - 1) // initial_color_shape_x
+    color_shape_x = (m + tilesize_x - 1) // tilesize_x
+
+    task = get_legate_runtime().create_manual_task(
+        library, CuPyNumericOpCode.MP_QR, (color_shape_x, 1)
+    )
+    task.throws_exception(LinAlgError)
+
+    tiled_a = a.partition_by_tiling((tilesize_x, n))
+    tiled_q = q.partition_by_tiling((tilesize_x, n), (color_shape_x, 1))
+    tiled_r = r.partition_by_tiling((tilesize_x, n), (color_shape_x, 1))
+
+    task.add_input(tiled_a, (dimension(0), dimension(1)))
+    task.add_output(tiled_q, (dimension(0), dimension(1)))
+    task.add_output(tiled_r, (dimension(0), dimension(1)))
+
+    task.add_scalar_arg(m, ty.int64)
+    task.add_scalar_arg(n, ty.int64)
+    task.add_scalar_arg(mb, ty.int64)
+    task.add_scalar_arg(nb, ty.int64)
+
+    task.add_nccl_communicator()  # for repartitioning
+
+    task.execute()
+
+
 def qr_deferred(a: DeferredArray, q: DeferredArray, r: DeferredArray) -> None:
     library = a.library
 
-    qr_single(library, a.base, q.base, r.base)
+    m = a.base.shape[0]
+    n = a.base.shape[1]
+
+    # TODO: confirm if below can work with rectangular:
+    #
+    mb = QR_TILE_SIZE
+    nb = QR_TILE_SIZE
+
+    if (
+        runtime.has_cusolvermp
+        and runtime.num_gpus > 1
+        and m >= n  # TODO: m < n to be addressed in separate PR
+        and m * n >= MIN_QR_MATRIX_SIZE
+    ):
+        mp_qr(library, m, n, mb, nb, a.base, q.base, r.base)
+    else:
+        qr_single(library, a.base, q.base, r.base)

@@ -18,6 +18,8 @@
 
 #include "cuda_help.h"
 
+#include <map>
+
 namespace cupynumeric {
 
 struct cufftPlanCache;
@@ -39,7 +41,7 @@ struct CUDALibraries {
   cublasHandle_t get_cublas();
   cusolverDnHandle_t get_cusolver();
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-  cusolverMpHandle_t get_cusolvermp(cudaStream_t stream);
+  cusolverMpHandle_t get_cusolvermp(cudaStream_t stream, int nprow, int npcol);
 #endif
   [[nodiscard]] const cutensorHandle_t& get_cutensor();
   cufftContext get_cufft_plan(cufftType type, const cufftPlanParams& params, cudaStream_t stream);
@@ -58,9 +60,15 @@ struct CUDALibraries {
   std::unique_ptr<cudaDeviceProp> device_prop_{};
   cublasContext* cublas_;
   cusolverDnContext* cusolver_;
-
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
-  cusolverMpHandle* cusolvermp_;
+  // per-grid handle map;
+  // this was recommended by Marcin Rogowski (cusolvermp team)
+  // following cusolvermp upgrade to 0.7.x
+  // to avoid re-using a handle for a different grid
+  // which triggers a bug in cusolvermp
+  // see https://github.com/nv-legate/cupynumeric.internal/pull/672
+  //
+  std::map<std::pair<int, int>, cusolverMpHandle_t> cusolvermp_handle_map_;
 #endif
   std::optional<cutensorHandle_t> cutensor_{};
   std::map<cufftType, cufftPlanCache*> plan_caches_;

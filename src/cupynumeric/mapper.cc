@@ -130,6 +130,7 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
     case CUPYNUMERIC_SYRK:
     case CUPYNUMERIC_GEMM:
     case CUPYNUMERIC_MP_POTRF:
+    case CUPYNUMERIC_MP_QR:
     case CUPYNUMERIC_MP_SOLVE: {
       std::vector<StoreMapping> mappings;
       auto inputs  = task.inputs();
@@ -477,6 +478,7 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         }
       }
     }
+    case CUPYNUMERIC_MP_QR:
     case CUPYNUMERIC_MP_POTRF:
     case CUPYNUMERIC_MP_SOLVE: {
       switch (memory_kind) {

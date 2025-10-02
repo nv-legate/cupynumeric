@@ -123,6 +123,7 @@ def test_CuPyNumericOpCode() -> None:
         "MATMUL",
         "MATVECMUL",
         "MP_POTRF",
+        "MP_QR",
         "MP_SOLVE",
         "NONZERO",
         "PACKBITS",
