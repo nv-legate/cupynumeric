@@ -14,7 +14,6 @@
 #
 from __future__ import annotations
 
-import weakref
 from collections import Counter
 from collections.abc import Iterable
 from enum import IntEnum, unique
@@ -288,16 +287,11 @@ class DeferredArray(NumPyThunk):
     :meta private:
     """
 
-    def __init__(
-        self, base: LogicalStore, numpy_array: npt.NDArray[Any] | None = None
-    ) -> None:
+    def __init__(self, base: LogicalStore) -> None:
         super().__init__(base.type.to_numpy_dtype())
         assert base is not None
         assert isinstance(base, LogicalStore)
         self.base: LogicalStore = base  # a Legate Store
-        self.numpy_array = (
-            None if numpy_array is None else weakref.ref(numpy_array)
-        )
 
     def __str__(self) -> str:
         return f"DeferredArray(base: {self.base})"
@@ -349,11 +343,7 @@ class DeferredArray(NumPyThunk):
         return self._copy_if_overlapping(other)
 
     def __numpy_array__(self) -> npt.NDArray[Any]:
-        if self.numpy_array is not None:
-            result = self.numpy_array()
-            if result is not None:
-                return result
-        elif self.size == 0:
+        if self.size == 0:
             # Return an empty array with the right number of dimensions
             # and type
             return np.empty(shape=self.shape, dtype=self.dtype)

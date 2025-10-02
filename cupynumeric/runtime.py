@@ -436,12 +436,7 @@ class Runtime(object):
                 # This argument should really be called "donate"
                 read_only=(transfer != TransferType.SHARE),
             )
-            return DeferredArray(
-                store,
-                numpy_array=(
-                    array if transfer == TransferType.SHARE else None
-                ),
-            )
+            return DeferredArray(store)
 
         from ._thunk.eager import EagerArray
 

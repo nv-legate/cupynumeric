@@ -46,7 +46,6 @@ def sort_flattened(
     )
     sort_deferred(sort_result, flattened, argsort, stable=stable)
     output.base = sort_result.base
-    output.numpy_array = None
 
 
 def sort_swapped(
@@ -81,11 +80,9 @@ def sort_swapped(
         )
         sort_deferred(sort_result, swapped_copy, argsort, stable=stable)
         output.base = sort_result.swapaxes(input.ndim - 1, sort_axis).base
-        output.numpy_array = None
     else:
         sort_deferred(swapped_copy, swapped_copy, argsort, stable=stable)
         output.base = swapped_copy.swapaxes(input.ndim - 1, sort_axis).base
-        output.numpy_array = None
 
 
 def sort_task(
@@ -113,7 +110,6 @@ def sort_task(
         task.add_output(unbound.base)
         task.execute()
         output.base = unbound.base
-        output.numpy_array = None
     else:
         task.add_output(output.base)
         task.add_alignment(output.base, input.base)
