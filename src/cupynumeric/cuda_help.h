@@ -27,6 +27,7 @@
 #include <cusolverDn.h>
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
 #include <cusolverMp.h>
+#include <cal.h>
 #endif
 #include <cuda_runtime.h>
 #include <cufft.h>
@@ -107,6 +108,24 @@ __host__ inline void check_cusolver(cusolverStatus_t status, const char* file, i
   }
 }
 
+#if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
+__host__ inline void check_cal(calError_t status, const char* file, int line)
+{
+  if (status != CAL_OK) {
+    fprintf(stderr,
+            "Internal libcal failure with error code %d in file %s at line %d\n",
+            status,
+            file,
+            line);
+#ifdef DEBUG_CUPYNUMERIC
+    assert(false);
+#else
+    exit(status);
+#endif
+  }
+}
+#endif
+
 __host__ inline void check_cutensor(cutensorStatus_t result, const char* file, int line)
 {
   if (result != CUTENSOR_STATUS_SUCCESS) {
@@ -158,6 +177,12 @@ __host__ inline void check_nccl(ncclResult_t error, const char* file, int line)
   do {                                                           \
     cusolverStatus_t __result__ = (expr);                        \
     cupynumeric::check_cusolver(__result__, __FILE__, __LINE__); \
+  } while (false)
+
+#define CHECK_CAL(expr)                                     \
+  do {                                                      \
+    calError_t __result__ = (expr);                         \
+    cupynumeric::check_cal(__result__, __FILE__, __LINE__); \
   } while (false)
 
 #define CHECK_CUTENSOR(expr)                                     \

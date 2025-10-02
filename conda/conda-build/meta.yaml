@@ -161,7 +161,8 @@ requirements:
     - libcurand-dev
     - libcufile-dev
     - cuda-version ={{ cuda_version }}
-    - libcusolvermp-dev >=0.7
+    - libcusolvermp-dev <0.7
+    - libcal-dev
 {% endif %}
 
   run:
@@ -181,6 +182,7 @@ requirements:
     - {{ pin_compatible('libcusolver',  min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufile',    min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
+    - libcusolvermp0 <0.7
     - cutensor >=2.0,<2.3.0.6 =*_*     # versioned independently of CUDA; pin to avoid 2.3.0.6 bug
     - nccl >=2.0,<3
     - cupy

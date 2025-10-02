@@ -24,8 +24,8 @@ namespace cupynumeric {
 using namespace Legion;
 using namespace legate;
 
-template <typename VAL, typename comm_t>
-static inline void mp_solve_template(comm_t comm,
+template <typename VAL>
+static inline void mp_solve_template(cal_comm_t comm,
                                      int nprow,
                                      int npcol,
                                      int64_t n,
@@ -145,7 +145,7 @@ static inline void mp_solve_template(comm_t comm,
                                  info.ptr(0)));
 
   // TODO: We need a deferred exception to avoid this synchronization
-  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+  CHECK_CAL(cal_stream_sync(comm, stream));
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
   CHECK_CUSOLVER(cusolverMpDestroyMatrixDesc(a_desc));
@@ -163,8 +163,7 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
   TaskContext context;
   explicit MpSolveImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
-  void operator()(comm_t comm,
+  void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
                   int64_t n,
@@ -185,8 +184,7 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
   TaskContext context;
   explicit MpSolveImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
-  void operator()(comm_t comm,
+  void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
                   int64_t n,
@@ -207,8 +205,7 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit MpSolveImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
-  void operator()(comm_t comm,
+  void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
                   int64_t n,
@@ -239,8 +236,7 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit MpSolveImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
-  void operator()(comm_t comm,
+  void operator()(cal_comm_t comm,
                   int nprow,
                   int npcol,
                   int64_t n,

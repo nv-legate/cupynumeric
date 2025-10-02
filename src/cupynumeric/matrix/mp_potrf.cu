@@ -24,8 +24,8 @@ namespace cupynumeric {
 using namespace Legion;
 using namespace legate;
 
-template <typename VAL, typename comm_t>
-static inline void mp_potrf_template(comm_t comm,
+template <typename VAL>
+static inline void mp_potrf_template(cal_comm_t comm,
                                      int nprow,
                                      int npcol,
                                      int64_t n,
@@ -92,7 +92,7 @@ static inline void mp_potrf_template(comm_t comm,
                                  info.ptr(0)));
 
   // TODO: We need a deferred exception to avoid this synchronization
-  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+  CHECK_CAL(cal_stream_sync(comm, stream));
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
   CHECK_CUSOLVER(cusolverMpDestroyMatrixDesc(desc));
@@ -108,9 +108,8 @@ struct MpPotrfImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
   TaskContext context;
   explicit MpPotrfImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
   void operator()(
-    comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, float* array, int64_t lld)
+    cal_comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, float* array, int64_t lld)
   {
     auto stream = context.get_task_stream();
     mp_potrf_template(comm, nprow, npcol, n, nb, array, lld, stream);
@@ -122,9 +121,8 @@ struct MpPotrfImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
   TaskContext context;
   explicit MpPotrfImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
   void operator()(
-    comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, double* array, int64_t lld)
+    cal_comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, double* array, int64_t lld)
   {
     auto stream = context.get_task_stream();
     mp_potrf_template(comm, nprow, npcol, n, nb, array, lld, stream);
@@ -136,9 +134,13 @@ struct MpPotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit MpPotrfImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
-  void operator()(
-    comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, complex<float>* array, int64_t lld)
+  void operator()(cal_comm_t comm,
+                  int nprow,
+                  int npcol,
+                  int64_t n,
+                  int64_t nb,
+                  complex<float>* array,
+                  int64_t lld)
   {
     auto stream = context.get_task_stream();
     mp_potrf_template(comm, nprow, npcol, n, nb, reinterpret_cast<cuComplex*>(array), lld, stream);
@@ -150,9 +152,13 @@ struct MpPotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit MpPotrfImplBody(TaskContext context) : context(context) {}
 
-  template <typename comm_t>
-  void operator()(
-    comm_t comm, int nprow, int npcol, int64_t n, int64_t nb, complex<double>* array, int64_t lld)
+  void operator()(cal_comm_t comm,
+                  int nprow,
+                  int npcol,
+                  int64_t n,
+                  int64_t nb,
+                  complex<double>* array,
+                  int64_t lld)
   {
     auto stream = context.get_task_stream();
     mp_potrf_template(

@@ -95,6 +95,7 @@ def mp_potrf(
     task.add_scalar_arg(n, ty.int64)
     task.add_scalar_arg(nb, ty.int64)
     task.add_nccl_communicator()  # for repartitioning
+    task.add_cal_communicator()
     task.execute()
 
 
