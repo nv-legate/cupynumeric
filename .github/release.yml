@@ -1,18 +1,27 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES.
+#                         All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 ---
 changelog:
   exclude:
     labels:
       - category:task
+      - Build
+      - CI
+      - Maintenance
   categories:
     - title: 🐛 Bug Fixes
       labels:
         - category:bug-fix
+        - Bug
     - title: 🚀 New Features
       labels:
         - category:new-feature
+        - Feature
     - title: 🛠️ Improvements
       labels:
         - category:improvement
     - title: 📖 Documentation
       labels:
         - category:documentation
+        - Docs
