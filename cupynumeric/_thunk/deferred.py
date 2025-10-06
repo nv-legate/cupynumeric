@@ -45,7 +45,9 @@ from legate.core import (
     constant,
     dimension,
     get_legate_runtime,
+    get_machine,
     scale,
+    TaskTarget,
 )
 from legate.core.utils import OrderedSet
 
@@ -1295,6 +1297,37 @@ class DeferredArray(NumPyThunk):
         if self.shape == newshape:
             return self
 
+        if np.prod(self.shape) == 0:
+            assert np.prod(newshape) == 0
+            result = runtime.create_empty_thunk(
+                newshape, dtype=self.base.type, inputs=[self]
+            )
+            return result
+
+        assert not (
+            np.any(np.array(self.shape) == 0)
+            or np.any(np.array(newshape) == 0)
+        )
+
+        src_trivial_dims = np.array(self.shape) == 1
+        if np.any(src_trivial_dims):
+            src = self.base
+            for dim in np.flatnonzero(src_trivial_dims)[::-1]:
+                src = src.project(dim, 0)
+            src_array = DeferredArray(src)
+            return src_array.reshape(newshape, order)
+        new_trivial_dims = np.array(newshape) == 1
+        if np.any(new_trivial_dims):
+            result = self.reshape(
+                tuple(np.array(newshape)[~new_trivial_dims]), order
+            )
+            src = cast(DeferredArray, result).base
+            for dim in np.flatnonzero(new_trivial_dims):
+                src = src.promote(dim, 1)
+            return DeferredArray(src)
+
+        assert not (np.any(src_trivial_dims) or np.any(new_trivial_dims))
+
         # Find a combination of domain transformations to convert this store
         # to the new shape. First we identify a pair of subsets of the source
         # and target extents whose products are the same, and infer necessary
@@ -1312,10 +1345,6 @@ class DeferredArray(NumPyThunk):
         # |(a,b)  | (c,d)   | Yes  | tmp = new store((ab,))            |
         # |       |         |      | Delinearize(tmp, (a,b)) <- src    |
         # |       |         |      | tgt = Delinearize(tmp, (c,d))     |
-        # +-------+---------+------+-----------------------------------+
-        # |(a,1)  | (a,)    | No   | tgt = Project(src, 0, 0)          |
-        # +-------+---------+------+-----------------------------------+
-        # |(a,)   | (a,1)   | No   | tgt = Promote(src, 0, 1)          |
         # +-------+---------+------+-----------------------------------+
         #
         # Update 9/22/2021: the non-affineness with delinearization leads
@@ -1354,109 +1383,77 @@ class DeferredArray(NumPyThunk):
                     out_prod *= out_shape[out_dim]
                     out_dim += 1
                 if in_prod == out_prod:
-                    if in_dim < in_ndim and in_shape[in_dim] == 1:
-                        in_dim += 1
                     break
 
             in_group = in_shape[prev_in_dim:in_dim]
             out_group = out_shape[prev_out_dim:out_dim]
             groups.append((in_group, out_group))
 
-        while in_dim < in_ndim:
-            assert in_shape[in_dim] == 1
-            groups.append(((1,), ()))
-            in_dim += 1
-
-        while out_dim < out_ndim:
-            assert out_shape[out_dim] == 1
-            groups.append(((), (1,)))
-            out_dim += 1
+        assert in_dim == in_ndim
+        assert out_dim == out_ndim
 
         needs_linearization = any(len(src_g) > 1 for src_g, _ in groups)
         needs_delinearization = any(len(tgt_g) > 1 for _, tgt_g in groups)
-        needs_copy = needs_linearization or needs_delinearization
 
-        if needs_copy:
-            tmp_shape: NdShape = ()
+        # with trivial dimensions already removed, the only way
+        # nothing needs to be linearized or delinearized is if
+        # self.shape == newshape, which would have already exited
+        assert needs_linearization or needs_delinearization
+
+        tmp_shape: NdShape = ()
+        for src_g, tgt_g in groups:
+            if len(src_g) > 1 and len(tgt_g) > 1:
+                tmp_shape += (_prod(tgt_g),)
+            else:
+                tmp_shape += tgt_g
+
+        result = runtime.create_empty_thunk(
+            tmp_shape, dtype=self.base.type, inputs=[self]
+        )
+
+        src = self.base
+        tgt = result.base  # type: ignore
+
+        src_dim = 0
+        tgt_dim = 0
+        for src_g, tgt_g in groups:
+            diff = 1
+            if src_g == tgt_g:
+                assert len(src_g) == 1
+            elif len(src_g) == 1:
+                diff = len(tgt_g)
+                assert diff > 1
+                src = src.delinearize(src_dim, tgt_g)
+            else:
+                diff = len(src_g)
+                assert diff > 1
+                tgt = tgt.delinearize(tgt_dim, src_g)
+
+            src_dim += diff
+            tgt_dim += diff
+
+        assert src.shape == tgt.shape
+
+        src_array = DeferredArray(src)
+        tgt_array = DeferredArray(tgt)
+        tgt_array.copy(src_array, deep=True)
+
+        if needs_delinearization and needs_linearization:
+            src = result.base  # type: ignore
+            src_dim = 0
             for src_g, tgt_g in groups:
                 if len(src_g) > 1 and len(tgt_g) > 1:
-                    tmp_shape += (_prod(tgt_g),)
-                else:
-                    tmp_shape += tgt_g
-
-            result = runtime.create_empty_thunk(
-                tmp_shape, dtype=self.base.type, inputs=[self]
-            )
-
-            src = self.base
-            tgt = result.base  # type: ignore
-
-            src_dim = 0
-            tgt_dim = 0
-            for src_g, tgt_g in groups:
-                diff = 1
-                if src_g == tgt_g:
-                    assert len(src_g) == 1
-                elif len(src_g) == 0:
-                    assert tgt_g == (1,)
-                    src = src.promote(src_dim, 1)
-                elif len(tgt_g) == 0:
-                    assert src_g == (1,)
-                    tgt = tgt.promote(tgt_dim, 1)
-                elif len(src_g) == 1:
                     src = src.delinearize(src_dim, tgt_g)
-                    diff = len(tgt_g)
+                    src_dim += len(tgt_g)
                 else:
-                    tgt = tgt.delinearize(tgt_dim, src_g)
-                    diff = len(src_g)
+                    src_dim += 1
 
-                src_dim += diff
-                tgt_dim += diff
-
-            assert src.shape == tgt.shape
-
+            assert src.shape == newshape
             src_array = DeferredArray(src)
-            tgt_array = DeferredArray(tgt)
-            tgt_array.copy(src_array, deep=True)
-
-            if needs_delinearization and needs_linearization:
-                src = result.base  # type: ignore
-                src_dim = 0
-                for src_g, tgt_g in groups:
-                    if len(src_g) > 1 and len(tgt_g) > 1:
-                        src = src.delinearize(src_dim, tgt_g)
-                        src_dim += len(tgt_g)
-                    else:
-                        src_dim += 1
-
-                assert src.shape == newshape
-                src_array = DeferredArray(src)
-                result = runtime.create_empty_thunk(
-                    newshape, dtype=self.base.type, inputs=[self]
-                )
-                result.copy(src_array, deep=True)
-
-        else:
-            src = self.base
-            src_dim = 0
-            for src_g, tgt_g in groups:
-                diff = 1
-                if src_g == tgt_g:
-                    assert len(src_g) == 1
-                elif len(src_g) == 0:
-                    assert tgt_g == (1,)
-                    src = src.promote(src_dim, 1)
-                elif len(tgt_g) == 0:
-                    assert src_g == (1,)
-                    src = src.project(src_dim, 0)
-                    diff = 0
-                else:
-                    # unreachable
-                    assert False
-
-                src_dim += diff
-
-            result = DeferredArray(src)
+            result = runtime.create_empty_thunk(
+                newshape, dtype=self.base.type, inputs=[self]
+            )
+            result.copy(src_array, deep=True)
 
         return result
 
@@ -1737,8 +1734,7 @@ class DeferredArray(NumPyThunk):
         # is_scalar case exited in the conditional above
         assert not is_scalar
 
-        ind_store = indices.base
-
+        ind_store = indices.base.promote(0, j).promote(1, k).promote(3, n)
         # promote input and output to have the same shape for alignment purposes
         # TODO(tisaac): remove this when aligning on subsets of dimensions is possible
         src_store = self.base.promote(2, m)
@@ -1754,6 +1750,7 @@ class DeferredArray(NumPyThunk):
             )
         res_store = out.base.promote(1, k)
         assert src_store.shape == res_store.shape
+        assert src_store.shape == ind_store.shape
 
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.TAKE
@@ -1763,9 +1760,9 @@ class DeferredArray(NumPyThunk):
         p_ind = task.add_input(ind_store)
 
         task.add_constraint(align(p_src, p_res))
-        # broadcast the incoming and outgoing dimensions so that any advanced indexing on these dimension can be done locally
-        task.add_constraint(broadcast(p_res, (1, 2)))
-        task.add_constraint(broadcast(p_ind))
+        task.add_constraint(align(p_src, p_ind))
+        # broadcast the outgoing dimension so that indexing into the incoming dimension be done locally
+        task.add_constraint(broadcast(p_src, (1,)))
         task.add_scalar_arg(mode == "clip", ty.bool_)
         task.execute()
         return out
@@ -1773,13 +1770,26 @@ class DeferredArray(NumPyThunk):
     def _take_decide_algorithm(
         self, indices_tuple: tuple[int, ...], axis: int
     ) -> Literal["index", "task"]:
-        # we will use the task that works by broadcasting the indices
-        # if it does not require any communication to reshape it for the task
-
         if len(indices_tuple) == 0:
             # for scalar indices, .get_item() doesn't require advanced indexing,
             # so use "index"
             return "index"
+
+        # the downsides of using the task are that it broadcasts the inputs
+        # and that it may reshape the arguments, so we avoid using it when
+        # those operations are expensive
+
+        machine = get_machine()
+        target = machine.preferred_target
+        procs = machine.get_processor_range(target)
+        if (target == TaskTarget.GPU and procs.count == 1) or (
+            target != TaskTarget.GPU and procs.count == procs.per_node_count
+        ):
+            # there should be no communication in broadcasting the inputs
+            # and reshapes should be fast, use the task
+            return "task"
+
+        ## now determine if reshapes are required
         # filter out trivial dimensions from the indices
         indices_shape = [a for a in indices_tuple if a != 1]
         if len(indices_shape) == 0:
