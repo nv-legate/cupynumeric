@@ -34,9 +34,7 @@ function(find_or_configure_OpenBLAS)
   endif()
 
   set(FIND_PKG_ARGS      ${PKG_VERSION}
-      GLOBAL_TARGETS     ${BLAS_target}
-      BUILD_EXPORT_SET   cupynumeric-exports
-      INSTALL_EXPORT_SET cupynumeric-exports)
+      GLOBAL_TARGETS     ${BLAS_target})
 
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/cpm_helpers.cmake)
   if(PKG_BRANCH)
@@ -92,9 +90,12 @@ function(find_or_configure_OpenBLAS)
     if(TARGET ${BLAS_aliased_target})
       set(BLAS_target ${BLAS_aliased_target})
     endif()
-    # Make an BLAS::BLAS alias target
+    # Make BLAS::BLAS and LAPACK::LAPACK alias target
     if(NOT TARGET BLAS::BLAS)
       add_library(BLAS::BLAS ALIAS ${BLAS_target})
+    endif()
+    if(NOT TARGET LAPACK::LAPACK)
+      add_library(LAPACK::LAPACK ALIAS ${BLAS_target})
     endif()
 
     # Set build INTERFACE_INCLUDE_DIRECTORIES appropriately
@@ -112,6 +113,9 @@ function(find_or_configure_OpenBLAS)
     string(JOIN "\n" code_string
       "if(NOT TARGET BLAS::BLAS)"
       "  add_library(BLAS::BLAS ALIAS ${BLAS_target})"
+      "endif()"
+      "if(NOT TARGET LAPACK::LAPACK)"
+      "  add_library(LAPACK::LAPACK ALIAS ${BLAS_target})"
       "endif()"
     )
 
@@ -177,11 +181,7 @@ function(cupynumeric_find_existing_blas found)
   set(${found} FALSE PARENT_SCOPE)
   foreach(vendor IN LISTS ALL_BLAS_VENDORS)
     set(BLA_VENDOR "${vendor}")
-    rapids_find_package(
-      BLAS
-      BUILD_EXPORT_SET cupynumeric-exports
-      INSTALL_EXPORT_SET cupynumeric-exports
-    )
+    rapids_find_package(BLAS)
     if(BLAS_FOUND)
       message(STATUS "Found BLAS: ${vendor}")
       string(TOUPPER "${vendor}" VENDOR)
@@ -193,12 +193,11 @@ function(cupynumeric_find_existing_blas found)
 endfunction()
 
 function(find_blas)
+  if (TARGET BLAS::BLAS)
+    return()
+  endif()
   if(BLA_VENDOR)
-    rapids_find_package(
-      BLAS
-      BUILD_EXPORT_SET cupynumeric-exports
-      INSTALL_EXPORT_SET cupynumeric-exports
-    )
+    rapids_find_package(BLAS)
     if(BLAS_FOUND)
       message(STATUS "Found BLAS: ${BLA_VENDOR}")
       string(TOUPPER "${BLA_VENDOR}" VENDOR)
@@ -245,3 +244,7 @@ function(find_blas)
 endfunction()
 
 find_blas()
+
+if (NOT TARGET BLAS::BLAS)
+  message(FATAL_ERROR "CuPyNumeric could not find a working BLAS installation")
+endif()

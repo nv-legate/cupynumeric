@@ -34,14 +34,10 @@ function(find_or_configure_tblis)
                 HEADER_NAMES "tblis/tblis.h"
                 LIBRARY_NAMES "libtblis${lib_suffix}"
                 NO_CONFIG
-                BUILD_EXPORT_SET   cupynumeric-exports
-                INSTALL_EXPORT_SET cupynumeric-exports
   )
 
   rapids_cpm_find(tblis ${PKG_VERSION}
       GLOBAL_TARGETS    tblis::tblis
-      BUILD_EXPORT_SET   cupynumeric-exports
-      INSTALL_EXPORT_SET cupynumeric-exports
       CPM_ARGS
         ${tblis_cpm_git_args}
         EXCLUDE_FROM_ALL  ${PKG_EXCLUDE_FROM_ALL}

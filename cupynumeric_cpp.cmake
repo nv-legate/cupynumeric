@@ -96,6 +96,7 @@ if(Legion_USE_CUDA)
 endif()
 
 include(thirdparty/get_blas)
+include(thirdparty/get_lapack)
 
 include(thirdparty/get_tblis)
 
@@ -420,6 +421,7 @@ target_link_libraries(cupynumeric
           $<TARGET_NAME_IF_EXISTS:NCCL::NCCL>
   PRIVATE cupynumeric::Thrust
           BLAS::BLAS
+          LAPACK::LAPACK
           tblis::tblis
           # Add Conda library and include paths
           $<TARGET_NAME_IF_EXISTS:conda_env>
