@@ -593,7 +593,9 @@ def _contract(
         if out is not None and out_dtype == c_dtype and out_shape == c_shape:
             c = out
         else:
-            c = ndarray(shape=c_shape, dtype=c_dtype, inputs=(a, b))
+            c = ndarray._from_inputs(
+                shape=c_shape, dtype=c_dtype, inputs=(a, b)
+            )
         # Perform operation
         c._thunk.contract(
             c_modes, a._thunk, a_modes, b._thunk, b_modes, mode2extent
@@ -613,7 +615,9 @@ def _contract(
                 f"'{casting}'"
             )
         if out is None:
-            out = ndarray(shape=out_shape, dtype=out_dtype, inputs=(c,))
+            out = ndarray._from_inputs(
+                shape=out_shape, dtype=out_dtype, inputs=(c,)
+            )
         out[...] = c.reshape(c_bloated_shape)
         return out
     if out_shape != c_shape:

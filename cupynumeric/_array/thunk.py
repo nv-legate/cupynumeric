@@ -87,7 +87,7 @@ def perform_unary_op(
             else:
                 dtype = np.dtype(np.float64)
 
-        out = ndarray(shape=out_shape, dtype=dtype, inputs=(src,))
+        out = ndarray._from_inputs(shape=out_shape, dtype=dtype, inputs=(src,))
 
     if out.dtype != src.dtype:
         if (
@@ -95,7 +95,9 @@ def perform_unary_op(
         ) or op == UnaryOpCode.ANGLE:
             out._thunk.unary_op(op, src._thunk, True, extra_args)
         else:
-            temp = ndarray(out.shape, dtype=src.dtype, inputs=(src,))
+            temp = ndarray._from_inputs(
+                out.shape, dtype=src.dtype, inputs=(src,)
+            )
             temp._thunk.unary_op(op, src._thunk, True, extra_args)
             out._thunk.convert(temp._thunk)
     else:
@@ -193,7 +195,9 @@ def perform_unary_reduction(
             out_shape += (1,)
 
     if out is None:
-        out = ndarray(shape=out_shape, dtype=res_dtype, inputs=(src, where))
+        out = ndarray._from_inputs(
+            shape=out_shape, dtype=res_dtype, inputs=(src, where)
+        )
     elif out.shape != out_shape:
         errmsg = f"the output shapes do not match: expected {out_shape} but got {out.shape}"
         raise ValueError(errmsg)
@@ -204,7 +208,9 @@ def perform_unary_reduction(
     if out.dtype == res_dtype:
         result = out
     else:
-        result = ndarray(shape=out_shape, dtype=res_dtype, inputs=(src, where))
+        result = ndarray._from_inputs(
+            shape=out_shape, dtype=res_dtype, inputs=(src, where)
+        )
 
     # src might have taken eager path above:
     if not isinstance(src, ndarray):
@@ -255,7 +261,7 @@ def perform_binary_reduction(
     one_thunk = one._maybe_convert(common_type, args)._thunk
     two_thunk = two._maybe_convert(common_type, args)._thunk
 
-    dst = ndarray(shape=(), dtype=dtype, inputs=args)
+    dst = ndarray._from_inputs(shape=(), dtype=dtype, inputs=args)
     dst._thunk.binary_reduction(
         op, one_thunk, two_thunk, broadcast, extra_args
     )
@@ -275,7 +281,7 @@ def perform_where(mask: ndarray, one: ndarray, two: ndarray) -> ndarray:
 
     # Compute the output shape
     out_shape = np.broadcast_shapes(mask.shape, one.shape, two.shape)
-    out = ndarray(shape=out_shape, dtype=common_type, inputs=args)
+    out = ndarray._from_inputs(shape=out_shape, dtype=common_type, inputs=args)
     out._thunk.where(mask._thunk, one._thunk, two._thunk)
     return out
 

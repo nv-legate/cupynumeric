@@ -98,7 +98,7 @@ def tile(
     for dim in range(A.ndim):
         out_shape += (A.shape[dim] * computed_reps[offset + dim],)
     assert len(out_shape) == out_dims
-    result = ndarray(out_shape, dtype=A.dtype, inputs=(A,))
+    result = ndarray._from_inputs(out_shape, dtype=A.dtype, inputs=(A,))
     result._thunk.tile(A._thunk, computed_reps)
     return result
 
@@ -222,4 +222,4 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
         result = array._thunk.repeat(
             repeats=repeats._thunk, axis=axis_int, scalar_repeats=False
         )
-    return ndarray(shape=result.shape, thunk=result)
+    return ndarray._from_thunk(result)

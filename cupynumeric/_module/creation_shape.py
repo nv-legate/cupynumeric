@@ -43,7 +43,7 @@ def _uninitialized_like(
 ) -> ndarray:
     shape = a.shape if shape is None else shape
     dtype = a.dtype if dtype is None else np.dtype(dtype)
-    return ndarray(shape, dtype=dtype, inputs=(a,))
+    return ndarray._from_inputs(shape, dtype=dtype, inputs=(a,))
 
 
 def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:

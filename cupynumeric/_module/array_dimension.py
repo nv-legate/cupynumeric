@@ -226,10 +226,8 @@ def _broadcast_to(
         raise ValueError(
             f"cannot broadcast an array of shape {arr.shape} to {shape}"
         )
-    result = ndarray(
-        shape=out_shape,
-        thunk=arr._thunk.broadcast_to(out_shape),
-        writeable=False,
+    result = ndarray._from_thunk(
+        arr._thunk.broadcast_to(out_shape), writeable=False
     )
     return result
 

@@ -278,8 +278,7 @@ def argwhere(a: ndarray) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
-    thunk = a._thunk.argwhere()
-    return ndarray(shape=thunk.shape, thunk=thunk)
+    return ndarray._from_thunk(a._thunk.argwhere())
 
 
 @add_boilerplate("condition", "arr")
@@ -323,7 +322,7 @@ def extract(condition: ndarray, arr: ndarray) -> ndarray:
         bool_condition = condition_reshape.astype(bool)
         thunk = arr._thunk.get_item(bool_condition._thunk)
 
-    return ndarray(shape=thunk.shape, thunk=thunk)
+    return ndarray._from_thunk(thunk)
 
 
 @add_boilerplate("a")

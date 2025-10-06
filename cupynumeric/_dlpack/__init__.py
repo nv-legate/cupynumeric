@@ -18,6 +18,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Protocol
 
 from .. import ndarray
+from .._thunk.deferred import DeferredArray
 
 if TYPE_CHECKING:
     from typing_extensions import CapsuleType
@@ -53,4 +54,4 @@ def from_dlpack(
 
     store = from_dlpack(x, device=device, copy=copy)
 
-    return ndarray(store)
+    return ndarray._from_thunk(DeferredArray(store))

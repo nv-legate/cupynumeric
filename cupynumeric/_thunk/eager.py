@@ -1607,7 +1607,7 @@ class EagerArray(NumPyThunk):
                     f"matmul doesn't support kwargs: {keys}"
                 )
 
-            a = ndarray(self.shape, self.dtype, thunk=self.deferred)
+            a = ndarray._from_thunk(self.deferred)
             return matmul(a, rhs, out=out, casting=casting, dtype=dtype)
         else:
             rhs_array = (
