@@ -41,7 +41,6 @@ from legate.core import (
     align,
     bloat,
     broadcast,
-    constant,
     dimension,
     get_legate_runtime,
     get_machine,
@@ -2132,16 +2131,23 @@ class DeferredArray(NumPyThunk):
                         i: int,
                     ) -> None:
                         manual_task = legate_runtime.create_manual_task(
-                            self.library, CuPyNumericOpCode.MATMUL, color_shape
+                            self.library,
+                            CuPyNumericOpCode.MATMUL,
+                            launch_shape=(*color_shape, i + 1),
+                            lower_bounds=(0, 0, i),
                         )
 
-                        manual_task.add_output(tiled_lhs)
-                        manual_task.add_input(tiled_lhs)
-                        manual_task.add_input(
-                            tiled_rhs1, (dimension(0), constant(i))
+                        manual_task.add_output(
+                            tiled_lhs, (dimension(0), dimension(1))
                         )
                         manual_task.add_input(
-                            tiled_rhs2, (constant(i), dimension(1))
+                            tiled_lhs, (dimension(0), dimension(1))
+                        )
+                        manual_task.add_input(
+                            tiled_rhs1, (dimension(0), dimension(2))
+                        )
+                        manual_task.add_input(
+                            tiled_rhs2, (dimension(2), dimension(1))
                         )
 
                         manual_task.execute()
