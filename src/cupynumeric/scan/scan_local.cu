@@ -13,31 +13,23 @@
  * limitations under the License.
  *
  */
-
 #include "cupynumeric/scan/scan_local.h"
 #include "cupynumeric/scan/scan_local_template.inl"
 #include "cupynumeric/unary/isnan.h"
 #include "cupynumeric/utilities/thrust_util.h"
 
-#include <thrust/scan.h>
-#include <thrust/iterator/transform_iterator.h>
-
 #include "cupynumeric/cuda_help.h"
+
+#include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/scan.h>
+
+#include <type_traits>
 
 namespace cupynumeric {
 
 using namespace legate;
-
-template <typename RES>
-static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  lazy_kernel(RES* out, RES* sum_val)
-{
-  const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= 1) {
-    return;
-  }
-  sum_val[0] = out[0];
-}
 
 template <ScanCode OP_CODE, Type::Code CODE, int DIM>
 struct ScanLocalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
@@ -67,17 +59,35 @@ struct ScanLocalImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
 
     auto sum_valsptr = sum_vals.create_output_buffer<VAL, DIM>(extents, true);
 
-    for (uint64_t index = 0; index < volume; index += stride) {
-      thrust::inclusive_scan(
-        DEFAULT_POLICY.on(stream), inptr + index, inptr + index + stride, outptr + index, func);
-      // get the corresponding ND index with base zero to use for sum_val
-      auto sum_valp = pitches.unflatten(index, Point<DIM>::ZEROES());
-      // only one element on scan axis
-      sum_valp[DIM - 1] = 0;
-      // write out the partition sum
-      lazy_kernel<<<1, THREADS_PER_BLOCK, 0, stream>>>(&outptr[index + stride - 1],
-                                                       &sum_valsptr[sum_valp]);
-    }
+    using IndexT = std::decay_t<decltype(stride)>;
+
+    auto axial_dim    = stride;
+    auto accessor_key = [axial_dim] __host__ __device__(IndexT indx) -> IndexT {
+      return indx / axial_dim;
+    };
+    auto key_traversor_start =
+      thrust::make_transform_iterator(thrust::make_counting_iterator<IndexT>(0), accessor_key);
+
+    thrust::inclusive_scan_by_key(DEFAULT_POLICY.on(stream),
+                                  key_traversor_start,
+                                  key_traversor_start + volume,
+                                  inptr,
+                                  outptr,
+                                  thrust::equal_to<IndexT>{},
+                                  func);
+
+    thrust::for_each(DEFAULT_POLICY.on(stream),
+                     thrust::make_counting_iterator<IndexT>(0),
+                     thrust::make_counting_iterator<IndexT>(volume / stride),
+                     [stride, outptr, pitches, sum_valsptr] __device__(auto axial_indx) mutable {
+                       auto index = axial_indx * stride;
+
+                       // get the corresponding ND index with base zero to use for sum_val
+                       auto sum_valp = pitches.unflatten(index, Point<DIM>::ZEROES());
+                       // only one element on scan axis
+                       sum_valp[DIM - 1]     = 0;
+                       sum_valsptr[sum_valp] = outptr[index + stride - 1];
+                     });
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }
 };
@@ -117,21 +127,35 @@ struct ScanLocalNanImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
 
     auto sum_valsptr = sum_vals.create_output_buffer<VAL, DIM>(extents, true);
 
-    for (uint64_t index = 0; index < volume; index += stride) {
-      thrust::inclusive_scan(
-        DEFAULT_POLICY.on(stream),
-        thrust::make_transform_iterator(inptr + index, convert_nan_func()),
-        thrust::make_transform_iterator(inptr + index + stride, convert_nan_func()),
-        outptr + index,
-        func);
-      // get the corresponding ND index with base zero to use for sum_val
-      auto sum_valp = pitches.unflatten(index, Point<DIM>::ZEROES());
-      // only one element on scan axis
-      sum_valp[DIM - 1] = 0;
-      // write out the partition sum
-      lazy_kernel<<<1, THREADS_PER_BLOCK, 0, stream>>>(&outptr[index + stride - 1],
-                                                       &sum_valsptr[sum_valp]);
-    }
+    using IndexT = std::decay_t<decltype(stride)>;
+
+    auto axial_dim    = stride;
+    auto accessor_key = [axial_dim] __host__ __device__(IndexT indx) -> IndexT {
+      return indx / axial_dim;
+    };
+    auto key_traversor_start =
+      thrust::make_transform_iterator(thrust::make_counting_iterator<IndexT>(0), accessor_key);
+
+    thrust::inclusive_scan_by_key(DEFAULT_POLICY.on(stream),
+                                  key_traversor_start,
+                                  key_traversor_start + volume,
+                                  thrust::make_transform_iterator(inptr, convert_nan_func()),
+                                  outptr,
+                                  thrust::equal_to<IndexT>{},
+                                  func);
+
+    thrust::for_each(DEFAULT_POLICY.on(stream),
+                     thrust::make_counting_iterator<IndexT>(0),
+                     thrust::make_counting_iterator<IndexT>(volume / stride),
+                     [stride, outptr, pitches, sum_valsptr] __device__(auto axial_indx) mutable {
+                       auto index = axial_indx * stride;
+
+                       // get the corresponding ND index with base zero to use for sum_val
+                       auto sum_valp = pitches.unflatten(index, Point<DIM>::ZEROES());
+                       // only one element on scan axis
+                       sum_valp[DIM - 1]     = 0;
+                       sum_valsptr[sum_valp] = outptr[index + stride - 1];
+                     });
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }
 };
