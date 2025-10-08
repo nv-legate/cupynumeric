@@ -1083,7 +1083,7 @@ class DeferredArray(NumPyThunk):
                         f"Shape did not match along dimension {dim} "
                         "and the value is not equal to 1"
                     )
-                result = result.project(dim, 0).promote(dim, shape[dim])
+                result = result.broadcast(dim, shape[dim])
 
         return result
 
@@ -2290,7 +2290,7 @@ class DeferredArray(NumPyThunk):
                 if trace:
                     if matrix.ndim == 2:
                         diag = diag.promote(0, matrix.shape[0])
-                        diag = diag.project(1, 0).promote(1, matrix.shape[1])
+                        diag = diag.broadcast(1, matrix.shape[1])
                     else:
                         for i in range(0, naxes):
                             diag = diag.promote(start, matrix.shape[-i - 1])
