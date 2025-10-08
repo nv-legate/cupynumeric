@@ -58,8 +58,7 @@ struct SegmentMergePiece {
 };
 
 template <typename VAL>
-struct SegmentSampleComparator
-  : public thrust::binary_function<SegmentSample<VAL>, SegmentSample<VAL>, bool> {
+struct SegmentSampleComparator {
   __CUDA_HD__ bool operator()(const SegmentSample<VAL>& lhs, const SegmentSample<VAL>& rhs) const
   {
     if (lhs.segment != rhs.segment) {
@@ -81,7 +80,7 @@ struct SegmentSampleComparator
   }
 };
 
-struct modulusWithOffset : public thrust::binary_function<int64_t, int64_t, int64_t> {
+struct modulusWithOffset {
   const size_t constant;
 
   modulusWithOffset(size_t _constant) : constant(_constant) {}

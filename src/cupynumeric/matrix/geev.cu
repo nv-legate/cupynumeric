@@ -30,7 +30,7 @@ namespace cupynumeric {
 using namespace legate;
 
 template <typename VAL, typename VAL_COMPLEX>
-struct assembleEvs : public thrust::unary_function<VAL_COMPLEX, int64_t> {
+struct assembleEvs {
   const VAL_COMPLEX* ew_in_;
   const VAL* ev_in_;
   const int64_t m_;
