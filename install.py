@@ -386,7 +386,6 @@ def install_cupynumeric(
         )
     }
 -DBUILD_SHARED_LIBS=ON
--DCMAKE_CUDA_ARCHITECTURES={str(arch)}
 -DLegion_MAX_DIM={str(maxdim)}
 -DLegion_MAX_FIELDS={str(maxfields)}
 -DLegion_SPY={("ON" if spy else "OFF")}
@@ -399,6 +398,8 @@ def install_cupynumeric(
 -Dcupynumeric_BUILD_TESTS={("ON" if with_tests else "OFF")}
 """.splitlines()
 
+    if arch:
+        cmake_flags += [f"-DCMAKE_CUDA_ARCHITECTURES={str(arch)}"]
     if march:
         cmake_flags += [f"-DBUILD_MARCH={march}"]
     if cuda_dir:
@@ -599,9 +600,8 @@ def driver():
     parser.add_argument(
         "--arch",
         dest="arch",
-        action="store",
         required=False,
-        default="all-major",
+        default=None,
         help="Specify the target GPU architecture.",
     )
     parser.add_argument(
