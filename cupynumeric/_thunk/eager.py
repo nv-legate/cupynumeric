@@ -45,7 +45,7 @@ from ..config import (
     WindowOpCode,
 )
 from ..runtime import runtime
-from .deferred import DeferredArray
+from .deferred import DeferredArray, IndexKey
 from .thunk import NumPyThunk
 
 if TYPE_CHECKING:
@@ -553,7 +553,7 @@ class EagerArray(NumPyThunk):
             return self.deferred.scalar
         return self.array.size == 1
 
-    def _create_indexing_key(self, key: Any) -> Any:
+    def _create_indexing_key(self, key: IndexKey) -> Any:
         if key is None or key is Ellipsis:
             return key
         if isinstance(key, int):
@@ -568,7 +568,7 @@ class EagerArray(NumPyThunk):
         assert isinstance(key, NumPyThunk)
         return runtime.to_eager_array(key).array
 
-    def get_item(self, key: Any) -> NumPyThunk:
+    def get_item(self, key: IndexKey) -> NumPyThunk:
         if self.deferred is not None:
             return self.deferred.get_item(key)
         if is_advanced_indexing(key):
@@ -576,12 +576,12 @@ class EagerArray(NumPyThunk):
             out = self.array[index_key]
             result = EagerArray(out)
         else:
-            child = self.array[key]
+            child = self.array[key]  # type: ignore[index]
             result = EagerArray(child, parent=self, key=("get_item", key))
             self.children.append(result)
         return result
 
-    def set_item(self, key: Any, value: Any) -> None:
+    def set_item(self, key: IndexKey, value: Any) -> None:
         self.check_eager_args(value)
         if self.deferred is not None:
             self.deferred.set_item(key, value)
@@ -594,9 +594,9 @@ class EagerArray(NumPyThunk):
                     self.array[index_key] = value
             else:
                 if isinstance(value, EagerArray):
-                    self.array[key] = value.array
+                    self.array[key] = value.array  # type: ignore[index]
                 else:
-                    self.array[key] = value
+                    self.array[key] = value  # type: ignore[index]
 
     def reshape(self, newshape: NdShape, order: OrderType) -> NumPyThunk:
         if self.deferred is not None:

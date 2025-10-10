@@ -16,10 +16,12 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable
+from dataclasses import dataclass
 from enum import IntEnum, unique
 from functools import reduce, wraps
 from inspect import signature
 from itertools import chain
+from string import ascii_lowercase
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -110,6 +112,46 @@ def _prod(tpl: Sequence[int]) -> int:
 
 R = TypeVar("R")
 P = ParamSpec("P")
+
+# Type alias for NumPy-style indexing keys
+# An indexing key can be:
+# - int: integer index
+# - slice: slice object
+# - None: newaxis (adds a dimension)
+# - Ellipsis: fills in remaining dimensions
+# - NumPyThunk: array-like for advanced/fancy indexing
+# - tuple of any of the above for multi-dimensional indexing
+if TYPE_CHECKING:
+    from builtins import ellipsis as EllipsisType
+
+    IndexKey = int | slice | None | EllipsisType | NumPyThunk | tuple[Any, ...]
+else:
+    # At runtime, IndexKey is just an alias for Any
+    IndexKey = Any
+
+
+@dataclass(frozen=True)
+class BooleanIndexingContext:
+    """
+    Prepared context for boolean array indexing operations.
+
+    Attributes
+    ----------
+    transformed_array : DeferredArray
+        Array after transformations and transpose
+    bool_key : DeferredArray
+        Boolean indexing array (mask)
+    inverted_transpose_indices : tuple[int, ...] | None
+        Indices to undo transpose (None if no transpose)
+    transpose_index : int
+        Original position of boolean array
+    """
+
+    transformed_array: DeferredArray
+    bool_key: DeferredArray
+    inverted_transpose_indices: tuple[int, ...] | None
+    transpose_index: int
+
 
 legate_runtime = get_legate_runtime()
 
@@ -279,6 +321,294 @@ def _make_deferred_binary_ufunc(ufunc: binary_ufunc) -> Callable[..., Any]:
     return method
 
 
+def _apply_non_boolean_keys(
+    new_key: tuple[Any, ...],
+    store: LogicalStore,
+    transpose_index: int,
+    slice_store_func: Any,
+) -> tuple[LogicalStore, int]:
+    """
+    Apply non-boolean indexing keys (int, slice, newaxis) to a store.
+
+    This is a helper function for boolean array indexing that applies
+    transformations like integer indexing, slicing, and newaxis before
+    the boolean indexing operation.
+
+    Parameters
+    ----------
+    new_key : tuple
+        Tuple of indexing keys (excluding the boolean array)
+    store : LogicalStore
+        The store to transform
+    transpose_index : int
+        Original position of the boolean array in the full key
+    slice_store_func : callable
+        Function to call for slice operations (DeferredArray._slice_store)
+
+    Returns
+    -------
+    tuple[LogicalStore, int]
+        The transformed store and the new position of the boolean dimension
+    """
+    shift = 0  # Track dimension shifts due to projections
+    new_boolean_position = transpose_index
+
+    for dim, k in enumerate(new_key):
+        # Determine if this key affects dimensions before the boolean array
+        affects_boolean_position = dim < transpose_index
+
+        if isinstance(k, int):
+            # Integer indexing: select a specific slice along this dimension
+            if k < 0:
+                # Convert negative indices
+                k += store.shape[dim + shift]
+            store = store.project(dim + shift, k)
+            shift -= 1  # Projection reduces dimensionality
+            # If this projection is before the boolean dimension, adjust its position
+            if affects_boolean_position:
+                new_boolean_position -= 1
+        elif k is np.newaxis:
+            # Add a new dimension of size 1
+            store = store.promote(dim + shift, 1)
+            # If this promotion is before the boolean dimension, adjust its position
+            if affects_boolean_position:
+                new_boolean_position += 1
+        elif isinstance(k, slice):
+            # Slice indexing: select a range along this dimension
+            k, store = slice_store_func(k, store, dim + shift)
+            # Slicing doesn't change dimensionality, so no adjustment needed
+        else:
+            raise TypeError(
+                "Unsupported entry type passed to advanced indexing operation"
+            )
+
+    return store, new_boolean_position
+
+
+def _execute_boolean_indexing_task(
+    rhs: DeferredArray, key: DeferredArray, is_set: bool
+) -> DeferredArray:
+    """
+    Execute the ADVANCED_INDEXING task for boolean indexing.
+
+    This is shared logic for both get and set operations.
+
+    Parameters
+    ----------
+    rhs : DeferredArray
+        The input array (after transformations and transpose)
+    key : DeferredArray
+        The boolean mask (will be promoted to match rhs dimensionality)
+    is_set : bool
+        Whether this is a set operation
+
+    Returns
+    -------
+    DeferredArray
+        The raw output from the ADVANCED_INDEXING task
+    """
+    key_store = key.base
+
+    # Promote the boolean key to match the full dimensionality
+    key_dims = key_store.ndim
+    for i in range(key_dims, rhs.ndim):
+        key_store = key_store.promote(i, rhs.shape[i])
+
+    # Determine output data type
+    out_dtype = rhs.base.type
+    if is_set:
+        # For set operations, we return Point<N> type for indirect copy operations
+        N = rhs.ndim
+        out_dtype = ty.point_type(N)
+
+    # Create output thunk with same dimensionality as input
+    out = runtime.create_unbound_thunk(out_dtype, ndim=rhs.ndim)
+    key_dims_value = key.ndim  # Number of dimensions in the boolean array
+
+    # Set up and execute the ADVANCED_INDEXING task
+    task = legate_runtime.create_auto_task(
+        rhs.library, CuPyNumericOpCode.ADVANCED_INDEXING
+    )
+    task.add_output(out.base)
+    p_rhs = task.add_input(rhs.base)
+    p_key = task.add_input(key_store)
+    task.add_scalar_arg(is_set, ty.bool_)
+    task.add_scalar_arg(key_dims_value, ty.int64)
+
+    # Add constraints for proper data alignment and broadcasting
+    task.add_constraint(align(p_rhs, p_key))
+    if rhs.base.ndim > 1:
+        task.add_constraint(broadcast(p_rhs, range(1, rhs.base.ndim)))
+
+    # Execute the boolean indexing task
+    task.execute()
+
+    return out
+
+
+def _process_boolean_array_index_get(
+    ctx: BooleanIndexingContext,
+) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
+    """
+    Process boolean array indexing for get operations: result = a[bool_mask]
+
+    Parameters
+    ----------
+    ctx : BooleanIndexingContext
+        The prepared boolean indexing context
+
+    Returns
+    -------
+    tuple[bool, DeferredArray, DeferredArray, DeferredArray]
+        (False, rhs, out, self) tuple containing the indexing result
+    """
+    rhs = ctx.transformed_array
+    key = ctx.bool_key
+
+    # Handle edge cases where either the key or input array is empty
+    if key.size == 0 or rhs.size == 0:
+        # Calculate the number of selected elements
+        if rhs.size == 0 and key.size != 0:
+            s = key.nonzero()[0].size
+        else:
+            s = 0
+
+        # Calculate output shape
+        out_shape = (s,) + tuple(
+            rhs.shape[i] for i in range(key.ndim, rhs.ndim)
+        )
+
+        out = runtime.create_deferred_thunk(out_shape, rhs.base.type)
+        out.fill(np.zeros((), dtype=out.dtype))
+        return False, rhs, out, ctx.transformed_array
+
+    # Execute the ADVANCED_INDEXING task
+    out = _execute_boolean_indexing_task(rhs, key, is_set=False)
+    out_dtype = rhs.base.type
+
+    # Post-process the output to handle dimension reduction
+    key_dims = key.ndim
+    out_dim = rhs.ndim - key_dims + 1
+
+    if out_dim != rhs.ndim:
+        out_tmp = out.base
+
+        if out.size == 0:
+            # Handle empty output case
+            out_shape = tuple(out.shape[i] for i in range(0, out_dim))
+            out = runtime.create_deferred_thunk(out_shape, out_dtype)
+            out.fill(np.array(0, dtype=out_dtype.to_numpy_dtype()))
+        else:
+            # Project out the extra dimensions from the end
+            for dim in range(rhs.ndim - out_dim):
+                out_tmp = out_tmp.project(rhs.ndim - dim - 1, 0)
+
+            out = out._copy_store(out_tmp)
+
+    # Apply inverted transpose to restore the original dimension order
+    if ctx.inverted_transpose_indices is not None:
+        if key.ndim == 1:
+            # Single-dimensional boolean array case
+            assert out.ndim == len(ctx.inverted_transpose_indices), (
+                f"Dimension mismatch: output has {out.ndim} dimensions but "
+                f"inverted transpose expects {len(ctx.inverted_transpose_indices)} dimensions"
+            )
+            out = out.transpose(ctx.inverted_transpose_indices)
+        else:
+            # Multi-dimensional boolean array case
+            if out.ndim > 1:
+                # Create identity permutation for the output dimensions
+                output_transpose = list(range(out.ndim))
+
+                # Move the first dimension (collapsed boolean result) to the correct position
+                if ctx.transpose_index < out.ndim:
+                    boolean_dim = output_transpose.pop(0)
+                    output_transpose.insert(ctx.transpose_index, boolean_dim)
+                    out = out.transpose(tuple(output_transpose))
+
+    return False, rhs, out, ctx.transformed_array
+
+
+def _process_boolean_array_index_set(
+    ctx: BooleanIndexingContext, value: Any
+) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
+    """
+    Process boolean array indexing for set operations: a[bool_mask] = value
+
+    Parameters
+    ----------
+    ctx : BooleanIndexingContext
+        The prepared boolean indexing context
+    value : Any
+        The value to assign
+
+    Returns
+    -------
+    tuple[bool, DeferredArray, DeferredArray, DeferredArray]
+        (True, rhs, out, self) tuple containing the indexing result
+    """
+    rhs = ctx.transformed_array
+    key = ctx.bool_key
+
+    # Handle edge cases where either the key or input array is empty
+    if key.size == 0 or rhs.size == 0:
+        # Calculate the number of selected elements
+        if rhs.size == 0 and key.size != 0:
+            s = key.nonzero()[0].size
+        else:
+            s = 0
+
+        # Calculate output shape
+        out_shape = (s,) + tuple(
+            rhs.shape[i] for i in range(key.ndim, rhs.ndim)
+        )
+
+        out = runtime.create_deferred_thunk(out_shape, rhs.base.type)
+        out.fill(np.zeros((), dtype=out.dtype))
+        return False, rhs, out, ctx.transformed_array
+
+    # Optimization for scalar assignment: a[bool_mask] = scalar_value
+    has_scalar_value = value is not None and value.size == 1
+    can_use_putmask = (
+        has_scalar_value
+        and ctx.inverted_transpose_indices is None  # No transpose was applied
+        and ctx.transpose_index == 0  # Boolean array was at the beginning
+    )
+
+    if can_use_putmask:
+        # Use putmask for efficient scalar assignment
+        mask = DeferredArray(base=key.base)
+        rhs.putmask(mask, value)
+        return False, rhs, rhs, ctx.transformed_array
+
+    # Execute the ADVANCED_INDEXING task
+    out = _execute_boolean_indexing_task(rhs, key, is_set=True)
+    out_dtype = ty.point_type(rhs.ndim)
+
+    # Post-process the output to handle dimension reduction
+    key_dims = key.ndim
+    out_dim = rhs.ndim - key_dims + 1
+
+    if out_dim != rhs.ndim:
+        out_tmp = out.base
+
+        if out.size == 0:
+            # Handle empty output case
+            out_shape = tuple(out.shape[i] for i in range(0, out_dim))
+            out = runtime.create_deferred_thunk(out_shape, out_dtype)
+        else:
+            # Project out the extra dimensions from the end
+            for dim in range(rhs.ndim - out_dim):
+                out_tmp = out_tmp.project(rhs.ndim - dim - 1, 0)
+
+            out = out._copy_store(out_tmp)
+
+    # Note: For set operations, we don't apply inverted transpose to the output
+    # The output is used for the indirect copy operation, not returned to the user
+
+    return True, rhs, out, ctx.transformed_array
+
+
 class DeferredArray(NumPyThunk):
     """This is a deferred thunk for describing NumPy computations.
     It is backed by either a Legion logical region or a Legion future
@@ -401,15 +731,14 @@ class DeferredArray(NumPyThunk):
         if start_index == -1:
             start_index = 0
 
-        new_arrays: tuple[Any, ...] = tuple()
         # check array's type and convert them to deferred arrays
-        for a in arrays:
-            a = runtime.to_deferred_array(a, read_only=True)
-            data_type = a.dtype
-            if data_type != np.int64:
+        def convert_and_check(a: Any) -> DeferredArray:
+            converted = runtime.to_deferred_array(a, read_only=True)
+            if converted.dtype != np.int64:
                 raise TypeError("index arrays should be int64 type")
-            new_arrays += (a,)
-        arrays = new_arrays
+            return converted
+
+        arrays = tuple(convert_and_check(a) for a in arrays)
 
         # find a broadcasted shape for all arrays passed as indices
         shapes = tuple(a.shape for a in arrays)
@@ -425,13 +754,10 @@ class DeferredArray(NumPyThunk):
         out_shape = b_shape
 
         # broadcast shapes
-        new_arrays = tuple()
-        for a in arrays:
-            if a.shape != b_shape:
-                new_arrays += (a._broadcast(b_shape),)
-            else:
-                new_arrays += (a.base,)
-        arrays = new_arrays
+        arrays = tuple(
+            a._broadcast(b_shape) if a.shape != b_shape else a.base
+            for a in arrays
+        )
 
         if len(arrays) < self.ndim:
             # the case when # of arrays passed is smaller than dimension of
@@ -445,7 +771,7 @@ class DeferredArray(NumPyThunk):
                     self.shape[i] for i in range(start_index + N, self.ndim)
                 )
             )
-            new_arrays = tuple()
+            new_arrays: tuple[Any, ...] = tuple()
             # promote all index arrays to have the same shape as output
             for a in arrays:
                 for i in range(0, start_index):
@@ -530,193 +856,212 @@ class DeferredArray(NumPyThunk):
 
         return k, store
 
-    def _has_single_boolean_array(
-        self, key: Any, is_set: bool
-    ) -> tuple[bool, DeferredArray, Any]:
+    def _try_single_boolean_array_index_get(
+        self, key: IndexKey
+    ) -> tuple[bool, Any, Any, Any] | None:
+        """
+        Try to handle single boolean array indexing for get operations: result = a[bool_mask]
+
+        Args:
+            key: The indexing key
+
+        Returns:
+            None if this is not a single boolean array case
+            (False, rhs, out, self) tuple if successfully handled (False indicates get operation)
+        """
+        if (prepared := self._prepare_boolean_array_indexing(key)) is None:
+            return None
+
+        return _process_boolean_array_index_get(prepared)
+
+    def _try_single_boolean_array_index_set(
+        self, key: IndexKey, value: Any
+    ) -> tuple[bool, Any, Any, Any] | None:
+        """
+        Try to handle single boolean array indexing for set operations: a[bool_mask] = value
+
+        Args:
+            key: The indexing key
+            value: The value to assign
+
+        Returns:
+            None if this is not a single boolean array case
+            (True, rhs, out, self) tuple if successfully handled (True indicates set operation)
+        """
+        if (prepared := self._prepare_boolean_array_indexing(key)) is None:
+            return None
+
+        return _process_boolean_array_index_set(prepared, value)
+
+    def _prepare_boolean_array_indexing(
+        self, key: IndexKey
+    ) -> BooleanIndexingContext | None:
+        """
+        Prepare single boolean array indexing by validating and transforming the array.
+
+        This function detects if the indexing operation involves exactly one boolean array,
+        validates shapes, applies necessary transformations (int, slice, newaxis), and
+        transposes to move boolean dimensions to the front.
+
+        Args:
+            key: The indexing key (can be a single array or tuple of indices)
+
+        Returns:
+            None if this is not a single boolean array case or if complex transformations
+            make it unsuitable for the optimized path.
+
+            Otherwise returns a BooleanIndexingContext containing:
+            - transformed_array: The array after transformations and transpose
+            - bool_key: The boolean indexing array
+            - inverted_transpose_indices: Indices to undo the transpose (None if no transpose)
+            - transpose_index: Original position of the boolean array
+        """
+        # Case 1: Direct boolean array indexing like a[bool_mask]
         if isinstance(key, NumPyThunk) and key.dtype == bool:
-            return True, self, key
-        else:
-            # key is a single array of indices
-            if isinstance(key, NumPyThunk):
-                return False, self, key
+            # Simple case: no transpose needed, boolean array is already at position 0
+            bool_key = (
+                runtime.to_deferred_array(key, read_only=True)
+                if not isinstance(key, DeferredArray)
+                else key
+            )
+            return BooleanIndexingContext(
+                transformed_array=self,
+                bool_key=bool_key,
+                inverted_transpose_indices=None,
+                transpose_index=0,
+            )
 
-            assert isinstance(key, tuple)
+        # Case 2: Tuple indexing with exactly one boolean array like a[:, bool_mask, :]
+        if not isinstance(key, tuple):
+            return None  # Not a tuple, can't be our target case
 
-            key = self._unpack_ellipsis(key, self.ndim)
+        # Expand ellipsis (...) to explicit slice(None) entries
+        key = self._unpack_ellipsis(key, self.ndim)
 
-            # loop through all the keys to check if there
-            # is a single NumPyThunk entry
-            num_arrays = 0
-            transpose_index = 0
-            for dim, k in enumerate(key):
-                if isinstance(k, NumPyThunk):
-                    num_arrays += 1
-                    transpose_index = dim
+        # Scan through the key tuple to find boolean arrays
+        # Find all array indices in the key
+        array_indices = [
+            i for i, k in enumerate(key) if isinstance(k, NumPyThunk)
+        ]
 
-            # this is the case when there is a single boolean array passed
-            # in this case we transpose original array so that the indx
-            # to which boolean array is passed to goes first
-            # doing this we can avoid going through Realm Copy which should
-            # improve performance
-            if (
-                num_arrays == 1
-                and key[transpose_index].dtype == bool
-                and is_set
-            ):
-                lhs = self
-                key_dim = key[transpose_index].ndim
-                transpose_indices = tuple(
-                    (transpose_index + i) for i in range(0, key_dim)
-                )
-                transpose_indices += tuple(
-                    i for i in range(0, transpose_index)
-                )
-                transpose_indices += tuple(
-                    i for i in range(transpose_index + key_dim, lhs.ndim)
-                )
+        # We only handle the case with exactly one array
+        if len(array_indices) != 1:
+            return None
 
-                new_key = tuple(key[i] for i in range(0, transpose_index))
-                new_key += tuple(
-                    key[i] for i in range(transpose_index + 1, len(key))
-                )
-                lhs = lhs.transpose(transpose_indices)
+        transpose_index = array_indices[0]
 
-                # transform original array for all other keys in the tuple
-                if len(new_key) > 0:
-                    shift = 0
-                    store = lhs.base
-                    for dim, k in enumerate(new_key):
-                        if isinstance(k, int):
-                            if k < 0:
-                                k += store.shape[dim + key_dim + shift]
-                            store = store.project(dim + key_dim + shift, k)
-                            shift -= 1
-                        elif k is np.newaxis:
-                            store = store.promote(dim + key_dim + shift, 1)
-                        elif isinstance(k, slice):
-                            k, store = self._slice_store(
-                                k, store, dim + key_dim + shift
-                            )
-                        else:
-                            raise TypeError(
-                                "Unsupported entry type passed to advanced ",
-                                "indexing operation",
-                            )
-                    lhs = DeferredArray(store)
+        # Non-boolean arrays are handled by general advanced indexing
+        if key[transpose_index].dtype != bool:
+            return None
 
-                return True, lhs, key[transpose_index]
+        # Now we have exactly one boolean array at position transpose_index
+        # We need to apply other transformations first, then transpose to move boolean dimensions to front
+        # This optimization avoids expensive copy operations in the advanced indexing task
 
-            # this is a general advanced indexing case
-            else:
-                return False, self, key
+        lhs = self
+        bool_key = key[transpose_index]
+        key_dim = bool_key.ndim  # Boolean array can be multi-dimensional
 
-    def _advanced_indexing_with_boolean_array(
-        self, key: Any, is_set: bool = False, set_value: Any | None = None
-    ) -> tuple[bool, Any, Any, Any]:
-        rhs = self
-        if not isinstance(key, DeferredArray):
-            key = runtime.to_deferred_array(key, read_only=True)
+        # Validate boolean array shape compatibility BEFORE any transformations
+        # The boolean array's dimensions must match the corresponding dimensions of the original array
+        # at the original transpose_index position
+        if not isinstance(bool_key, DeferredArray):
+            bool_key = runtime.to_deferred_array(bool_key, read_only=True)
 
-        # in case when boolean array is passed as an index, shape for all
-        # its dimensions should be the same as the shape of
-        # corresponding dimensions of the input array
-        for i in range(key.ndim):
-            if key.shape[i] != rhs.shape[i]:
+        for i in range(key_dim):
+            original_dim_index = transpose_index + i
+            if original_dim_index >= lhs.ndim:
                 raise ValueError(
-                    "shape of the index array for "
-                    f"dimension {i} doesn't match to the shape of the"
-                    f"index array which is {rhs.shape[i]}"
+                    f"Boolean array has {key_dim} dimensions but can't index "
+                    f"starting at position {transpose_index} in array with {lhs.ndim} dimensions"
+                )
+            if bool_key.shape[i] != lhs.shape[original_dim_index]:
+                raise ValueError(
+                    f"shape of the boolean index array for dimension {i} "
+                    f"doesn't match the input array shape at position {original_dim_index}: "
+                    f"expected {lhs.shape[original_dim_index]}, got {bool_key.shape[i]}"
                 )
 
-        # if key or rhs are empty, return an empty array with correct shape
-        if key.size == 0 or rhs.size == 0:
-            if rhs.size == 0 and key.size != 0:
-                # we need to calculate shape of the 0 dim of output region
-                # even though the size of it is 0
-                # this can potentially be replaced with COUNT_NONZERO
-                s = key.nonzero()[0].size
-            else:
-                s = 0
+        # First, apply all non-boolean transformations to get the correct intermediate array
+        # We need to track how the boolean dimension position changes due to these transformations
+        new_boolean_position = transpose_index
 
-            out_shape = (s,) + tuple(
-                rhs.shape[i] for i in range(key.ndim, rhs.ndim)
+        # Process all the other keys in the tuple (everything except the boolean array)
+        # These need to be applied BEFORE transpose to get the correct dimensions
+        # Keys before boolean array
+        keys_before = (key[i] for i in range(0, transpose_index))
+        # Keys after boolean array
+        keys_after = (key[i] for i in range(transpose_index + 1, len(key)))
+
+        new_key = tuple(chain(keys_before, keys_after))
+
+        # Apply the non-boolean keys first
+        if new_key:
+            store, new_boolean_position = _apply_non_boolean_keys(
+                new_key, lhs.base, transpose_index, DeferredArray._slice_store
+            )
+            # Wrap the modified store back into a DeferredArray
+            lhs = DeferredArray(store)
+
+        # Now calculate transpose indices based on the transformed array dimensions
+        # Move the boolean dimensions from new_boolean_position to the front
+        # Boolean dimensions first
+        bool_dims = range(new_boolean_position, new_boolean_position + key_dim)
+
+        # Dimensions before boolean array
+        before_dims = range(0, new_boolean_position)
+
+        # Dimensions after boolean array
+        after_dims = range(new_boolean_position + key_dim, lhs.ndim)
+
+        transpose_indices = tuple(chain(bool_dims, before_dims, after_dims))
+
+        # Apply the transpose to move boolean dimensions to the front
+        # Only transpose if boolean array is not already at position 0
+        if new_boolean_position != 0:
+            lhs = lhs.transpose(transpose_indices)
+
+        # Calculate inverted transpose indices to undo the transpose after boolean indexing
+        # This is needed to restore the correct dimension order in the final result
+        inverted_transpose_indices = None
+        if new_boolean_position != 0:
+            # Create the inverse permutation of the transpose
+            inverted_transpose_indices = tuple(
+                i
+                for i, k in sorted(
+                    enumerate(transpose_indices), key=lambda x: x[1]
+                )
             )
 
-            out = runtime.create_deferred_thunk(out_shape, rhs.base.type)
-            out.fill(np.zeros((), dtype=out.dtype))
-            return False, rhs, out, self
+        # For complex cases with transformations, fall back to the general advanced indexing
+        # The transformation pipeline is complex and error-prone for boolean indexing
+        # It's safer to let the general advanced indexing handle these cases
+        # Fallback to general advanced indexing if there are transformations
+        # or if the boolean position changed
+        if new_key or new_boolean_position != transpose_index:
+            # Fall back to general advanced indexing for complex cases
+            return None
 
-        key_store = key.base
-        # bring key to the same shape as rhs
-        for i in range(key_store.ndim, rhs.ndim):
-            key_store = key_store.promote(i, rhs.shape[i])
-
-        # has_set_value && set_value.size==1 corresponds to the case
-        # when a[bool_indices]=scalar
-        # then we can call "putmask" to modify input array
-        # and avoid calling Copy
-        has_set_value = set_value is not None and set_value.size == 1
-        if has_set_value:
-            mask = DeferredArray(base=key_store)
-            rhs.putmask(mask, set_value)
-            return False, rhs, rhs, self
-        else:
-            out_dtype = rhs.base.type
-            # in the case this operation is called for the set_item, we
-            # return Point<N> type field that is later used for
-            # indirect copy operation
-            if is_set:
-                N = rhs.ndim
-                out_dtype = ty.point_type(N)
-
-            # TODO : current implementation of the ND output regions
-            # requires out.ndim == rhs.ndim. This will be fixed in the
-            # future
-            out = runtime.create_unbound_thunk(out_dtype, ndim=rhs.ndim)
-            key_dims = key.ndim  # dimension of the original key
-
-            task = legate_runtime.create_auto_task(
-                self.library, CuPyNumericOpCode.ADVANCED_INDEXING
-            )
-            task.add_output(out.base)
-            p_rhs = task.add_input(rhs.base)
-            p_key = task.add_input(key_store)
-            task.add_scalar_arg(is_set, ty.bool_)
-            task.add_scalar_arg(key_dims, ty.int64)
-            task.add_constraint(align(p_rhs, p_key))
-            if rhs.base.ndim > 1:
-                task.add_constraint(broadcast(p_rhs, range(1, rhs.base.ndim)))
-            task.execute()
-
-            # TODO : current implementation of the ND output regions
-            # requires out.ndim == rhs.ndim.
-            # The logic below will be removed in the future
-            out_dim = rhs.ndim - key_dims + 1
-
-            if out_dim != rhs.ndim:
-                out_tmp = out.base
-
-                if out.size == 0:
-                    out_shape = tuple(out.shape[i] for i in range(0, out_dim))
-                    out = runtime.create_deferred_thunk(out_shape, out_dtype)
-                    if not is_set:
-                        out.fill(np.array(0, dtype=out_dtype.to_numpy_dtype()))
-                else:
-                    for dim in range(rhs.ndim - out_dim):
-                        out_tmp = out_tmp.project(rhs.ndim - dim - 1, 0)
-
-                    out = out._copy_store(out_tmp)
-            return is_set, rhs, out, self
+        # Simple case: boolean indexing without complex transformations
+        # Return the prepared arrays and metadata
+        return BooleanIndexingContext(
+            transformed_array=lhs,
+            bool_key=bool_key,
+            inverted_transpose_indices=inverted_transpose_indices,
+            transpose_index=new_boolean_position,
+        )
 
     def _check_if_can_use_einsum(
         self, computed_key: tuple[Any, ...]
-    ) -> tuple[bool, int, Any]:
+    ) -> tuple[bool, int, NumPyThunk | None]:
         """
         Check if we can use einsum optimization path for indexing.
         """
         can_use_einsum_path = False
         mask_axis = -1
         mask_array = None
+        max_supported_dim = 5
+        max_mask_tensor_gb = 15.0  # 15 GB max
 
         if all(dim > 0 for dim in self.shape):  # no zero-size dimensions
             array_positions = []
@@ -738,24 +1083,32 @@ class DeferredArray(NumPyThunk):
                 array_element = computed_key[mask_axis]
 
                 # Check if array shape is compatible for einsum optimization
-                # For boolean arrays: shape must match (self.shape[mask_axis],)
-                # For integer arrays: should be 1D and size > 0
+                # arrays should be 1D and size > 0
                 # We set the limit to self.ndim<5 as the complexity of the
                 # internal C++ tensor contraction logic grows exponentially
                 # with the number of dimensions and seems to segfault for some
                 # of the advanced indexing examples
 
-                if array_element.size > 0 and self.ndim < 5:
-                    if array_element.dtype == bool:
-                        # Boolean arrays must have exact shape match
-                        if array_element.shape == (self.shape[mask_axis],):
-                            can_use_einsum_path = True
-                            mask_array = array_element
-                    else:
-                        # Integer arrays should be 1D for einsum optimization
-                        if array_element.ndim == 1:
-                            can_use_einsum_path = True
-                            mask_array = array_element
+                # Also limit the size to avoid creating huge mask tensors
+                # The mask tensor will have shape (array_size, axis_size) with float32 dtype (4 bytes per element)
+                max_mask_tensor_gb = max_mask_tensor_gb  # 15 GB max
+                axis_size = self.shape[mask_axis]
+                would_create_elements = array_element.size * axis_size
+                mask_tensor_size_gb = (would_create_elements * 4) / (
+                    1024**3
+                )  # 4 bytes per float32, convert to GB
+
+                if (
+                    array_element.size > 0
+                    and self.ndim < max_supported_dim
+                    and array_element.dtype != bool
+                    # Integer arrays should be 1D for einsum optimization
+                    and array_element.ndim == 1
+                    # Avoid huge mask tensors
+                    and mask_tensor_size_gb <= max_mask_tensor_gb
+                ):
+                    can_use_einsum_path = True
+                    mask_array = array_element
 
         return can_use_einsum_path, mask_axis, mask_array
 
@@ -763,115 +1116,119 @@ class DeferredArray(NumPyThunk):
         self, mask_axis: int, mask_array: Any
     ) -> tuple[bool, Any, Any, Any]:
         """
-        Simulate advanced indexing a[mask, :, :] (or similar) using einsum.
+        Simulate advanced indexing a[indices, :, :] (or similar) using einsum.
+
+        This function implements advanced indexing by converting the indexing operation
+        into an einsum (Einstein summation) operation.
+        The key insight is that advanced indexing like a[indices, :, :] can be expressed
+        as a tensor contraction between a mask tensor and the input array.
+
+        Example - Integer indexing:
+        Input: a.shape = (4, 3, 2), indices = [1, 3]
+        Operation: a[indices, :, :]  # Select rows 1 and 3
+        Einsum equivalent:
+        - mask_tensor.shape = (2, 4)  # 2 selected indices, 4 total rows
+        - mask_tensor[i, a] = 1 if a == indices[i], else 0
+        - einsum("ia,abc->ibc", mask_tensor, a) produces the result
+
         """
         from .._module.linalg_mvp import einsum
-        from .._module.ssc_searching import argwhere
         from .._module.creation_ranges import arange
-        from .._module.creation_shape import zeros, empty
+        from .._module.creation_shape import empty
         from .._module.ssc_searching import where
 
         a = self
 
         # Build einsum subscripts dynamically
+        # We need to create subscript strings for the einsum operation
+        # For an array with ndim dimensions, we use letters 'a', 'b', 'c', etc.
+        # to represent each dimension
         ndim = a.ndim
-        input_subs = [chr(ord("i") + d) for d in range(ndim)]
-        masked_axis_sub = chr(
-            ord("i") + ndim
-        )  # Use next available letter for mask dimension
+        input_subs = list(ascii_lowercase[:ndim])  # ['a', 'b', 'c', ...]
+
+        # The mask tensor will have an additional dimension representing the selected elements
+        # We use the next available letter for this new dimension
+        masked_axis_sub = ascii_lowercase[ndim]  # e.g., 'd' for 3D input array
+
+        # Store the original letter for the axis being masked
         masked_axis_original = input_subs[
             mask_axis
-        ]  # Store original letter for masked axis
+        ]  # e.g., 'a' if masking axis 0
 
-        # Create mask tensor using argwhere logic to avoid advanced indexing
+        # Create mask tensor using broadcasting logic for integer indices
+        # The mask tensor will have shape (num_selected, axis_size) where:
+        # - num_selected is the number of elements selected by the mask
+        # - axis_size is the size of the axis being masked
+        # - mask_tensor[i, j] = 1 if the i-th selected element is at position j, else 0
         axis_size = a.shape[mask_axis]
 
-        if mask_array.dtype == bool:
-            # For boolean masks, get indices of True values
-            if mask_array.shape != (a.shape[mask_axis],):
-                raise ValueError(
-                    "boolean array of indices should have the same shape as the input array[axis]"
-                )
-            argwhere_result = argwhere(mask_array)
-            if argwhere_result.size == 0:
-                # Handle empty case: no True values in mask
-                mask_tensor = zeros((0, axis_size), dtype=np.float32)
-            else:
-                mask_tensor = (
-                    argwhere_result[:, 0, np.newaxis]
-                    == arange(axis_size)[np.newaxis, :]
-                ).astype(np.float32)  # Use float32 for einsum compatibility
-        else:
-            # Convert negative indices to positive equivalents
-            # negative indices should be converted as: axis_size + negative_index
-            # Find negative indices and convert them
-            negative_mask = mask_array._less(0)
-            if negative_mask.any():
-                # For negative indices, add axis_size to convert to positive
-                positive_equivalent = mask_array._add(axis_size)
-                # Use the functional where: where(condition, if_true, if_false)
-                mask_array = where(
-                    negative_mask, positive_equivalent, mask_array
-                )
-                if (mask_array >= axis_size).any():
-                    raise IndexError("indices are out of bounds of the array")
-            else:
-                # Now check if the converted indices are within bounds [0, axis_size)
-                if (
-                    mask_array._less(0).any()
-                    or mask_array._greater_equal(axis_size).any()
-                ):
-                    raise IndexError("indices are out of bounds of the array")
+        # For integer indices, we need to create a mask tensor that maps
+        # each selected index to its position in the original axis
+        # Convert negative indices to positive equivalents
+        # negative indices should be converted as: axis_size + negative_index
+        # Find negative indices and convert them
+        negative_mask = mask_array._less(0)
+        positive_equivalent = mask_array._add(axis_size)
+        # Use the functional where: where(condition, if_true, if_false)
+        mask_array = where(negative_mask, positive_equivalent, mask_array)
+        if (mask_array >= axis_size).any():
+            raise IndexError("indices are out of bounds of the array")
 
-            # Ensure mask_array is a DeferredArray (convert EagerArray if needed)
-            if hasattr(mask_array, "_thunk"):
-                # Already a DeferredArray
-                mask_deferred = mask_array._thunk
-            elif hasattr(mask_array, "base"):
-                mask_deferred = mask_array
-            else:
-                # Convert EagerArray to DeferredArray
-                mask_deferred = mask_array.to_deferred_array(read_only=True)
+        # Now we need to create a mask tensor where mask_tensor[i, j] = 1
+        # if mask_array[i] == j, else 0
+        # This is done by broadcasting the indices against a range array
+        mask_deferred = mask_array._thunk
 
-            mask_2d = DeferredArray(
-                mask_deferred.base.promote(1, 1)
-            )  # Add dimension: shape (N,) -> (N, 1)
-            range_1d = arange(axis_size)  # Create range array directly
+        # Reshape mask_array to (N, 1) for broadcasting
+        mask_2d = DeferredArray(
+            mask_deferred.base.promote(1, 1)
+        )  # Add dimension: shape (N,) -> (N, 1)
 
-            # Ensure range_1d is a DeferredArray (convert EagerArray if needed)
-            if hasattr(range_1d._thunk, "base"):
-                # Already a DeferredArray
-                range_1d_deferred = range_1d._thunk
-            else:
-                # Convert EagerArray to DeferredArray
-                range_1d_deferred = range_1d._thunk.to_deferred_array(  # type: ignore
-                    read_only=True
-                )
+        # Create range array [0, 1, 2, ..., axis_size-1] and reshape to (1, M)
+        range_1d = arange(axis_size)  # Create range array directly
 
-            range_2d = DeferredArray(
-                range_1d_deferred.base.promote(0, 1)  # Now we can use .base
-            )  # Add dimension: shape (M,) -> (1, M)
+        # Ensure we have a deferred array with a base attribute
+        range_1d_deferred = runtime.to_deferred_array(
+            range_1d._thunk, read_only=True
+        )
 
-            mask_tensor_store = mask_2d._equal(range_2d)
-            mask_tensor = mask_tensor_store.astype(
-                np.float32
-            )  # Use float32 for einsum compatibility
+        # Reshape range to (1, axis_size) for broadcasting
+        range_2d = DeferredArray(
+            range_1d_deferred.base.promote(0, 1)  # Now we can use .base
+        )  # Add dimension: shape (M,) -> (1, M)
+
+        # Compare each index with each position: (N, 1) == (1, M) -> (N, M)
+        # This creates a boolean tensor where True indicates a match
+        mask_tensor_store = mask_2d._equal(range_2d)
+        mask_tensor = mask_tensor_store.astype(
+            np.float32
+        )  # Use float32 for einsum compatibility
 
         # Build einsum subscript strings
-        # mask_tensor has shape (num_selected, axis_size) -> uses masked_axis_sub + masked_axis_original
-        # input array keeps its original subscripts
+        # The einsum operation will contract the mask tensor with the input array
+        # to produce the selected elements
+
+        # Input array subscript: use original dimension letters
+        # e.g., for 3D array with shape (4, 3, 2): "abc"
         a_subscript = "".join(input_subs)
 
-        # output array replaces the masked axis with the new dimension
+        # Output array subscript: replace the masked axis with the new dimension
+        # e.g., if masking axis 0 in 3D array: "abc" -> "dbc" (where 'd' is the new dimension)
         output_subscript_list = input_subs.copy()
         output_subscript_list[mask_axis] = masked_axis_sub
         output_subscript = "".join(output_subscript_list)
 
+        # Create the einsum string: "ab,abc->ibc" (for 3D example)
+        # - "ab": mask_tensor dimensions (num_selected, axis_size)
+        # - "abc": input array dimensions (axis_size, other_dims...)
+        # - "ibc": output array dimensions (num_selected, other_dims...)
+        # The 'a' dimension is contracted (summed) away, leaving only selected elements
         einsum_str = f"{masked_axis_sub}{masked_axis_original},{a_subscript}->{output_subscript}"
 
         # Safety check: if mask_tensor is empty (no selections), return empty result directly
         if mask_tensor.shape[0] == 0:
-            # Create empty result with correct shape
+            # Handle the case where no elements are selected (empty mask)
+            # Create empty result with correct shape where the masked axis has size 0
             result_shape = list(a.shape)
             result_shape[mask_axis] = (
                 0  # No selections means 0 elements in masked axis
@@ -879,16 +1236,24 @@ class DeferredArray(NumPyThunk):
             empty_result = empty(tuple(result_shape), dtype=a.dtype)
             result = empty_result._thunk
         else:
-            # Convert DeferredArray to ndarray for einsum
+            # Perform the einsum operation to select elements
+            # Convert DeferredArray to ndarray for einsum (einsum expects ndarray inputs)
             from .._array.array import ndarray
 
             a_ndarray = ndarray._from_thunk(a)
+
+            # Execute the einsum operation
+            # This performs the tensor contraction: sum over the masked axis
+            # For each selected element, it multiplies by 1 (from mask_tensor) and sums
+            # For non-selected elements, it multiplies by 0, so they don't contribute
+            # Mathematically: result[i, b, c] = sum_a(mask_tensor[i, a] * a[a, b, c])
             einsum_result = einsum(einsum_str, mask_tensor, a_ndarray)
 
             # Preserve original dtype - einsum may promote types, but we want same dtype as input
             # This is especially important when input is integer type but mask_tensor is float32
             if einsum_result.dtype != a.dtype:
                 # For integer types, we may need to round to avoid precision issues
+                # that could arise from the float32 mask_tensor
                 if np.issubdtype(a.dtype, np.integer) and np.issubdtype(
                     einsum_result.dtype, np.floating
                 ):
@@ -906,15 +1271,16 @@ class DeferredArray(NumPyThunk):
     def _create_indexing_array(
         self, key: Any, is_set: bool = False, set_value: Any | None = None
     ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
-        is_bool_array, lhs, bool_key = self._has_single_boolean_array(
-            key, is_set
-        )
-        # the case when single boolean array is passed to the advanced
-        # indexing operation
-        if is_bool_array:
-            return lhs._advanced_indexing_with_boolean_array(
-                bool_key, is_set, set_value
+        # Try to handle single boolean array indexing first
+        if is_set:
+            boolean_result = self._try_single_boolean_array_index_set(
+                key, set_value
             )
+        else:
+            boolean_result = self._try_single_boolean_array_index_get(key)
+
+        if boolean_result is not None:
+            return boolean_result
         # general advanced indexing case
         store = self.base
         rhs = self
@@ -931,7 +1297,7 @@ class DeferredArray(NumPyThunk):
             self._check_if_can_use_einsum(computed_key)
         )
 
-        if can_take_einsum_path and not is_set and self.ndim > 1:
+        if not is_set and self.ndim > 1 and can_take_einsum_path:
             return self._advanced_indexing_using_einsum(mask_axis, mask_array)
 
         # the index where the first index_array is passed to the [] operator
@@ -1051,8 +1417,8 @@ class DeferredArray(NumPyThunk):
                 unpacked += (k,)
         return unpacked
 
-    def _get_view(self, key: Any) -> DeferredArray:
-        key = self._unpack_ellipsis(key, self.ndim)
+    def _get_view(self, key: IndexKey) -> DeferredArray:
+        key = self._unpack_ellipsis(key, self.ndim)  # type: ignore[arg-type]
         store = self.base
         shift = 0
         for dim, k in enumerate(key):
@@ -1101,7 +1467,7 @@ class DeferredArray(NumPyThunk):
         thunk_copy.copy(self, deep=True)
         return thunk_copy
 
-    def get_item(self, key: Any) -> NumPyThunk:
+    def get_item(self, key: IndexKey) -> NumPyThunk:
         # Check to see if this is advanced indexing or not
         if is_advanced_indexing(key):
             # Create the indexing array
@@ -1137,7 +1503,7 @@ class DeferredArray(NumPyThunk):
         else:
             result = self._get_view(key)
 
-            if ... not in key and result.shape == ():
+            if ... not in key and result.shape == ():  # type: ignore[operator]
                 input = result
                 result = runtime.create_deferred_thunk((), self.base.type)
 
@@ -1152,7 +1518,7 @@ class DeferredArray(NumPyThunk):
         return result
 
     @auto_convert("value")
-    def set_item(self, key: Any, value: Any) -> None:
+    def set_item(self, key: IndexKey, value: Any) -> None:
         assert self.dtype == value.dtype
 
         # Check to see if this is advanced indexing or not
