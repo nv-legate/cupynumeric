@@ -25,6 +25,8 @@ from ..runtime import runtime
 from ..types import CastingKind
 from .creation_shape import empty_like
 
+from ..config import TransferType
+
 casting_kinds: tuple[CastingKind, ...] = (
     "no",
     "equiv",
@@ -135,9 +137,12 @@ def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
     Returns
     -------
     out : ndarray
-        Array interpretation of `a`.  No copy is performed if the input is
-        already an ndarray with matching dtype.  If `a` is a subclass of
-        ndarray, a base class ndarray is returned.
+        Array interpretation of `a`.
+
+    Notes
+    ------
+    The input array will be copied it is a view of another NumPy ndarray or
+    if its datatype and the requested datatype are different.
 
     See Also
     --------
@@ -147,15 +152,40 @@ def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
+    if isinstance(a, np.ndarray):
+        if a.base is None and (dtype is None or a.dtype == dtype):
+            # The array is not a view, so we attach to this buffer.
+            thunk = runtime.find_or_create_array_thunk(
+                a, transfer=TransferType.SHARE, read_only=not a.flags["W"]
+            )
+            return ndarray._from_thunk(thunk, writeable=a.flags["W"])
+        else:
+            # Considering all the non-trivial operations like advanced
+            # indexing, transpose, squeeze etc., finding the mapping between
+            # the parent and child array when operations are done in
+            # the NumPy land will be challenging.
+            # A copy of the parent array is required to prevent
+            # data races that can occur when attaching multiple
+            # region-fields to the same backing memory pointed to
+            # by the parent and child NumPy arraysts. This aliasing
+            # of the physical memory under two different region-fields
+            # for the parent and child without defining the
+            # relationship between the two can lead to data races
+            # in Legion. A copy of the parent array prevents
+            # this from happening.
+            a_dtype = dtype if dtype is not None else a.dtype
+            return array(a, a_dtype, copy=True)
+
     if not isinstance(a, ndarray):
         thunk = runtime.get_numpy_thunk(a, share=True, dtype=dtype)
         writeable = a.flags.writeable if isinstance(a, np.ndarray) else True
-        array = ndarray._from_thunk(thunk, writeable=writeable)
+        arr = ndarray._from_thunk(thunk, writeable=writeable)
     else:
-        array = a
-    if dtype is not None and array.dtype != dtype:
-        array = array.astype(dtype)
-    return array
+        arr = a
+
+    if dtype is not None and arr.dtype != dtype:
+        arr = arr.astype(dtype)
+    return arr
 
 
 @add_boilerplate("a")

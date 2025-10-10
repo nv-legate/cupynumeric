@@ -21,7 +21,13 @@ from typing import TYPE_CHECKING, Any, Sequence, TypeGuard
 
 import legate.core.types as ty
 import numpy as np
-from legate.core import LEGATE_MAX_DIM, Scalar, TaskTarget, get_legate_runtime
+from legate.core import (
+    LEGATE_MAX_DIM,
+    Scalar,
+    TaskTarget,
+    get_legate_runtime,
+    DimOrdering,
+)
 
 from ._utils.array import calculate_volume, is_supported_dtype, to_core_type
 from ._utils.stack import find_last_user_stacklevel
@@ -427,6 +433,18 @@ class Runtime(object):
                         array.tobytes(), array.shape, array.dtype
                     )
 
+            if transfer == TransferType.MAKE_COPY:
+                ordering = DimOrdering.c_order()
+            else:
+                if array.flags["F_CONTIGUOUS"]:
+                    ordering = DimOrdering.fortran_order()
+                elif array.flags["C_CONTIGUOUS"]:
+                    ordering = DimOrdering.c_order()
+                else:
+                    raise ValueError(
+                        "Only F_CONTIGUOUS and C_CONTIGUOUS arrays are supported."
+                    )
+
             # This is not a scalar so make a field.
             # We won't try to cache these bigger arrays.
             store = legate_runtime.create_store_from_buffer(
@@ -434,7 +452,8 @@ class Runtime(object):
                 array.shape,
                 array.copy() if transfer == TransferType.MAKE_COPY else array,
                 # This argument should really be called "donate"
-                read_only=(transfer != TransferType.SHARE),
+                read_only=read_only,
+                ordering=ordering,
             )
             return DeferredArray(store)
 
