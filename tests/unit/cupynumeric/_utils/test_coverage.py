@@ -146,6 +146,7 @@ class Test_implemented:
     def test_reporting_True_func(
         self, mock_record_api_call: MagicMock
     ) -> None:
+        settings.report_coverage = True
         wrapped = m.implemented(_test_func, "foo", "_test_func")
 
         assert wrapped.__name__ == _test_func.__name__
@@ -168,9 +169,8 @@ class Test_implemented:
     def test_reporting_False_func(
         self, mock_record_api_call: MagicMock
     ) -> None:
-        wrapped = m.implemented(
-            _test_func, "foo", "_test_func", reporting=False
-        )
+        settings.report_coverage = False
+        wrapped = m.implemented(_test_func, "foo", "_test_func")
 
         assert wrapped.__name__ == _test_func.__name__
         assert wrapped.__qualname__ == _test_func.__qualname__
@@ -185,6 +185,7 @@ class Test_implemented:
     def test_reporting_True_ufunc(
         self, mock_record_api_call: MagicMock
     ) -> None:
+        settings.report_coverage = True
         wrapped = m.implemented(_test_ufunc, "foo", "_test_ufunc")
 
         # these had to be special-cased, @wraps does not handle them
@@ -209,9 +210,8 @@ class Test_implemented:
     def test_reporting_False_ufunc(
         self, mock_record_api_call: MagicMock
     ) -> None:
-        wrapped = m.implemented(
-            _test_ufunc, "foo", "_test_func", reporting=False
-        )
+        settings.report_coverage = False
+        wrapped = m.implemented(_test_ufunc, "foo", "_test_func")
 
         # these had to be special-cased, @wraps does not handle them
         assert wrapped.__name__ == _test_ufunc._name
@@ -230,6 +230,7 @@ class Test_unimplemented:
     def test_reporting_True_func(
         self, mock_record_api_call: MagicMock
     ) -> None:
+        settings.report_coverage = True
         wrapped = m.unimplemented(_test_func, "foo", "_test_func")
 
         assert wrapped.__name__ == _test_func.__name__
@@ -253,9 +254,8 @@ class Test_unimplemented:
     def test_reporting_False_func(
         self, mock_record_api_call: MagicMock
     ) -> None:
-        wrapped = m.unimplemented(
-            _test_func, "foo", "_test_func", reporting=False
-        )
+        settings.report_coverage = False
+        wrapped = m.unimplemented(_test_func, "foo", "_test_func")
 
         assert wrapped.__name__ == _test_func.__name__
         assert wrapped.__qualname__ == _test_func.__qualname__
@@ -279,6 +279,7 @@ class Test_unimplemented:
     def test_reporting_True_ufunc(
         self, mock_record_api_call: MagicMock
     ) -> None:
+        settings.report_coverage = True
         wrapped = m.unimplemented(_test_ufunc, "foo", "_test_ufunc")
 
         assert wrapped.__doc__ != _test_ufunc.__doc__
@@ -300,9 +301,8 @@ class Test_unimplemented:
     def test_reporting_False_ufunc(
         self, mock_record_api_call: MagicMock
     ) -> None:
-        wrapped = m.unimplemented(
-            _test_ufunc, "foo", "_test_ufunc", reporting=False
-        )
+        settings.report_coverage = False
+        wrapped = m.unimplemented(_test_ufunc, "foo", "_test_ufunc")
 
         assert wrapped.__doc__ != _test_ufunc.__doc__
         assert "not implemented" in wrapped.__doc__
@@ -532,10 +532,7 @@ def test_implemented_decorator_actual() -> None:
         return "test"
 
     decorated_func = m.implemented(
-        func=test_func,
-        prefix="test_module",
-        name="test_function",
-        reporting=True,
+        func=test_func, prefix="test_module", name="test_function"
     )
 
     result = decorated_func()
