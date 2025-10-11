@@ -30,10 +30,11 @@ on the `legate channel <https://anaconda.org/legate/cupynumeric>`_.
    pip wheels only), supporting Python versions 3.11 to 3.13. Windows is only
    supported through WSL.
 
-Nightly top-of-tree builds of cuPyNumeric are available under the "experimental" label:
+Nightly top-of-tree builds of cuPyNumeric are available on a separate channel,
+`legate-nightly`:
 
 .. code-block:: bash
-   $ conda install -c conda-forge -c legate/label/experimental cupynumeric
+   $ conda install -c conda-forge -c legate-nightly cupynumeric
 
 Refer to the `nightly docs <https://nv-legate.github.io/cupynumeric>`_ when using these.
 
