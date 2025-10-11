@@ -14,7 +14,6 @@
 #
 from __future__ import annotations
 
-import itertools
 import warnings
 from dataclasses import dataclass
 from enum import Enum
@@ -62,57 +61,31 @@ UFUNC_METHODS = ("at", "accumulate", "outer", "reduce", "reduceat")
 upr_result: ContextVar[object] = ContextVar("upr_result", default=None)
 
 
-def compute_fallback_and_mode(
-    result: Any, input_type: type, fallback_reason: str | None
-) -> tuple[str | None, str]:
+def _infer_mode(result: Any) -> str:
     if result is None:
-        return None, "none"
+        return "N/A"
     elif hasattr(result, "_thunk"):
         is_deferred = runtime.is_deferred_array(result._thunk)
-        mode = "deferred" if is_deferred else "eager"
-
-        if not isinstance(result, numpy.ndarray):
-            return None, mode
-        elif input_type == numpy.ndarray and isinstance(result, numpy.ndarray):
-            return None, mode
-        return fallback_reason, mode
-
+        return "deferred" if is_deferred else "eager"
     elif isinstance(result, numpy.ndarray):
-        mode = "eager"
-        if input_type == numpy.ndarray:
-            return None, mode
-        return fallback_reason, mode
+        return "eager"
     else:
-        return None, "eager"
+        return "N/A"
 
 
 @contextmanager
-def ProfileRange(
-    name: str,
-    location: str,
-    input_type: type,
-    fallback_reason: str | None = None,
-) -> Iterator[None]:
+def ProfileRange(name: str, location: str) -> Iterator[None]:
     get_legate_runtime().start_profiling_range()  # type: ignore
     token = upr_result.set(None)
     try:
         yield
     finally:
         result = upr_result.get()
-
-        fallback_reason, mode = compute_fallback_and_mode(
-            result, input_type, fallback_reason
+        mode = _infer_mode(result)
+        provenance = (
+            f"{name.replace('numpy.', 'cupynumeric.')} "
+            f"[mode: {mode}] on {location}"
         )
-
-        if fallback_reason:
-            fallback = (
-                f" > numpy fallback | Fallback Reason: {fallback_reason}"
-            )
-        else:
-            fallback = ""
-
-        provenance = f"{name.replace('numpy.', 'cupynumeric.')} [mode: {mode}{fallback}] on {location}"
-
         upr_result.reset(token)
         get_legate_runtime().stop_profiling_range(provenance)  # type: ignore
 
@@ -120,27 +93,6 @@ def ProfileRange(
 @cache
 def _profiling_enabled() -> bool:
     return get_legate_runtime().config().profile  # type: ignore
-
-
-def _get_fallback_reason(*args: Any, **kwargs: Any) -> str | None:
-    if settings.test():
-        return "LEGATE_TEST=1"
-
-    if settings.force_thunk() == "eager":
-        return "forced_eager"
-
-    for arg in itertools.chain(args, kwargs.values()):
-        if getattr(arg, "size", 0) == 0:
-            return "empty_array"
-
-        if (
-            hasattr(arg, "_thunk")
-            and arg.size <= runtime.max_eager_volume
-            and not runtime.is_deferred_array(arg._thunk)
-        ):
-            return "size_threshold"
-
-    return None
 
 
 def issue_fallback_warning(what: str) -> None:
@@ -232,10 +184,11 @@ def _fixup_co_name(
     return decorator
 
 
-def implemented(
-    func: AnyCallable, prefix: str, name: str, reporting: bool = True
-) -> CuWrapped:
+def implemented(func: AnyCallable, prefix: str, name: str) -> CuWrapped:
     name = f"{prefix}.{name}"
+    reporting = settings.report_coverage()
+    profiling = _profiling_enabled()
+    full_bt = reporting and settings.report_dump_callstack()
 
     wrapper: CuWrapped
 
@@ -243,37 +196,25 @@ def implemented(
     @track_provenance()
     @_fixup_co_name(func, "implemented")
     def _wrapper(*args: Any, **kwargs: Any) -> Any:
-        if reporting:
-            location = find_last_user_line_numbers(
-                not settings.report_dump_callstack()
-            )
+        if not reporting and not profiling:
+            return func(*args, **kwargs)
 
-            def run_func(args: Any, kwargs: Any) -> Any:
+        location = find_last_user_line_numbers(top_only=(not full_bt))
+
+        def run_func(args: Any, kwargs: Any) -> Any:
+            if reporting:
                 runtime.record_api_call(
                     name=name, location=location, implemented=True
                 )
-                return func(*args, **kwargs)
+            return func(*args, **kwargs)
 
-            if not _profiling_enabled():
-                return run_func(args, kwargs)
+        if not profiling:
+            return run_func(args, kwargs)
 
-            fallback_reason = _get_fallback_reason(*args, **kwargs)
-            with ProfileRange(name, location, type(args[0]), fallback_reason):
-                result = run_func(args, kwargs)
-                upr_result.set(result)
-                return result
-
-        else:
-            if not _profiling_enabled():
-                return func(*args, **kwargs)
-
-            location = find_last_user_line_numbers(True)
-            fallback_reason = _get_fallback_reason(*args, **kwargs)
-
-            with ProfileRange(name, location, type(args[0]), fallback_reason):
-                result = func(*args, **kwargs)
-                upr_result.set(result)
-                return result
+        with ProfileRange(name, location):
+            result = run_func(args, kwargs)
+            upr_result.set(result)
+            return result
 
     wrapper = cast(CuWrapped, _wrapper)
 
@@ -305,10 +246,12 @@ def unimplemented(
     func: AnyCallable,
     prefix: str,
     name: str,
-    reporting: bool = True,
     fallback: Callable[[Any], Any] | None = None,
 ) -> CuWrapped:
     name = f"{prefix}.{name}"
+    reporting = settings.report_coverage()
+    profiling = _profiling_enabled()
+    full_bt = reporting and settings.report_dump_callstack()
 
     # Previously we were depending on NumPy functions to automatically convert
     # all array-like arguments to `numpy.ndarray` through `__array__()` (taking
@@ -322,50 +265,28 @@ def unimplemented(
     @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
     @_fixup_co_name(func, "unimplemented")
     def _wrapper(*args: Any, **kwargs: Any) -> Any:
-        if reporting:
-            location = find_last_user_line_numbers(
-                not settings.report_dump_callstack()
-            )
+        if reporting or profiling:
+            location = find_last_user_line_numbers(top_only=(not full_bt))
 
-            def run_func(args: Any, kwargs: Any) -> Any:
+        def run_func(args: Any, kwargs: Any) -> Any:
+            if reporting:
                 runtime.record_api_call(
                     name=name, location=location, implemented=False
                 )
-                if fallback:
-                    args = deep_apply(args, fallback)
-                    kwargs = deep_apply(kwargs, fallback)
-                return func(*args, **kwargs)
+            else:
+                issue_fallback_warning(what=name)
+            if fallback:
+                args = deep_apply(args, fallback)
+                kwargs = deep_apply(kwargs, fallback)
+            return func(*args, **kwargs)
 
-            fallback_reason = _get_fallback_reason(*args, **kwargs)
-
-            if _profiling_enabled():
-                with ProfileRange(
-                    name, location, type(args[0]), fallback_reason
-                ):
-                    result = run_func(*args, **kwargs)
-                    upr_result.set(result)
-                    return result
+        if not profiling:
             return run_func(args, kwargs)
 
-        else:
-
-            def run_func_with_fallback(args: Any, kwargs: Any) -> Any:
-                issue_fallback_warning(what=name)
-                if fallback:
-                    args = deep_apply(args, fallback)
-                    kwargs = deep_apply(kwargs, fallback)
-                return func(*args, **kwargs)
-
-            if not _profiling_enabled():
-                return run_func_with_fallback(args, kwargs)
-
-            fallback_reason = _get_fallback_reason(*args, **kwargs)
-            location = find_last_user_line_numbers(True)
-
-            with ProfileRange(name, location, type(args[0]), fallback_reason):
-                result = run_func_with_fallback(*args, **kwargs)
-                upr_result.set(result)
-                return result
+        with ProfileRange(name, location):
+            result = run_func(args, kwargs)
+            upr_result.set(result)
+            return result
 
     wrapper = cast(CuWrapped, _wrapper)
 
@@ -425,8 +346,6 @@ def clone_module(
         omit_types=(ModuleType,),
     )
 
-    reporting = settings.report_coverage()
-
     from .._ufunc.ufunc import ufunc as lgufunc
 
     for attr, value in new_globals.items():
@@ -437,9 +356,7 @@ def clone_module(
             include_builtin_function_type
             and isinstance(value, BuiltinFunctionType)
         ):
-            wrapped = implemented(
-                cast(AnyCallable, value), mod_name, attr, reporting=reporting
-            )
+            wrapped = implemented(cast(AnyCallable, value), mod_name, attr)
             new_globals[attr] = wrapped
             if isinstance(value, lgufunc):
                 for method in UFUNC_METHODS:
@@ -448,14 +365,12 @@ def clone_module(
                             getattr(value, method),
                             f"{mod_name}.{attr}",
                             method,
-                            reporting=reporting,
                         )
                         if hasattr(value, method)
                         else unimplemented(
                             getattr(getattr(origin_module, attr), method),
                             f"{mod_name}.{attr}",
                             method,
-                            reporting=reporting,
                             fallback=fallback,
                         )
                     )
@@ -468,9 +383,7 @@ def clone_module(
             include_builtin_function_type
             and isinstance(value, BuiltinFunctionType)
         ):
-            wrapped = unimplemented(
-                value, mod_name, attr, reporting=reporting, fallback=fallback
-            )
+            wrapped = unimplemented(value, mod_name, attr, fallback=fallback)
             new_globals[attr] = wrapped
             if isinstance(value, npufunc):
                 for method in UFUNC_METHODS:
@@ -478,7 +391,6 @@ def clone_module(
                         getattr(value, method),
                         f"{mod_name}.{attr}",
                         method,
-                        reporting=reporting,
                         fallback=fallback,
                     )
                     setattr(wrapped, method, wrapped_method)
@@ -527,26 +439,18 @@ def clone_class(
             omit_names=set(cls.__dict__).union(clean_omit_names),
         )
 
-        reporting = settings.report_coverage()
-
         for attr, value in cls.__dict__.items():
             # Only need to wrap things that are also in the origin class
             if not hasattr(origin_class, attr):
                 continue
             if should_wrap(value):
-                wrapped = implemented(
-                    value, class_name, attr, reporting=reporting
-                )
+                wrapped = implemented(value, class_name, attr)
                 setattr(cls, attr, wrapped)
 
         for attr, value in missing.items():
             if should_wrap(value):
                 wrapped = unimplemented(
-                    value,
-                    class_name,
-                    attr,
-                    reporting=reporting,
-                    fallback=fallback,
+                    value, class_name, attr, fallback=fallback
                 )
                 setattr(cls, attr, wrapped)
             else:
