@@ -165,6 +165,14 @@ def test_concatenate_casting(casting):
     assert np.array_equal(res_np, res_num)
 
 
+def test_concatenate_axis_none_single_input() -> None:
+    arr_num = num.arange(5)
+    arr_np = np.arange(5)
+    result_num = num.concatenate([arr_num], axis=None)
+    result_np = np.concatenate([arr_np], axis=None)
+    assert np.array_equal(result_num, result_np)
+
+
 class TestConcatenateErrors:
     def test_zero_arrays(self):
         expected_exc = ValueError
