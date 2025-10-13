@@ -351,7 +351,7 @@ void CUDALibraries::finalize()
 #if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
   finalize_cusolvermp();
 #endif
-  if (cutensor_ != nullptr) {
+  if (cutensor_.has_value()) {
     finalize_cutensor();
   }
   for (auto& pair : plan_caches_) {
