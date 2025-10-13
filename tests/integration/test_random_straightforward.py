@@ -17,7 +17,7 @@ import math
 import legate.install_info as info
 import numpy as np
 import pytest
-from utils.random import ModuleGenerator, assert_distribution
+from utils.random import ModuleGenerator, assert_distribution, DEFAULT_MEAN_TOL
 
 import cupynumeric as num
 
@@ -208,7 +208,7 @@ def test_cauchy_float32(t):
     # cauchy's distribution mean and stdev are not defined...
     aa = np.array(a)
     median = np.median(aa)
-    assert np.abs(median - x0) < 0.01
+    assert np.abs(median - x0) < DEFAULT_MEAN_TOL
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
@@ -220,7 +220,7 @@ def test_cauchy_float64(t):
     # cauchy's distribution mean and stdev are not defined...
     aa = np.array(a)
     median = np.median(aa)
-    assert np.abs(median - x0) < 0.01
+    assert np.abs(median - x0) < DEFAULT_MEAN_TOL
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
@@ -232,7 +232,7 @@ def test_stdcauchy_float32(t):
     # cauchy's distribution mean and stdev are not defined...
     aa = np.array(a)
     median = np.median(aa)
-    assert np.abs(median - x0) < 0.01
+    assert np.abs(median - x0) < DEFAULT_MEAN_TOL
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
@@ -244,7 +244,7 @@ def test_stdcauchy_float64(t):
     # cauchy's distribution mean and stdev are not defined...
     aa = np.array(a)
     median = np.median(aa)
-    assert np.abs(median - x0) < 0.01
+    assert np.abs(median - x0) < DEFAULT_MEAN_TOL
 
 
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)

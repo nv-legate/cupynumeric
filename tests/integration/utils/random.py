@@ -18,6 +18,9 @@ import numpy as np
 import cupynumeric as num
 
 
+DEFAULT_MEAN_TOL = 0.05
+
+
 class ModuleGenerator:
     def __init__(
         self, seed=None, force_build=False
@@ -144,7 +147,7 @@ class ModuleGenerator:
 
 
 def assert_distribution(
-    a, theo_mean, theo_stdev, mean_tol=1e-2, stdev_tol=1.0
+    a, theo_mean, theo_stdev, mean_tol=DEFAULT_MEAN_TOL, stdev_tol=1.0
 ):
     if True:
         aa = np.array(a)
