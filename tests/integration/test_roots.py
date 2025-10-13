@@ -93,12 +93,13 @@ def test_cubic_polynomial():
 
 
 def test_quartic_polynomial():
-    arr = np.array([1, 0, -2, 0, 1])
+    arr = np.array([1, 0, -5, 0, 4])
     arr_num = num.array(arr)
 
     result = num.roots(arr_num)
-    expected = np.roots(arr)
-    assert allclose(result, expected)
+    sorted_result = num.sort(result)
+    expected = np.sort(np.roots(arr))
+    assert allclose(sorted_result, expected)
 
 
 def test_repeated_roots():
@@ -107,10 +108,13 @@ def test_repeated_roots():
 
     result = num.roots(arr_num)
     expected = np.roots(arr)
-    # we need to increase tolerance since there is a numerical
-    # instability for the result of eigvals when different BLAS
-    # libraries are used
-    assert allclose(result, expected, rtol=1e-5, atol=1e-8)
+    # computing repeated roots from coefficients is numerically unstable:
+    # even if we used an algorithm that was backward stable up to machine
+    # precision for a quadrupally repeated root we should still expect errors
+    # that are O(eps^(1/4))
+    rtol = np.finfo(np.float64).eps ** 0.25
+    close = allclose(result, expected, rtol=rtol, atol=1e-8)
+    assert close
 
 
 def test_large_coefficients():
@@ -248,12 +252,13 @@ def test_scalar_input():
 
 
 def test_mixed_zeros_and_coefficients():
-    arr = np.array([0, 1, 0, -2, 0, 1, 0])  # Leading and trailing zeros
+    arr = np.array([0, 1, 0, -5, 0, 4, 0])  # Leading and trailing zeros
     arr_num = num.array(arr)
 
     result = num.roots(arr_num)
-    expected = np.roots(arr)
-    assert allclose(result, expected)
+    sorted_result = num.sort(result)
+    expected = np.sort(np.roots(arr))
+    assert allclose(sorted_result, expected)
 
 
 def random_symmetric_matrix(n, seed=None):
