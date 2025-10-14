@@ -1,4 +1,4 @@
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2025 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -169,6 +169,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_GEEV: int
     CUPYNUMERIC_GEMM: int
     CUPYNUMERIC_HISTOGRAM: int
+    CUPYNUMERIC_HISTOGRAMDD: int
     CUPYNUMERIC_IN1D: int
     CUPYNUMERIC_LOAD_CUDALIBS: int
     CUPYNUMERIC_MATMUL: int
@@ -394,6 +395,7 @@ class CuPyNumericOpCode(IntEnum):
     GEEV = _cupynumeric.CUPYNUMERIC_GEEV
     GEMM = _cupynumeric.CUPYNUMERIC_GEMM
     HISTOGRAM = _cupynumeric.CUPYNUMERIC_HISTOGRAM
+    HISTOGRAMDD = _cupynumeric.CUPYNUMERIC_HISTOGRAMDD
     IN1D = _cupynumeric.CUPYNUMERIC_IN1D
     LOAD_CUDALIBS = _cupynumeric.CUPYNUMERIC_LOAD_CUDALIBS
     MATMUL = _cupynumeric.CUPYNUMERIC_MATMUL

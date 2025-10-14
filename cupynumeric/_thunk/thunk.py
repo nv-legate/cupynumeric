@@ -1,4 +1,4 @@
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2025 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1508,6 +1508,10 @@ class NumPyThunk(ABC):
     def histogram(self, src: Any, bins: Any, weights: Any) -> None: ...
 
     @abstractmethod
+    def histogramdd(
+        self, coords: Any, weights: Any, bins_set: Any
+    ) -> None: ...
+
     def stencil_hint(
         self, low_offsets: tuple[int, ...], high_offsets: tuple[int, ...]
     ) -> None: ...

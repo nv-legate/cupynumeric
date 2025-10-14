@@ -1,4 +1,4 @@
-/* Copyright 2024 NVIDIA Corporation
+/* Copyright 2025 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 #include "cupynumeric/mapper.h"
 #include "legate/utilities/assert.h"
+
+#include <cupynumeric/stat/histogramdd.h>
 
 using namespace legate;
 using namespace legate::mapping;
@@ -60,6 +62,9 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       mappings.back().policy().ordering.set_fortran_order();
       mappings.back().policy().exact = true;
       return std::move(mappings);
+    }
+    case CUPYNUMERIC_HISTOGRAMDD: {
+      return HistogramDDTask::store_mappings(task, options);
     }
     case CUPYNUMERIC_MATMUL: {
       std::vector<StoreMapping> mappings;
@@ -453,6 +458,9 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         return 0;
       }
       return std::nullopt;
+    }
+    case CUPYNUMERIC_HISTOGRAMDD: {
+      return HistogramDDTask::allocation_pool_size(task, memory_kind);
     }
     case CUPYNUMERIC_MATMUL: [[fallthrough]];
     case CUPYNUMERIC_MATVECMUL: {

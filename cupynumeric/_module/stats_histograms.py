@@ -1,4 +1,4 @@
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2025 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence, TypeAlias, cast
 
 import numpy as np
+import itertools as it
+import functools as ft
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
+from .._array.util import convert_to_cupynumeric_ndarray
 from ..types import SortSide
 from .creation_data import asarray
 from .creation_shape import ones, zeros
@@ -127,10 +130,15 @@ def bincount(
     return out
 
 
+# TODO: unify typing (bins, ranges, weights) across histogram, histogramdd, and histogram2d
+if TYPE_CHECKING:
+    Bins: TypeAlias = ndarray | npt.ArrayLike | int
+
+
 @add_boilerplate("x", "weights")
 def histogram(
     x: ndarray,
-    bins: ndarray | npt.ArrayLike | int = 10,
+    bins: Bins = 10,
     range: tuple[int, int] | tuple[float, float] | None = None,
     weights: ndarray | None = None,
     density: bool = False,
@@ -378,3 +386,325 @@ def digitize(x: ndarray, bins: ndarray, right: bool = False) -> ndarray | int:
         return len(bins) - searchsorted(bins.flip(), x, side=side)
     else:
         return searchsorted(bins, x, side=side)
+
+
+@add_boilerplate("coords", "weights")
+def histogramdd(
+    coords: ndarray,
+    bins: tuple[ndarray, ...] | tuple[int, ...] | int = 10,
+    range: Sequence[tuple[int, int] | tuple[float, float] | None]
+    | None = None,
+    density: bool = False,
+    weights: ndarray | None = None,
+) -> tuple[ndarray, Sequence[npt.ArrayLike]]:
+    """
+    Compute the multidimensional histogram of a dataset.
+
+    Parameters
+    ----------
+    coords : (N, D) array, or (N, D) array_like
+        Input data. The data to be histogrammed.
+        An array, each row is a coordinate in a D-dimensional space
+        - such as histogramdd(np.array([p1, p2, p3])).
+    bins : sequence or int, optional
+        The bin specification:
+        A sequence of arrays describing the monotonically increasing
+        bin edges along each dimension.
+        The number of bins for each dimension (nx, ny, ... =bins)
+        The number of bins for all dimensions (nx=ny=…=bins).
+    range : sequence, optional
+        A sequence of length D, each an optional (lower, upper) tuple giving
+        the outer bin edges to be used if the edges are not given explicitly
+        in bins. An entry of None in the sequence results in the minimum and
+        maximum values being used for the corresponding dimension.
+        The default, None, is equivalent to passing a tuple of D None values.
+    density : bool, optional
+        If False, the default, returns the number of samples in each bin.
+        If True, returns the probability density function at the bin,
+        bin_count / sample_count / bin_volume.
+    weights : (N,) array_like, optional
+        An array of values w_i weighing each sample (x_i, y_i, z_i, ...).
+        Weights are normalized to 1 if density is True.
+        If density is False, the values of the returned histogram
+        are equal to the sum of the weights belonging to the samples
+        falling into each bin.
+
+    Returns
+    -------
+    hist : ndarray
+        The multidimensional histogram of given sample. See `density` and `weights`
+        for a description of the possible semantics.
+    edges : sequence
+        A list of D arrays describing the bin edges for each dimension.
+
+    See Also
+    --------
+    numpy.histogramdd
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    # Note: the C++-side assumption is coords come as row major: (D, N),
+    # rather than column-major as they actually come;
+    # but this is fixed in the C++ mapper (set_fortran_order());
+    #
+    # 1: check `coords.shape = (2,.)`;
+    #
+    assert coords.ndim == 2
+    (num_coords, num_dims) = coords.shape
+    assert num_dims > 1 and num_coords > 0
+    #
+    # 2: construct `bins` as sequence of arrays;
+    #
+    bins_all: tuple[ndarray, ...] | tuple[int, ...]
+    #
+    # check isscalar(bins):
+    if isinstance(bins, int):
+        bins_all = (bins,) * num_dims
+    else:
+        bins_all = bins
+    #
+    # one way or another bins_all is a tuple of same_type:
+    #
+    assert len(bins_all) == num_dims
+    is_tuple_of_ints = all(type(e) is int for e in bins_all)
+
+    bins_set = []
+    if not is_tuple_of_ints:
+        # ... then it must be tuple of ndarray's:
+        #
+        for b in bins_all:
+            b_as_arr = convert_to_cupynumeric_ndarray(b)
+            b_array = b_as_arr.astype(np.dtype(np.float64))
+
+            if not all((b_array[1:] - b_array[:-1]) >= 0):
+                raise ValueError(
+                    "`bins` must increase monotonically, when an array"
+                )
+            bins_set.append(b_array)
+    else:
+        # construct bins_set from bins of ints and ranges:
+        #
+        # 3. interpret `range` when `bins` is not list of arrays;
+        #
+        ranges_all: Sequence[tuple[int, int] | tuple[float, float] | None]
+        #
+        if range is None:
+            ranges_all = tuple([None] * num_dims)
+        else:
+            ranges_all = tuple(range)
+
+        assert isinstance(ranges_all, tuple) and len(ranges_all) == num_dims
+        any_missing = np.any([r is None for r in ranges_all])
+
+        lower_b_array: ndarray | None = None
+        higher_b_array: ndarray | None = None
+        if any_missing:
+            lower_b_array = coords.min(axis=0)
+            higher_b_array = coords.max(axis=0)
+
+        for index_dim, num_edges_dim, range_dim in zip(
+            _builtin_range(0, num_dims), bins_all, ranges_all
+        ):
+            if range_dim is not None:
+                assert len(range_dim) == 2
+                if range_dim[0] >= range_dim[1]:
+                    raise ValueError(
+                        "`ranges` must be None or pairs of increasing values."
+                    )
+                lower_b = range_dim[0]
+                higher_b = range_dim[1]
+            else:
+                lower_b = float(cast(ndarray, lower_b_array)[index_dim])
+                higher_b = float(cast(ndarray, higher_b_array)[index_dim])
+
+            step = (higher_b - lower_b) / num_edges_dim
+
+            dims = int(num_edges_dim)  # type: ignore [call-overload]
+            ks = _builtin_range(dims)
+            bins_array = convert_to_cupynumeric_ndarray(
+                [lower_b + k * step for k in ks] + [higher_b]
+            ).astype(np.float64)
+
+            bins_set.append(bins_array)
+
+    box_shape = tuple(bin.size - 1 for bin in bins_set)
+    num_boxes = np.prod(box_shape)
+
+    histdd_inputs: tuple[Any, ...]
+    if weights is not None:
+        if weights.size != num_coords:
+            raise ValueError(
+                "`weights` array must be same size as number of points"
+            )
+
+        result_type = weights.dtype
+        if weights.ndim != 1:
+            weights = weights.flatten()
+        weights_thunk = weights._thunk
+        histdd_inputs = (coords, weights, bins_set)
+    else:
+        result_type = np.dtype(np.float64)
+        weights_thunk = None
+        histdd_inputs = (coords, bins_set)
+
+    # numpy always casts the output of histogramdd to float
+    result_type = np.dtype(np.float64)
+
+    histdd = ndarray((num_boxes,), dtype=result_type, inputs=histdd_inputs)
+
+    histdd._thunk.histogramdd(
+        coords._thunk,
+        weights=weights_thunk,
+        bins_set=[bins_set[k]._thunk for k in _builtin_range(0, num_dims)],
+    )
+
+    # 4. implement density (density = True) case;
+    #
+    edge_l = []
+    if density:
+        #
+        # scale by weights sum:
+        histdd /= histdd.sum()
+        for index_dim in _builtin_range(0, num_dims):
+            edge_l.append(bins_set[index_dim][1:] - bins_set[index_dim][:-1])
+        #
+        # cartesian products:
+        cartes = list(it.product(*edge_l))
+        #
+        # volumes:
+        volumes = convert_to_cupynumeric_ndarray(
+            list(map(lambda lens: ft.reduce(lambda x, y: x * y, lens), cartes))
+        ).astype(np.float64)
+        #
+        # scale each entry by its volume:
+        histdd /= volumes
+
+    return histdd.reshape(box_shape), bins_set
+
+
+@add_boilerplate("xcoords", "ycoords", "weights")
+def histogram2d(
+    xcoords: ndarray,
+    ycoords: ndarray,
+    bins: tuple[Sequence[int], Sequence[int]]
+    | tuple[Sequence[int], int]
+    | tuple[int, Sequence[int]]
+    | tuple[int, int]
+    | int = 10,
+    range: ndarray | None = None,
+    density: bool = False,
+    weights: ndarray | None = None,
+) -> tuple[ndarray, ndarray, ndarray]:
+    """
+    Compute the bi-dimensional histogram of two data samples.
+
+    Parameters
+    ----------
+    xcoords : array_like, shape (N,)
+        An array containing the x coordinates of the points to be histogrammed.
+    ycoords : array_like, shape (N,)
+        An array containing the y coordinates of the points to be histogrammed.
+    bins : int or array_like or [int, int] or [array, array], optional
+        If int, the number of bins for the two dimensions (nx=ny=bins).
+        If array_like, the bin edges for the two
+        dimensions (x_edges=y_edges=bins).
+        If [int, int], the number of bins in each
+        dimension (nx, ny = bins).
+        If [array, array], the bin edges in each
+        dimension (x_edges, y_edges = bins).
+        A combination [int, array] or [array, int], where int is the
+        number of bins and array is the bin edges.
+    range : array_like, shape(2,2), optional
+        The leftmost and rightmost edges of the bins along each dimension
+        (if not specified explicitly in the bins parameters):
+        [[xmin, xmax], [ymin, ymax]].
+        All values outside of this range will be considered
+        outliers and not tallied in the histogram.
+    density : bool, optional
+        If False, the default, returns the number of samples in each bin.
+        If True, returns the probability density function at the bin,
+        bin_count / sample_count / bin_area.
+    weights : array_like, shape(N,), optional
+        An array of values w_i weighing each sample (x_i, y_i).
+        Weights are normalized to 1 if density is True. If density is False,
+        the values of the returned histogram are equal to the sum of the
+        weights belonging to the samples falling into each bin.
+
+    Returns
+    -------
+    hist : ndarray, shape(nx, ny)
+        The bi-dimensional histogram of samples x and y. Values in x are
+        histogrammed along the first dimension and values in y are
+        histogrammed along the second dimension.
+    xedges : ndarray, shape(nx+1,)
+        The bin edges along the first dimension.
+    yedges : ndarray, shape(ny+1,)
+        The bin edges along the second dimension.
+
+    See Also
+    --------
+    numpy.histogram2d
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    assert xcoords.ndim == 1
+    assert ycoords.ndim == 1
+
+    num_coords = xcoords.shape[0]
+    assert ycoords.shape[0] == num_coords
+    num_dims = 2
+    #
+    # pack x,y coords into column-major 2D ndarray:
+    #
+    coords_adapter = ndarray(shape=(num_coords, num_dims), dtype=xcoords.dtype)
+    coords_adapter[:, 0] = xcoords
+    coords_adapter[:, 1] = ycoords
+
+    assert coords_adapter.ndim == 2
+    assert coords_adapter.shape == (num_coords, num_dims)
+
+    bins_adapter: Any = bins
+    #
+    # check not non-scalar(bins):
+    #
+    if isinstance(bins, tuple):
+        x_bins: Bins
+        y_bins: Bins
+        x_bins, y_bins = bins
+        #
+        # check cases [int, array] or [array, int]
+        #
+        if isinstance(x_bins, int) and not isinstance(y_bins, int):
+            x_bins = np.linspace(xcoords.min(), xcoords.max(), num=x_bins + 1)
+        elif isinstance(y_bins, int) and not isinstance(x_bins, int):
+            y_bins = np.linspace(ycoords.min(), ycoords.max(), num=y_bins + 1)
+        #
+        # everything else is handled by histogramdd()
+        #
+        bins_adapter = (x_bins, y_bins)
+
+    #
+    range_adapter: Any = range
+    if range is not None:
+        range_adapter = np.array(
+            [[range[0][0], range[0][1]], [range[1][0], range[1][1]]]
+        )
+    #
+    # trampoline through histogramdd():
+    #
+    result, bins_set = histogramdd(
+        coords_adapter, bins_adapter, range_adapter, density, weights
+    )
+    assert len(bins_set) == num_dims
+    assert result.shape[0] == num_dims
+    bins_rx = convert_to_cupynumeric_ndarray(bins_set[0]).astype(
+        bins_adapter[0].dtype
+    )
+    bins_ry = convert_to_cupynumeric_ndarray(bins_set[1]).astype(
+        bins_adapter[1].dtype
+    )
+    return result, bins_rx, bins_ry

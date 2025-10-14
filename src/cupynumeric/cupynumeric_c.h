@@ -1,4 +1,4 @@
-/* Copyright 2024 NVIDIA Corporation
+/* Copyright 2025 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ enum CuPyNumericOpCode {
   CUPYNUMERIC_GEEV,
   CUPYNUMERIC_GEMM,
   CUPYNUMERIC_HISTOGRAM,
+  CUPYNUMERIC_HISTOGRAMDD,
   CUPYNUMERIC_IN1D,
   CUPYNUMERIC_LOAD_CUDALIBS,
   CUPYNUMERIC_MATMUL,

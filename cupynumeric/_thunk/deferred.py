@@ -1,4 +1,4 @@
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2025 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -4763,6 +4763,45 @@ class DeferredArray(NumPyThunk):
         task.add_constraint(broadcast(p_bins))
         task.add_constraint(broadcast(p_dst))
         task.add_constraint(align(p_src, p_weight))
+
+        task.execute()
+
+    # Perform a multi-dimensional histogram operation on the array
+    @auto_convert("coords", "weights")
+    def histogramdd(self, coords: Any, weights: Any, bins_set: Any) -> None:
+        coords_array = coords
+        bins_list = bins_set
+        dst_array = self
+        assert coords_array.size > 0
+        assert coords_array.ndim == 2
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.HISTOGRAMDD
+        )
+
+        dst_array.fill(np.array(0, dst_array.dtype))
+        p_dst = task.add_reduction(dst_array.base, ReductionOpKind.ADD)
+        task.add_constraint(broadcast(p_dst))
+
+        p_coords = task.add_input(coords_array.base)
+        task.add_constraint(broadcast(p_coords, (1,)))
+
+        bins_list = tuple(
+            runtime.to_deferred_array(b, read_only=True) for b in bins_set
+        )
+
+        if weights:
+            # promote for alignment
+            weights_store = weights.base.promote(1, coords_array.shape[1])
+            p_weight = task.add_input(weights_store)
+            task.add_constraint(align(p_coords, p_weight))
+            task.add_scalar_arg(True, ty.bool_)
+        else:
+            task.add_scalar_arg(False, ty.bool_)
+
+        for bin_dim in bins_list:
+            p_bin = task.add_input(bin_dim.base)
+            task.add_constraint(broadcast(p_bin))
 
         task.execute()
 

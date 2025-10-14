@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2025 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -183,7 +183,8 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/cephes/chbevl.cc
   src/cupynumeric/cephes/i0.cc
   src/cupynumeric/stat/histogram.cc
-
+  src/cupynumeric/stat/histogramdd.cc
+  src/cupynumeric/stat/detail/histogramdd_using_thrust.cc
 )
 
 if(Legion_USE_OpenMP)
@@ -239,6 +240,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/convolution/convolve_omp.cc
     src/cupynumeric/transform/flip_omp.cc
     src/cupynumeric/stat/histogram_omp.cc
+    src/cupynumeric/stat/histogramdd_omp.cc
   )
 endif()
 
@@ -300,6 +302,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/arg_redop_register.cu
     src/cupynumeric/cudalibs.cu
     src/cupynumeric/stat/histogram.cu
+    src/cupynumeric/stat/histogramdd.cu
   )
 endif()
 

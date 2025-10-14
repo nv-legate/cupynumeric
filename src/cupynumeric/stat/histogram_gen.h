@@ -1,4 +1,4 @@
-/* Copyright 2024 NVIDIA Corporation
+/* Copyright 2025 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 #pragma once
 
+#include <thrust/system/omp/execution_policy.h>
+
 namespace cupynumeric {
 namespace detail {
+using namespace legate;
 // primary templates, to be specialized (SFINAEd)
 //
 template <typename exe_policy_t, typename weight_t, typename offset_t, typename = void>

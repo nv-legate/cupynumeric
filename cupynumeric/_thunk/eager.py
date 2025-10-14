@@ -1,4 +1,4 @@
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2025 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -2140,6 +2140,34 @@ class EagerArray(NumPyThunk):
                 cast(EagerArray, bins).array,
                 weights=cast(EagerArray, weights).array,
             )
+
+    def histogramdd(self, coords: Any, weights: Any, bins_set: Any) -> None:
+        self.check_eager_args(coords, weights, bins_set)
+        if self.deferred is not None:
+            self.deferred.histogramdd(coords, weights, bins_set)
+        else:
+            weights_array = (
+                cast(EagerArray, weights).array if weights else None
+            )
+
+            # numpy wants the output to be a D-dimensional array
+            output_shape = tuple([len(b.array) - 1 for b in bins_set])
+            try:
+                output_np = np.reshape(
+                    self.array, shape=output_shape, copy=False
+                )
+                inplace = True
+            except ValueError:
+                output_np = np.ndarray(output_shape, dtype=self.array.dtype)
+                inplace = False
+
+            output_np[...], _ = np.histogramdd(
+                coords.array,
+                bins=[cast(EagerArray, bins).array for bins in bins_set],
+                weights=weights_array,
+            )
+            if not inplace:
+                self.array[:] = output_np.reshape(self.array.shape)
 
     def stencil_hint(
         self, low_offsets: tuple[int, ...], high_offsets: tuple[int, ...]
