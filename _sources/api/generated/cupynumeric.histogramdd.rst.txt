@@ -1,0 +1,6 @@
+﻿cupynumeric.histogramdd
+=======================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: histogramdd
