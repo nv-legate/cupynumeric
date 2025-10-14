@@ -139,7 +139,7 @@ def check_shape_dtype_without_axis(
 
 def _block_collect_slices(
     arr: ndarray | Sequence[ndarray], cur_depth: int, depth: int
-) -> tuple[list[Any], list[tuple[slice, ...]], Sequence[ndarray]]:
+) -> tuple[list[Any], NdShape, Sequence[ndarray]]:
     # collects slices for each array in `arr`
     # the outcome will be slices on every dimension of the output array
     # for each array in `arr`
@@ -163,8 +163,9 @@ def _block_collect_slices(
         # flatten array lists from sublists into a single list
         arrays = list(chain(*arrays))
         # prepares the out_shape of the current list
-        out_shape = list(outshape_list[0])
-        out_shape[-1 + cur_depth - depth] = leading_dim
+        shape = list(outshape_list[0])
+        shape[-1 + cur_depth - depth] = leading_dim
+        out_shape = tuple(shape)
         offset = 0
         updated_slices = []
         # update the dimension in each slice for the current axis
@@ -199,7 +200,7 @@ def _block_collect_slices(
 def _block_slicing(arrays: Sequence[ndarray], depth: int) -> ndarray:
     # collects the final slices of input arrays and assign them at once
     arrays, out_shape, slices = _block_collect_slices(arrays, 1, depth)
-    out_array = ndarray(shape=out_shape, inputs=arrays)
+    out_array = ndarray._from_inputs(shape=out_shape, inputs=arrays)
 
     for dest, inp in zip(slices, arrays):
         out_array[(Ellipsis,) + tuple(dest)] = inp
@@ -209,7 +210,7 @@ def _block_slicing(arrays: Sequence[ndarray], depth: int) -> ndarray:
 
 def _collect_outshape_slices(
     inputs: Sequence[ndarray], common_shape: NdShape, axis: int
-) -> tuple[list[Any], list[tuple[slice, ...]], Sequence[ndarray]]:
+) -> tuple[NdShape, list[tuple[slice, ...]], list[ndarray]]:
     leading_dim = _builtin_sum(arr.shape[axis] for arr in inputs)
     out_shape = list(common_shape)
     out_shape[axis] = leading_dim
@@ -217,12 +218,12 @@ def _collect_outshape_slices(
     slices = []
     offset = 0
     # collect slices for arrays in `inputs`
-    inputs = list(inp for inp in inputs if inp.size > 0)
+    inputs = [inp for inp in inputs if inp.size > 0]
     for inp in inputs:
         slices.append((slice(offset, offset + inp.shape[axis]),) + post_idx)
         offset += inp.shape[axis]
 
-    return out_shape, slices, inputs
+    return tuple(out_shape), slices, inputs
 
 
 def _concatenate(
@@ -240,12 +241,12 @@ def _concatenate(
     )
 
     if out is None:
-        out_array = ndarray(
+        out_array = ndarray._from_inputs(
             shape=out_shape, dtype=common_info.dtype, inputs=inputs
         )
     else:
         out_array = convert_to_cupynumeric_ndarray(out)
-        if list(out_array.shape) != out_shape:
+        if out_array.shape != out_shape:
             raise ValueError(
                 f"out.shape({out.shape}) is not matched "
                 f"to the result shape of concatenation ({out_shape})"
@@ -507,7 +508,7 @@ def stack(
     axis = normalize_axis_index(axis, common_info.ndim + 1)
     shape = common_info.shape[:axis] + (1,) + common_info.shape[axis:]
     arrays = [arr.reshape(shape) for arr in arrays]
-    common_info.shape = tuple(shape)
+    common_info.shape = shape
     return _concatenate(arrays, common_info, axis, out=out)
 
 

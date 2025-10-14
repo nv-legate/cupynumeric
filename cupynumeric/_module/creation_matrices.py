@@ -161,7 +161,7 @@ def trilu(m: ndarray, k: int, lower: bool) -> ndarray:
     if m.ndim < 1:
         raise TypeError("Array must be at least 1-D")
     shape = m.shape if m.ndim >= 2 else m.shape * 2
-    result = ndarray(shape, dtype=m.dtype, inputs=(m,))
+    result = ndarray._from_inputs(shape, dtype=m.dtype, inputs=(m,))
     result._thunk.trilu(m._thunk, k, lower)
     return result
 

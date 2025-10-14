@@ -252,7 +252,7 @@ def in1d(
         ar2_max=ar2_max,
     )
 
-    result = ndarray(shape=result_thunk.shape, thunk=result_thunk)
+    result = ndarray._from_thunk(result_thunk)
 
     if supports_nan:
         mask = np.isnan(ar1)

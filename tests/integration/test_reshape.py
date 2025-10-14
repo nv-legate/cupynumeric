@@ -28,6 +28,30 @@ SQUARE_CASES = [
     (1, 10, 10),
 ]
 
+TRIVIAL_INPUT_DIM_CASES = [
+    (2, 3),
+    (1, 2, 3),
+    (2, 1, 3),
+    (2, 3, 1),
+    (1, 2, 1, 3),
+    (2, 1, 3, 1),
+    (1, 2, 1, 3, 1),
+    (1, 1, 2, 3),
+    (2, 3, 1, 1, 1),
+]
+
+TRIVIAL_OUTPUT_DIM_CASES = [
+    (3, 2),
+    (1, 3, 2),
+    (3, 1, 2),
+    (3, 2, 1),
+    (1, 3, 1, 2),
+    (3, 1, 2, 1),
+    (1, 3, 1, 2, 1),
+    (1, 1, 3, 2),
+    (3, 2, 1, 1, 1),
+]
+
 
 class TestSquare:
     anp = np.arange(100).reshape(10, 10)
@@ -168,6 +192,17 @@ def test_reshape_empty_array(shape):
     a = num.arange(0).reshape(0, 1)
     anp = np.arange(0).reshape(0, 1)
     assert np.array_equal(num.reshape(a, shape), np.reshape(anp, shape))
+
+
+@pytest.mark.parametrize("inshape", TRIVIAL_INPUT_DIM_CASES, ids=str)
+@pytest.mark.parametrize("outshape", TRIVIAL_OUTPUT_DIM_CASES, ids=str)
+def test_reshape_trivial_dims(inshape, outshape):
+    size = np.prod(inshape)
+    a_np = np.arange(size).reshape(inshape)
+    a_num = num.array(a_np.copy())
+    assert np.array_equal(
+        num.reshape(a_num, outshape), np.reshape(a_np, outshape)
+    )
 
 
 def test_reshape_same_shape():

@@ -106,7 +106,7 @@ def array(
 
     if not isinstance(obj, ndarray):
         thunk = runtime.get_numpy_thunk(obj, share=(not copy), dtype=dtype)
-        result = ndarray(shape=None, thunk=thunk)
+        result = ndarray._from_thunk(thunk)
     else:
         result = obj
     if dtype is not None and result.dtype != dtype:
@@ -150,7 +150,7 @@ def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
     if not isinstance(a, ndarray):
         thunk = runtime.get_numpy_thunk(a, share=True, dtype=dtype)
         writeable = a.flags.writeable if isinstance(a, np.ndarray) else True
-        array = ndarray(shape=None, thunk=thunk, writeable=writeable)
+        array = ndarray._from_thunk(thunk, writeable=writeable)
     else:
         array = a
     if dtype is not None and array.dtype != dtype:

@@ -298,7 +298,9 @@ class ufunc(Generic[T]):
         from .._array.array import ndarray
 
         if out is None:
-            return ndarray(shape=out_shape, dtype=res_dtype, inputs=inputs)
+            return ndarray._from_inputs(
+                shape=out_shape, dtype=res_dtype, inputs=inputs
+            )
         elif out.dtype != res_dtype:
             if not np.can_cast(res_dtype, out.dtype, casting=casting):
                 raise TypeError(
@@ -306,7 +308,9 @@ class ufunc(Generic[T]):
                     f"{res_dtype} to {out.dtype} with casting rule "
                     f"'{casting}'"
                 )
-            return ndarray(shape=out.shape, dtype=res_dtype, inputs=inputs)
+            return ndarray._from_inputs(
+                shape=out.shape, dtype=res_dtype, inputs=inputs
+            )
         else:
             return out
 

@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from legate.core import get_legate_runtime, types as ty
 
@@ -35,18 +35,14 @@ if TYPE_CHECKING:
 def sort_flattened(
     output: DeferredArray, input: DeferredArray, argsort: bool, stable: bool
 ) -> None:
-    flattened = cast("DeferredArray", input.reshape((input.size,), order="C"))
+    flattened = input.reshape((input.size,), order="C")
 
     # run sort flattened -- return 1D solution
-    sort_result = cast(
-        "DeferredArray",
-        runtime.create_empty_thunk(
-            flattened.shape, dtype=output.base.type, inputs=(flattened,)
-        ),
+    sort_result = runtime.create_deferred_thunk(
+        flattened.shape, dtype=output.base.type
     )
     sort_deferred(sort_result, flattened, argsort, stable=stable)
     output.base = sort_result.base
-    output.numpy_array = None
 
 
 def sort_swapped(
@@ -61,31 +57,21 @@ def sort_swapped(
     # swap axes
     swapped = input.swapaxes(sort_axis, input.ndim - 1)
 
-    swapped_copy = cast(
-        "DeferredArray",
-        runtime.create_empty_thunk(
-            swapped.shape, dtype=input.base.type, inputs=(input, swapped)
-        ),
+    swapped_copy = runtime.create_deferred_thunk(
+        swapped.shape, dtype=input.base.type
     )
     swapped_copy.copy(swapped, deep=True)
 
     # run sort on last axis
     if argsort is True:
-        sort_result = cast(
-            "DeferredArray",
-            runtime.create_empty_thunk(
-                swapped_copy.shape,
-                dtype=output.base.type,
-                inputs=(swapped_copy,),
-            ),
+        sort_result = runtime.create_deferred_thunk(
+            swapped_copy.shape, dtype=output.base.type
         )
         sort_deferred(sort_result, swapped_copy, argsort, stable=stable)
         output.base = sort_result.swapaxes(input.ndim - 1, sort_axis).base
-        output.numpy_array = None
     else:
         sort_deferred(swapped_copy, swapped_copy, argsort, stable=stable)
         output.base = swapped_copy.swapaxes(input.ndim - 1, sort_axis).base
-        output.numpy_array = None
 
 
 def sort_task(
@@ -113,7 +99,6 @@ def sort_task(
         task.add_output(unbound.base)
         task.execute()
         output.base = unbound.base
-        output.numpy_array = None
     else:
         task.add_output(output.base)
         task.add_alignment(output.base, input.base)

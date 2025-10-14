@@ -115,12 +115,12 @@ def bincount(
     else:
         # Normal case of bincount
         if weights is None:
-            out = ndarray(
+            out = ndarray._from_inputs(
                 (minlength,), dtype=np.dtype(np.int64), inputs=(x, weights)
             )
             out._thunk.bincount(x._thunk)
         else:
-            out = ndarray(
+            out = ndarray._from_inputs(
                 (minlength,), dtype=weights.dtype, inputs=(x, weights)
             )
             out._thunk.bincount(x._thunk, weights=weights._thunk)
@@ -255,7 +255,7 @@ def histogram(
             bins_array.astype(bins_orig_type),
         )
 
-    hist = ndarray(
+    hist = ndarray._from_inputs(
         (num_intervals,),
         dtype=weights_array.dtype,
         inputs=(x, bins_array, weights_array),

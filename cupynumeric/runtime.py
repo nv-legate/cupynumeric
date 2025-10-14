@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 import warnings
 from functools import lru_cache, reduce
-from typing import TYPE_CHECKING, Any, Literal, Sequence, TypeGuard
+from typing import TYPE_CHECKING, Any, Sequence, TypeGuard
 
 import legate.core.types as ty
 import numpy as np
@@ -436,12 +436,7 @@ class Runtime(object):
                 # This argument should really be called "donate"
                 read_only=(transfer != TransferType.SHARE),
             )
-            return DeferredArray(
-                store,
-                numpy_array=(
-                    array if transfer == TransferType.SHARE else None
-                ),
-            )
+            return DeferredArray(store)
 
         from ._thunk.eager import EagerArray
 
@@ -450,34 +445,23 @@ class Runtime(object):
             array.copy() if transfer == TransferType.MAKE_COPY else array
         )
 
-    def create_empty_thunk(
-        self,
-        shape: NdShape,
-        dtype: ty.Type,
-        inputs: Sequence[NumPyThunk] | None = None,
-        force_thunk: Literal["deferred"] | Literal["eager"] | None = None,
-    ) -> NumPyThunk:
-        from ._thunk.deferred import DeferredArray
-
-        assert inputs is None or force_thunk is None
-        if force_thunk == "eager" or (
-            force_thunk is None
-            and self.is_eager_shape(shape)
-            and self.are_all_eager_inputs(inputs)
-        ):
-            return self.create_eager_thunk(shape, dtype.to_numpy_dtype())
-
-        store = legate_runtime.create_store(
-            dtype, shape=shape, optimize_scalar=True
-        )
-        return DeferredArray(store)
-
     def create_eager_thunk(
         self, shape: NdShape, dtype: np.dtype[Any]
     ) -> NumPyThunk:
         from ._thunk.eager import EagerArray
 
         return EagerArray(np.empty(shape, dtype=dtype))
+
+    def create_deferred_thunk(
+        self, shape: NdShape, dtype: ty.Type
+    ) -> DeferredArray:
+        from ._thunk.deferred import DeferredArray
+
+        store = legate_runtime.create_store(
+            dtype, shape=shape, optimize_scalar=True
+        )
+
+        return DeferredArray(store)
 
     def create_unbound_thunk(
         self, dtype: ty.Type, ndim: int = 1

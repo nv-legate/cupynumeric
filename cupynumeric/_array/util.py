@@ -161,7 +161,7 @@ def convert_to_cupynumeric_ndarray(obj: Any, share: bool = False) -> ndarray:
     writeable = (
         obj.flags.writeable if isinstance(obj, np.ndarray) and share else True
     )
-    return ndarray(shape=None, thunk=thunk, writeable=writeable)
+    return ndarray._from_thunk(thunk, writeable=writeable)
 
 
 def maybe_convert_to_np_ndarray(obj: Any) -> Any:
