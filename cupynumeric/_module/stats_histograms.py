@@ -530,7 +530,7 @@ def histogramdd(
             bins_set.append(bins_array)
 
     box_shape = tuple(bin.size - 1 for bin in bins_set)
-    num_boxes = np.prod(box_shape)
+    num_boxes = int(np.prod(box_shape))
 
     histdd_inputs: tuple[Any, ...]
     if weights is not None:
@@ -552,7 +552,9 @@ def histogramdd(
     # numpy always casts the output of histogramdd to float
     result_type = np.dtype(np.float64)
 
-    histdd = ndarray((num_boxes,), dtype=result_type, inputs=histdd_inputs)
+    histdd = ndarray._from_inputs(
+        (num_boxes,), dtype=result_type, inputs=histdd_inputs
+    )
 
     histdd._thunk.histogramdd(
         coords._thunk,
