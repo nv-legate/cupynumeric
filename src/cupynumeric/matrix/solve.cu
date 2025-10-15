@@ -40,7 +40,7 @@ static inline void solve_template(GetrfBufferSize getrf_buffer_size,
   auto handle = get_cusolver();
 
   // copy inputs for in-place compute
-  auto a_copy = create_buffer<VAL>(m * n, Memory::Kind::GPU_FB_MEM);
+  auto a_copy = create_buffer<VAL>(int64_t(m) * n, Memory::Kind::GPU_FB_MEM);
   CUPYNUMERIC_CHECK_CUDA(
     cudaMemcpyAsync(a_copy.ptr(0), a, sizeof(VAL) * m * n, cudaMemcpyDeviceToDevice, stream));
   CUPYNUMERIC_CHECK_CUDA(
@@ -85,7 +85,7 @@ static inline void solve_template_batched(GetrfBatched getrfbatched,
   auto cublas_handle = get_cublas();
 
   // copy inputs for in-place compute
-  auto a_copy = create_buffer<VAL>(batchsize * n * n, Memory::Kind::GPU_FB_MEM);
+  auto a_copy = create_buffer<VAL>(int64_t(batchsize) * n * n, Memory::Kind::GPU_FB_MEM);
   CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
     a_copy.ptr(0), a, sizeof(VAL) * batchsize * n * n, cudaMemcpyDeviceToDevice, stream));
   CUPYNUMERIC_CHECK_CUDA(
@@ -100,7 +100,7 @@ static inline void solve_template_batched(GetrfBatched getrfbatched,
     bArray[i] = x + i * n * nrhs;
   }
 
-  auto ipiv = create_buffer<int32_t>(n * batchsize, Memory::Kind::GPU_FB_MEM);
+  auto ipiv = create_buffer<int32_t>(int64_t(n) * batchsize, Memory::Kind::GPU_FB_MEM);
 
   auto info = create_buffer<int32_t>(batchsize, Memory::Kind::Z_COPY_MEM);
   CHECK_CUBLAS(
