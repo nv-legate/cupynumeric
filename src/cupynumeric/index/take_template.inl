@@ -151,6 +151,9 @@ struct TakeImplBody {
                                 Point<3>(shape.hi[0], shape.hi[2], shape.hi[3]));
       Pitches<2> res_pitches{};
       auto res_volume = res_pitches.flatten(res_reduced_shape);
+      if (res_volume <= 0) {
+        return;
+      }
 
       thrust::for_each(policy,
                        thrust::counting_iterator<size_t>(0),
