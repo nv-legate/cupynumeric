@@ -103,7 +103,7 @@ static inline void syev_batched_template(DataType valTypeR,
 
   auto buffer = create_buffer<char>(lwork_device, Memory::Kind::GPU_FB_MEM);
   std::vector<char> buffer_host(std::max(1ul, lwork_host));
-  auto info = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
+  auto info = create_buffer<int32_t>(num_batches, Memory::Kind::Z_COPY_MEM);
 
   CHECK_CUSOLVER(syev_handles->cusolver_syev_batched(
     handle,
@@ -124,10 +124,12 @@ static inline void syev_batched_template(DataType valTypeR,
     info.ptr(0),
     num_batches));
 
-  CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
 
-  if (info[0] != 0) {
-    throw legate::TaskException(SyevTask::ERROR_MESSAGE);
+  for (int i = 0; i < num_batches; i++) {
+    if (info[i] != 0) {
+      throw legate::TaskException(SyevTask::ERROR_MESSAGE);
+    }
   }
 }
 
@@ -197,7 +199,7 @@ static inline void syevd_template(DataType valTypeR,
                      lwork_host,
                      info.ptr(0)));
 
-  CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
 
   if (info[0] != 0) {
     throw legate::TaskException(SyevTask::ERROR_MESSAGE);

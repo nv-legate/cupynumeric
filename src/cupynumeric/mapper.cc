@@ -395,7 +395,16 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     case CUPYNUMERIC_SVD: [[fallthrough]];
     case CUPYNUMERIC_SYEV: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
-        return aligned_size(sizeof(std::int32_t), DEFAULT_ALIGNMENT);
+        auto a_array                 = task.input(0);
+        auto dim                     = a_array.dim();
+        auto a_domain                = a_array.domain();
+        std::int64_t batchsize_total = 1;
+
+        for (std::int32_t i = 0; i < dim - 2; ++i) {
+          auto extent = a_domain.rect_data[i + dim] - a_domain.rect_data[i] + 1;
+          batchsize_total *= extent;
+        }
+        return aligned_size(batchsize_total * sizeof(std::int32_t), DEFAULT_ALIGNMENT);
       }
       return std::nullopt;
     }
