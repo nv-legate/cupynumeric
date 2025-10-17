@@ -48,7 +48,7 @@ static inline void qr_template(GeqrfBufferSize geqrf_buffer_size,
   VAL* q_tmp = q;
   // if m < n:  q is not large enough to make compute inplace -> make tmp buffer
   if (m < n) {
-    auto q_copy = create_buffer<VAL>(m * n, Memory::Kind::GPU_FB_MEM);
+    auto q_copy = create_buffer<VAL>(int64_t(m) * n, Memory::Kind::GPU_FB_MEM);
     q_tmp       = q_copy.ptr(0);
   }
 
