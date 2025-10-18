@@ -29,7 +29,7 @@ build_release_product() {
     conda_build_args+=(--variants "$variantOpts")
 
     # https://github.com/nv-legate/cupynumeric.internal/pull/351#issuecomment-2286922486
-    export CONDA_OVERRIDE_CUDA="${CUDA_VERSION}"
+    export CONDA_OVERRIDE_CUDA="${LEGATE_CUDA_VERSION}"
 
     # Use the new .conda format.
     conda config --set conda_build.pkg_format 2
@@ -62,6 +62,8 @@ copy_release_artifacts() {
 
 build_project() {
     . setup-utils;
+
+    : "${LEGATE_CUDA_VERSION:?LEGATE_CUDA_VERSION must be set by the workflow matrix}"
 
     init_build_env "$@";
 

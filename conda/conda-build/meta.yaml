@@ -30,8 +30,11 @@
 ## The placeholder version is strictly for making two-pass conda build process.
 ## It should not be used for any other purpose, and this is not a default version.
 {% set placeholder_version = '0.0.0.dev' %}
-{% set default_cuda_version = '12.2.2' %}
-{% set cuda_version='.'.join(environ.get('CUDA_VERSION', default_cuda_version).split('.')[:2]) %}
+{% set legate_cuda_version = environ.get('LEGATE_CUDA_VERSION') %}
+{% if not legate_cuda_version %}
+invalid_yaml_missing_cuda_version: LEGATE_CUDA_VERSION must be set
+{% endif %}
+{% set cuda_version='.'.join(legate_cuda_version.split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0]|int %}
 {% set py_version=environ.get('CONDA_PY', '') %}
 {% if build_number is defined %}
@@ -154,7 +157,7 @@ requirements:
     - legate ={{ legate_version }}=*{{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cuda-cccl
-    - cutensor >=2.0,<2.3.0.6 =*_*
+    - cutensor >=2.0,<2.4,!=2.3.0.6 =*_*
     - libcublas-dev
     - libcusolver-dev
     - libcufft-dev
@@ -181,7 +184,7 @@ requirements:
     - {{ pin_compatible('libcusolver',  min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufile',    min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
-    - cutensor >=2.0,<2.3.0.6 =*_*     # versioned independently of CUDA; pin to avoid 2.3.0.6 bug
+    - cutensor >=2.0,<2.4,!=2.3.0.6 =*_*     # allow CUDA 13 cuTENSOR builds while excluding 2.3.0.6 regression
     - nccl >=2.0,<3
     - cupy
     - libnvjitlink

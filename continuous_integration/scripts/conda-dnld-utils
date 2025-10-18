@@ -27,7 +27,7 @@ setup_conda_channel() {
     # strict channel ordering is required for prioritizing packages from artifacts
     conda config --set channel_priority strict
     legate_conda_label="$(jq -r '.packages.legate.anaconda_label' ${REPO_DIR}/cmake/versions.json)";
-    export CONDA_CHANNEL="legate"
+    export CONDA_CHANNEL="legate-nightly"
     export CONDA_LABEL="${legate_conda_label}"
     echo "CONDA_CHANNEL=${CONDA_CHANNEL} : CONDA_LABEL=${CONDA_LABEL}"
 }

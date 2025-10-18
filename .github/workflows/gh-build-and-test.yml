@@ -28,6 +28,9 @@ on:
       default-branch:
         required: true
         type: string
+      cuda-version:
+        required: false
+        type: string
 
 jobs:
   setup-build:
@@ -54,14 +57,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.41
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.42
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      legate-gh-ci-tag: "v1.41"
+      legate-gh-ci-tag: "v1.42"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -69,7 +72,8 @@ jobs:
       target-device: ${{ inputs.target-device }}
       use-container: ${{ inputs.platform == 'linux' || inputs.platform == 'linux-aarch64' }}
       setup-python-proxy-cache: true
-      timeout: 60
+      timeout: ${{ (inputs.platform == 'linux-aarch64' && inputs.target-device == 'gpu') && 120 || 60 }}
+      cuda-version: ${{ inputs.cuda-version }}
     secrets: inherit
 
   setup-test:
@@ -176,7 +180,7 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.41
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.42
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
@@ -184,7 +188,7 @@ jobs:
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
       has-gpu: ${{ matrix.runner.type == 'gpu' }}
-      legate-gh-ci-tag: "v1.41"
+      legate-gh-ci-tag: "v1.42"
       name: ${{ matrix.test-config.name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -195,24 +199,24 @@ jobs:
       setup-python-proxy-cache: ${{ matrix.runner.setup-python-proxy-cache }}
       enable-core-dumps: false
       timeout: 150
+      cuda-version: ${{ inputs.cuda-version }}
     secrets: inherit
 
   upload:
     needs: test
     # The use of always() below, ensures the step will run even on failure of the tests
     # before if other conditionals are all true.
-    # We use the package 'with tests' to test and then upload corresponding package 'without test'.
-    if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == true }}
+    if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == false }}
     name: Upload package to Anaconda Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.41
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.42
     with:
       build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      legate-gh-ci-tag: "v1.41"
+      legate-gh-ci-tag: "v1.42"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -220,8 +224,9 @@ jobs:
       python-version: ${{ inputs.python-version }}
       repos-Root: "cupynumeric"
       target-device: ${{ inputs.target-device }}
-      upload-action: ${{ needs.test.result == 'failure' && 'upload-package-Anaconda' || 'upload-package-Anaconda-tested' }}
+      upload-action: upload-package-Anaconda
       refname: ${{ inputs.refname }}
       default-branch: ${{ inputs.default-branch }}
       timeout: 15
+      cuda-version: ${{ inputs.cuda-version }}
     secrets: inherit

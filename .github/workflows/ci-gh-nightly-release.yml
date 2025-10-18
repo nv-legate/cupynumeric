@@ -21,7 +21,8 @@ on:
     - cron: '0 23 * * *'  # Nightly at 11:00 PM
 
 jobs:
-  build-and-test:
+  cu129-tests:
+    name: CUDA 12.9 tests
     strategy:
       fail-fast: false
       matrix:
@@ -31,9 +32,6 @@ jobs:
         target-device:
           - gpu
           - cpu
-        build-has-tests:
-          - true
-          - false
         python-version:
           - "3.11"
           - "3.12"
@@ -46,7 +44,95 @@ jobs:
       ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
-      build-has-tests: ${{ matrix.build-has-tests }}
+      build-has-tests: true
+      cuda-version: "12.9.0"
+      refname: ${{ github.ref_name }}
+      default-branch: ${{ github.event.repository.default_branch }}
+    secrets: inherit
+
+  cu129:
+    name: CUDA 12.9 packages
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+          - linux-aarch64
+        target-device:
+          - gpu
+          - cpu
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    uses:
+      ./.github/workflows/gh-build-and-test.yml
+    with:
+      build-type: nightly
+      platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
+      python-version: ${{ matrix.python-version }}
+      target-device: ${{ matrix.target-device }}
+      build-has-tests: false
+      cuda-version: "12.9.0"
+      refname: ${{ github.ref_name }}
+      default-branch: ${{ github.event.repository.default_branch }}
+    secrets: inherit
+
+  cu130-tests:
+    name: CUDA 13.0 tests
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+          - linux-aarch64
+        target-device:
+          - gpu
+          - cpu
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    uses:
+      ./.github/workflows/gh-build-and-test.yml
+    with:
+      build-type: nightly
+      platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
+      python-version: ${{ matrix.python-version }}
+      target-device: ${{ matrix.target-device }}
+      build-has-tests: true
+      cuda-version: "13.0.0"
+      refname: ${{ github.ref_name }}
+      default-branch: ${{ github.event.repository.default_branch }}
+    secrets: inherit
+
+  cu130:
+    name: CUDA 13.0 packages
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+          - linux-aarch64
+        target-device:
+          - gpu
+          - cpu
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    uses:
+      ./.github/workflows/gh-build-and-test.yml
+    with:
+      build-type: nightly
+      platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
+      python-version: ${{ matrix.python-version }}
+      target-device: ${{ matrix.target-device }}
+      build-has-tests: false
+      cuda-version: "13.0.0"
       refname: ${{ github.ref_name }}
       default-branch: ${{ github.event.repository.default_branch }}
     secrets: inherit
@@ -76,7 +162,7 @@ jobs:
   push_code:
     name: Nightly source release
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@v1.38
+      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@v1.42
     with:
       runs-on: linux-amd64-cpu4
       source-repo: "${{ github.repository_owner }}/cupynumeric.internal"
