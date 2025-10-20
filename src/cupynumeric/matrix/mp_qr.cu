@@ -45,10 +45,9 @@ static inline void mp_qr_template(comm_t comm,
                                   int64_t mb,
                                   int64_t nb,
                                   VAL* a_array,
-                                  VAL* q_array,
+                                  VAL* tmp_array,
                                   size_t a_volume,
                                   size_t llda,
-                                  size_t lldq,
                                   int rank,
                                   cudaStream_t ctx_stream)
 {
@@ -71,9 +70,9 @@ static inline void mp_qr_template(comm_t comm,
     &a_desc, grid, cudaTypeToDataType<VAL>::type, m, n, mb, nb, 0, 0, llda));  // mirror
                                                                                // mp_solver
 
-  cusolverMpMatrixDescriptor_t q_desc = nullptr;
+  cusolverMpMatrixDescriptor_t t_desc = nullptr;
   CHECK_CUSOLVER(cusolverMpCreateMatrixDesc(
-    &q_desc, grid, cudaTypeToDataType<VAL>::type, m, n, mb, nb, 0, 0, llda));  // mirror
+    &t_desc, grid, cudaTypeToDataType<VAL>::type, m, n, mb, nb, 0, 0, llda));  // mirror
                                                                                // mp_solver
   // local-tau array:
   //
@@ -88,6 +87,8 @@ static inline void mp_qr_template(comm_t comm,
 
   constexpr int64_t IA{1};
   constexpr int64_t JA{1};
+
+  int64_t k = std::min(m, n);
 
   // workspace sizes
   size_t workspaceInBytesOnDevice_geqrf = 0;
@@ -118,16 +119,16 @@ static inline void mp_qr_template(comm_t comm,
                                             CUBLAS_OP_N,
                                             m,
                                             n,
-                                            n,
+                                            k,
                                             a_array,
                                             IA,
                                             JA,
                                             a_desc,
                                             d_tau_ptr,
-                                            q_array,
+                                            tmp_array,
                                             IA,
                                             JA,
-                                            q_desc,
+                                            t_desc,
                                             cudaTypeToDataType<VAL>::type,
                                             &workspaceInBytesOnDevice_ormqr,
                                             &workspaceInBytesOnHost_ormqr));
@@ -170,7 +171,7 @@ static inline void mp_qr_template(comm_t comm,
     throw legate::TaskException(ss.str());
   }
 
-  // ======================= Obtaining q_array from d_tau ====================
+  // ======================= Obtaining tmp_array from d_tau ====================
   //
   // re-initialize status buffer to zero
   info[0] = 0;
@@ -179,16 +180,16 @@ static inline void mp_qr_template(comm_t comm,
                                  CUBLAS_OP_N,
                                  m,
                                  n,
-                                 n,
+                                 k,
                                  a_array,
                                  IA,
                                  JA,
                                  a_desc,
                                  d_tau_ptr,
-                                 q_array,  // assume Q preset to I and block-cyclic partitioned;
+                                 tmp_array,  // assume tmp preset to I and block-cyclic partitioned;
                                  IA,
                                  JA,
-                                 q_desc,
+                                 t_desc,
                                  cudaTypeToDataType<VAL>::type,
                                  device_buffer.ptr(0),
                                  workspaceInBytesOnDevice,
@@ -208,7 +209,7 @@ static inline void mp_qr_template(comm_t comm,
 
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   CHECK_CUSOLVER(cusolverMpDestroyMatrixDesc(a_desc));
-  CHECK_CUSOLVER(cusolverMpDestroyMatrixDesc(q_desc));
+  CHECK_CUSOLVER(cusolverMpDestroyMatrixDesc(t_desc));
   CHECK_CUSOLVER(cusolverMpDestroyGrid(grid));
 }
 
@@ -226,15 +227,14 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   int64_t mb,
                   int64_t nb,
                   float* a_array,
-                  float* q_array,
+                  float* tmp_array,
                   size_t a_volume,
                   size_t llda,
-                  size_t lldq,
                   int rank) const
   {
     auto stream = context.get_task_stream();
     mp_qr_template(
-      comm, nprow, npcol, m, n, mb, nb, a_array, q_array, a_volume, llda, lldq, rank, stream);
+      comm, nprow, npcol, m, n, mb, nb, a_array, tmp_array, a_volume, llda, rank, stream);
   }
 };
 
@@ -252,15 +252,14 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   int64_t mb,
                   int64_t nb,
                   double* a_array,
-                  double* q_array,
+                  double* tmp_array,
                   size_t a_volume,
                   size_t llda,
-                  size_t lldq,
                   int rank) const
   {
     auto stream = context.get_task_stream();
     mp_qr_template(
-      comm, nprow, npcol, m, n, mb, nb, a_array, q_array, a_volume, llda, lldq, rank, stream);
+      comm, nprow, npcol, m, n, mb, nb, a_array, tmp_array, a_volume, llda, rank, stream);
   }
 };
 
@@ -278,10 +277,9 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int64_t mb,
                   int64_t nb,
                   complex<float>* a_array,
-                  complex<float>* q_array,
+                  complex<float>* tmp_array,
                   size_t a_volume,
                   size_t llda,
-                  size_t lldq,
                   int rank) const
   {
     auto stream = context.get_task_stream();
@@ -293,10 +291,9 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                    mb,
                    nb,
                    reinterpret_cast<cuComplex*>(a_array),
-                   reinterpret_cast<cuComplex*>(q_array),
+                   reinterpret_cast<cuComplex*>(tmp_array),
                    a_volume,
                    llda,
-                   lldq,
                    rank,
                    stream);
   }
@@ -316,10 +313,9 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int64_t mb,
                   int64_t nb,
                   complex<double>* a_array,
-                  complex<double>* q_array,
+                  complex<double>* tmp_array,
                   size_t a_volume,
                   size_t llda,
-                  size_t lldq,
                   int rank) const
   {
     auto stream = context.get_task_stream();
@@ -331,10 +327,9 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                    mb,
                    nb,
                    reinterpret_cast<cuDoubleComplex*>(a_array),
-                   reinterpret_cast<cuDoubleComplex*>(q_array),
+                   reinterpret_cast<cuDoubleComplex*>(tmp_array),
                    a_volume,
                    llda,
-                   lldq,
                    rank,
                    stream);
   }

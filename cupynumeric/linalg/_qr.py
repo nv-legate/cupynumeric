@@ -47,7 +47,7 @@ def qr_single(
 
 
 QR_TILE_SIZE = 4 if settings.test() else 128
-MIN_QR_MATRIX_SIZE = 32 if settings.test() else 1048576
+MIN_QR_MATRIX_SIZE = 1024 if settings.test() else 1048576
 
 
 def mp_qr(
@@ -93,15 +93,13 @@ def qr_deferred(a: DeferredArray, q: DeferredArray, r: DeferredArray) -> None:
     m = a.base.shape[0]
     n = a.base.shape[1]
 
-    # TODO: confirm if below can work with rectangular:
-    #
+    # qr API requires squared tiles
     mb = QR_TILE_SIZE
     nb = QR_TILE_SIZE
 
     if (
         runtime.has_cusolvermp
         and runtime.num_gpus > 1
-        and m >= n  # TODO: m < n to be addressed in separate PR
         and m * n >= MIN_QR_MATRIX_SIZE
     ):
         mp_qr(library, m, n, mb, nb, a.base, q.base, r.base)

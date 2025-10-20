@@ -46,38 +46,67 @@ template <VariantKind KIND, Type::Code CODE>
 struct MpQRImplBody;
 
 namespace utils {
-// copy from upper-triangular part of R (a_arr_ptr)
-// into R store block (r_arr_ptr):
+// copy from upper-triangular part of R (src_arr_ptr)
+// into R store block (tgt_arr_ptr):
 // where R block = Rect{offset_r, offset_c,
 //                      extends{num_rows, num_cols}}
 //
 template <typename VAL>
-void extract_by_col_above_diag(VAL* r_arr_ptr,
-                               size_t r_volume,
-                               size_t ldr,
-                               const VAL* a_arr_ptr,
-                               size_t lda,
+void extract_by_col_above_diag(VAL* tgt_arr_ptr,
+                               size_t tgt_volume,
+                               size_t tgt_ld,
+                               const VAL* src_arr_ptr,
+                               size_t src_ld,
                                size_t offset_r,
                                size_t offset_c,
                                cudaStream_t stream)
 {
   auto extractor = [=] __device__(auto counter) mutable {
     // counter col-major index of R
-    auto rel_row_index = counter % ldr;
-    auto rel_col_index = counter / ldr;
+    auto rel_row_index = counter % tgt_ld;
+    auto rel_col_index = counter / tgt_ld;
 
     bool is_upper = offset_r + rel_row_index <= offset_c + rel_col_index;
 
     // compute col major index of A
-    auto src_indx_a = rel_col_index * lda + rel_row_index;
+    auto src_indx_a = rel_col_index * src_ld + rel_row_index;
 
-    return is_upper ? a_arr_ptr[src_indx_a] : VAL(0);
+    return is_upper ? src_arr_ptr[src_indx_a] : VAL(0);
   };
 
   thrust::transform(DEFAULT_POLICY.on(stream),
                     thrust::make_counting_iterator<size_t>(0),
-                    thrust::make_counting_iterator<size_t>(r_volume),
-                    r_arr_ptr,
+                    thrust::make_counting_iterator<size_t>(tgt_volume),
+                    tgt_arr_ptr,
+                    extractor);
+}
+
+// copy from square part of R (src_arr_ptr)
+// into R store block (tgt_arr_ptr):
+//
+template <typename VAL>
+void extract_by_col(VAL* tgt_arr_ptr,
+                    size_t tgt_volume,
+                    size_t tgt_ld,
+                    const VAL* src_arr_ptr,
+                    size_t src_ld,
+                    cudaStream_t stream)
+{
+  auto extractor = [=] __device__(auto counter) mutable {
+    // counter col-major index of R
+    auto rel_row_index = counter % tgt_ld;
+    auto rel_col_index = counter / tgt_ld;
+
+    // compute col major index of A
+    auto src_indx_a = rel_col_index * src_ld + rel_row_index;
+
+    return src_arr_ptr[src_indx_a];
+  };
+
+  thrust::transform(DEFAULT_POLICY.on(stream),
+                    thrust::make_counting_iterator<size_t>(0),
+                    thrust::make_counting_iterator<size_t>(tgt_volume),
+                    tgt_arr_ptr,
                     extractor);
 }
 
@@ -152,13 +181,11 @@ struct MpQRImpl {
     CHECK_NCCL(ncclCommUserRank(nccl_comm, &rank));
     CHECK_NCCL(ncclCommCount(nccl_comm, &num_ranks));
 
-    // FIXME (separate PR): implement support for m < n
-    assert(m >= n);
-
     auto stream = context.get_task_stream();
 
     assert(launch_domain.get_volume() == num_ranks);
     assert(launch_domain.get_dim() <= 2);
+    assert(mb == nb);
 
     // enforce 2D shape for simplicity -- although b/x might be 1D
     auto a_shape = a_array.shape<2>();
@@ -171,17 +198,32 @@ struct MpQRImpl {
     auto* q_arr =
       q_shape.empty() ? nullptr : q_array.write_accessor<VAL, 2>(q_shape).ptr(q_shape, q_strides);
 
+    auto r_shape = r_array.shape<2>();
+    size_t r_strides[2];
+    auto* r_arr =
+      r_shape.empty() ? nullptr : r_array.write_accessor<VAL, 2>(r_shape).ptr(r_shape, r_strides);
+
     // assume col-major input
     auto llda = a_shape.empty() ? 1 : (a_shape.hi[0] - a_shape.lo[0] + 1);
     auto lldq = q_shape.empty() ? 1 : (q_shape.hi[0] - q_shape.lo[0] + 1);
+    auto lldr = r_shape.empty() ? 1 : (r_shape.hi[0] - r_shape.lo[0] + 1);
 
     // the 2dbc process domain should go in both dimensions (8x1) -> (4x2)
     //
-    size_t nprow = num_ranks;
+    size_t nprow = 1;
     size_t npcol = 1;
-    while (npcol * 2 * m <= nprow * n && nprow % 2 == 0) {
-      npcol *= 2;
-      nprow /= 2;
+    if (m >= n) {
+      nprow = num_ranks;
+      while (npcol * 2 * m <= nprow * n && nprow % 2 == 0) {
+        npcol *= 2;
+        nprow /= 2;
+      }
+    } else {
+      npcol = num_ranks;
+      while (nprow * 2 * n <= npcol * m && npcol % 2 == 0) {
+        nprow *= 2;
+        npcol /= 2;
+      }
     }
 
     assert(nprow * npcol == num_ranks);
@@ -192,13 +234,34 @@ struct MpQRImpl {
                        a_array.read_accessor<VAL, 2>(a_shape).accessor.is_dense_col_major(a_shape);
     bool q_col_major = q_shape.empty() ||
                        q_array.write_accessor<VAL, 2>(q_shape).accessor.is_dense_col_major(q_shape);
+    bool r_col_major = r_shape.empty() ||
+                       r_array.write_accessor<VAL, 2>(r_shape).accessor.is_dense_col_major(r_shape);
 
     assert(a_col_major);
     assert(q_col_major);
+    assert(r_col_major);
 
     auto a_offset_r = a_shape.lo[0];
     auto a_offset_c = a_shape.lo[1];
     auto a_volume   = a_shape.empty() ? 0 : llda * (a_shape.hi[1] - a_shape.lo[1] + 1);
+    auto num_rows   = a_shape.hi[0] < a_shape.lo[0] ? 0 : a_shape.hi[0] - a_shape.lo[0] + 1;
+    auto num_cols   = a_shape.hi[1] < a_shape.lo[1] ? 0 : a_shape.hi[1] - a_shape.lo[1] + 1;
+
+    auto q_offset_r = q_shape.lo[0];
+    auto q_offset_c = q_shape.lo[1];
+    auto q_volume   = q_shape.empty() ? 0 : lldq * (q_shape.hi[1] - q_shape.lo[1] + 1);
+    assert(q_shape.empty() || a_offset_r == q_offset_r);
+    assert(q_shape.empty() || a_offset_c == q_offset_c);
+    assert(m < n || q_volume == a_volume);
+    assert(m < n || lldq == llda);
+
+    auto r_offset_r = r_shape.lo[0];
+    auto r_offset_c = r_shape.lo[1];
+    auto r_volume   = r_shape.empty() ? 0 : lldr * (r_shape.hi[1] - r_shape.lo[1] + 1);
+    assert(r_shape.empty() || a_offset_r == r_offset_r);
+    assert(r_shape.empty() || a_offset_c == r_offset_c);
+    assert(m > n || r_volume == a_volume);
+    assert(m > n || lldr == llda);
 
     // repartition logic:
     //
@@ -215,31 +278,33 @@ struct MpQRImpl {
                                                                               comms[0],
                                                                               context);
 
-    auto q_offset_r = q_shape.lo[0];
-    auto q_offset_c = q_shape.lo[1];
-    auto q_volume   = q_shape.empty() ? 0 : lldq * (q_shape.hi[1] - q_shape.lo[1] + 1);
-
-    if (!q_shape.empty()) {
-      auto q_num_rows = q_shape.hi[0] < q_shape.lo[0] ? 0 : q_shape.hi[0] - q_shape.lo[0] + 1;
-      auto q_num_cols = q_shape.hi[1] < q_shape.lo[1] ? 0 : q_shape.hi[1] - q_shape.lo[1] + 1;
-
-      utils::init_eye_block(q_arr, m, n, q_offset_r, q_offset_c, q_num_rows, q_num_cols, stream);
+    // initialize with ID
+    if (!a_shape.empty()) {
+      if (m >= n) {
+        utils::init_eye_block(q_arr, m, n, q_offset_r, q_offset_c, num_rows, num_cols, stream);
+      } else {
+        // use R as tmp storage
+        utils::init_eye_block(r_arr, m, n, r_offset_r, r_offset_c, num_rows, num_cols, stream);
+      }
     }
-    auto [q_buffer_2dbc, q_volume_2dbc, q_lld_2dbc] = repartition_matrix_2dbc(q_arr,
-                                                                              q_volume,
-                                                                              false,
-                                                                              q_offset_r,
-                                                                              q_offset_c,
-                                                                              lldq,
-                                                                              nprow,
-                                                                              npcol,
-                                                                              mb,
-                                                                              nb,
-                                                                              comms[0],
-                                                                              context);
 
-    assert(q_volume_2dbc == a_volume_2dbc);
-    assert(q_lld_2dbc == a_lld_2dbc);
+    // choose temporary storage of same alignment as A
+    auto [tmp_buffer_2dbc, tmp_volume_2dbc, tmp_lld_2dbc] =
+      repartition_matrix_2dbc(m >= n ? q_arr : r_arr,
+                              a_volume,
+                              false,
+                              a_offset_r,
+                              a_offset_c,
+                              llda,
+                              nprow,
+                              npcol,
+                              mb,
+                              nb,
+                              comms[0],
+                              context);
+
+    assert(tmp_volume_2dbc == a_volume_2dbc);
+    assert(tmp_lld_2dbc == a_lld_2dbc);
 
     MpQRImplBody<KIND, CODE>{context}(nccl_comm,
                                       nprow,
@@ -249,84 +314,114 @@ struct MpQRImpl {
                                       mb,
                                       nb,
                                       a_buffer_2dbc.ptr(0),
-                                      q_buffer_2dbc.ptr(0),
+                                      tmp_buffer_2dbc.ptr(0),
                                       a_volume_2dbc,
                                       a_lld_2dbc,
-                                      q_lld_2dbc,
                                       rank);
 
-    // re-tile A:
-    //
-    auto num_rows  = a_shape.hi[0] < a_shape.lo[0] ? 0 : a_shape.hi[0] - a_shape.lo[0] + 1;
-    auto num_cols  = a_shape.hi[1] < a_shape.lo[1] ? 0 : a_shape.hi[1] - a_shape.lo[1] + 1;
-    auto a_arr_tmp = create_buffer<VAL>(
-      num_rows * num_cols,
-      Memory::Kind::GPU_FB_MEM);  // need a temp copy, a_arr_tmp, of shape = (num_rows, num_cols))
+    if (m >= n) {
+      // M >= N: Q aligned to A
+      // a_2dbc  ->  Q
+      //   Q->R upper
+      // tmp_2dbc  ->  Q
+      repartition_matrix_block(a_buffer_2dbc,
+                               a_volume_2dbc,
+                               a_lld_2dbc,
+                               rank,
+                               nprow,
+                               npcol,
+                               mb,
+                               nb,
+                               q_arr,
+                               q_volume,
+                               lldq,
+                               num_rows,
+                               num_cols,
+                               false,
+                               q_offset_r,
+                               q_offset_c,
+                               comms[0],
+                               context);
 
-    repartition_matrix_block(a_buffer_2dbc,
-                             a_volume_2dbc,
-                             a_lld_2dbc,
-                             rank,
-                             nprow,
-                             npcol,
-                             mb,
-                             nb,
-                             a_arr_tmp.ptr(0),  // TODO: (1) pass R store, directly (?)
-                             a_volume,
-                             llda,
-                             num_rows,
-                             num_cols,
-                             false,
-                             a_offset_r,
-                             a_offset_c,
-                             comms[0],
-                             context);
+      // R.shape = (n, n), A.shape = (m, n)
+      // -> the local R partition may be empty
+      if (!r_shape.empty()) {
+        utils::extract_by_col_above_diag(
+          r_arr, r_volume, lldr, q_arr, lldq, r_offset_r, r_offset_c, stream);
+      }
 
-    // extract upper-triangular block from A into R:
-    //
-    auto r_shape = r_array.shape<2>();
-    size_t r_strides[2];
-    auto* r_arr =
-      r_shape.empty() ? nullptr : r_array.write_accessor<VAL, 2>(r_shape).ptr(r_shape, r_strides);
-    bool r_col_major = r_shape.empty() ||
-                       r_array.write_accessor<VAL, 2>(r_shape).accessor.is_dense_col_major(r_shape);
-    assert(r_col_major);
-    auto r_volume = r_shape.empty()
-                      ? 0
-                      : (r_shape.hi[0] - r_shape.lo[0] + 1) * (r_shape.hi[1] - r_shape.lo[1] + 1);
+      repartition_matrix_block(tmp_buffer_2dbc,
+                               tmp_volume_2dbc,
+                               tmp_lld_2dbc,
+                               rank,
+                               nprow,
+                               npcol,
+                               mb,
+                               nb,
+                               q_arr,
+                               q_volume,
+                               lldq,
+                               num_rows,
+                               num_cols,
+                               false,
+                               q_offset_r,
+                               q_offset_c,
+                               comms[0],
+                               context);
+    } else {
+      // M < N: R aligned to A
+      // tmp_2dbc  ->  R
+      // R -> Q copy
+      // a_2dbc  ->  R
+      // R->upper inplace
+      repartition_matrix_block(tmp_buffer_2dbc,
+                               tmp_volume_2dbc,
+                               tmp_lld_2dbc,
+                               rank,
+                               nprow,
+                               npcol,
+                               mb,
+                               nb,
+                               r_arr,
+                               r_volume,
+                               lldr,
+                               num_rows,
+                               num_cols,
+                               false,
+                               r_offset_r,
+                               r_offset_c,
+                               comms[0],
+                               context);
 
-    // R.shape = (n, n), A.shape = (m, n)
-    // but the local R partition may be empty for most PEs
-    //
-    if (!r_shape.empty()) {
-      auto ldr = r_shape.hi[0] - r_shape.lo[0] + 1;
+      // Q.shape = (n, n), A.shape = (m, n)
+      // -> the local Q partition may be empty
+      if (!q_shape.empty()) {
+        utils::extract_by_col(q_arr, q_volume, lldq, r_arr, lldr, stream);
+      }
+
+      repartition_matrix_block(a_buffer_2dbc,
+                               a_volume_2dbc,
+                               a_lld_2dbc,
+                               rank,
+                               nprow,
+                               npcol,
+                               mb,
+                               nb,
+                               r_arr,
+                               r_volume,
+                               lldr,
+                               num_rows,
+                               num_cols,
+                               false,
+                               r_offset_r,
+                               r_offset_c,
+                               comms[0],
+                               context);
+
+      // Zero out lower diagonal of R in-place
       utils::extract_by_col_above_diag(
-        r_arr, r_volume, ldr, a_arr_tmp.ptr(0), llda, a_offset_r, a_offset_c, stream);
+        r_arr, r_volume, lldr, r_arr, lldr, r_offset_r, r_offset_c, stream);
     }
-
-    num_rows = q_shape.hi[0] < q_shape.lo[0] ? 0 : q_shape.hi[0] - q_shape.lo[0] + 1;
-    num_cols = q_shape.hi[1] < q_shape.lo[1] ? 0 : q_shape.hi[1] - q_shape.lo[1] + 1;
-
-    // re-tile Q:
-    //
-    repartition_matrix_block(q_buffer_2dbc,
-                             q_volume_2dbc,
-                             q_lld_2dbc,
-                             rank,
-                             nprow,
-                             npcol,
-                             mb,
-                             nb,
-                             q_arr,
-                             q_volume,
-                             lldq,
-                             num_rows,
-                             num_cols,
-                             false,
-                             q_offset_r,
-                             q_offset_c,
-                             comms[0],
-                             context);
   }
 
   template <Type::Code CODE, std::enable_if_t<!support_mp_qr<CODE>::value>* = nullptr>
