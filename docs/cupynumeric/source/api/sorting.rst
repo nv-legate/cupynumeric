@@ -11,7 +11,6 @@ Sorting
 
    argpartition
    argsort
-   msort
    partition
    sort
    sort_complex

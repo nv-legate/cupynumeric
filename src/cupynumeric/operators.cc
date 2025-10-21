@@ -418,8 +418,6 @@ NDArray argsort(NDArray input,
   return result;
 }
 
-NDArray msort(NDArray input) { return sort(input, 0); }
-
 NDArray sort_complex(NDArray input)
 {
   auto result = sort(input);

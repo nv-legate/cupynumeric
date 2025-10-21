@@ -35,7 +35,6 @@ class CPNProject(Project):
             CustomTest("examples/sort.py"),
             CustomTest("tests/integration/test_argsort.py"),
             CustomTest("tests/integration/test_cholesky.py"),
-            CustomTest("tests/integration/test_msort.py"),
             CustomTest("tests/integration/test_nanpercentiles.py"),
             CustomTest("tests/integration/test_nanquantiles.py"),
             CustomTest("tests/integration/test_partition.py"),
