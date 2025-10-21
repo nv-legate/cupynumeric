@@ -50,3 +50,10 @@ jobs:
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
+  wheels-mac:
+    needs: legate-sha
+    secrets: inherit
+    uses: ./.github/workflows/wheels-mac.yml
+    with:
+      build-type: pull-request
+      legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}

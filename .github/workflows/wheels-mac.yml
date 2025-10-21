@@ -1,0 +1,143 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2025 NVIDIA CORPORATION & AFFILIATES.
+#                         All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        required: true
+        type: string
+      sha:
+        type: string
+      repo:
+        type: string
+      legate-sha:
+        required: true
+        type: string
+      matrix_filter:
+        type: string
+        default: "."
+
+defaults:
+  run:
+    shell: bash -eou pipefail {0}
+
+permissions:
+  actions: read
+  checks: none
+  contents: read
+  deployments: none
+  discussions: none
+  id-token: write
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+jobs:
+  compute-matrix:
+    runs-on: linux-amd64-cpu4
+    timeout-minutes: 15
+    outputs:
+      MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
+    steps:
+      - name: Compute Build Matrix
+        id: compute-matrix
+        run: |
+          set -eo pipefail
+
+          # please keep the matrices sorted in ascending order by the following:
+          #
+          #     [PY_VER]
+          #
+          export MATRIX="
+          # arm64
+          - { PY_VER: '3.11' }
+          - { PY_VER: '3.12' }
+          - { PY_VER: '3.13' }
+          "
+
+          MATRIX="$(
+            yq -n -o json 'env(MATRIX)' | \
+            jq -c '${{ inputs.matrix_filter }} | if (. | length) > 0 then {include: .} else "Error: Empty matrix\n" | halt_error(1) end'
+          )"
+
+          echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
+  build:
+    name: arm64, py${{ matrix.PY_VER }}
+    needs: compute-matrix
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
+    runs-on: mac-arm64-llr
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+
+      - name: Add tools to the path
+        run: |
+          tools_path="$(pwd)/continuous_integration/scripts/tools"
+          echo "${tools_path}" >> "${GITHUB_PATH}"
+
+      - name: Download the legate wheel
+        env:
+          BUILD_NAME: arm64-py${{ matrix.PY_VER }}
+          GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+        run: |
+          brew install gh
+          legate-gh-download-artifact ${{ inputs.legate-sha }} "wheel-mac-${{ env.BUILD_NAME }}" "wheel"
+
+      - if: github.repository_owner == 'nv-legate'
+        name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-2
+          role-duration-seconds: 28800  # 8 hours
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-nv-legate
+
+      - name: Set up the environment
+        env:
+          PY_VER: ${{ matrix.PY_VER }}
+        run: |
+          PY_VER_NO_DOT=${PY_VER//./}
+          echo "PY_VER_NO_DOT=${PY_VER_NO_DOT}" >> "${GITHUB_ENV}"
+          # Unzip and point to the legate wheel.
+          ls -lh wheel/
+          unzip wheel/*.whl
+          legate_prefix="$(pwd)/legate"
+          echo "legate_prefix=${legate_prefix}" >> "${GITHUB_ENV}"
+
+      - name: Build the wheel
+        uses: pypa/cibuildwheel@7c619efba910c04005a835b110b057fc28fd6e93  # v3.2.0
+        with:
+          package-dir: ./scripts/build/python/cupynumeric/
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: "cp${{ env.PY_VER_NO_DOT }}-*"
+          CIBW_ENVIRONMENT_MACOS: >
+            CMAKE_BUILD_PARALLEL_LEVEL=7
+            CMAKE_CXX_COMPILER_LAUNCHER=sccache
+            CMAKE_C_COMPILER_LAUNCHER=sccache
+            CMAKE_GENERATOR="Unix Makefiles"
+            CMAKE_PREFIX_PATH=${{ env.legate_prefix }}
+            SCCACHE_IDLE_TIMEOUT=32768
+            SCCACHE_BUCKET=rapids-sccache-east
+            SCCACHE_REGION=us-east-2
+            SCCACHE_S3_KEY_PREFIX=legate-mac
+            SCCACHE_S3_NO_CREDENTIALS=false
+            SCCACHE_S3_USE_SSL=true
+
+      - name: Wheel upload
+        env:
+          BUILD_NAME: mac-arm64-py${{ matrix.PY_VER }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ env.BUILD_NAME }}
+          path: wheelhouse/*.whl
