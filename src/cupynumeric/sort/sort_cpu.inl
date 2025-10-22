@@ -475,9 +475,7 @@ void sample_sort_nd(
   size_t num_ranks,
   size_t segment_size_g,
   /* domain information in sort dimension */
-  size_t my_sort_rank,    // local rank id in sort dimension
   size_t num_sort_ranks,  // #ranks that share a sort dimension
-  size_t* sort_ranks,     // rank ids that share a sort dimension with us
   size_t segment_size_l,  // (local) segment size
   /* other */
   bool rebalance,
@@ -496,6 +494,11 @@ void sample_sort_nd(
   /////////////// Part 0: detection of empty nodes
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
+  // local rank id in sort dimension
+  size_t my_sort_rank;
+  // rank ids that share a sort dimension with us
+  std::vector<size_t> sort_ranks(num_sort_ranks);
+
   // first of all we need to check for processes that don't want
   // to take part in the computation. This might lead to a reduction of
   // sort ranks. Note that if segment_size_l>0 && volume==0 means that we have
@@ -509,20 +512,26 @@ void sample_sort_nd(
                                                 comm::coll::CollDataType::CollInt,
                                                 comm));
 
-    auto p_worker_count = worker_counts.ptr(0);
-    int32_t worker_count =
-      std::accumulate(p_worker_count, p_worker_count + num_ranks, 0, std::plus<int32_t>());
-
-    if (static_cast<size_t>(worker_count) < num_ranks) {
-      const size_t number_sort_groups = num_ranks / num_sort_ranks;
-      num_sort_ranks                  = worker_count / number_sort_groups;
-
-      if (volume == 0) {
-        // unfortunately we cannot early out here... we still need to participate in collective
-        // communication
-        assert(my_sort_rank >= num_sort_ranks);
-        num_sort_ranks = 0;
+    // the mapping allows empty partitions within the rank-row
+    // therefore we have to extract the non-empty sort ranks
+    size_t nonzero_pos   = 0;
+    int my_sort_rank_row = my_rank / num_sort_ranks;
+    for (size_t loc_rank = 0; loc_rank < num_sort_ranks; ++loc_rank) {
+      size_t glob_rank = my_sort_rank_row * num_sort_ranks + loc_rank;
+      if (my_rank == glob_rank) {
+        my_sort_rank = worker_counts[my_rank] > 0 ? nonzero_pos : num_sort_ranks;
       }
+      if (worker_counts[glob_rank] > 0) {
+        sort_ranks[nonzero_pos++] = glob_rank;
+      }
+    }
+    num_sort_ranks = nonzero_pos;
+
+    if (volume == 0) {
+      // unfortunately we cannot early out here... we still need to participate in collective
+      // communication
+      assert(my_sort_rank >= num_sort_ranks);
+      num_sort_ranks = 0;
     }
     worker_counts.destroy();
   }
@@ -906,7 +915,7 @@ void sample_sort_nd(
                    num_ranks,
                    my_sort_rank,
                    num_sort_ranks,
-                   sort_ranks,
+                   sort_ranks.data(),
                    segment_size_l,
                    num_segments_l,
                    argsort,
@@ -1019,11 +1028,6 @@ struct SortImplBodyCpu {
     if (need_distributed_sort) {
       if (is_index_space) {
         assert(is_index_space || is_unbound_1d_storage);
-        std::vector<size_t> sort_ranks(num_sort_ranks);
-        size_t rank_group = local_rank / num_sort_ranks;
-        for (size_t r = 0; r < num_sort_ranks; ++r) {
-          sort_ranks[r] = rank_group * num_sort_ranks + r;
-        }
 
         void* output_ptr = nullptr;
         // in case the storage *is NOT* unbound -- we provide a target pointer
@@ -1046,9 +1050,7 @@ struct SortImplBodyCpu {
                              local_rank,
                              num_ranks,
                              segment_size_g,
-                             local_rank % num_sort_ranks,
                              num_sort_ranks,
-                             sort_ranks.data(),
                              segment_size_l,
                              rebalance,
                              argsort,

@@ -1278,9 +1278,7 @@ void sample_sort_nccl_nd(
   size_t num_ranks,
   size_t segment_size_g,
   /* domain information in sort dimension */
-  size_t my_sort_rank,    // local rank id in sort dimension
   size_t num_sort_ranks,  // #ranks that share a sort dimension
-  size_t* sort_ranks,     // rank ids that share a sort dimension with us
   size_t segment_size_l,  // (local) segment size
   /* other */
   bool rebalance,
@@ -1297,27 +1295,49 @@ void sample_sort_nccl_nd(
   /////////////// Part 0: detection of empty nodes
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
+  // local rank id in sort dimension
+  size_t my_sort_rank;
+  // rank ids that share a sort dimension with us
+  std::vector<size_t> sort_ranks(num_sort_ranks);
+
   // first of all we need to check for processes that don't want
   // to take part in the computation. This might lead to a reduction of
   // sort ranks. Note that if segment_size_l>0 && volume==0 means that we have
   // a full sort group being empty, this should not affect local sort rank size.
   {
-    auto worker_count_d = create_non_empty_buffer<int32_t>(1, legate::Memory::GPU_FB_MEM);
-    size_t worker_count = (segment_size_l > 0 ? 1 : 0);
+    auto workers_d    = create_non_empty_buffer<int32_t>(num_ranks, legate::Memory::GPU_FB_MEM);
+    auto worker_d     = create_non_empty_buffer<int32_t>(1, legate::Memory::GPU_FB_MEM);
+    int32_t is_worker = (segment_size_l > 0 ? 1 : 0);
     CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
-      worker_count_d.ptr(0), &worker_count, sizeof(int32_t), cudaMemcpyHostToDevice, stream));
+      worker_d.ptr(0), &is_worker, sizeof(int32_t), cudaMemcpyHostToDevice, stream));
     context.concurrent_task_barrier();
-    CHECK_NCCL(ncclAllReduce(
-      worker_count_d.ptr(0), worker_count_d.ptr(0), 1, ncclInt32, ncclSum, *comm, stream));
+    CHECK_NCCL(ncclAllGather(worker_d.ptr(0), workers_d.ptr(0), 1, ncclInt32, *comm, stream));
     context.concurrent_task_barrier();
-    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
-      &worker_count, worker_count_d.ptr(0), sizeof(int32_t), cudaMemcpyDeviceToHost, stream));
+    std::vector<int32_t> worker_row_rank(num_sort_ranks);
+    int my_sort_rank_row = my_rank / num_sort_ranks;
+    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(worker_row_rank.data(),
+                                           workers_d.ptr(0) + my_sort_rank_row * num_sort_ranks,
+                                           num_sort_ranks * sizeof(int32_t),
+                                           cudaMemcpyDeviceToHost,
+                                           stream));
     CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
-    if (worker_count < num_ranks) {
-      const size_t number_sort_groups = num_ranks / num_sort_ranks;
-      num_sort_ranks                  = worker_count / number_sort_groups;
+
+    // the mapping allows empty partitions within the rank-row
+    // therefore we have to extract the non-empty sort ranks
+    size_t nonzero_pos = 0;
+    for (size_t loc_rank = 0; loc_rank < num_sort_ranks; ++loc_rank) {
+      size_t glob_rank = my_sort_rank_row * num_sort_ranks + loc_rank;
+      if (my_rank == glob_rank) {
+        my_sort_rank = is_worker ? nonzero_pos : num_sort_ranks;
+      }
+      if (worker_row_rank[loc_rank] > 0) {
+        sort_ranks[nonzero_pos++] = glob_rank;
+      }
     }
-    worker_count_d.destroy();
+    num_sort_ranks = nonzero_pos;
+
+    workers_d.destroy();
+    worker_d.destroy();
   }
 
   // NOTE: ranks with volume==0 will continue in order to allow concurrent barrier synchronization
@@ -1744,7 +1764,7 @@ void sample_sort_nccl_nd(
                    my_rank,
                    my_sort_rank,
                    num_sort_ranks,
-                   sort_ranks,
+                   sort_ranks.data(),
                    segment_size_l,
                    num_segments_l,
                    argsort,
@@ -1873,12 +1893,6 @@ struct SortImplBody<VariantKind::GPU, CODE, DIM> {
 
     if (need_distributed_sort) {
       if (is_index_space) {
-        std::vector<size_t> sort_ranks(num_sort_ranks);
-        size_t rank_group = local_rank / num_sort_ranks;
-        for (size_t r = 0; r < num_sort_ranks; ++r) {
-          sort_ranks[r] = rank_group * num_sort_ranks + r;
-        }
-
         void* output_ptr = nullptr;
         // in case the storage *is NOT* unbound -- we provide a target pointer
         // in case the storage *is* unbound -- the result will be appended to output_array
@@ -1901,9 +1915,7 @@ struct SortImplBody<VariantKind::GPU, CODE, DIM> {
                                   local_rank,
                                   num_ranks,
                                   segment_size_g,
-                                  local_rank % num_sort_ranks,
                                   num_sort_ranks,
-                                  sort_ranks.data(),
                                   segment_size_l,
                                   rebalance,
                                   argsort,
