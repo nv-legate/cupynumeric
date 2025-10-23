@@ -55,8 +55,8 @@ jobs:
           #
           export MATRIX="
           # arm64
-          - { PY_VER: '3.11' }
-          - { PY_VER: '3.12' }
+          #- { PY_VER: '3.11' }
+          #- { PY_VER: '3.12' }
           - { PY_VER: '3.13' }
           "
 
@@ -67,7 +67,7 @@ jobs:
 
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
   build:
-    name: arm64, py${{ matrix.PY_VER }}
+    name: arm64, py${{ matrix.PY_VER }} (optional)
     needs: compute-matrix
     timeout-minutes: 30
     strategy:
