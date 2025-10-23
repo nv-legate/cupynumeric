@@ -100,6 +100,16 @@ def _convert_kwargs(
     return converted
 
 
+def _convert_cupynumeric_to_numpy(obj: Any) -> Any:
+    """
+    Convert cuPyNumeric arrays to NumPy arrays, handling one level of nesting.
+    Used in fallback to prevent __array_function__ recursion.
+    """
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(maybe_convert_to_np_ndarray(item) for item in obj)
+    return maybe_convert_to_np_ndarray(obj)
+
+
 def add_boilerplate(
     *array_params: str,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -110,6 +120,15 @@ def add_boilerplate(
     Every time the wrapped function is called, this wrapper will convert all
     specified array-like parameters to cuPyNumeric ndarrays. Additionally, any
     "out" or "where" arguments will also always be automatically converted.
+
+    If conversion fails (e.g., for unsupported dtypes like strings or objects),
+    the function automatically falls back to NumPy's implementation and emits
+    a RuntimeWarning to inform the user.
+
+    Parameters
+    ----------
+    *array_params : str
+        Names of parameters to convert to cuPyNumeric ndarrays
     """
     to_convert = set(array_params)
     assert len(to_convert) == len(array_params)
@@ -125,8 +144,51 @@ def add_boilerplate(
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> R:
-            args = _convert_args(args, indices, out_index)
-            kwargs = _convert_kwargs(kwargs, to_convert)
+            try:
+                args = _convert_args(args, indices, out_index)
+                kwargs = _convert_kwargs(kwargs, to_convert)
+            except (TypeError, ValueError, NotImplementedError) as e:
+                import warnings
+
+                warnings.warn(
+                    f"cuPyNumeric does not support the provided input type for "
+                    f"{func.__name__} and is falling back to NumPy. "
+                    f"({type(e).__name__}: {e})",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+
+                # Convert all arguments to NumPy
+                numpy_args = tuple(
+                    _convert_cupynumeric_to_numpy(arg) for arg in args
+                )
+                numpy_kwargs = {
+                    k: _convert_cupynumeric_to_numpy(v)
+                    for k, v in kwargs.items()
+                }
+
+                # Fallback only works for top-level numpy module functions (e.g., numpy.lexsort).
+                # Does NOT work for:
+                # - ndarray methods (e.g., ndarray.sort)
+                # - submodule functions (e.g., numpy.linalg.svd, numpy.fft.fft)
+                numpy_func = getattr(np, func.__name__, None)
+                if numpy_func is None:
+                    raise
+                # Use __wrapped__ to bypass __array_function__ protocol
+                result = (
+                    numpy_func.__wrapped__(*numpy_args, **numpy_kwargs)
+                    if hasattr(numpy_func, "__wrapped__")
+                    else numpy_func(*numpy_args, **numpy_kwargs)
+                )
+
+                # Try to convert result back to cupynumeric if possible
+                if isinstance(result, np.ndarray):
+                    try:
+                        return convert_to_cupynumeric_ndarray(result)  # type: ignore[return-value]
+                    except TypeError:
+                        # Result has unsupported dtype, return NumPy array as-is
+                        return result  # type: ignore[return-value]
+                return result  # type: ignore[no-any-return]
 
             if settings.doctor():
                 doctor.diagnose(func.__name__, args, kwargs)

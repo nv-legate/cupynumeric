@@ -192,6 +192,21 @@ class TestSort(object):
             arr_num_copy.sort(axis=axis, kind=sort_type)
             assert np.array_equal(res_num, arr_num_copy)
 
+    def test_string_array_fallback(self):
+        """Test that sort falls back to NumPy for unsupported dtypes"""
+        arr_np = np.array(["zebra", "apple", "mango", "banana"])
+        expected = np.sort(arr_np)
+
+        with pytest.warns(
+            RuntimeWarning,
+            match="cuPyNumeric does not support.*falling back to NumPy",
+        ):
+            result = num.sort(arr_np)
+
+        assert np.array_equal(result, expected)
+        # Result may be NumPy array since cuPyNumeric doesn't support string dtype
+        assert isinstance(result, np.ndarray)
+
 
 if __name__ == "__main__":
     import sys

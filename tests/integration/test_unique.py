@@ -68,6 +68,22 @@ def test_parameters(return_index, return_inverse, return_counts, axis):
     assert np.array_equal(res_np, res_num)
 
 
+def test_string_array_fallback():
+    """Test that unique falls back to NumPy for unsupported dtypes"""
+    arr_np = np.array(["apple", "banana", "apple", "cherry", "banana"])
+    expected = np.unique(arr_np)
+
+    with pytest.warns(
+        RuntimeWarning,
+        match="cuPyNumeric does not support.*falling back to NumPy",
+    ):
+        result = num.unique(arr_np)
+
+    assert np.array_equal(result, expected)
+    # Result may be NumPy array since cuPyNumeric doesn't support string dtype
+    assert isinstance(result, np.ndarray)
+
+
 if __name__ == "__main__":
     import sys
 

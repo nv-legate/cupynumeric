@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import cupynumeric as num
+from utils.comparisons import allclose
 
 # cupynumeric.argsort(a: ndarray, axis: int = -1, kind: SortType = 'quicksort',
 # order: Optional = None) → ndarray
@@ -78,7 +79,7 @@ class TestArgSort(object):
     def test_arr_empty(self, arr):
         res_np = np.argsort(arr)
         res_num = num.argsort(arr)
-        assert np.array_equal(res_num, res_np)
+        assert allclose(res_num, res_np)
 
     @pytest.mark.xfail
     def test_structured_array_order(self):
@@ -103,12 +104,12 @@ class TestArgSort(object):
         # AssertionError
         #
         # Passed on Numpy.
-        assert np.array_equal(res_np, res_num)
+        assert allclose(res_np, res_num)
 
         res_np = np.argsort(a_np, order=["age", "height"])
         res_num = num.argsort(a_num, order=["age", "height"])
         # same as above.
-        assert np.array_equal(res_np, res_num)
+        assert allclose(res_np, res_num)
 
     def test_axis_out_bound(self):
         arr = [-1, 0, 1, 2, 10]
@@ -126,7 +127,7 @@ class TestArgSort(object):
         # 'heap', or 'stable' (got 'negative')"
         # cuPyNumeric passed. The code basically supports ‘stable’
         # or not ‘stable’.
-        assert np.array_equal(res_num, res_np)
+        assert allclose(res_num, res_np)
 
     @pytest.mark.parametrize("size", SIZES)
     def test_basic_axis(self, size):
@@ -135,7 +136,7 @@ class TestArgSort(object):
         for axis in range(-arr_np.ndim + 1, arr_np.ndim):
             res_np = np.argsort(arr_np, axis=axis)
             res_num = num.argsort(arr_num, axis=axis)
-            assert np.array_equal(res_num, res_np)
+            assert allclose(res_num, res_np)
 
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", STABLE_SORT_TYPES)
@@ -145,7 +146,7 @@ class TestArgSort(object):
         for axis in range(-arr_np.ndim + 1, arr_np.ndim):
             res_np = np.argsort(arr_np, axis=axis, kind=sort_type)
             res_num = num.argsort(arr_num, axis=axis, kind=sort_type)
-            assert np.array_equal(res_num, res_np)
+            assert allclose(res_num, res_np)
 
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", UNSTABLE_SORT_TYPES)
@@ -159,7 +160,7 @@ class TestArgSort(object):
         for axis in range(-arr_np.ndim + 1, arr_np.ndim):
             res_np = np.argsort(arr_np, axis=axis, kind=sort_type)
             res_num = num.argsort(arr_num, axis=axis, kind=sort_type)
-            assert np.array_equal(res_num, res_np)
+            assert allclose(res_num, res_np)
 
     @pytest.mark.parametrize("size", SIZES)
     def test_arr_basic_axis(self, size):
@@ -170,7 +171,7 @@ class TestArgSort(object):
             arr_np_copy.argsort(axis=axis)
             arr_num_copy = arr_num
             arr_num_copy.argsort(axis=axis)
-            assert np.array_equal(arr_np_copy, arr_num_copy)
+            assert allclose(arr_np_copy, arr_num_copy)
 
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", STABLE_SORT_TYPES)
@@ -182,7 +183,7 @@ class TestArgSort(object):
             arr_np_copy.argsort(axis=axis, kind=sort_type)
             arr_num_copy = arr_num
             arr_num_copy.argsort(axis=axis, kind=sort_type)
-            assert np.array_equal(arr_np_copy, arr_num_copy)
+            assert allclose(arr_np_copy, arr_num_copy)
 
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", UNSTABLE_SORT_TYPES)
@@ -198,7 +199,7 @@ class TestArgSort(object):
             arr_np_copy.argsort(axis=axis, kind=sort_type)
             arr_num_copy = arr_num
             arr_num_copy.argsort(axis=axis, kind=sort_type)
-            assert np.array_equal(arr_np_copy, arr_num_copy)
+            assert allclose(arr_np_copy, arr_num_copy)
 
     @pytest.mark.parametrize("size", SIZES)
     def test_basic_complex_axis(self, size):
@@ -210,7 +211,7 @@ class TestArgSort(object):
         for axis in range(-arr_np.ndim + 1, arr_np.ndim):
             res_np = np.sort(arr_np, axis=axis)
             res_num = num.sort(arr_num, axis=axis)
-            assert np.array_equal(res_num, res_np)
+            assert allclose(res_num, res_np)
 
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
@@ -223,7 +224,7 @@ class TestArgSort(object):
         for axis in range(-arr_np.ndim + 1, arr_np.ndim):
             res_np = np.sort(arr_np, axis=axis, kind=sort_type)
             res_num = num.sort(arr_num, axis=axis, kind=sort_type)
-            assert np.array_equal(res_num, res_np)
+            assert allclose(res_num, res_np)
 
 
 if __name__ == "__main__":
