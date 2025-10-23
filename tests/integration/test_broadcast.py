@@ -213,6 +213,28 @@ def test_extra_1d_broadcast_assignment(N):
     assert np.array_equal(z, num.ones(prefix + shape))
 
 
+@pytest.mark.parametrize(
+    "shape, target_shape",
+    [((2, 3, 4), (3, 4)), ((3, 4, 5), (4, 5)), ((2, 3, 4, 5), (3, 4, 5))],
+)
+def test_broadcast_to_invalid_shape(
+    shape: tuple[int, ...], target_shape: tuple[int, ...]
+) -> None:
+    arr_np = np.ones(shape)
+    arr_num = num.ones(shape)
+
+    np_error_msg = (
+        "input operand has more dimensions than allowed by the axis remapping"
+    )
+    num_error_msg = "cannot broadcast an array of shape"
+
+    with pytest.raises(ValueError, match=np_error_msg):
+        np.broadcast_to(arr_np, target_shape)
+
+    with pytest.raises(ValueError, match=num_error_msg):
+        num.broadcast_to(arr_num, target_shape)
+
+
 if __name__ == "__main__":
     import sys
 
