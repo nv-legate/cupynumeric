@@ -3051,11 +3051,32 @@ class ndarray:
             where=where,
         )
 
-    def _count_nonzero(self, axis: Any = None) -> int | ndarray:
+    def _count_nonzero(
+        self, axis: int | tuple[int, ...] | None = None, keepdims: bool = False
+    ) -> int | ndarray:
         if self.size == 0:
-            return 0
+            if axis is None:
+                return 0
+
+            from .thunk import normalize_axis_tuple
+
+            axis = normalize_axis_tuple(axis, self.ndim)
+            if keepdims:
+                out_shape = tuple(
+                    1 if i in axis else s for i, s in enumerate(self.shape)
+                )
+            else:
+                out_shape = tuple(
+                    s for i, s in enumerate(self.shape) if i not in axis
+                )
+            if not out_shape:
+                return 0
+            result = ndarray(shape=out_shape, dtype=np.uint64)
+            result.fill(0)
+            return result
+
         return perform_unary_reduction(
-            UnaryRedCode.COUNT_NONZERO, self, axis=axis
+            UnaryRedCode.COUNT_NONZERO, self, axis=axis, keepdims=keepdims
         )
 
     def _summation_dtype(self, dtype: np.dtype[Any] | None) -> np.dtype[Any]:

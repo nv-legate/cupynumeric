@@ -112,7 +112,6 @@ def test_basic_axis(size):
         assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("size", EMPTY_SIZES)
 def test_empty_axis(size):
     arr_np = np.random.randint(-5, 5, size=size)
@@ -121,13 +120,9 @@ def test_empty_axis(size):
     for axis in range(-ndim + 1, ndim, 1):
         out_np = np.count_nonzero(arr_np, axis=axis)
         out_num = num.count_nonzero(arr_num, axis=axis)
-        # Numpy and cuPyNumeric have diffrent out.
-        # out_np = array([[0]])
-        # out_num = 0
         assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("size", NO_EMPTY_SIZE)
 @pytest.mark.parametrize("keepdims", [False, True])
 def test_axis_keepdims(size, keepdims):
@@ -137,10 +132,6 @@ def test_axis_keepdims(size, keepdims):
     for axis in range(-ndim + 1, ndim, 1):
         out_np = np.count_nonzero(arr_np, axis=axis, keepdims=keepdims)
         out_num = num.count_nonzero(arr_num, axis=axis, keepdims=keepdims)
-        # Numpy has the parameter 'keepdims',
-        # cuPyNumeric do not have this parameter.
-        # cuPyNumeric raises "TypeError: count_nonzero() got an unexpected
-        # keyword argument 'keepdims'"
         assert np.array_equal(out_np, out_num)
 
 

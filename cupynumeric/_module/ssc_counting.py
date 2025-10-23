@@ -24,7 +24,9 @@ if TYPE_CHECKING:
 
 @add_boilerplate("a")
 def count_nonzero(
-    a: ndarray, axis: int | tuple[int, ...] | None = None
+    a: ndarray,
+    axis: int | tuple[int, ...] | None = None,
+    keepdims: bool = False,
 ) -> int | ndarray:
     """
 
@@ -38,7 +40,11 @@ def count_nonzero(
         Axis or tuple of axes along which to count non-zeros.
         Default is None, meaning that non-zeros will be counted
         along a flattened version of ``a``.
-
+    keepdims : bool, optional
+        If this is set to True, the axes which are reduced are left
+        in the result as dimensions with size one. With this option,
+        the result will broadcast correctly against the input array.
+        Default is False.
     Returns
     -------
     count : int or ndarray[int]
@@ -54,4 +60,4 @@ def count_nonzero(
     --------
     Multiple GPUs, Multiple CPUs
     """
-    return a._count_nonzero(axis)
+    return a._count_nonzero(axis, keepdims=keepdims)

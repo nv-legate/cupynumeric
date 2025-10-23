@@ -1787,61 +1787,65 @@ class EagerArray(NumPyThunk):
             return
         if where is None:
             where = True
-        if op in _UNARY_RED_OPS_WITH_ARG:
-            fn = _UNARY_RED_OPS_WITH_ARG[op]
-            # arg based APIs don't have the following arguments: where, initial
-            if op in _UNARY_RED_OPS_WITH_ARG:
+
+        match op:
+            case op if op in _UNARY_RED_OPS_WITH_ARG:
+                fn = _UNARY_RED_OPS_WITH_ARG[op]
+                # arg based APIs don't have the following arguments: where, initial
+                if op in _UNARY_RED_OPS_WITH_ARG:
+                    fn(
+                        rhs.array,
+                        out=self.array,
+                        axis=orig_axis,
+                        keepdims=keepdims,
+                    )
+            case op if op in _UNARY_RED_OPS_WITHOUT_ARG:
+                fn = _UNARY_RED_OPS_WITHOUT_ARG[op]
+                # Need to be more careful here, Numpy does not use None to mean
+                # "was not passed in" in this instance
+                kws = {"initial": initial} if initial is not None else {}
                 fn(
                     rhs.array,
                     out=self.array,
                     axis=orig_axis,
                     keepdims=keepdims,
+                    where=where
+                    if not isinstance(where, EagerArray)
+                    else where.array,
+                    **kws,
                 )
-        elif op in _UNARY_RED_OPS_WITHOUT_ARG:
-            fn = _UNARY_RED_OPS_WITHOUT_ARG[op]
-            # Need to be more careful here, Numpy does not use None to mean
-            # "was not passed in" in this instance
-            kws = {"initial": initial} if initial is not None else {}
-            fn(
-                rhs.array,
-                out=self.array,
-                axis=orig_axis,
-                keepdims=keepdims,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
-                **kws,
-            )
-        elif op == UnaryRedCode.SUM_SQUARES:
-            squared = np.square(rhs.array)
-            np.sum(
-                squared,
-                out=self.array,
-                axis=orig_axis,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
-                keepdims=keepdims,
-            )
-        elif op == UnaryRedCode.VARIANCE:
-            (mu,) = args
-            centered = np.subtract(rhs.array, np.asarray(mu))
-            squares = np.square(centered)
-            np.sum(
-                squares,
-                axis=orig_axis,
-                where=where
-                if not isinstance(where, EagerArray)
-                else where.array,
-                keepdims=keepdims,
-                out=self.array,
-            )
-        elif op == UnaryRedCode.CONTAINS:
-            self.array.fill(args[0].value() in rhs.array)
-        elif op == UnaryRedCode.COUNT_NONZERO:
-            self.array[()] = np.count_nonzero(rhs.array, axis=orig_axis)
-        else:
-            raise RuntimeError("unsupported unary reduction op " + str(op))
+            case UnaryRedCode.SUM_SQUARES:
+                squared = np.square(rhs.array)
+                np.sum(
+                    squared,
+                    out=self.array,
+                    axis=orig_axis,
+                    where=where
+                    if not isinstance(where, EagerArray)
+                    else where.array,
+                    keepdims=keepdims,
+                )
+            case UnaryRedCode.VARIANCE:
+                (mu,) = args
+                centered = np.subtract(rhs.array, np.asarray(mu))
+                squares = np.square(centered)
+                np.sum(
+                    squares,
+                    axis=orig_axis,
+                    where=where
+                    if not isinstance(where, EagerArray)
+                    else where.array,
+                    keepdims=keepdims,
+                    out=self.array,
+                )
+            case UnaryRedCode.CONTAINS:
+                self.array.fill(args[0].value() in rhs.array)
+            case UnaryRedCode.COUNT_NONZERO:
+                self.array[()] = np.count_nonzero(
+                    rhs.array, axis=orig_axis, keepdims=keepdims
+                )
+            case _:
+                raise RuntimeError("unsupported unary reduction op " + str(op))
 
     def isclose(
         self, rhs1: Any, rhs2: Any, rtol: float, atol: float, equal_nan: bool
