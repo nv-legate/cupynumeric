@@ -1,0 +1,6 @@
+﻿cupynumeric.isin
+================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isin

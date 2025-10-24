@@ -11,3 +11,4 @@ Making proper sets
 
    unique
    in1d
+   isin
