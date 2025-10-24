@@ -390,6 +390,362 @@ def test_large_complex_numbers():
     assert allclose(result_unique, expected_unique)
 
 
+# ============================================================================
+# Tests for isin function
+# ============================================================================
+
+
+@pytest.mark.parametrize(
+    "element_shape, test_shape",
+    [
+        ((1,), (1,)),
+        ((3,), (5,)),
+        ((2, 3), (4,)),
+        ((2, 3), (2, 3)),
+        ((3, 4, 5), (10,)),
+        ((4, 5), (2, 3, 4)),
+        ((0,), (5,)),
+        ((5,), (0,)),
+        ((0,), (0,)),
+        ((0, 5), (10,)),
+        ((5, 0), (10,)),
+        ((2, 0, 3), (5,)),
+        ((0, 0), (0,)),
+    ],
+)
+def test_isin_basic(element_shape, test_shape):
+    """Test basic isin functionality with various shapes."""
+    element = mk_seq_array(np, element_shape)
+    test_elements = mk_seq_array(np, test_shape)
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+
+    # Check that shape is preserved
+    assert result.shape == element.shape
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    "element, test_elements",
+    [
+        ([], []),
+        (mk_seq_array(np, (3, 4)), []),
+        ([], mk_seq_array(np, (3,))),
+        (mk_seq_array(np, (2, 0, 3)), mk_seq_array(np, (4,))),
+    ],
+)
+def test_isin_empty_arrays(element, test_elements):
+    """Test isin with empty arrays."""
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert allclose(result, expected)
+
+
+def test_isin_shape_preservation():
+    """Test that isin preserves the shape of the element array."""
+    shapes = [(5,), (2, 3), (2, 3, 4), (1, 1, 1), (10, 1), (1, 10)]
+
+    for shape in shapes:
+        element = mk_seq_array(np, shape)
+        test_elements = mk_seq_array(np, (5,))
+        element_num = num.array(element)
+        test_elements_num = num.array(test_elements)
+
+        result = num.isin(element_num, test_elements_num)
+        expected = np.isin(element, test_elements)
+
+        assert result.shape == shape
+        assert expected.shape == shape
+        assert allclose(result, expected)
+
+
+@pytest.mark.parametrize("assume_unique", [False, True])
+def test_isin_assume_unique(assume_unique):
+    """Test isin with assume_unique parameter."""
+    element = mk_seq_array(np, (3, 4))
+    test_elements = mk_seq_array(np, (5,))
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(
+        element_num, test_elements_num, assume_unique=assume_unique
+    )
+    expected = np.isin(element, test_elements, assume_unique=assume_unique)
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize("invert", [False, True])
+def test_isin_invert(invert):
+    """Test isin with invert parameter."""
+    element = mk_seq_array(np, (3, 4))
+    test_elements = mk_seq_array(np, (5,))
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num, invert=invert)
+    expected = np.isin(element, test_elements, invert=invert)
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize("kind", [None, "sort", "table"])
+def test_isin_kind(kind):
+    """Test isin with different kind algorithms."""
+    element = mk_seq_array(np, (3, 4))
+    test_elements = mk_seq_array(np, (5,))
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num, kind=kind)
+    expected = np.isin(element, test_elements, kind=kind)
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    "element_dtype, test_dtype",
+    [
+        (np.float32, np.complex64),
+        (np.float64, np.complex128),
+        (np.int32, np.complex64),
+        (np.complex64, np.float32),
+        (np.complex128, np.float64),
+        (np.int32, np.int64),
+        (np.float32, np.float64),
+    ],
+)
+def test_isin_mixed_dtypes(element_dtype, test_dtype):
+    """Test isin with mixed dtypes."""
+    element = mk_seq_array(np, (3, 4)).astype(element_dtype)
+    test_elements = mk_seq_array(np, (5,)).astype(test_dtype)
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert allclose(result, expected)
+
+
+def test_isin_nan_values():
+    """Test isin with NaN values."""
+    element = mk_seq_array(np, (3, 4)).astype(np.float64)
+    element[1, 2] = np.nan
+    test_elements = mk_seq_array(np, (3,)).astype(np.float64)
+    test_elements[1] = np.nan
+
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert allclose(result, expected)
+
+
+def test_isin_inf_values():
+    """Test isin with infinity values."""
+    element = mk_seq_array(np, (3, 4)).astype(np.float64)
+    element[0, 1] = np.inf
+    element[2, 3] = -np.inf
+    test_elements = mk_seq_array(np, (3,)).astype(np.float64)
+    test_elements[1] = np.inf
+
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert allclose(result, expected)
+
+
+def test_isin_scalar_element():
+    """Test isin with scalar element."""
+    element = np.array(5)
+    test_elements = mk_seq_array(np, (10,))
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert result.shape == element.shape
+    assert allclose(result, expected)
+
+
+def test_isin_scalar_test_elements():
+    """Test isin with scalar test_elements."""
+    element = mk_seq_array(np, (3, 4))
+    test_elements = np.array(5)
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert allclose(result, expected)
+
+
+def test_isin_duplicates():
+    """Test isin with duplicate values."""
+    element = mk_seq_array(np, (3, 4))
+    element[0, 0] = 100
+    element[2, 3] = 100
+    test_elements = mk_seq_array(np, (5,))
+    test_elements[1] = 100
+    test_elements[4] = 100
+
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize("invert", [False, True])
+@pytest.mark.parametrize(
+    "element_shape, test_shape",
+    [
+        ((2, 3), (5,)),
+        ((4, 5), (10,)),
+        ((1, 1), (1,)),
+        ((10,), (20,)),
+        ((3, 4, 5), (15,)),
+    ],
+)
+def test_isin_invert_shapes(invert, element_shape, test_shape):
+    """Test isin with invert parameter and various shapes."""
+    element = mk_seq_array(np, element_shape)
+    test_elements = mk_seq_array(np, test_shape)
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num, invert=invert)
+    expected = np.isin(element, test_elements, invert=invert)
+    assert result.shape == element_shape
+    assert allclose(result, expected)
+
+
+def test_isin_large_arrays():
+    """Test isin with large arrays."""
+    element = mk_seq_array(np, (100, 100))
+    test_elements = mk_seq_array(np, (1000,))
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert result.shape == element.shape
+    assert allclose(result, expected)
+
+
+def test_isin_complex_numbers():
+    """Test isin with complex numbers."""
+    element = np.array(
+        [
+            [complex(1, 2), complex(3, 4), complex(5, 6)],
+            [complex(7, 8), complex(1, 2), complex(9, 10)],
+        ],
+        dtype=np.complex128,
+    )
+    test_elements = np.array(
+        [complex(1, 2), complex(5, 6), complex(11, 12)], dtype=np.complex128
+    )
+
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert result.shape == element.shape
+    assert allclose(result, expected)
+
+
+def test_isin_vs_in1d_difference():
+    """Test that isin preserves shape while in1d flattens."""
+    element = mk_seq_array(np, (3, 4))
+    test_elements = mk_seq_array(np, (5,))
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    # isin should preserve shape
+    result_isin = num.isin(element_num, test_elements_num)
+    assert result_isin.shape == (3, 4)
+
+    # in1d should flatten
+    result_in1d = num.in1d(element_num, test_elements_num)
+    assert result_in1d.shape == (12,)
+
+    # But the flattened versions should be equal
+    assert allclose(result_isin.ravel(), result_in1d)
+
+
+def test_isin_noncontiguous():
+    """Test isin with non-contiguous arrays."""
+    element = np.random.rand(50, 50) * 100
+    element_num = num.array(element)
+    element = element.T
+    element_num = element_num.T
+    element_slice = element[10:20, 10:20]
+    element_num_slice = element_num[10:20, 10:20]
+
+    test_elements = mk_seq_array(np, (50,))
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num_slice, test_elements_num)
+    expected = np.isin(element_slice, test_elements)
+    assert result.shape == element_slice.shape
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    "element_factory, test_elements",
+    [
+        # Large array with only a few distinct values - all matches
+        (lambda: np.full((1000, 1000), 5), np.array([5])),
+        # Large array with few distinct values - partial matches
+        (
+            lambda: np.concatenate(
+                [np.full((500, 1000), 5), np.full((500, 1000), 7)]
+            ),
+            np.array([5, 9]),
+        ),
+        # Large array with few distinct values - no matches
+        (lambda: np.full((1000, 1000), 5), np.array([1, 2, 3])),
+    ],
+)
+def test_isin_large_arrays_few_distinct_values(element_factory, test_elements):
+    """Test isin with large arrays containing few distinct values."""
+    element = element_factory()
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(element_num, test_elements_num)
+    expected = np.isin(element, test_elements)
+    assert result.shape == element.shape
+    assert allclose(result, expected)
+
+
+@pytest.mark.parametrize("invert", [False, True])
+def test_isin_table_out_of_range(invert):
+    """Test isin with table kind and large range values."""
+    element = mk_seq_array(np, (3, 4))
+    element[0, 1] = -100000
+    element[2, 3] = 500000
+    test_elements = mk_seq_array(np, (3,)) + 100000
+
+    element_num = num.array(element)
+    test_elements_num = num.array(test_elements)
+
+    result = num.isin(
+        element_num, test_elements_num, kind="table", invert=invert
+    )
+    expected = np.isin(element, test_elements, kind="table", invert=invert)
+    assert result.shape == element.shape
+    assert allclose(result, expected)
+
+
 if __name__ == "__main__":
     import sys
 

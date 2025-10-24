@@ -259,3 +259,71 @@ def in1d(
         result[mask] = full(mask.sum(), False, dtype=bool)
 
     return result
+
+
+@add_boilerplate("element", "test_elements")
+def isin(
+    element: Any,
+    test_elements: Any,
+    assume_unique: bool = False,
+    invert: bool = False,
+    kind: Literal["sort", "table"] | None = None,
+) -> ndarray:
+    """
+    Calculates ``element in test_elements``, broadcasting over `element` only.
+    Returns a boolean array of the same shape as `element` that is True
+    where an element of `element` is in `test_elements` and False otherwise.
+
+    Parameters
+    ----------
+    element : array_like
+        Input array.
+    test_elements : array_like
+        The values against which to test each value of `element`.
+        This argument is flattened if it is an array or array_like.
+    assume_unique : bool, optional
+        If True, the input arrays are both assumed to be unique, which
+        can speed up the calculation.  Default is False.
+    invert : bool, optional
+        If True, the values in the returned array are inverted, as if
+        calculating `element not in test_elements`. Default is False.
+        ``np.isin(a, b, invert=True)`` is equivalent to (but faster
+        than) ``np.invert(np.isin(a, b))``.
+    kind : {None, 'sort', 'table'}, optional
+        The algorithm to use. This will not affect the final result,
+        but will affect the speed and memory use. The default, None,
+        will select automatically based on memory considerations.
+
+        * If 'sort', will use a mergesort-based approach. This will have
+          a memory usage of roughly 6 times the sum of the sizes of
+          `element` and `test_elements`, not accounting for size of dtypes.
+        * If 'table', will use a lookup table approach similar to a
+          counting sort. This is only available for boolean and integer
+          arrays. This will have a memory usage of the size of
+          `element` plus the max-min value of `test_elements`. This tends
+          to be the faster method if the following relationship is true:
+          ``len(element) >> (max(test_elements)-min(test_elements))``
+
+    Returns
+    -------
+    isin : ndarray, bool
+        Has the same shape as `element`. The values `element[isin]`
+        are in `test_elements`.
+
+    See Also
+    --------
+    in1d                  : Flattened version of this function.
+    numpy.isin            : NumPy equivalent function.
+
+    Availability
+    ------------
+    Multiple GPUs, Multiple CPUs
+
+    """
+    return in1d(
+        element,
+        test_elements,
+        assume_unique=assume_unique,
+        invert=invert,
+        kind=kind,
+    ).reshape(element.shape)
