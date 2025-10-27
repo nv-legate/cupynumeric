@@ -50,9 +50,9 @@ from legate.core import (
     TaskTarget,
 )
 from legate.core.utils import OrderedSet
+from numpy.lib.array_utils import normalize_axis_tuple
 
 from .. import _ufunc
-from ..lib.array_utils import normalize_axis_tuple
 from .._array.doctor import doctor
 from .._utils.array import (
     is_advanced_indexing,

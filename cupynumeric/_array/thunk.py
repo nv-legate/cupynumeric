@@ -26,7 +26,7 @@ from ..config import (
     UnaryOpCode,
     UnaryRedCode,
 )
-from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
+from numpy.lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..types import NdShape
 from .util import (
     broadcast_where,

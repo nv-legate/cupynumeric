@@ -20,7 +20,7 @@ import numpy as np
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
-from ..lib.array_utils import normalize_axis_tuple
+from numpy.lib.array_utils import normalize_axis_tuple
 from .creation_data import array
 
 if TYPE_CHECKING:

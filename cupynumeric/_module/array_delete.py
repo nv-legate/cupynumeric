@@ -17,14 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
-from .._utils import is_np2
-
-if is_np2:
-    from numpy.lib.array_utils import normalize_axis_index
-else:
-    from numpy.core.multiarray import normalize_axis_index  # type: ignore[no-redef]
-
+from numpy.lib.array_utils import normalize_axis_index
 
 from .._array.util import add_boilerplate
 from .array_dimension import atleast_1d

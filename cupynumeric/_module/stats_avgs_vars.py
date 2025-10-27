@@ -18,10 +18,10 @@ import math
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from numpy.lib.array_utils import normalize_axis_tuple
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
-from ..lib.array_utils import normalize_axis_tuple
 from .creation_shape import full
 from .logic_truth import any
 from .stats_order import nanquantile, quantile

@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
+from numpy.lib.array_utils import normalize_axis_index
 
 from .._array.array import _warn_and_convert, ndarray
 from .._array.util import (
@@ -27,7 +28,6 @@ from .._array.util import (
 from .._module.array_dimension import broadcast_arrays
 from .._utils.array import calculate_volume
 from .._utils.coverage import is_implemented
-from ..lib.array_utils import normalize_axis_index
 from ..runtime import runtime
 from ..types import NdShape
 from .array_joining import hstack

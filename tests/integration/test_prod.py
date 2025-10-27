@@ -18,7 +18,6 @@ from utils.comparisons import allclose
 from utils.utils import AxisError
 
 import cupynumeric as num
-from cupynumeric._utils import is_np2
 
 # numpy.prod(a, axis=None, dtype=None, out=None, keepdims=<no value>,
 # initial=<no value>, where=<no value>)
@@ -126,7 +125,7 @@ class TestProdNegative(object):
 
     @pytest.mark.parametrize("initial", ([2, 3], [3]), ids=str)
     def test_initial_list(self, initial):
-        expected_exc = TypeError if is_np2 else ValueError
+        expected_exc = TypeError
         arr = [[1, 2], [3, 4]]
         with pytest.raises(expected_exc):
             np.prod(arr, initial=initial)

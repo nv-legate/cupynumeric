@@ -17,11 +17,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Sequence, cast
 
 import numpy as np
+from numpy.exceptions import AxisError
+from numpy.lib.array_utils import normalize_axis_index
 
 from .._array.array import _warn_and_convert, ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
-from .._utils import is_np2
-from ..lib.array_utils import normalize_axis_index
 from ..runtime import runtime
 from .creation_shape import full
 
@@ -30,10 +30,6 @@ if TYPE_CHECKING:
 
     from ..types import NdShape
 
-if is_np2:
-    from numpy.exceptions import AxisError
-else:
-    from numpy import AxisError  # type: ignore[no-redef,attr-defined]
 
 _builtin_max = max
 
