@@ -226,7 +226,12 @@ def _make_eager_unary_ufunc(
         """
         Helper method to apply unary ufunc operations.
         """
-        self.check_eager_args(out)
+        from .._array.array import ndarray
+
+        # Check if out contains a deferred thunk and convert self if needed
+        if isinstance(out, ndarray) and runtime.is_deferred_array(out._thunk):
+            if self.deferred is None:
+                self.to_deferred_array(read_only=False)
 
         if self.deferred is not None:
             return deferred_ufunc._call_full(
@@ -239,9 +244,7 @@ def _make_eager_unary_ufunc(
             )
 
         out_array = (
-            out._thunk.__numpy_array__()
-            if (out is not None and hasattr(out, "_thunk"))
-            else out
+            out._thunk.__numpy_array__() if isinstance(out, ndarray) else out
         )
         return np_ufunc(
             self.array,
@@ -270,7 +273,48 @@ def _make_eager_binary_ufunc(
         """
         Helper method to apply binary ufunc operations.
         """
-        self.check_eager_args(rhs, out)
+        from .._array.array import ndarray
+
+        # Check if rhs or out contain deferred thunks and convert self if needed
+        # We check the ._thunk attribute directly without extracting to avoid issues
+        # Only convert if the thunk is truly deferred (not an eager array with .deferred set)
+        # Also avoid converting if arrays are 0-dimensional (ndim=0) as deferred doesn't support them
+        if isinstance(rhs, ndarray):
+            rhs_thunk = rhs._thunk
+            # Only convert if both self and rhs have at least 1 dimension and non-zero size
+            can_convert = (
+                self.ndim > 0
+                and self.array.size > 0
+                and rhs.ndim > 0
+                and rhs.size > 0
+            )
+            if runtime.is_deferred_array(rhs_thunk):
+                if self.deferred is None and can_convert:
+                    self.to_deferred_array(read_only=False)
+            elif (
+                runtime.is_eager_array(rhs_thunk)
+                and rhs_thunk.deferred is not None
+            ):
+                if self.deferred is None and can_convert:
+                    self.to_deferred_array(read_only=False)
+        if isinstance(out, ndarray):
+            out_thunk = out._thunk
+            # Only convert if both self and out have at least 1 dimension and non-zero size
+            can_convert = (
+                self.ndim > 0
+                and self.array.size > 0
+                and out.ndim > 0
+                and out.size > 0
+            )
+            if runtime.is_deferred_array(out_thunk):
+                if self.deferred is None and can_convert:
+                    self.to_deferred_array(read_only=False)
+            elif (
+                runtime.is_eager_array(out_thunk)
+                and out_thunk.deferred is not None
+            ):
+                if self.deferred is None and can_convert:
+                    self.to_deferred_array(read_only=False)
 
         if self.deferred is not None:
             return deferred_ufunc._call_full(
@@ -284,15 +328,11 @@ def _make_eager_binary_ufunc(
             )
 
         rhs_array = (
-            rhs._thunk.__numpy_array__()
-            if (rhs is not None and hasattr(rhs, "_thunk"))
-            else rhs
+            rhs._thunk.__numpy_array__() if isinstance(rhs, ndarray) else rhs
         )
 
         out_array = (
-            out._thunk.__numpy_array__()
-            if (out is not None and hasattr(out, "_thunk"))
-            else out
+            out._thunk.__numpy_array__() if isinstance(out, ndarray) else out
         )
         return np_ufunc(
             self.array,
