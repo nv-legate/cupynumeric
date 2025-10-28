@@ -328,8 +328,8 @@ TEST(Dot, MMStandard)
 
 TEST(Dot, MMComplex)
 {
-  test_contract_standard<complex<float>>({124, 30}, {30, 95});
-  test_contract_standard<complex<float>>({124, 30}, {30, 95});
+  test_contract_standard<legate::Complex<float>>({124, 30}, {30, 95});
+  test_contract_standard<legate::Complex<float>>({124, 30}, {30, 95});
 }
 
 TEST(Dot, MMLarge)
@@ -347,6 +347,6 @@ TEST(Dot, AllFloat) { test_contract_full_all<float>(); }
 
 TEST(Dot, AllDouble) { test_contract_full_all<double>(); }
 
-TEST(Dot, AllComplex64) { test_contract_standard_all<complex<float>>(); }
+TEST(Dot, AllComplex64) { test_contract_standard_all<legate::Complex<float>>(); }
 
-TEST(Dot, AllComplex128) { test_contract_standard_all<complex<double>>(); }
+TEST(Dot, AllComplex128) { test_contract_standard_all<legate::Complex<double>>(); }

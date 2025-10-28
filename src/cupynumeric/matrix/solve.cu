@@ -203,9 +203,9 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int32_t m,
                   int32_t n,
                   int32_t nrhs,
-                  const complex<float>* a,
-                  const complex<float>* b,
-                  complex<float>* x)
+                  const legate::Complex<float>* a,
+                  const legate::Complex<float>* b,
+                  legate::Complex<float>* x)
   {
     auto stream = context.get_task_stream();
     if (batchsize > 1) {
@@ -242,9 +242,9 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int32_t m,
                   int32_t n,
                   int32_t nrhs,
-                  const complex<double>* a,
-                  const complex<double>* b,
-                  complex<double>* x)
+                  const legate::Complex<double>* a,
+                  const legate::Complex<double>* b,
+                  legate::Complex<double>* x)
   {
     auto stream = context.get_task_stream();
     if (batchsize > 1) {

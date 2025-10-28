@@ -17,6 +17,8 @@
 #pragma once
 
 #include "legate.h"
+#include "legate/redop/redop.h"
+#include "cupynumeric/typedefs.h"
 
 namespace cupynumeric {
 

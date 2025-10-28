@@ -124,7 +124,13 @@ struct generate_arange_shape_fn {
       step = legate::Scalar(VAL(1));
     }
 
-    return static_cast<size_t>(ceil((stop.value<VAL>() - start.value<VAL>()) / step.value<VAL>()));
+    const auto val = (stop.value<VAL>() - start.value<VAL>()) / step.value<VAL>();
+
+    if constexpr (std::is_same_v<VAL, legate::Half>) {
+      return static_cast<size_t>(ceil(static_cast<float>(val)));
+    } else {
+      return static_cast<size_t>(ceil(val));
+    }
   }
 
   template <legate::Type::Code CODE,

@@ -18,6 +18,7 @@
 
 // Useful for IDEs
 #include "cupynumeric/matrix/dot.h"
+#include "legate/redop/redop.h"
 
 namespace cupynumeric {
 
@@ -32,7 +33,7 @@ struct AccTypeOf {
 };
 
 template <>
-struct AccTypeOf<__half> {
+struct AccTypeOf<legate::Half> {
   using type = float;
 };
 

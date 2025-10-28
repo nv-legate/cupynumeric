@@ -17,7 +17,7 @@
 #pragma once
 
 #include "cupynumeric/cupynumeric_task.h"
-
+#include "cupynumeric/binary/binary_op_util.h"
 #include <thrust/sort.h>
 
 namespace cupynumeric {

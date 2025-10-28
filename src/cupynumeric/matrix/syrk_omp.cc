@@ -59,7 +59,10 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit SyrkImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<float>* lhs_, const complex<float>* rhs_, int32_t m, int32_t n)
+  void operator()(legate::Complex<float>* lhs_,
+                  const legate::Complex<float>* rhs_,
+                  int32_t m,
+                  int32_t n)
   {
     auto lhs = reinterpret_cast<__complex__ float*>(lhs_);
     auto rhs = reinterpret_cast<const __complex__ float*>(rhs_);
@@ -77,7 +80,10 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit SyrkImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<double>* lhs_, const complex<double>* rhs_, int32_t m, int32_t n)
+  void operator()(legate::Complex<double>* lhs_,
+                  const legate::Complex<double>* rhs_,
+                  int32_t m,
+                  int32_t n)
   {
     auto lhs = reinterpret_cast<__complex__ double*>(lhs_);
     auto rhs = reinterpret_cast<const __complex__ double*>(rhs_);

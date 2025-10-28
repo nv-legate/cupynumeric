@@ -18,6 +18,8 @@
 
 // Useful for IDEs
 #include "cupynumeric/set/in1d.h"
+#include "cupynumeric/binary/binary_op_util.h"
+
 #include <thrust/fill.h>
 
 namespace cupynumeric {

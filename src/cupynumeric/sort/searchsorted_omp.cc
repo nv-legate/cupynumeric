@@ -16,6 +16,8 @@
 
 #include "cupynumeric/sort/searchsorted.h"
 #include "cupynumeric/sort/searchsorted_template.inl"
+#include "legate/redop/redop.h"
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include <omp.h>
 
@@ -53,7 +55,7 @@ struct SearchSortedImplBody<VariantKind::OMP, CODE, DIM> {
 
     if (left) {
       auto output_reduction =
-        output_positions.reduce_accessor<MinReduction<int64_t>, true, DIM>(rect_values);
+        output_positions.reduce_accessor<Legion::MinReduction<int64_t>, true, DIM>(rect_values);
 #pragma omp for
       for (size_t idx = 0; idx < num_values; ++idx) {
         VAL key             = input_v_ptr[idx];

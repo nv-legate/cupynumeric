@@ -26,29 +26,29 @@ using namespace legate;
 namespace {
 
 template <typename T>
-void assemble_complex(complex<T>* ew, complex<T>* ev, T* ew_r, T* ew_i, T* ev_r, size_t m)
+void assemble_complex(Complex<T>* ew, Complex<T>* ev, T* ew_r, T* ew_i, T* ev_r, size_t m)
 {
   bool skip_next_ev = false;
   for (int i = 0; i < m; ++i) {
-    ew[i] = complex<T>(ew_r[i], ew_i[i]);
+    ew[i] = Complex<T>(ew_r[i], ew_i[i]);
     if (ev != nullptr) {
       if (skip_next_ev) {
         skip_next_ev = false;
       } else {
         T* src1          = &ev_r[i * m];
-        complex<T>* dst1 = &ev[i * m];
+        Complex<T>* dst1 = &ev[i * m];
         if (ew_i[i] != T(0)) {
           // define next 2 EVs
           T* src2          = src1 + m;
-          complex<T>* dst2 = dst1 + m;
+          Complex<T>* dst2 = dst1 + m;
           for (int k = 0; k < m; ++k) {
-            dst1[k] = complex<T>(src1[k], src2[k]);
-            dst2[k] = complex<T>(src1[k], T(-1) * src2[k]);
+            dst1[k] = Complex<T>(src1[k], src2[k]);
+            dst2[k] = Complex<T>(src1[k], T(-1) * src2[k]);
           }
           skip_next_ev = true;
         } else {
           for (int k = 0; k < m; ++k) {
-            dst1[k] = complex<T>(src1[k], T(0));
+            dst1[k] = Complex<T>(src1[k], T(0));
           }
         }
       }
@@ -67,8 +67,8 @@ struct GeevImplBody<KIND, Type::Code::FLOAT32> {
                   int32_t batch_stride_ew,
                   int32_t batch_stride_ev,
                   const float* a,
-                  complex<float>* ew,
-                  complex<float>* ev)
+                  Complex<float>* ew,
+                  Complex<float>* ev)
   {
     bool compute_evs = ev != nullptr;
     auto a_copy      = create_buffer<float>(m * m);
@@ -143,8 +143,8 @@ struct GeevImplBody<KIND, Type::Code::FLOAT64> {
                   int32_t batch_stride_ew,
                   int32_t batch_stride_ev,
                   const double* a,
-                  complex<double>* ew,
-                  complex<double>* ev)
+                  Complex<double>* ew,
+                  Complex<double>* ev)
   {
     bool compute_evs = ev != nullptr;
     auto a_copy      = create_buffer<double>(m * m);
@@ -219,12 +219,12 @@ struct GeevImplBody<KIND, Type::Code::COMPLEX64> {
                   int32_t num_batches,
                   int32_t batch_stride_ew,
                   int32_t batch_stride_ev,
-                  const complex<float>* a,
-                  complex<float>* ew,
-                  complex<float>* ev)
+                  const Complex<float>* a,
+                  Complex<float>* ew,
+                  Complex<float>* ev)
   {
     bool compute_evs = ev != nullptr;
-    auto a_copy      = create_buffer<complex<float>>(m * m);
+    auto a_copy      = create_buffer<Complex<float>>(m * m);
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
       std::copy(a, a + (m * m), a_copy.ptr(0));
@@ -289,12 +289,12 @@ struct GeevImplBody<KIND, Type::Code::COMPLEX128> {
                   int32_t num_batches,
                   int32_t batch_stride_ew,
                   int32_t batch_stride_ev,
-                  const complex<double>* a,
-                  complex<double>* ew,
-                  complex<double>* ev)
+                  const Complex<double>* a,
+                  Complex<double>* ew,
+                  Complex<double>* ev)
   {
     bool compute_evs = ev != nullptr;
-    auto a_copy      = create_buffer<complex<double>>(m * m);
+    auto a_copy      = create_buffer<Complex<double>>(m * m);
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
       std::copy(a, a + (m * m), a_copy.ptr(0));

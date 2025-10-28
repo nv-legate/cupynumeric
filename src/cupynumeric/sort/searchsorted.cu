@@ -17,6 +17,7 @@
 #include "cupynumeric/sort/searchsorted.h"
 #include "cupynumeric/sort/searchsorted_template.inl"
 #include <cub/thread/thread_search.cuh>
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include "cupynumeric/cuda_help.h"
 

@@ -26,7 +26,7 @@ using namespace legate;
 namespace {
 
 template <typename T>
-void remove_diag_imag(complex<T>* a_inout, size_t m)
+void remove_diag_imag(Complex<T>* a_inout, size_t m)
 {
   for (int i = 0; i < m; ++i) {
     a_inout[i * m + i].imag(T(0));
@@ -163,12 +163,12 @@ struct SyevImplBody<KIND, Type::Code::COMPLEX64> {
                   int32_t num_batches,
                   int32_t batch_stride_ew,
                   int32_t batch_stride_ev,
-                  const complex<float>* a,
+                  const Complex<float>* a,
                   float* ew,
-                  complex<float>* ev)
+                  Complex<float>* ev)
   {
     bool compute_evs = ev != nullptr;
-    auto a_copy      = create_buffer<complex<float>>(m * m);
+    auto a_copy      = create_buffer<Complex<float>>(m * m);
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
       std::copy(a, a + (m * m), a_copy.ptr(0));
@@ -229,12 +229,12 @@ struct SyevImplBody<KIND, Type::Code::COMPLEX128> {
                   int32_t num_batches,
                   int32_t batch_stride_ew,
                   int32_t batch_stride_ev,
-                  const complex<double>* a,
+                  const Complex<double>* a,
                   double* ew,
-                  complex<double>* ev)
+                  Complex<double>* ev)
   {
     bool compute_evs = ev != nullptr;
-    auto a_copy      = create_buffer<complex<double>>(m * m);
+    auto a_copy      = create_buffer<Complex<double>>(m * m);
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
       std::copy(a, a + (m * m), a_copy.ptr(0));

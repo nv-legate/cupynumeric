@@ -20,6 +20,7 @@
 #include "cupynumeric/sort/sort.h"
 #include "cupynumeric/pitches.h"
 #include "legate/comm/coll.h"
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include <thrust/detail/config.h>
 #include <thrust/execution_policy.h>

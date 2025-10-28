@@ -76,9 +76,9 @@ static inline void syev_batched_template(DataType valTypeR,
   CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
     a_copy_ptr, a, num_batches * m * m * sizeof(VAL), cudaMemcpyDeviceToDevice, stream));
 
-  if constexpr (std::is_same_v<VAL, complex<float>>) {
+  if constexpr (std::is_same_v<VAL, legate::Complex<float>>) {
     remove_diag_imag(reinterpret_cast<cuComplex*>(a_copy_ptr), m, stream, num_batches);
-  } else if constexpr (std::is_same_v<VAL, complex<double>>) {
+  } else if constexpr (std::is_same_v<VAL, legate::Complex<double>>) {
     remove_diag_imag(reinterpret_cast<cuDoubleComplex*>(a_copy_ptr), m, stream, num_batches);
   }
 
@@ -153,9 +153,9 @@ static inline void syevd_template(DataType valTypeR,
   CUPYNUMERIC_CHECK_CUDA(
     cudaMemcpyAsync(a_copy_ptr, a, m * m * sizeof(VAL), cudaMemcpyDeviceToDevice, stream));
 
-  if constexpr (std::is_same_v<VAL, complex<float>>) {
+  if constexpr (std::is_same_v<VAL, legate::Complex<float>>) {
     remove_diag_imag(reinterpret_cast<cuComplex*>(a_copy_ptr), m, stream);
-  } else if constexpr (std::is_same_v<VAL, complex<double>>) {
+  } else if constexpr (std::is_same_v<VAL, legate::Complex<double>>) {
     remove_diag_imag(reinterpret_cast<cuDoubleComplex*>(a_copy_ptr), m, stream);
   }
 
@@ -286,15 +286,15 @@ struct SyevImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int64_t num_batches,
                   int64_t batch_stride_ew,
                   int64_t batch_stride_ev,
-                  const complex<float>* a,
+                  const Complex<float>* a,
                   float* ew,
-                  complex<float>* ev)
+                  Complex<float>* ev)
   {
     auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     if (num_batches > 1 && get_cusolver_extra_symbols()->has_syev_batched) {
-      syev_batched_template<complex<float>>(
+      syev_batched_template<Complex<float>>(
         CUDA_R_32F,
         CUDA_C_32F,
         uplo_l,
@@ -306,7 +306,7 @@ struct SyevImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
         stream);
     } else {
       for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-        syevd_template<complex<float>>(
+        syevd_template<Complex<float>>(
           CUDA_R_32F,
           CUDA_C_32F,
           uplo_l,
@@ -330,15 +330,15 @@ struct SyevImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int64_t num_batches,
                   int64_t batch_stride_ew,
                   int64_t batch_stride_ev,
-                  const complex<double>* a,
+                  const Complex<double>* a,
                   double* ew,
-                  complex<double>* ev)
+                  Complex<double>* ev)
   {
     auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     if (num_batches > 1 && get_cusolver_extra_symbols()->has_syev_batched) {
-      syev_batched_template<complex<double>>(
+      syev_batched_template<Complex<double>>(
         CUDA_R_64F,
         CUDA_C_64F,
         uplo_l,
@@ -350,7 +350,7 @@ struct SyevImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
         stream);
     } else {
       for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-        syevd_template<complex<double>>(
+        syevd_template<Complex<double>>(
           CUDA_R_64F,
           CUDA_C_64F,
           uplo_l,

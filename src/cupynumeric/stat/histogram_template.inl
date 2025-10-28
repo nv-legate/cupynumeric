@@ -18,6 +18,7 @@
 
 // Useful for IDEs
 #include "cupynumeric/stat/histogram.h"
+#include "legate/redop/redop.h"
 
 namespace cupynumeric {
 

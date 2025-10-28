@@ -17,6 +17,7 @@
 #include "cupynumeric/set/unique.h"
 #include "cupynumeric/set/unique_template.inl"
 #include "cupynumeric/utilities/thrust_util.h"
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include "cupynumeric/cuda_help.h"
 

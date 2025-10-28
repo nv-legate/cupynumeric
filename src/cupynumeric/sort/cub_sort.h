@@ -90,8 +90,8 @@ void cub_local_sort(const uint64_t* values_in,
                     const size_t sort_dim_size,
                     cudaStream_t stream);
 
-void cub_local_sort(const __half* values_in,
-                    __half* values_out,
+void cub_local_sort(const legate::Half* values_in,
+                    legate::Half* values_out,
                     const int64_t* indices_in,
                     int64_t* indices_out,
                     const size_t volume,

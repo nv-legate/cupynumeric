@@ -20,6 +20,14 @@
 
 #include "legate.h"
 
+#ifndef __CUDA_HD__
+#ifdef __CUDACC__
+#define __CUDA_HD__ __host__ __device__
+#else
+#define __CUDA_HD__
+#endif
+#endif
+
 namespace cupynumeric {
 
 using Array  = legate::PhysicalStore;

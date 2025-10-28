@@ -149,12 +149,12 @@ struct SvdImplBody<KIND, Type::Code::COMPLEX64> {
                   int32_t n,
                   int32_t k,
                   bool full_matrices,
-                  const complex<float>* a,
-                  complex<float>* u,
+                  const legate::Complex<float>* a,
+                  legate::Complex<float>* u,
                   float* s,
-                  complex<float>* vh)
+                  legate::Complex<float>* vh)
   {
-    auto a_copy = create_buffer<complex<float>>(m * n);
+    auto a_copy = create_buffer<legate::Complex<float>>(m * n);
     std::copy(a, a + (n * m), a_copy.ptr(0));
 
     int32_t info            = 0;
@@ -212,12 +212,12 @@ struct SvdImplBody<KIND, Type::Code::COMPLEX128> {
                   int32_t n,
                   int32_t k,
                   bool full_matrices,
-                  const complex<double>* a,
-                  complex<double>* u,
+                  const legate::Complex<double>* a,
+                  legate::Complex<double>* u,
                   double* s,
-                  complex<double>* vh)
+                  legate::Complex<double>* vh)
   {
-    auto a_copy = create_buffer<complex<double>>(m * n);
+    auto a_copy = create_buffer<legate::Complex<double>>(m * n);
     std::copy(a, a + (n * m), a_copy.ptr(0));
 
     int32_t info             = 0;

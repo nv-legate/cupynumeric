@@ -99,8 +99,8 @@ void thrust_local_sort(const uint64_t* values_in,
                        const bool stable,
                        cudaStream_t stream);
 
-void thrust_local_sort(const __half* values_in,
-                       __half* values_out,
+void thrust_local_sort(const legate::Half* values_in,
+                       legate::Half* values_out,
                        const int64_t* indices_in,
                        int64_t* indices_out,
                        const size_t volume,
@@ -126,8 +126,8 @@ void thrust_local_sort(const double* values_in,
                        const bool stable,
                        cudaStream_t stream);
 
-void thrust_local_sort(const complex<float>* values_in,
-                       complex<float>* values_out,
+void thrust_local_sort(const legate::Complex<float>* values_in,
+                       legate::Complex<float>* values_out,
                        const int64_t* indices_in,
                        int64_t* indices_out,
                        const size_t volume,
@@ -135,8 +135,8 @@ void thrust_local_sort(const complex<float>* values_in,
                        const bool stable,
                        cudaStream_t stream);
 
-void thrust_local_sort(const complex<double>* values_in,
-                       complex<double>* values_out,
+void thrust_local_sort(const legate::Complex<double>* values_in,
+                       legate::Complex<double>* values_out,
                        const int64_t* indices_in,
                        int64_t* indices_out,
                        const size_t volume,

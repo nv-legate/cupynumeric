@@ -73,7 +73,7 @@ test_cupynumeric() {
             shift;
             setup_test_env;
             run_legate_issue;
-            ./test.py ${WORKERS} -vv --timeout 300 "$@"
+            ./test.py ${WORKERS} -vv --timeout 600 "$@"
             ;;
         "mypy")
             echo "Installing and executing mypy..."

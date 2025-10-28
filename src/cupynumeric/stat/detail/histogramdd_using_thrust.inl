@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cupynumeric/stat/histogramdd.h>
+#include <legate/redop/redop.h>
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>

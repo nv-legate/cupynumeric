@@ -70,7 +70,10 @@ struct TrsmImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit TrsmImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<float>* lhs_, const complex<float>* rhs_, int32_t m, int32_t n)
+  void operator()(legate::Complex<float>* lhs_,
+                  const legate::Complex<float>* rhs_,
+                  int32_t m,
+                  int32_t n)
   {
     auto stream = context.get_task_stream();
     auto lhs    = reinterpret_cast<cuComplex*>(lhs_);
@@ -85,7 +88,10 @@ struct TrsmImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit TrsmImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<double>* lhs_, const complex<double>* rhs_, int32_t m, int32_t n)
+  void operator()(legate::Complex<double>* lhs_,
+                  const legate::Complex<double>* rhs_,
+                  int32_t m,
+                  int32_t n)
   {
     auto stream = context.get_task_stream();
     auto lhs    = reinterpret_cast<cuDoubleComplex*>(lhs_);

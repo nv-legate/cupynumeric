@@ -19,6 +19,7 @@
 #include "legate/data/buffer.h"
 #include "cupynumeric/utilities/thrust_allocator.h"
 #include "cupynumeric/utilities/thrust_util.h"
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include <thrust/sort.h>
 #include <thrust/iterator/constant_iterator.h>

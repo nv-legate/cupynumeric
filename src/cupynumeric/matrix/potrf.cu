@@ -72,9 +72,8 @@ void PotrfImplBody<VariantKind::GPU, Type::Code::FLOAT64>::operator()(double* ar
 }
 
 template <>
-void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64>::operator()(complex<float>* array,
-                                                                        int32_t m,
-                                                                        int32_t n)
+void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64>::operator()(
+  legate::Complex<float>* array, int32_t m, int32_t n)
 {
   auto stream = context.get_task_stream();
   potrf_template(cusolverDnCpotrf_bufferSize,
@@ -86,9 +85,8 @@ void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX64>::operator()(complex<
 }
 
 template <>
-void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX128>::operator()(complex<double>* array,
-                                                                         int32_t m,
-                                                                         int32_t n)
+void PotrfImplBody<VariantKind::GPU, Type::Code::COMPLEX128>::operator()(
+  legate::Complex<double>* array, int32_t m, int32_t n)
 {
   auto stream = context.get_task_stream();
   potrf_template(cusolverDnZpotrf_bufferSize,

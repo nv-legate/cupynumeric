@@ -84,21 +84,21 @@ struct SolveImplBody<KIND, Type::Code::COMPLEX64> {
                   int32_t m,
                   int32_t n,
                   int32_t nrhs,
-                  const complex<float>* a_,
-                  const complex<float>* b_,
-                  complex<float>* x_)
+                  const legate::Complex<float>* a_,
+                  const legate::Complex<float>* b_,
+                  legate::Complex<float>* x_)
   {
     auto ipiv = create_buffer<int32_t>(std::min(m, n));
 
-    auto a_copy = create_buffer<complex<float>>(m * n);
-    std::memcpy(x_, b_, batchsize * m * nrhs * sizeof(complex<float>));
+    auto a_copy = create_buffer<legate::Complex<float>>(m * n);
+    std::memcpy(x_, b_, batchsize * m * nrhs * sizeof(legate::Complex<float>));
 
     auto a = reinterpret_cast<__complex__ float*>(a_copy.ptr(0));
     auto b = reinterpret_cast<__complex__ float*>(x_);
 
     int32_t info = 0;
     for (int i = 0; i < batchsize; ++i) {
-      std::memcpy(a_copy.ptr(0), a_ + i * m * n, m * n * sizeof(complex<float>));
+      std::memcpy(a_copy.ptr(0), a_ + i * m * n, m * n * sizeof(legate::Complex<float>));
       cgesv_(&n, &nrhs, a, &m, ipiv.ptr(0), b + i * m * nrhs, &n, &info);
       if (info != 0) {
         throw legate::TaskException(SolveTask::ERROR_MESSAGE);
@@ -116,21 +116,21 @@ struct SolveImplBody<KIND, Type::Code::COMPLEX128> {
                   int32_t m,
                   int32_t n,
                   int32_t nrhs,
-                  const complex<double>* a_,
-                  const complex<double>* b_,
-                  complex<double>* x_)
+                  const legate::Complex<double>* a_,
+                  const legate::Complex<double>* b_,
+                  legate::Complex<double>* x_)
   {
     auto ipiv = create_buffer<int32_t>(std::min(m, n));
 
-    auto a_copy = create_buffer<complex<double>>(m * n);
-    std::memcpy(x_, b_, batchsize * m * nrhs * sizeof(complex<double>));
+    auto a_copy = create_buffer<legate::Complex<double>>(m * n);
+    std::memcpy(x_, b_, batchsize * m * nrhs * sizeof(legate::Complex<double>));
 
     auto a = reinterpret_cast<__complex__ double*>(a_copy.ptr(0));
     auto b = reinterpret_cast<__complex__ double*>(x_);
 
     int32_t info = 0;
     for (int i = 0; i < batchsize; ++i) {
-      std::memcpy(a_copy.ptr(0), a_ + i * m * n, m * n * sizeof(complex<double>));
+      std::memcpy(a_copy.ptr(0), a_ + i * m * n, m * n * sizeof(legate::Complex<double>));
       zgesv_(&n, &nrhs, a, &m, ipiv.ptr(0), b + i * m * nrhs, &n, &info);
       if (info != 0) {
         throw legate::TaskException(SolveTask::ERROR_MESSAGE);

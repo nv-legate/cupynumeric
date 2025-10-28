@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "mathtypes/half.h"
+#include "legate/type/half.h"
 
 namespace cupynumeric {
 
@@ -45,14 +45,17 @@ float* allocate_buffer(size_t size);
 
 // The following assume that the float array was created using allocate_buffer
 
-void half_vector_to_float(float* out, const __half* ptr, size_t n);
+void half_vector_to_float(float* out, const legate::Half* ptr, size_t n);
 
-void half_matrix_to_float(float* out, const __half* ptr, size_t m, size_t n, size_t pitch);
+void half_matrix_to_float(float* out, const legate::Half* ptr, size_t m, size_t n, size_t pitch);
 
 void half_tensor_to_float(
-  float* out, const __half* in, size_t ndim, const int64_t* shape, const int64_t* in_strides);
+  float* out, const legate::Half* in, size_t ndim, const int64_t* shape, const int64_t* in_strides);
 
-void float_tensor_to_half(
-  __half* out, const float* in, size_t ndim, const int64_t* shape, const int64_t* out_strides);
+void float_tensor_to_half(legate::Half* out,
+                          const float* in,
+                          size_t ndim,
+                          const int64_t* shape,
+                          const int64_t* out_strides);
 
 }  // namespace cupynumeric

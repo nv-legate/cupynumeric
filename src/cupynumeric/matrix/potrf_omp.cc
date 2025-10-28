@@ -51,9 +51,8 @@ void PotrfImplBody<VariantKind::OMP, Type::Code::FLOAT64>::operator()(double* ar
 }
 
 template <>
-void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX64>::operator()(complex<float>* array,
-                                                                        int32_t m,
-                                                                        int32_t n)
+void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX64>::operator()(
+  legate::Complex<float>* array, int32_t m, int32_t n)
 {
   char uplo    = 'L';
   int32_t info = 0;
@@ -64,9 +63,8 @@ void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX64>::operator()(complex<
 }
 
 template <>
-void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX128>::operator()(complex<double>* array,
-                                                                         int32_t m,
-                                                                         int32_t n)
+void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX128>::operator()(
+  legate::Complex<double>* array, int32_t m, int32_t n)
 {
   char uplo    = 'L';
   int32_t info = 0;

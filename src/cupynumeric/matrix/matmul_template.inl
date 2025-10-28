@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <legate/redop/redop.h>
+
 // Useful for IDEs
 #include "cupynumeric/matrix/matmul.h"
 #include "cupynumeric/matrix/util.h"
@@ -43,11 +45,11 @@ struct support_matmul<Type::Code::FLOAT16> : std::true_type {
 };
 template <>
 struct support_matmul<Type::Code::COMPLEX64> : std::true_type {
-  using ACC_TYPE = complex<float>;
+  using ACC_TYPE = legate::Complex<float>;
 };
 template <>
 struct support_matmul<Type::Code::COMPLEX128> : std::true_type {
-  using ACC_TYPE = complex<double>;
+  using ACC_TYPE = legate::Complex<double>;
 };
 
 template <VariantKind KIND>

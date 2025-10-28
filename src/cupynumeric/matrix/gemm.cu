@@ -102,9 +102,9 @@ struct GemmImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit GemmImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<float>* lhs_,
-                  const complex<float>* rhs1_,
-                  const complex<float>* rhs2_,
+  void operator()(legate::Complex<float>* lhs_,
+                  const legate::Complex<float>* rhs1_,
+                  const legate::Complex<float>* rhs2_,
                   int32_t m,
                   int32_t n,
                   int32_t k)
@@ -123,9 +123,9 @@ struct GemmImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit GemmImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<double>* lhs_,
-                  const complex<double>* rhs1_,
-                  const complex<double>* rhs2_,
+  void operator()(legate::Complex<double>* lhs_,
+                  const legate::Complex<double>* rhs1_,
+                  const legate::Complex<double>* rhs2_,
                   int32_t m,
                   int32_t n,
                   int32_t k)

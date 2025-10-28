@@ -18,6 +18,7 @@
 
 // Useful for IDEs
 #include "cupynumeric/stat/bincount.h"
+#include "legate/redop/redop.h"
 
 namespace cupynumeric {
 

@@ -19,6 +19,8 @@
 #include "cupynumeric/cupynumeric_task.h"
 #include "cupynumeric/arg.h"
 #include "cupynumeric/arg.inl"
+#include "cupynumeric/binary/binary_op_util.h"
+#include "legate/type/half.h"
 
 #ifdef __NVCC__
 #include "thrust/complex.h"
@@ -28,6 +30,15 @@
 
 #include <math.h>
 #include <complex>
+
+// If legate didn't define Half (and it is an alias to CUDA __half) and we are on device, we
+// can use the builtin CUDA __half intrinsics. Technically in CUDA 13.0 we can also use the
+// intrinsics on host, but that's more complicated to detect.
+#if !LEGATE_DEFINED(LEGATE_DEFINED_HALF) && LEGATE_DEFINED(LEGATE_DEVICE_COMPILE)
+#define CUPYNUMERIC_HAVE_HALF_INTRINSICS 1
+#else
+#define CUPYNUMERIC_HAVE_HALF_INTRINSICS 0
+#endif
 
 namespace cupynumeric {
 
@@ -240,7 +251,15 @@ struct UnaryOp<UnaryOpCode::ABSOLUTE, CODE> {
                              !std::is_integral<_T>::value>* = nullptr>
   constexpr _T operator()(const _T& x) const
   {
-    return static_cast<_T>(fabs(x));
+    if constexpr (std::is_same_v<_T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{fabs(static_cast<float>(x))};
+#else
+      return __habs(x);
+#endif
+    } else {
+      return static_cast<_T>(fabs(x));
+    }
   }
 };
 
@@ -278,7 +297,14 @@ struct UnaryOp<UnaryOpCode::ARCCOS, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return acos(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+      return legate::Half{acos(static_cast<float>(x))};
+    } else {
+      return acos(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -294,13 +320,13 @@ struct UnaryOp<UnaryOpCode::ARCCOSH, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::ARCCOSH, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{acosh(static_cast<float>(x))};
+    return legate::Half{acosh(static_cast<float>(x))};
   }
 };
 
@@ -311,7 +337,14 @@ struct UnaryOp<UnaryOpCode::ARCSIN, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return asin(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+      return legate::Half{asin(static_cast<float>(x))};
+    } else {
+      return asin(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -327,13 +360,13 @@ struct UnaryOp<UnaryOpCode::ARCSINH, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::ARCSINH, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{asinh(static_cast<float>(x))};
+    return legate::Half{asinh(static_cast<float>(x))};
   }
 };
 
@@ -344,7 +377,14 @@ struct UnaryOp<UnaryOpCode::ARCTAN, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return atan(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+      return legate::Half{atan(static_cast<float>(x))};
+    } else {
+      return atan(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -360,13 +400,13 @@ struct UnaryOp<UnaryOpCode::ARCTANH, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::ARCTANH, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{atanh(static_cast<float>(x))};
+    return legate::Half{atanh(static_cast<float>(x))};
   }
 };
 
@@ -383,13 +423,13 @@ struct UnaryOp<UnaryOpCode::CBRT, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::CBRT, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{cbrt(static_cast<float>(x))};
+    return legate::Half{cbrt(static_cast<float>(x))};
   }
 };
 
@@ -400,7 +440,18 @@ struct UnaryOp<UnaryOpCode::CEIL, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return ceil(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{ceil(static_cast<float>(x))};
+#else
+      return hceil(x);
+#endif
+    } else {
+      return ceil(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -457,7 +508,18 @@ struct UnaryOp<UnaryOpCode::COS, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return cos(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{cos(static_cast<float>(x))};
+#else
+      return hcos(x);
+#endif
+    } else {
+      return cos(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -473,13 +535,13 @@ struct UnaryOp<UnaryOpCode::COSH, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::COSH, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{cosh(static_cast<float>(x))};
+    return legate::Half{cosh(static_cast<float>(x))};
   }
 };
 
@@ -496,13 +558,13 @@ struct UnaryOp<UnaryOpCode::DEG2RAD, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::DEG2RAD, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{static_cast<float>(x) * static_cast<float>(M_PI / 180.0)};
+    return legate::Half{static_cast<float>(x) * static_cast<float>(M_PI / 180.0)};
   }
 };
 
@@ -513,7 +575,18 @@ struct UnaryOp<UnaryOpCode::EXP, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return exp(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{exp(static_cast<float>(x))};
+#else
+      return hexp(x);
+#endif
+    } else {
+      return exp(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -547,13 +620,17 @@ struct UnaryOp<UnaryOpCode::EXP2, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::EXP2, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{exp2(static_cast<float>(x))};
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+    return legate::Half{exp2(static_cast<float>(x))};
+#else
+    return hexp2(x);
+#endif
   }
 };
 
@@ -583,13 +660,13 @@ struct UnaryOp<UnaryOpCode::EXPM1, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::EXPM1, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{expm1(static_cast<float>(x))};
+    return legate::Half{expm1(static_cast<float>(x))};
   }
 };
 
@@ -600,7 +677,18 @@ struct UnaryOp<UnaryOpCode::FLOOR, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return floor(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{floor(static_cast<float>(x))};
+#else
+      return hfloor(x);
+#endif
+    } else {
+      return floor(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -654,12 +742,15 @@ struct UnaryOp<UnaryOpCode::ISFINITE, CODE> {
   }
 
   template <typename _T>
-  __CUDA_HD__ bool operator()(const complex<_T>& x) const
+  __CUDA_HD__ bool operator()(const legate::Complex<_T>& x) const
   {
     return isfinite(x.imag()) && isfinite(x.real());
   }
 
-  __CUDA_HD__ bool operator()(const __half& x) const { return isfinite(static_cast<float>(x)); }
+  __CUDA_HD__ bool operator()(const legate::Half& x) const
+  {
+    return isfinite(static_cast<float>(x));
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -682,12 +773,12 @@ struct UnaryOp<UnaryOpCode::ISINF, CODE> {
   }
 
   template <typename _T>
-  __CUDA_HD__ bool operator()(const complex<_T>& x) const
+  __CUDA_HD__ bool operator()(const legate::Complex<_T>& x) const
   {
     return isinf(x.imag()) || isinf(x.real());
   }
 
-  __CUDA_HD__ bool operator()(const __half& x) const { return isinf(static_cast<float>(x)); }
+  __CUDA_HD__ bool operator()(const legate::Half& x) const { return isinf(static_cast<float>(x)); }
 };
 
 template <legate::Type::Code CODE>
@@ -710,12 +801,12 @@ struct UnaryOp<UnaryOpCode::ISNAN, CODE> {
   }
 
   template <typename _T>
-  __CUDA_HD__ bool operator()(const complex<_T>& x) const
+  __CUDA_HD__ bool operator()(const legate::Complex<_T>& x) const
   {
     return isnan(x.imag()) || isnan(x.real());
   }
 
-  __CUDA_HD__ bool operator()(const __half& x) const { return isnan(x); }
+  __CUDA_HD__ bool operator()(const legate::Half& x) const { return isnan(static_cast<float>(x)); }
 };
 
 template <legate::Type::Code CODE>
@@ -726,7 +817,18 @@ struct UnaryOp<UnaryOpCode::LOG, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return log(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{log(static_cast<float>(x))};
+#else
+      return hlog(x);
+#endif
+    } else {
+      return log(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -743,13 +845,17 @@ struct UnaryOp<UnaryOpCode::LOG10, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::LOG10, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{log10f(static_cast<float>(x))};
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+    return legate::Half{log10f(static_cast<float>(x))};
+#else
+    return hlog10(x);
+#endif
   }
 };
 
@@ -777,13 +883,13 @@ struct UnaryOp<UnaryOpCode::LOG1P, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::LOG1P, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{log1pf(static_cast<float>(x))};
+    return legate::Half{log1pf(static_cast<float>(x))};
   }
 };
 
@@ -811,13 +917,17 @@ struct UnaryOp<UnaryOpCode::LOG2, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::LOG2, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{log2f(static_cast<float>(x))};
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+    return legate::Half{log2f(static_cast<float>(x))};
+#else
+    return hlog2(x);
+#endif
   }
 };
 
@@ -864,13 +974,13 @@ struct UnaryOp<UnaryOpCode::RAD2DEG, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::RAD2DEG, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{static_cast<float>(x) * static_cast<float>(180.0 / M_PI)};
+    return legate::Half{static_cast<float>(x) * static_cast<float>(180.0 / M_PI)};
   }
 };
 
@@ -900,14 +1010,14 @@ struct UnaryOp<UnaryOpCode::RECIPROCAL, CODE> {
 
 template <>
 struct UnaryOp<UnaryOpCode::RECIPROCAL, legate::Type::Code::FLOAT16> {
-  using T                     = __half;
+  using T                     = legate::Half;
   static constexpr bool valid = true;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return static_cast<float>(x) != 0 ? __half{1} / x : __half{0};
+    return static_cast<float>(x) != 0 ? legate::Half{1} / x : legate::Half{0};
   }
 };
 
@@ -934,13 +1044,17 @@ struct UnaryOp<UnaryOpCode::RINT, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::RINT, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{rint(static_cast<float>(x))};
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+    return legate::Half{rint(static_cast<float>(x))};
+#else
+    return hrint(x);
+#endif
   }
 };
 
@@ -983,28 +1097,28 @@ struct UnaryOp<UnaryOpCode::ROUND, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::ROUND, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args)
     // args[0] is original signed decimals, which is needed for sign comparison
     // args[1] is pre-multiplied factor 10**abs(decimals) to avoid calling std::pow here
-    : decimals{args[0].value<int64_t>()}, factor{args[1].value<int64_t>()}
+    : decimals{args[0].value<int64_t>()}, factor{static_cast<float>(args[1].value<int64_t>())}
   {
     LEGATE_ASSERT(args.size() == 2);
   }
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
     if (decimals < 0) {
-      return static_cast<__half>(rint(static_cast<float>(x) / factor) * factor);
+      return static_cast<legate::Half>(rint(static_cast<float>(x) / factor) * factor);
     } else {
-      __half fh = static_cast<__half>(factor);
-      return static_cast<__half>(rint(static_cast<float>(x * fh)) / factor);
+      legate::Half fh = static_cast<legate::Half>(factor);
+      return static_cast<legate::Half>(rint(static_cast<float>(x * fh)) / factor);
     }
   }
 
   int64_t decimals;
-  int64_t factor;
+  float factor;
 };
 
 namespace detail {
@@ -1050,13 +1164,13 @@ struct UnaryOp<UnaryOpCode::SIGN, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::SIGN, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{detail::sign(static_cast<float>(x))};
+    return legate::Half{detail::sign(static_cast<float>(x))};
   }
 };
 
@@ -1079,11 +1193,11 @@ struct UnaryOp<UnaryOpCode::SIGNBIT, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::SIGNBIT, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ bool operator()(const __half& x) const
+  __CUDA_HD__ bool operator()(const legate::Half& x) const
   {
     // the signbit function is not directly supported by CUDA ,
     // so using one from std
@@ -1099,7 +1213,18 @@ struct UnaryOp<UnaryOpCode::SIN, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return sin(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{sin(static_cast<float>(x))};
+#else
+      return hsin(x);
+#endif
+    } else {
+      return sin(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -1115,13 +1240,13 @@ struct UnaryOp<UnaryOpCode::SINH, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::SINH, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{sinh(static_cast<float>(x))};
+    return legate::Half{sinh(static_cast<float>(x))};
   }
 };
 
@@ -1152,7 +1277,18 @@ struct UnaryOp<UnaryOpCode::SQRT, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return sqrt(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+      return legate::Half{sqrt(static_cast<float>(x))};
+#else
+      return hsqrt(x);
+#endif
+    } else {
+      return sqrt(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -1162,7 +1298,14 @@ struct UnaryOp<UnaryOpCode::TAN, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return tan(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+      return legate::Half{tan(static_cast<float>(x))};
+    } else {
+      return tan(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -1172,7 +1315,14 @@ struct UnaryOp<UnaryOpCode::TANH, CODE> {
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  constexpr decltype(auto) operator()(const T& x) const { return tanh(x); }
+  constexpr decltype(auto) operator()(const T& x) const
+  {
+    if constexpr (std::is_same_v<T, legate::Half>) {
+      return legate::Half{tanh(static_cast<float>(x))};
+    } else {
+      return tanh(x);
+    }
+  }
 };
 
 template <legate::Type::Code CODE>
@@ -1188,13 +1338,17 @@ struct UnaryOp<UnaryOpCode::TRUNC, CODE> {
 template <>
 struct UnaryOp<UnaryOpCode::TRUNC, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using T                     = __half;
+  using T                     = legate::Half;
 
   UnaryOp(const std::vector<legate::Scalar>& args) {}
 
-  __CUDA_HD__ __half operator()(const __half& x) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& x) const
   {
-    return __half{trunc(static_cast<float>(x))};
+#if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
+    return legate::Half{trunc(static_cast<float>(x))};
+#else
+    return htrunc(x);
+#endif
   }
 };
 
@@ -1210,19 +1364,26 @@ struct MultiOutUnaryOp<UnaryOpCode::FREXP, CODE> {
   using RHS2                  = int32_t;
   using LHS                   = RHS1;
 
-  __CUDA_HD__ LHS operator()(const RHS1& rhs1, RHS2* rhs2) const { return frexp(rhs1, rhs2); }
+  __CUDA_HD__ LHS operator()(const RHS1& rhs1, RHS2* rhs2) const
+  {
+    if constexpr (std::is_same_v<RHS1, legate::Half>) {
+      return legate::Half{frexp(rhs1, rhs2)};
+    } else {
+      return frexp(rhs1, rhs2);
+    }
+  }
 };
 
 template <>
 struct MultiOutUnaryOp<UnaryOpCode::FREXP, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using RHS1                  = __half;
+  using RHS1                  = legate::Half;
   using RHS2                  = int32_t;
-  using LHS                   = __half;
+  using LHS                   = legate::Half;
 
   __CUDA_HD__ LHS operator()(const RHS1& rhs1, RHS2* rhs2) const
   {
-    return static_cast<__half>(frexp(static_cast<float>(rhs1), rhs2));
+    return static_cast<legate::Half>(frexp(static_cast<float>(rhs1), rhs2));
   }
 };
 
@@ -1239,16 +1400,16 @@ struct MultiOutUnaryOp<UnaryOpCode::MODF, CODE> {
 template <>
 struct MultiOutUnaryOp<UnaryOpCode::MODF, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
-  using RHS1                  = __half;
-  using RHS2                  = __half;
-  using LHS                   = __half;
+  using RHS1                  = legate::Half;
+  using RHS2                  = legate::Half;
+  using LHS                   = legate::Half;
 
   __CUDA_HD__ LHS operator()(const RHS1& rhs1, RHS2* rhs2) const
   {
     float tmp;
     float result = modf(static_cast<float>(rhs1), &tmp);
-    *rhs2        = static_cast<__half>(tmp);
-    return static_cast<__half>(result);
+    *rhs2        = static_cast<legate::Half>(tmp);
+    return static_cast<legate::Half>(result);
   }
 };
 

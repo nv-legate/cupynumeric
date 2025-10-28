@@ -155,23 +155,23 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int64_t n,
                   int64_t k,
                   bool full_matrices,
-                  const complex<float>* a,
-                  complex<float>* u,
+                  const legate::Complex<float>* a,
+                  legate::Complex<float>* u,
                   float* s,
-                  complex<float>* vh)
+                  legate::Complex<float>* vh)
   {
     auto stream = context.get_task_stream();
-    svd_template<complex<float>>(CUDA_C_32F,
-                                 CUDA_R_32F,
-                                 m,
-                                 n,
-                                 k,
-                                 full_matrices,
-                                 reinterpret_cast<const cuComplex*>(a),
-                                 reinterpret_cast<cuComplex*>(u),
-                                 s,
-                                 reinterpret_cast<cuComplex*>(vh),
-                                 stream);
+    svd_template<legate::Complex<float>>(CUDA_C_32F,
+                                         CUDA_R_32F,
+                                         m,
+                                         n,
+                                         k,
+                                         full_matrices,
+                                         reinterpret_cast<const cuComplex*>(a),
+                                         reinterpret_cast<cuComplex*>(u),
+                                         s,
+                                         reinterpret_cast<cuComplex*>(vh),
+                                         stream);
   }
 };
 
@@ -184,23 +184,23 @@ struct SvdImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int64_t n,
                   int64_t k,
                   bool full_matrices,
-                  const complex<double>* a,
-                  complex<double>* u,
+                  const legate::Complex<double>* a,
+                  legate::Complex<double>* u,
                   double* s,
-                  complex<double>* vh)
+                  legate::Complex<double>* vh)
   {
     auto stream = context.get_task_stream();
-    svd_template<complex<double>>(CUDA_C_64F,
-                                  CUDA_R_64F,
-                                  m,
-                                  n,
-                                  k,
-                                  full_matrices,
-                                  reinterpret_cast<const cuDoubleComplex*>(a),
-                                  reinterpret_cast<cuDoubleComplex*>(u),
-                                  s,
-                                  reinterpret_cast<cuDoubleComplex*>(vh),
-                                  stream);
+    svd_template<legate::Complex<double>>(CUDA_C_64F,
+                                          CUDA_R_64F,
+                                          m,
+                                          n,
+                                          k,
+                                          full_matrices,
+                                          reinterpret_cast<const cuDoubleComplex*>(a),
+                                          reinterpret_cast<cuDoubleComplex*>(u),
+                                          s,
+                                          reinterpret_cast<cuDoubleComplex*>(vh),
+                                          stream);
   }
 };
 

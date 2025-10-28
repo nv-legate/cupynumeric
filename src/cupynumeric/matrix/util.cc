@@ -14,10 +14,11 @@
  *
  */
 
+#include "legate_defines.h"
+#include "legate/type/half.h"
 #include "legate/data/buffer.h"
 #include "cupynumeric/matrix/util.h"
 #include "legate/utilities/macros.h"
-#include "legate_defines.h"
 
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
 #include <omp.h>
@@ -83,7 +84,7 @@ float* allocate_buffer(size_t size)
   return buffer.ptr(0);
 }
 
-void half_vector_to_float(float* out, const __half* ptr, size_t n)
+void half_vector_to_float(float* out, const legate::Half* ptr, size_t n)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
   if (legate::Processor::get_executing_processor().kind() == legate::Processor::OMP_PROC) {
@@ -99,7 +100,7 @@ void half_vector_to_float(float* out, const __half* ptr, size_t n)
   }
 }
 
-void half_matrix_to_float(float* out, const __half* ptr, size_t m, size_t n, size_t pitch)
+void half_matrix_to_float(float* out, const legate::Half* ptr, size_t m, size_t n, size_t pitch)
 {
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
   if (legate::Processor::get_executing_processor().kind() == legate::Processor::OMP_PROC) {
@@ -120,7 +121,7 @@ void half_matrix_to_float(float* out, const __half* ptr, size_t m, size_t n, siz
 }
 
 void half_tensor_to_float(
-  float* out, const __half* in, size_t ndim, const int64_t* shape, const int64_t* in_strides)
+  float* out, const legate::Half* in, size_t ndim, const int64_t* shape, const int64_t* in_strides)
 {
   int64_t volume = calculate_volume(ndim, shape);
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)
@@ -140,7 +141,7 @@ void half_tensor_to_float(
 }
 
 void float_tensor_to_half(
-  __half* out, const float* in, size_t ndim, const int64_t* shape, const int64_t* out_strides)
+  legate::Half* out, const float* in, size_t ndim, const int64_t* shape, const int64_t* out_strides)
 {
   int64_t volume = calculate_volume(ndim, shape);
 #if LEGATE_DEFINED(LEGATE_USE_OPENMP)

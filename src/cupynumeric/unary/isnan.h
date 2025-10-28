@@ -17,6 +17,10 @@
 #pragma once
 
 #include "legate/utilities/typedefs.h"
+#include "legate/type/complex.h"
+#include "legate/type/half.h"
+
+#include <complex>
 
 namespace cupynumeric {
 
@@ -33,15 +37,21 @@ __CUDA_HD__ bool is_nan(const T& x)
 }
 
 template <typename T>
-__CUDA_HD__ bool is_nan(const complex<T>& x)
+__CUDA_HD__ bool is_nan(const legate::Complex<T>& x)
 {
   return std::isnan(x.imag()) || std::isnan(x.real());
 }
 
-__CUDA_HD__ inline bool is_nan(const __half& x)
+template <typename T>
+__CUDA_HD__ bool is_nan(const std::complex<T>& x)
+{
+  return std::isnan(x.imag()) || std::isnan(x.real());
+}
+
+__CUDA_HD__ inline bool is_nan(const legate::Half& x)
 {
   using std::isnan;
-  return isnan(x);
+  return isnan(static_cast<float>(x));
 }
 
 }  // namespace cupynumeric

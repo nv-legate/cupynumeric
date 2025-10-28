@@ -137,8 +137,8 @@ struct MatVecMulImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
   void operator()(size_t m,
                   size_t n,
                   float* lhs,
-                  const __half* mat,
-                  const __half* vec,
+                  const legate::Half* mat,
+                  const legate::Half* vec,
                   size_t mat_stride,
                   bool transpose_mat,
                   bool lhs_overwritable)
@@ -181,9 +181,9 @@ struct MatVecMulImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
 
   void operator()(size_t m,
                   size_t n,
-                  complex<float>* lhs_,
-                  const complex<float>* mat_,
-                  const complex<float>* vec_,
+                  legate::Complex<float>* lhs_,
+                  const legate::Complex<float>* mat_,
+                  const legate::Complex<float>* vec_,
                   size_t mat_stride,
                   bool transpose_mat,
                   bool lhs_overwritable)
@@ -239,9 +239,9 @@ struct MatVecMulImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
 
   void operator()(size_t m,
                   size_t n,
-                  complex<double>* lhs_,
-                  const complex<double>* mat_,
-                  const complex<double>* vec_,
+                  legate::Complex<double>* lhs_,
+                  const legate::Complex<double>* mat_,
+                  const legate::Complex<double>* vec_,
                   size_t mat_stride,
                   bool transpose_mat,
                   bool lhs_overwritable)

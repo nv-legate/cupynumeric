@@ -276,7 +276,7 @@ struct UnaryRedOp<UnaryRedCode::SUM_SQUARES, TYPE_CODE> {
 
   using RHS = legate::type_of<TYPE_CODE>;
   using VAL = RHS;
-  using OP  = Legion::SumReduction<VAL>;
+  using OP  = legate::SumReduction<VAL>;
 
   template <bool EXCLUSIVE>
   __CUDA_HD__ static void fold(VAL& a, VAL b)
@@ -299,7 +299,7 @@ struct UnaryRedOp<UnaryRedCode::VARIANCE, TYPE_CODE> {
 
   using RHS = legate::type_of<TYPE_CODE>;
   using VAL = RHS;
-  using OP  = Legion::SumReduction<VAL>;
+  using OP  = legate::SumReduction<VAL>;
 
   template <bool EXCLUSIVE>
   __CUDA_HD__ static void fold(VAL& a, VAL b)

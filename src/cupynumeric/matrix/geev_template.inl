@@ -41,15 +41,15 @@ struct support_geev<Type::Code::COMPLEX128> : std::true_type {};
 
 template <Type::Code CODE>
 struct complex_type {
-  using TYPE = complex<float>;
+  using TYPE = Complex<float>;
 };
 template <>
 struct complex_type<Type::Code::FLOAT64> {
-  using TYPE = complex<double>;
+  using TYPE = Complex<double>;
 };
 template <>
 struct complex_type<Type::Code::COMPLEX128> {
-  using TYPE = complex<double>;
+  using TYPE = Complex<double>;
 };
 
 template <VariantKind KIND>

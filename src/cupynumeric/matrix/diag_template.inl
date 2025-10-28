@@ -19,6 +19,7 @@
 // Useful for IDEs
 #include "cupynumeric/matrix/diag.h"
 #include "cupynumeric/pitches.h"
+#include "legate/redop/redop.h"
 
 namespace cupynumeric {
 

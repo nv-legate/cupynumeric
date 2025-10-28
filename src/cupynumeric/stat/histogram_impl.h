@@ -34,7 +34,7 @@ struct lower_bound_op_t {
     // (<) is to be replaced by (<=):
     //
     auto sentinel = p_bins_[n_intervs_];
-    if constexpr (std::is_same_v<elem_t, __half> && (!std::is_integral_v<bin_t>)) {
+    if constexpr (std::is_same_v<elem_t, legate::Half> && (!std::is_integral_v<bin_t>)) {
       // upcast to bin_t:
       //
       bin_t left_up = static_cast<bin_t>(left);
@@ -43,7 +43,7 @@ struct lower_bound_op_t {
       } else {
         return left_up < right;
       }
-    } else if constexpr (std::is_same_v<elem_t, __half> && std::is_integral_v<bin_t>) {
+    } else if constexpr (std::is_same_v<elem_t, legate::Half> && std::is_integral_v<bin_t>) {
       // upcast to elem_t:
       //
       if (right == sentinel) {

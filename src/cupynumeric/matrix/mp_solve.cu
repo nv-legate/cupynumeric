@@ -214,9 +214,9 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int64_t n,
                   int64_t nrhs,
                   int64_t nb,
-                  complex<float>* a_array,
+                  legate::Complex<float>* a_array,
                   int64_t llda,
-                  complex<float>* b_array,
+                  legate::Complex<float>* b_array,
                   int64_t lldb)
   {
     auto stream = context.get_task_stream();
@@ -246,9 +246,9 @@ struct MpSolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int64_t n,
                   int64_t nrhs,
                   int64_t nb,
-                  complex<double>* a_array,
+                  legate::Complex<double>* a_array,
                   int64_t llda,
-                  complex<double>* b_array,
+                  legate::Complex<double>* b_array,
                   int64_t lldb)
   {
     auto stream = context.get_task_stream();

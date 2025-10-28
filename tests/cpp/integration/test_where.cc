@@ -98,11 +98,11 @@ TEST(Where, Type)
   auto X_BOOL                 = mk_array<bool>({true, false, true, false}, shape);
   auto X_INT                  = mk_array<int32_t>({1, 2, 3, 4}, shape);
   auto X_FLOAT                = mk_array<float>({1, 2, 3, 4}, shape);
-  auto X_COMPLEX128           = mk_array<complex<double>>({1, 2, 3, 4}, shape);
+  auto X_COMPLEX128           = mk_array<legate::Complex<double>>({1, 2, 3, 4}, shape);
   auto Y_BOOL                 = mk_array<bool>({false, true, true, false}, shape);
   auto Y_INT                  = mk_array<int32_t>({9, 8, 7, 6}, shape);
   auto Y_FLOAT                = mk_array<float>({9, 8, 7, 6}, shape);
-  auto Y_COMPLEX128           = mk_array<complex<double>>({9, 8, 7, 6}, shape);
+  auto Y_COMPLEX128           = mk_array<legate::Complex<double>>({9, 8, 7, 6}, shape);
 
   test_where_full<bool>(A, X_BOOL, Y_BOOL, {true, true, true, false}, shape);
 
@@ -116,13 +116,13 @@ TEST(Where, Type)
   test_where_full<float>(A, Y_FLOAT, X_BOOL, {9, 0, 7, 6}, shape);
   test_where_full<float>(A, Y_FLOAT, X_INT, {9, 2, 7, 6}, shape);
 
-  test_where_full<complex<double>>(A, X_BOOL, Y_COMPLEX128, {1, 8, 1, 0}, shape);
-  test_where_full<complex<double>>(A, X_INT, Y_COMPLEX128, {1, 8, 3, 4}, shape);
-  test_where_full<complex<double>>(A, X_FLOAT, Y_COMPLEX128, {1, 8, 3, 4}, shape);
-  test_where_full<complex<double>>(A, X_COMPLEX128, Y_COMPLEX128, {1, 8, 3, 4}, shape);
-  test_where_full<complex<double>>(A, Y_COMPLEX128, X_BOOL, {9, 0, 7, 6}, shape);
-  test_where_full<complex<double>>(A, Y_COMPLEX128, X_INT, {9, 2, 7, 6}, shape);
-  test_where_full<complex<double>>(A, Y_COMPLEX128, X_FLOAT, {9, 2, 7, 6}, shape);
+  test_where_full<legate::Complex<double>>(A, X_BOOL, Y_COMPLEX128, {1, 8, 1, 0}, shape);
+  test_where_full<legate::Complex<double>>(A, X_INT, Y_COMPLEX128, {1, 8, 3, 4}, shape);
+  test_where_full<legate::Complex<double>>(A, X_FLOAT, Y_COMPLEX128, {1, 8, 3, 4}, shape);
+  test_where_full<legate::Complex<double>>(A, X_COMPLEX128, Y_COMPLEX128, {1, 8, 3, 4}, shape);
+  test_where_full<legate::Complex<double>>(A, Y_COMPLEX128, X_BOOL, {9, 0, 7, 6}, shape);
+  test_where_full<legate::Complex<double>>(A, Y_COMPLEX128, X_INT, {9, 2, 7, 6}, shape);
+  test_where_full<legate::Complex<double>>(A, Y_COMPLEX128, X_FLOAT, {9, 2, 7, 6}, shape);
 }
 
 TEST(Where, BroadcastShape)

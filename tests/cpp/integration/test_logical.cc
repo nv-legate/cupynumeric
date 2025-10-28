@@ -180,20 +180,23 @@ void test_all_basic()
   test_all_each_axis<double, 9, 3>(in_array6, expect_result6, legate::float64(), shape6, true);
 
   // Test complex type
-  std::array<complex<float>, 4> in_array7 = {
-    complex<float>(0, 1), complex<float>(1, 1), complex<float>(1, 0), complex<float>(0, 0)};
+  std::array<legate::Complex<float>, 4> in_array7       = {legate::Complex<float>(0, 1),
+                                                           legate::Complex<float>(1, 1),
+                                                           legate::Complex<float>(1, 0),
+                                                           legate::Complex<float>(0, 0)};
   std::map<int32_t, std::array<bool, 2>> expect_result7 = {{0, {true, false}}, {1, {true, false}}};
   std::vector<uint64_t> shape7                          = {2, 2};
-  test_all_each_axis<complex<float>, 4, 2>(in_array7, expect_result7, legate::complex64(), shape7);
-  test_all_each_axis<complex<float>, 4, 2>(
+  test_all_each_axis<legate::Complex<float>, 4, 2>(
+    in_array7, expect_result7, legate::complex64(), shape7);
+  test_all_each_axis<legate::Complex<float>, 4, 2>(
     in_array7, expect_result7, legate::complex64(), shape7, true);
 
-  std::array<complex<double>, 1> in_array8              = {complex<double>(0, 1)};
+  std::array<legate::Complex<double>, 1> in_array8      = {legate::Complex<double>(0, 1)};
   std::map<int32_t, std::array<bool, 1>> expect_result8 = {{0, {true}}};
   std::vector<uint64_t> shape8                          = {1};
-  test_all_each_axis<complex<double>, 1, 1>(
+  test_all_each_axis<legate::Complex<double>, 1, 1>(
     in_array8, expect_result8, legate::complex128(), shape8);
-  test_all_each_axis<complex<double>, 1, 1>(
+  test_all_each_axis<legate::Complex<double>, 1, 1>(
     in_array8, expect_result8, legate::complex128(), shape8, true);
 }
 
@@ -262,10 +265,12 @@ void test_all_out_input()
   std::array<double, 4> expect_val2 = {0.0, 1.0, 1.0, 1.0};
   test_all<int32_t, double, 8, 4, 3, 2>(in_array, expect_val2, legate::int32(), shape, axis, out2);
 
-  auto out3                                 = cupynumeric::zeros(out_shape, legate::complex64());
-  std::array<complex<float>, 4> expect_val3 = {
-    complex<float>(0, 0), complex<float>(1, 0), complex<float>(1, 0), complex<float>(1, 0)};
-  test_all<int32_t, complex<float>, 8, 4, 3, 2>(
+  auto out3 = cupynumeric::zeros(out_shape, legate::complex64());
+  std::array<legate::Complex<float>, 4> expect_val3 = {legate::Complex<float>(0, 0),
+                                                       legate::Complex<float>(1, 0),
+                                                       legate::Complex<float>(1, 0),
+                                                       legate::Complex<float>(1, 0)};
+  test_all<int32_t, legate::Complex<float>, 8, 4, 3, 2>(
     in_array, expect_val3, legate::int32(), shape, axis, out3);
 
   auto out4                       = cupynumeric::zeros(out_shape, legate::bool_());
@@ -364,11 +369,12 @@ void test_all_large_array()
   test_all<double, bool, count, 1, 1, 1>(in_array2, expect_val, legate::float64(), shape);
 
   // Test complex type
-  std::array<complex<float>, count> in_array3;
+  std::array<legate::Complex<float>, count> in_array3;
   for (int32_t i = 0; i < count; i++) {
-    in_array3[i] = complex<float>(i + 1, i + 1);
+    in_array3[i] = legate::Complex<float>(i + 1, i + 1);
   }
-  test_all<complex<float>, bool, count, 1, 1, 1>(in_array3, expect_val, legate::complex64(), shape);
+  test_all<legate::Complex<float>, bool, count, 1, 1, 1>(
+    in_array3, expect_val, legate::complex64(), shape);
 }
 
 void test_all_invalid_axis()

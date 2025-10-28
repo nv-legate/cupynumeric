@@ -267,9 +267,10 @@ void test_amin_invalid_array()
   EXPECT_THROW(cupynumeric::amin(arr_emp), std::invalid_argument);
 
   // Test complex array (not supported now)
-  std::vector<complex<float>> arr2 = {complex<float>(0, 1), complex<float>(1, 1)};
-  std::vector<uint64_t> shape2     = {2};
-  auto arr_comp                    = cupynumeric::mk_array<complex<float>>(arr2, shape2);
+  std::vector<legate::Complex<float>> arr2 = {legate::Complex<float>(0, 1),
+                                              legate::Complex<float>(1, 1)};
+  std::vector<uint64_t> shape2             = {2};
+  auto arr_comp = cupynumeric::mk_array<legate::Complex<float>>(arr2, shape2);
   EXPECT_THROW(cupynumeric::amin(arr_comp), std::runtime_error);
 }
 

@@ -18,6 +18,44 @@
 
 #include "cupynumeric/cupynumeric_task.h"
 #include "cupynumeric/ndarray.h"
+#include "legate/type/half.h"
+#include "legate/type/complex.h"
+
+#include <cuda/std/functional>
+
+// If legate::Complex isn't cuda::std::complex then the following namespace injections don't
+// work.
+static_assert(std::is_same_v<legate::Complex<float>, ::cuda::std::complex<float>>);
+
+namespace cuda::std {
+
+template <typename T>
+__CUDA_HD__ constexpr bool operator<(const legate::Complex<T>& a, const legate::Complex<T>& b)
+{
+  return (a.real() < b.real()) || (!(b.real() < a.real()) && (a.imag() < b.imag()));
+}
+
+template <typename T>
+__CUDA_HD__ constexpr bool operator<=(const legate::Complex<T>& a, const legate::Complex<T>& b)
+{
+  return !(b < a);
+}
+
+template <typename T>
+__CUDA_HD__ constexpr bool operator>(const legate::Complex<T>& a, const legate::Complex<T>& b)
+{
+  return b < a;
+}
+
+template <typename T>
+__CUDA_HD__ constexpr bool operator>=(const legate::Complex<T>& a, const legate::Complex<T>& b)
+{
+  return !(a < b);
+}
+
+}  // namespace cuda::std
+
+#include <functional>
 
 #include <type_traits>
 
@@ -144,11 +182,11 @@ constexpr decltype(auto) op_dispatch(BinaryOpCode op_code, Functor f, Fnargs&&..
 }
 
 template <typename FloatFunc>
-__CUDA_HD__ __half lift(const __half& _a, const __half& _b, FloatFunc func)
+__CUDA_HD__ legate::Half lift(const legate::Half& _a, const legate::Half& _b, FloatFunc func)
 {
   float a = _a;
   float b = _b;
-  return __half{func(a, b)};
+  return legate::Half{func(a, b)};
 }
 
 template <typename Functor, typename... Fnargs>
@@ -165,7 +203,7 @@ constexpr decltype(auto) reduce_op_dispatch(BinaryOpCode op_code, Functor f, Fna
   return f.template operator()<BinaryOpCode::EQUAL>(std::forward<Fnargs>(args)...);
 }
 
-template <BinaryOpCode OP_CODE, legate::Type::Code CODE>
+template <BinaryOpCode OP_CODE, legate::Type::Code CODE, typename = void>
 struct BinaryOp {
   static constexpr bool valid = false;
 };
@@ -196,7 +234,7 @@ struct BinaryOp<BinaryOpCode::ARCTAN2, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::ARCTAN2, legate::Type::Code::FLOAT32>{});
   }
@@ -257,11 +295,11 @@ struct BinaryOp<BinaryOpCode::COPYSIGN, CODE> {
 
 template <>
 struct BinaryOp<BinaryOpCode::COPYSIGN, legate::Type::Code::FLOAT16> {
-  using T                     = __half;
+  using T                     = legate::Half;
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::COPYSIGN, legate::Type::Code::FLOAT32>{});
   }
@@ -308,14 +346,15 @@ struct BinaryOp<BinaryOpCode::FLOAT_POWER, CODE> {
 
 template <>
 struct BinaryOp<BinaryOpCode::FLOAT_POWER, legate::Type::Code::COMPLEX64> {
-  using T                     = complex<float>;
+  using T                     = legate::Complex<float>;
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ complex<double> operator()(const complex<float>& a, const complex<float>& b) const
+  __CUDA_HD__ legate::Complex<double> operator()(const legate::Complex<float>& a,
+                                                 const legate::Complex<float>& b) const
   {
     using std::pow;
-    return pow(static_cast<complex<double>>(a), static_cast<complex<double>>(b));
+    return pow(static_cast<legate::Complex<double>>(a), static_cast<legate::Complex<double>>(b));
   }
 };
 
@@ -346,7 +385,7 @@ template <>
 struct BinaryOp<BinaryOpCode::FMOD, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::FMOD, legate::Type::Code::FLOAT32>{});
   }
@@ -419,6 +458,11 @@ struct BinaryOp<BinaryOpCode::FLOOR_DIVIDE, CODE> {
   {
     return floor(a / b);
   }
+
+  constexpr legate::Half operator()(const legate::Half& a, const legate::Half& b) const
+  {
+    return legate::Half{(*this)(static_cast<float>(a), static_cast<float>(b))};
+  }
 };
 
 template <>
@@ -466,7 +510,7 @@ struct BinaryOp<BinaryOpCode::HYPOT, legate::Type::Code::FLOAT16> {
 
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::HYPOT, legate::Type::Code::FLOAT32>{});
   }
@@ -489,11 +533,14 @@ struct BinaryOp<BinaryOpCode::ISCLOSE, CODE> {
   {
     using std::fabs;
     using std::isinf;
-    if (isinf(a) || isinf(b)) {
+
+    const auto a_d = static_cast<double>(a);
+    const auto b_d = static_cast<double>(b);
+
+    if (isinf(a_d) || isinf(b_d)) {
       return a == b;
     }
-    return fabs(static_cast<double>(a) - static_cast<double>(b)) <=
-           atol_ + rtol_ * static_cast<double>(fabs(b));
+    return fabs(a_d - b_d) <= atol_ + rtol_ * fabs(b_d);
   }
 
   template <typename T = VAL, std::enable_if_t<legate::is_complex_type<T>::value>* = nullptr>
@@ -550,14 +597,14 @@ struct BinaryOp<BinaryOpCode::LDEXP, CODE> {
 
 template <>
 struct BinaryOp<BinaryOpCode::LDEXP, legate::Type::Code::FLOAT16> {
-  using T                     = __half;
+  using T                     = legate::Half;
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
   __CUDA_HD__ T operator()(const T& a, const int32_t& b) const
   {
     using std::ldexp;
-    return static_cast<__half>(ldexp(static_cast<float>(a), b));
+    return static_cast<legate::Half>(ldexp(static_cast<float>(a), b));
   }
 };
 
@@ -619,7 +666,7 @@ struct BinaryOp<BinaryOpCode::LOGADDEXP, legate::Type::Code::FLOAT16> {
 
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::LOGADDEXP, legate::Type::Code::FLOAT32>{});
   }
@@ -653,7 +700,7 @@ struct BinaryOp<BinaryOpCode::LOGADDEXP2, legate::Type::Code::FLOAT16> {
 
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::LOGADDEXP2, legate::Type::Code::FLOAT32>{});
   }
@@ -722,7 +769,7 @@ struct BinaryOp<BinaryOpCode::MAXIMUM, CODE> {
   using T                     = legate::type_of<CODE>;
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  constexpr T operator()(const T& a, const T& b) const { return std::max<T>(a, b); }
+  constexpr T operator()(const T& a, const T& b) const { return ::cuda::std::max(a, b); }
 };
 
 template <legate::Type::Code CODE>
@@ -730,7 +777,7 @@ struct BinaryOp<BinaryOpCode::MINIMUM, CODE> {
   using T                     = legate::type_of<CODE>;
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  constexpr T operator()(const T& a, const T& b) const { return std::min<T>(a, b); }
+  constexpr T operator()(const T& a, const T& b) const { return ::cuda::std::min(a, b); }
 };
 
 template <typename T>
@@ -780,7 +827,7 @@ template <>
 struct BinaryOp<BinaryOpCode::MOD, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::MOD, legate::Type::Code::FLOAT32>{});
   }
@@ -820,11 +867,11 @@ struct BinaryOp<BinaryOpCode::NEXTAFTER, CODE> {
 
 template <>
 struct BinaryOp<BinaryOpCode::NEXTAFTER, legate::Type::Code::FLOAT16> {
-  using T                     = __half;
+  using T                     = legate::Half;
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
 
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
   {
     return lift(a, b, BinaryOp<BinaryOpCode::NEXTAFTER, legate::Type::Code::FLOAT32>{});
   }
@@ -844,9 +891,9 @@ struct BinaryOp<BinaryOpCode::POWER, CODE> {
   constexpr VAL operator()(const VAL& a, const VAL& b) const
   {
     if constexpr (std::is_integral_v<std::decay_t<VAL>>) {
-      return cuda::std::round(cuda::std::pow(a, b));
+      return ::cuda::std::round(::cuda::std::pow(a, b));
     } else {
-      return cuda::std::pow(static_cast<double>(a), static_cast<double>(b));
+      return ::cuda::std::pow(static_cast<double>(a), static_cast<double>(b));
     }
   }
 };
@@ -855,14 +902,18 @@ template <>
 struct BinaryOp<BinaryOpCode::POWER, legate::Type::Code::FLOAT16> {
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  __CUDA_HD__ __half operator()(const __half& a, const __half& b) const { return pow(a, b); }
+  __CUDA_HD__ legate::Half operator()(const legate::Half& a, const legate::Half& b) const
+  {
+    return legate::Half{pow(static_cast<float>(a), static_cast<float>(b))};
+  }
 };
 
 template <>
 struct BinaryOp<BinaryOpCode::POWER, legate::Type::Code::COMPLEX64> {
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  __CUDA_HD__ complex<float> operator()(const complex<float>& a, const complex<float>& b) const
+  __CUDA_HD__ legate::Complex<float> operator()(const legate::Complex<float>& a,
+                                                const legate::Complex<float>& b) const
   {
     return pow(a, b);
   }
@@ -872,7 +923,8 @@ template <>
 struct BinaryOp<BinaryOpCode::POWER, legate::Type::Code::COMPLEX128> {
   static constexpr bool valid = true;
   BinaryOp(const std::vector<legate::Scalar>&) {}
-  __CUDA_HD__ complex<double> operator()(const complex<double>& a, const complex<double>& b) const
+  __CUDA_HD__ legate::Complex<double> operator()(const legate::Complex<double>& a,
+                                                 const legate::Complex<double>& b) const
   {
     return pow(a, b);
   }

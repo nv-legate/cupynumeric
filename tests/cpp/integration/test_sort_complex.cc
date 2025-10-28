@@ -26,113 +26,113 @@
 template <typename T>
 auto get_sort_complex_expect_result()
 {
-  std::vector<std::array<complex<T>, 12>> expect_result = {{complex<T>(1.5, 3.66),
-                                                            complex<T>(2, 4),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(6, 4),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(8, 11),
-                                                            complex<T>(10, 3),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(12, 5)},
-                                                           {complex<T>(1.5, 3.66),
-                                                            complex<T>(2, 4),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(6, 4),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(8, 11),
-                                                            complex<T>(10, 3),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(12, 5)},
-                                                           {complex<T>(10, 3),
-                                                            complex<T>(12, 5),
-                                                            complex<T>(2, 4),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(1.5, 3.66),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(8, 11),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(6, 4)},
-                                                           {complex<T>(2, 4),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(10, 3),
-                                                            complex<T>(12, 5),
-                                                            complex<T>(1.5, 3.66),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(6, 4),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(8, 11)},
-                                                           {complex<T>(10, 3),
-                                                            complex<T>(12, 5),
-                                                            complex<T>(2, 4),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(1.5, 3.66),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(8, 11),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(6, 4)},
-                                                           {complex<T>(10, 3),
-                                                            complex<T>(12, 5),
-                                                            complex<T>(2, 4),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(1.5, 3.66),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(8, 11),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(6, 4)},
-                                                           {complex<T>(1.5, 3.66),
-                                                            complex<T>(2, 4),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(6, 4),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(8, 11),
-                                                            complex<T>(10, 3),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(12, 5)},
-                                                           {complex<T>(2, 4),
-                                                            complex<T>(10, 3),
-                                                            complex<T>(12, 5),
-                                                            complex<T>(7, 6),
-                                                            complex<T>(8, 9),
-                                                            complex<T>(11, 1),
-                                                            complex<T>(1.5, 3.66),
-                                                            complex<T>(2.2, 10.5),
-                                                            complex<T>(6, 5.98),
-                                                            complex<T>(6, 4),
-                                                            complex<T>(7.9, 12),
-                                                            complex<T>(8, 11)}};
+  std::vector<std::array<legate::Complex<T>, 12>> expect_result = {{legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(6, 4),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(8, 11),
+                                                                    legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(12, 5)},
+                                                                   {legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(6, 4),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(8, 11),
+                                                                    legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(12, 5)},
+                                                                   {legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(12, 5),
+                                                                    legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(8, 11),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(6, 4)},
+                                                                   {legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(12, 5),
+                                                                    legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(6, 4),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(8, 11)},
+                                                                   {legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(12, 5),
+                                                                    legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(8, 11),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(6, 4)},
+                                                                   {legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(12, 5),
+                                                                    legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(8, 11),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(6, 4)},
+                                                                   {legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(6, 4),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(8, 11),
+                                                                    legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(12, 5)},
+                                                                   {legate::Complex<T>(2, 4),
+                                                                    legate::Complex<T>(10, 3),
+                                                                    legate::Complex<T>(12, 5),
+                                                                    legate::Complex<T>(7, 6),
+                                                                    legate::Complex<T>(8, 9),
+                                                                    legate::Complex<T>(11, 1),
+                                                                    legate::Complex<T>(1.5, 3.66),
+                                                                    legate::Complex<T>(2.2, 10.5),
+                                                                    legate::Complex<T>(6, 5.98),
+                                                                    legate::Complex<T>(6, 4),
+                                                                    legate::Complex<T>(7.9, 12),
+                                                                    legate::Complex<T>(8, 11)}};
   return expect_result;
 }
 
 template <typename T, int32_t SIZE>
 auto change_int_to_complex(const std::vector<std::array<int32_t, SIZE>>& input)
 {
-  std::vector<std::array<complex<T>, SIZE>> results;
+  std::vector<std::array<legate::Complex<T>, SIZE>> results;
   for (size_t i = 0; i < input.size(); i++) {
-    std::array<complex<T>, SIZE> result;
+    std::array<legate::Complex<T>, SIZE> result;
     for (size_t j = 0; j < input[i].size(); j++) {
-      result[j] = complex<T>(input[i][j], 0);
+      result[j] = legate::Complex<T>(input[i][j], 0);
     }
     results.push_back(result);
   }
@@ -255,55 +255,55 @@ void sort_complex_basic()
     {12}, {12, 1}, {3, 4}, {12, 1, 1}, {2, 2, 3}};
   std::array<int8_t, 12> in_array1 = {10, 3, 12, 5, 2, 4, 8, 9, 7, 6, 11, 1};
   auto expect_result1              = get_sort_complex_expect_result_from_int<float>();
-  sort_complex_basic_impl<int8_t, complex<float>, 12>(
+  sort_complex_basic_impl<int8_t, legate::Complex<float>, 12>(
     test_shapes_int, in_array1, expect_result1, legate::int8());
 
   // Test int16 type
   std::array<int16_t, 12> in_array2 = {10, 3, 12, 5, 2, 4, 8, 9, 7, 6, 11, 1};
   auto expect_result2               = get_sort_complex_expect_result_from_int<float>();
-  sort_complex_basic_impl<int16_t, complex<float>, 12>(
+  sort_complex_basic_impl<int16_t, legate::Complex<float>, 12>(
     test_shapes_int, in_array2, expect_result2, legate::int16());
 
   // Test int32 type
   std::array<int32_t, 12> int_array3 = {10, 3, 12, 5, 2, 4, 8, 9, 7, 6, 11, 1};
   auto expect_result3                = get_sort_complex_expect_result_from_int<double>();
-  sort_complex_basic_impl<int32_t, complex<double>, 12>(
+  sort_complex_basic_impl<int32_t, legate::Complex<double>, 12>(
     test_shapes_int, int_array3, expect_result3, legate::int32());
 
   // Test complex type
   std::vector<std::vector<uint64_t>> test_shapes = {
     {12}, {1, 12}, {12, 1}, {3, 4}, {12, 1, 1}, {1, 12, 1}, {1, 1, 12}, {2, 2, 3}};
 
-  std::array<complex<float>, 12> in_array4 = {complex<float>(10, 3),
-                                              complex<float>(12, 5),
-                                              complex<float>(2, 4),
-                                              complex<float>(8, 9),
-                                              complex<float>(7, 6),
-                                              complex<float>(11, 1),
-                                              complex<float>(1.5, 3.66),
-                                              complex<float>(6, 5.98),
-                                              complex<float>(2.2, 10.5),
-                                              complex<float>(8, 11),
-                                              complex<float>(7.9, 12),
-                                              complex<float>(6, 4)};
-  auto expect_result4                      = get_sort_complex_expect_result<float>();
-  sort_complex_basic_impl<complex<float>, complex<float>, 12>(
+  std::array<legate::Complex<float>, 12> in_array4 = {legate::Complex<float>(10, 3),
+                                                      legate::Complex<float>(12, 5),
+                                                      legate::Complex<float>(2, 4),
+                                                      legate::Complex<float>(8, 9),
+                                                      legate::Complex<float>(7, 6),
+                                                      legate::Complex<float>(11, 1),
+                                                      legate::Complex<float>(1.5, 3.66),
+                                                      legate::Complex<float>(6, 5.98),
+                                                      legate::Complex<float>(2.2, 10.5),
+                                                      legate::Complex<float>(8, 11),
+                                                      legate::Complex<float>(7.9, 12),
+                                                      legate::Complex<float>(6, 4)};
+  auto expect_result4                              = get_sort_complex_expect_result<float>();
+  sort_complex_basic_impl<legate::Complex<float>, legate::Complex<float>, 12>(
     test_shapes, in_array4, expect_result4, legate::complex64());
 
-  std::array<complex<double>, 12> in_array5 = {complex<double>(10, 3),
-                                               complex<double>(12, 5),
-                                               complex<double>(2, 4),
-                                               complex<double>(8, 9),
-                                               complex<double>(7, 6),
-                                               complex<double>(11, 1),
-                                               complex<double>(1.5, 3.66),
-                                               complex<double>(6, 5.98),
-                                               complex<double>(2.2, 10.5),
-                                               complex<double>(8, 11),
-                                               complex<double>(7.9, 12),
-                                               complex<double>(6, 4)};
-  auto expect_result5                       = get_sort_complex_expect_result<double>();
-  sort_complex_basic_impl<complex<double>, complex<double>, 12>(
+  std::array<legate::Complex<double>, 12> in_array5 = {legate::Complex<double>(10, 3),
+                                                       legate::Complex<double>(12, 5),
+                                                       legate::Complex<double>(2, 4),
+                                                       legate::Complex<double>(8, 9),
+                                                       legate::Complex<double>(7, 6),
+                                                       legate::Complex<double>(11, 1),
+                                                       legate::Complex<double>(1.5, 3.66),
+                                                       legate::Complex<double>(6, 5.98),
+                                                       legate::Complex<double>(2.2, 10.5),
+                                                       legate::Complex<double>(8, 11),
+                                                       legate::Complex<double>(7.9, 12),
+                                                       legate::Complex<double>(6, 4)};
+  auto expect_result5                               = get_sort_complex_expect_result<double>();
+  sort_complex_basic_impl<legate::Complex<double>, legate::Complex<double>, 12>(
     test_shapes, in_array5, expect_result5, legate::complex128());
 }
 
@@ -314,7 +314,7 @@ void sort_complex_basic_max_dim()
 #if LEGATE_MAX_DIM >= 4
   std::vector<std::vector<uint64_t>> test_shapes_4d = {{1, 1, 1, 16}, {16, 1, 1, 1}, {2, 2, 1, 4}};
   auto expect_result_4d                             = get_sort_complex_expect_result_4d();
-  sort_complex_basic_impl<int16_t, complex<float>, 16>(
+  sort_complex_basic_impl<int16_t, legate::Complex<float>, 16>(
     test_shapes_4d, in_array, expect_result_4d, legate::int16());
 #endif
 
@@ -322,7 +322,7 @@ void sort_complex_basic_max_dim()
   std::vector<std::vector<uint64_t>> test_shapes_5d = {
     {1, 1, 1, 1, 16}, {1, 16, 1, 1, 1}, {1, 2, 2, 1, 4}};
   auto expect_result_5d = get_sort_complex_expect_result_5d();
-  sort_complex_basic_impl<int16_t, complex<float>, 16>(
+  sort_complex_basic_impl<int16_t, legate::Complex<float>, 16>(
     test_shapes_5d, in_array, expect_result_5d, legate::int16());
 #endif
 
@@ -330,7 +330,7 @@ void sort_complex_basic_max_dim()
   std::vector<std::vector<uint64_t>> test_shapes_6d = {
     {1, 1, 1, 1, 1, 16}, {1, 1, 16, 1, 1, 1}, {2, 1, 1, 2, 2, 2}};
   auto expect_result_6d = get_sort_complex_expect_result_6d();
-  sort_complex_basic_impl<int16_t, complex<float>, 16>(
+  sort_complex_basic_impl<int16_t, legate::Complex<float>, 16>(
     test_shapes_6d, in_array, expect_result_6d, legate::int16());
 #endif
 
@@ -338,7 +338,7 @@ void sort_complex_basic_max_dim()
   std::vector<std::vector<uint64_t>> test_shapes_7d = {
     {1, 16, 1, 1, 1, 1, 1}, {4, 1, 2, 2, 1, 1, 1}, {2, 2, 1, 1, 2, 1, 2}};
   auto expect_result_7d = get_sort_complex_expect_result_7d();
-  sort_complex_basic_impl<int16_t, complex<float>, 16>(
+  sort_complex_basic_impl<int16_t, legate::Complex<float>, 16>(
     test_shapes_7d, in_array, expect_result_7d, legate::int16());
 #endif
 }
@@ -353,12 +353,12 @@ void sort_complex_large_array()
   for (int16_t i = 0; i < count; i++) {
     in_array1[i] = count - i;
   }
-  std::array<complex<float>, count> expect_val1;
+  std::array<legate::Complex<float>, count> expect_val1;
   for (int32_t j = 0; j < count; j++) {
-    expect_val1[j] = complex<float>(j + 1, 0);
+    expect_val1[j] = legate::Complex<float>(j + 1, 0);
   }
-  std::vector<std::array<complex<float>, count>> expect_result1 = {expect_val1};
-  sort_complex_basic_impl<int16_t, complex<float>, count>(
+  std::vector<std::array<legate::Complex<float>, count>> expect_result1 = {expect_val1};
+  sort_complex_basic_impl<int16_t, legate::Complex<float>, count>(
     test_shapes, in_array1, expect_result1, legate::int16());
 
   // Test int32 type for large array
@@ -366,25 +366,25 @@ void sort_complex_large_array()
   for (int32_t i = 0; i < count; i++) {
     in_array2[i] = count - i;
   }
-  std::array<complex<double>, count> expect_val2;
+  std::array<legate::Complex<double>, count> expect_val2;
   for (int32_t j = 0; j < count; j++) {
-    expect_val2[j] = complex<double>(j + 1, 0);
+    expect_val2[j] = legate::Complex<double>(j + 1, 0);
   }
-  std::vector<std::array<complex<double>, count>> expect_result2 = {expect_val2};
-  sort_complex_basic_impl<int32_t, complex<double>, count>(
+  std::vector<std::array<legate::Complex<double>, count>> expect_result2 = {expect_val2};
+  sort_complex_basic_impl<int32_t, legate::Complex<double>, count>(
     test_shapes, in_array2, expect_result2, legate::int32());
 
   // Test complex type
-  std::array<complex<float>, count> in_array3;
+  std::array<legate::Complex<float>, count> in_array3;
   for (int32_t i = 0; i < count; i++) {
-    in_array3[i] = complex<float>(count - i, count - i);
+    in_array3[i] = legate::Complex<float>(count - i, count - i);
   }
-  std::array<complex<float>, count> expect_val3;
+  std::array<legate::Complex<float>, count> expect_val3;
   for (int32_t j = 0; j < count; j++) {
-    expect_val3[j] = complex<float>(j + 1, j + 1);
+    expect_val3[j] = legate::Complex<float>(j + 1, j + 1);
   }
-  std::vector<std::array<complex<float>, count>> expect_result3 = {expect_val3};
-  sort_complex_basic_impl<complex<float>, complex<float>, count>(
+  std::vector<std::array<legate::Complex<float>, count>> expect_result3 = {expect_val3};
+  sort_complex_basic_impl<legate::Complex<float>, legate::Complex<float>, count>(
     test_shapes, in_array3, expect_result3, legate::complex64());
 }
 
@@ -393,19 +393,19 @@ void sort_complex_empty_array()
   std::vector<std::vector<uint64_t>> test_shapes = {
     {0}, {0, 1}, {1, 0}, {1, 0, 0}, {1, 1, 0}, {1, 0, 1}};
 
-  std::array<complex<float>, 0> in_array = {};
-  size_t test_shape_size                 = test_shapes.size();
+  std::array<legate::Complex<float>, 0> in_array = {};
+  size_t test_shape_size                         = test_shapes.size();
   for (size_t i = 0; i < test_shape_size; ++i) {
     auto test_shape = test_shapes[i];
     int32_t dim     = test_shape.size();
     if (dim == 1) {
-      test_sort_complex<complex<float>, complex<float>, 0, 1>(
+      test_sort_complex<legate::Complex<float>, legate::Complex<float>, 0, 1>(
         in_array, in_array, legate::complex64(), test_shape);
     } else if (dim == 2) {
-      test_sort_complex<complex<float>, complex<float>, 0, 2>(
+      test_sort_complex<legate::Complex<float>, legate::Complex<float>, 0, 2>(
         in_array, in_array, legate::complex64(), test_shape);
     } else {
-      test_sort_complex<complex<float>, complex<float>, 0, 3>(
+      test_sort_complex<legate::Complex<float>, legate::Complex<float>, 0, 3>(
         in_array, in_array, legate::complex64(), test_shape);
     }
   }
@@ -415,20 +415,20 @@ void sort_complex_single_item_array()
 {
   std::vector<std::vector<uint64_t>> test_shapes = {{1}, {1, 1}, {1, 1, 1}};
 
-  std::array<double, 1> in_array               = {12};
-  std::array<complex<double>, 1> expect_result = {complex<double>(12, 0)};
-  size_t test_shape_size                       = test_shapes.size();
+  std::array<double, 1> in_array                       = {12};
+  std::array<legate::Complex<double>, 1> expect_result = {legate::Complex<double>(12, 0)};
+  size_t test_shape_size                               = test_shapes.size();
   for (size_t i = 0; i < test_shape_size; ++i) {
     auto test_shape = test_shapes[i];
     int32_t dim     = test_shape.size();
     if (dim == 1) {
-      test_sort_complex<double, complex<double>, 1, 1>(
+      test_sort_complex<double, legate::Complex<double>, 1, 1>(
         in_array, expect_result, legate::float64(), test_shape);
     } else if (dim == 2) {
-      test_sort_complex<double, complex<double>, 1, 2>(
+      test_sort_complex<double, legate::Complex<double>, 1, 2>(
         in_array, expect_result, legate::float64(), test_shape);
     } else {
-      test_sort_complex<double, complex<double>, 1, 3>(
+      test_sort_complex<double, legate::Complex<double>, 1, 3>(
         in_array, expect_result, legate::float64(), test_shape);
     }
   }

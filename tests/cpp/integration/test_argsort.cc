@@ -295,19 +295,19 @@ void argsort_basic_axis()
   argsort_basic_axis_impl<double, 12>(test_shapes, in_array2, expect_result, legate::float64());
 
   // Test complex type
-  std::array<complex<float>, 12> in_array3 = {complex<float>(10, 3),
-                                              complex<float>(2.2, 10.5),
-                                              complex<float>(12, 5),
-                                              complex<float>(6, 5.98),
-                                              complex<float>(2, 4),
-                                              complex<float>(6, 4),
-                                              complex<float>(8, 9),
-                                              complex<float>(8, 11),
-                                              complex<float>(7.9, 12),
-                                              complex<float>(7, 6),
-                                              complex<float>(11, 1),
-                                              complex<float>(1.5, 3.66)};
-  argsort_basic_axis_impl<complex<float>, 12>(
+  std::array<legate::Complex<float>, 12> in_array3 = {legate::Complex<float>(10, 3),
+                                                      legate::Complex<float>(2.2, 10.5),
+                                                      legate::Complex<float>(12, 5),
+                                                      legate::Complex<float>(6, 5.98),
+                                                      legate::Complex<float>(2, 4),
+                                                      legate::Complex<float>(6, 4),
+                                                      legate::Complex<float>(8, 9),
+                                                      legate::Complex<float>(8, 11),
+                                                      legate::Complex<float>(7.9, 12),
+                                                      legate::Complex<float>(7, 6),
+                                                      legate::Complex<float>(11, 1),
+                                                      legate::Complex<float>(1.5, 3.66)};
+  argsort_basic_axis_impl<legate::Complex<float>, 12>(
     test_shapes, in_array3, expect_result, legate::complex64());
 }
 
@@ -328,19 +328,19 @@ void argsort_basic_axis_stable()
     test_shapes, in_array2, expect_result, legate::float64(), true);
 
   // Test complex type
-  std::array<complex<float>, 12> in_array3 = {complex<float>(10, 3),
-                                              complex<float>(2.2, 10.5),
-                                              complex<float>(12, 5),
-                                              complex<float>(6, 5.98),
-                                              complex<float>(2, 4),
-                                              complex<float>(2.2, 10.5),
-                                              complex<float>(8, 9),
-                                              complex<float>(8, 11),
-                                              complex<float>(7.9, 12),
-                                              complex<float>(7, 6),
-                                              complex<float>(10, 3),
-                                              complex<float>(1.5, 3.66)};
-  argsort_basic_axis_impl<complex<float>, 12>(
+  std::array<legate::Complex<float>, 12> in_array3 = {legate::Complex<float>(10, 3),
+                                                      legate::Complex<float>(2.2, 10.5),
+                                                      legate::Complex<float>(12, 5),
+                                                      legate::Complex<float>(6, 5.98),
+                                                      legate::Complex<float>(2, 4),
+                                                      legate::Complex<float>(2.2, 10.5),
+                                                      legate::Complex<float>(8, 9),
+                                                      legate::Complex<float>(8, 11),
+                                                      legate::Complex<float>(7.9, 12),
+                                                      legate::Complex<float>(7, 6),
+                                                      legate::Complex<float>(10, 3),
+                                                      legate::Complex<float>(1.5, 3.66)};
+  argsort_basic_axis_impl<legate::Complex<float>, 12>(
     test_shapes, in_array3, expect_result, legate::complex64(), true);
 }
 
@@ -401,11 +401,11 @@ void argsort_large_array()
   argsort_basic_axis_impl<double, count>(test_shapes, in_array2, expect_result, legate::float64());
 
   // Test complex type
-  std::array<complex<float>, count> in_array3;
+  std::array<legate::Complex<float>, count> in_array3;
   for (int32_t i = 0; i < count; i++) {
-    in_array3[i] = complex<float>(count - i, count - i);
+    in_array3[i] = legate::Complex<float>(count - i, count - i);
   }
-  argsort_basic_axis_impl<complex<float>, count>(
+  argsort_basic_axis_impl<legate::Complex<float>, count>(
     test_shapes, in_array3, expect_result, legate::complex64());
 }
 

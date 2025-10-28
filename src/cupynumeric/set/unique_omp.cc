@@ -16,6 +16,7 @@
 
 #include "cupynumeric/set/unique.h"
 #include "cupynumeric/set/unique_template.inl"
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include <omp.h>
 

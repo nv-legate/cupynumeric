@@ -18,8 +18,8 @@
 
 namespace cupynumeric {
 
-void thrust_local_sort(const complex<double>* values_in,
-                       complex<double>* values_out,
+void thrust_local_sort(const legate::Complex<double>* values_in,
+                       legate::Complex<double>* values_out,
                        const int64_t* indices_in,
                        int64_t* indices_out,
                        const size_t volume,

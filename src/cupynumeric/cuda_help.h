@@ -419,7 +419,7 @@ struct HasNativeShuffle {
 };
 
 template <typename T>
-struct HasNativeShuffle<complex<T>> {
+struct HasNativeShuffle<legate::Complex<T>> {
   static constexpr bool value = false;
 };
 

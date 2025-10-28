@@ -47,7 +47,7 @@ struct PotrfImplBody<KIND, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit PotrfImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<float>* array, int32_t m, int32_t n);
+  void operator()(legate::Complex<float>* array, int32_t m, int32_t n);
 };
 
 template <VariantKind KIND>
@@ -55,7 +55,7 @@ struct PotrfImplBody<KIND, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit PotrfImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<double>* array, int32_t m, int32_t n);
+  void operator()(legate::Complex<double>* array, int32_t m, int32_t n);
 };
 
 template <Type::Code CODE>

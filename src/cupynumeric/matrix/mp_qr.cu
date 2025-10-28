@@ -276,8 +276,8 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int64_t n,
                   int64_t mb,
                   int64_t nb,
-                  complex<float>* a_array,
-                  complex<float>* tmp_array,
+                  legate::Complex<float>* a_array,
+                  legate::Complex<float>* tmp_array,
                   size_t a_volume,
                   size_t llda,
                   int rank) const
@@ -312,8 +312,8 @@ struct MpQRImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int64_t n,
                   int64_t mb,
                   int64_t nb,
-                  complex<double>* a_array,
-                  complex<double>* tmp_array,
+                  legate::Complex<double>* a_array,
+                  legate::Complex<double>* tmp_array,
                   size_t a_volume,
                   size_t llda,
                   int rank) const

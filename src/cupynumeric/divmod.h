@@ -16,17 +16,11 @@
 
 #pragma once
 
+#include "cupynumeric/typedefs.h"
+
 /// Optionally enable GCC's built-in type
 #if !defined(__CUDA_ARCH__) && defined(__GNUC__) && defined(__SIZEOF_INT128__)
 #define UINT128_NATIVE
-#endif
-
-#ifndef __CUDA_HD__
-#ifdef __CUDACC__
-#define __CUDA_HD__ __host__ __device__
-#else
-#define __CUDA_HD__
-#endif
 #endif
 
 #include <cstdint>

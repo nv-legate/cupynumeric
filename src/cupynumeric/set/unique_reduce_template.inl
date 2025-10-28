@@ -19,6 +19,7 @@
 // Useful for IDEs
 #include "cupynumeric/set/unique_reduce.h"
 #include "cupynumeric/pitches.h"
+#include "cupynumeric/binary/binary_op_util.h"
 
 #include <thrust/copy.h>
 #include <thrust/sort.h>

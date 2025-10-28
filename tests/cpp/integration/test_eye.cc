@@ -189,9 +189,9 @@ void eye_basic()
   test_eye_3_4<int32_t>(k_vals, legate::int32());
 
   // Test complex type
-  test_eye_3_2<complex<float>>(k_vals, legate::complex64());
-  test_eye_3_3<complex<float>>(k_vals, legate::complex64());
-  test_eye_3_4<complex<float>>(k_vals, legate::complex64());
+  test_eye_3_2<legate::Complex<float>>(k_vals, legate::complex64());
+  test_eye_3_3<legate::Complex<float>>(k_vals, legate::complex64());
+  test_eye_3_4<legate::Complex<float>>(k_vals, legate::complex64());
 }
 
 void eye_square()
@@ -208,7 +208,7 @@ void eye_square()
   test_eye_square_3<int32_t>(std::nullopt, legate::int32());
 
   // Test with k and datatype input
-  test_eye_square_3<complex<float>>(k_vals, legate::complex64());
+  test_eye_square_3<legate::Complex<float>>(k_vals, legate::complex64());
 }
 
 void eye_input_zero()
@@ -261,7 +261,7 @@ void eye_large_array()
   const size_t m                      = 3;
   auto result3                        = cupynumeric::eye(n_or_m, m, 0, legate::complex64());
   std::vector<uint64_t> expect_shape3 = {n_or_m, m};
-  std::array<complex<float>, n_or_m * m> expect_result3;
+  std::array<legate::Complex<float>, n_or_m * m> expect_result3;
   expect_result3.fill(0);
   for (size_t i = 0; i < n_or_m; i++) {
     if (i < m) {
@@ -270,7 +270,7 @@ void eye_large_array()
   }
   EXPECT_EQ(result3.type(), legate::complex64());
   EXPECT_EQ(result3.shape(), expect_shape3);
-  check_array_eq<complex<float>, 2>(result3, expect_result3.data(), expect_result3.size());
+  check_array_eq<legate::Complex<float>, 2>(result3, expect_result3.data(), expect_result3.size());
 }
 
 void eye_negative()

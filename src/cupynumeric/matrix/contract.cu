@@ -27,7 +27,7 @@ template <typename T>
 struct contract_helper {};
 
 template <>
-struct contract_helper<__half> {
+struct contract_helper<legate::Half> {
   static constexpr auto data_type_code = CUTENSOR_R_16F;
   static cutensorComputeDescriptor_t compute_type_code() { return CUTENSOR_COMPUTE_DESC_32F; }
   using scalar_t = float;
@@ -48,17 +48,17 @@ struct contract_helper<double> {
 };
 
 template <>
-struct contract_helper<complex<float>> {
+struct contract_helper<legate::Complex<float>> {
   static constexpr auto data_type_code = CUTENSOR_C_32F;
   static cutensorComputeDescriptor_t compute_type_code() { return CUTENSOR_COMPUTE_DESC_32F; }
-  using scalar_t = complex<float>;
+  using scalar_t = legate::Complex<float>;
 };
 
 template <>
-struct contract_helper<complex<double>> {
+struct contract_helper<legate::Complex<double>> {
   static constexpr auto data_type_code = CUTENSOR_C_64F;
   static cutensorComputeDescriptor_t compute_type_code() { return CUTENSOR_COMPUTE_DESC_64F; }
-  using scalar_t = complex<double>;
+  using scalar_t = legate::Complex<double>;
 };
 
 }  // anonymous namespace
@@ -158,17 +158,17 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::FLOAT16> {
   TaskContext context;
   explicit ContractImplBody(TaskContext context) : context(context) {}
 
-  void operator()(__half* lhs_data,
+  void operator()(legate::Half* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
                   int64_t* lhs_strides,
                   int32_t* lhs_modes,
-                  const __half* rhs1_data,
+                  const legate::Half* rhs1_data,
                   size_t rhs1_ndim,
                   int64_t* rhs1_shape,
                   int64_t* rhs1_strides,
                   int32_t* rhs1_modes,
-                  const __half* rhs2_data,
+                  const legate::Half* rhs2_data,
                   size_t rhs2_ndim,
                   int64_t* rhs2_shape,
                   int64_t* rhs2_strides,
@@ -287,17 +287,17 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit ContractImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<float>* lhs_data,
+  void operator()(legate::Complex<float>* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
                   int64_t* lhs_strides,
                   int32_t* lhs_modes,
-                  const complex<float>* rhs1_data,
+                  const legate::Complex<float>* rhs1_data,
                   size_t rhs1_ndim,
                   int64_t* rhs1_shape,
                   int64_t* rhs1_strides,
                   int32_t* rhs1_modes,
-                  const complex<float>* rhs2_data,
+                  const legate::Complex<float>* rhs2_data,
                   size_t rhs2_ndim,
                   int64_t* rhs2_shape,
                   int64_t* rhs2_strides,
@@ -330,17 +330,17 @@ struct ContractImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit ContractImplBody(TaskContext context) : context(context) {}
 
-  void operator()(complex<double>* lhs_data,
+  void operator()(legate::Complex<double>* lhs_data,
                   size_t lhs_ndim,
                   int64_t* lhs_shape,
                   int64_t* lhs_strides,
                   int32_t* lhs_modes,
-                  const complex<double>* rhs1_data,
+                  const legate::Complex<double>* rhs1_data,
                   size_t rhs1_ndim,
                   int64_t* rhs1_shape,
                   int64_t* rhs1_strides,
                   int32_t* rhs1_modes,
-                  const complex<double>* rhs2_data,
+                  const legate::Complex<double>* rhs2_data,
                   size_t rhs2_ndim,
                   int64_t* rhs2_shape,
                   int64_t* rhs2_strides,

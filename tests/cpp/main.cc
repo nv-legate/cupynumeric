@@ -24,7 +24,7 @@ class Environment : public ::testing::Environment {
 
   void SetUp() override
   {
-    EXPECT_EQ(legate::start(argc_, argv_), 0);
+    legate::start();
     cupynumeric::initialize(argc_, argv_);
   }
   void TearDown() override { EXPECT_EQ(legate::finish(), 0); }

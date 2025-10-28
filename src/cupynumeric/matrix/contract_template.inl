@@ -18,6 +18,7 @@
 
 // Useful for IDEs
 #include "cupynumeric/matrix/contract.h"
+#include "legate/redop/redop.h"
 
 #if 0  // debugging output
 #include "legate/utilities/debug.h"

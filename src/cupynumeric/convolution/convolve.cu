@@ -1239,7 +1239,7 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, 4)
 
 template <typename VAL>
 __global__ static void __launch_bounds__(THREADS_PER_BLOCK, 4)
-  complex_multiply(complex<VAL>* inout, complex<VAL>* in, const size_t volume)
+  complex_multiply(legate::Complex<VAL>* inout, legate::Complex<VAL>* in, const size_t volume)
 {
   size_t offset = blockIdx.x * blockDim.x + threadIdx.x;
   if (offset >= volume) {
@@ -1468,7 +1468,7 @@ __host__ static inline void cufft_convolution(AccessorWO<VAL, DIM> out,
       size_t volume = (buffervolume / 2);
       blocks        = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
       complex_multiply<VAL><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-        (complex<VAL>*)signal_ptr, (complex<VAL>*)filter_ptr, volume);
+        (legate::Complex<VAL>*)signal_ptr, (legate::Complex<VAL>*)filter_ptr, volume);
     }
     // Inverse FFT for the ouptut
     // Allow this out-of-place for better performance

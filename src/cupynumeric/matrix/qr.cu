@@ -160,8 +160,12 @@ struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit QrImplBody(TaskContext context) : context(context) {}
 
-  void operator()(
-    int32_t m, int32_t n, int32_t k, const complex<float>* a, complex<float>* q, complex<float>* r)
+  void operator()(int32_t m,
+                  int32_t n,
+                  int32_t k,
+                  const legate::Complex<float>* a,
+                  legate::Complex<float>* q,
+                  legate::Complex<float>* r)
   {
     auto stream = context.get_task_stream();
     qr_template(cusolverDnCgeqrf_bufferSize,
@@ -186,9 +190,9 @@ struct QrImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
   void operator()(int32_t m,
                   int32_t n,
                   int32_t k,
-                  const complex<double>* a,
-                  complex<double>* q,
-                  complex<double>* r)
+                  const legate::Complex<double>* a,
+                  legate::Complex<double>* q,
+                  legate::Complex<double>* r)
   {
     auto stream = context.get_task_stream();
     qr_template(cusolverDnZgeqrf_bufferSize,

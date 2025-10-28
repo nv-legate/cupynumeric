@@ -20,6 +20,7 @@
 #include "cupynumeric/binary/binary_red.h"
 #include "cupynumeric/binary/binary_op_util.h"
 #include "cupynumeric/pitches.h"
+#include "legate/redop/redop.h"
 
 namespace cupynumeric {
 

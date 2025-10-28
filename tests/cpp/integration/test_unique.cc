@@ -64,7 +64,8 @@ TEST(Unique, test_scalar)
 template <typename T>
 std::vector<T> mk_random_vector(std::vector<uint64_t> shape, std::function<T()> gen)
 {
-  size_t size = std::accumulate(shape.begin(), shape.end(), size_t(1), std::multiplies<uint64_t>());
+  uint64_t size =
+    std::accumulate(shape.begin(), shape.end(), uint64_t(1), std::multiplies<uint64_t>());
   std::vector<T> v(size);
   std::generate(v.begin(), v.end(), gen);
   return v;

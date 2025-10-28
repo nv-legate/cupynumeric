@@ -80,15 +80,15 @@ struct ConvertOp<ConvertCode::NOOP, legate::Type::Code::FLOAT16, SRC_TYPE> {
   using SRC = legate::type_of<SRC_TYPE>;
 
   template <typename _SRC = SRC, std::enable_if_t<!legate::is_complex_type<_SRC>::value>* = nullptr>
-  __CUDA_HD__ __half operator()(const _SRC& src) const
+  __CUDA_HD__ legate::Half operator()(const _SRC& src) const
   {
-    return static_cast<__half>(static_cast<double>(src));
+    return static_cast<legate::Half>(static_cast<double>(src));
   }
 
   template <typename _SRC = SRC, std::enable_if_t<legate::is_complex_type<_SRC>::value>* = nullptr>
-  __CUDA_HD__ __half operator()(const _SRC& src) const
+  __CUDA_HD__ legate::Half operator()(const _SRC& src) const
   {
-    return static_cast<__half>(static_cast<double>(src.real()));
+    return static_cast<legate::Half>(static_cast<double>(src.real()));
   }
 };
 
@@ -96,7 +96,7 @@ template <legate::Type::Code DST_TYPE>
 struct ConvertOp<ConvertCode::NOOP, DST_TYPE, legate::Type::Code::FLOAT16> {
   using DST = legate::type_of<DST_TYPE>;
 
-  constexpr DST operator()(const __half& src) const
+  constexpr DST operator()(const legate::Half& src) const
   {
     return static_cast<DST>(static_cast<double>(src));
   }
@@ -129,17 +129,17 @@ struct ConvertOp<ConvertCode::PROD, legate::Type::Code::FLOAT16, SRC_TYPE> {
   using SRC = legate::type_of<SRC_TYPE>;
 
   template <typename _SRC = SRC, std::enable_if_t<!legate::is_complex_type<_SRC>::value>* = nullptr>
-  __CUDA_HD__ __half operator()(const _SRC& src) const
+  __CUDA_HD__ legate::Half operator()(const _SRC& src) const
   {
-    return cupynumeric::is_nan(src) ? static_cast<__half>(1)
-                                    : static_cast<__half>(static_cast<double>(src));
+    return cupynumeric::is_nan(src) ? static_cast<legate::Half>(1)
+                                    : static_cast<legate::Half>(static_cast<double>(src));
   }
 
   template <typename _SRC = SRC, std::enable_if_t<legate::is_complex_type<_SRC>::value>* = nullptr>
-  __CUDA_HD__ __half operator()(const _SRC& src) const
+  __CUDA_HD__ legate::Half operator()(const _SRC& src) const
   {
-    return cupynumeric::is_nan(src) ? static_cast<__half>(1)
-                                    : static_cast<__half>(static_cast<double>(src.real()));
+    return cupynumeric::is_nan(src) ? static_cast<legate::Half>(1)
+                                    : static_cast<legate::Half>(static_cast<double>(src.real()));
   }
 };
 
@@ -147,7 +147,7 @@ template <legate::Type::Code DST_TYPE>
 struct ConvertOp<ConvertCode::PROD, DST_TYPE, legate::Type::Code::FLOAT16> {
   using DST = legate::type_of<DST_TYPE>;
 
-  constexpr DST operator()(const __half& src) const
+  constexpr DST operator()(const legate::Half& src) const
   {
     return cupynumeric::is_nan(src) ? static_cast<DST>(1)
                                     : static_cast<DST>(static_cast<double>(src));
@@ -181,17 +181,17 @@ struct ConvertOp<ConvertCode::SUM, legate::Type::Code::FLOAT16, SRC_TYPE> {
   using SRC = legate::type_of<SRC_TYPE>;
 
   template <typename _SRC = SRC, std::enable_if_t<!legate::is_complex_type<_SRC>::value>* = nullptr>
-  __CUDA_HD__ __half operator()(const _SRC& src) const
+  __CUDA_HD__ legate::Half operator()(const _SRC& src) const
   {
-    return cupynumeric::is_nan(src) ? static_cast<__half>(0)
-                                    : static_cast<__half>(static_cast<double>(src));
+    return cupynumeric::is_nan(src) ? static_cast<legate::Half>(0)
+                                    : static_cast<legate::Half>(static_cast<double>(src));
   }
 
   template <typename _SRC = SRC, std::enable_if_t<legate::is_complex_type<_SRC>::value>* = nullptr>
-  __CUDA_HD__ __half operator()(const _SRC& src) const
+  __CUDA_HD__ legate::Half operator()(const _SRC& src) const
   {
-    return cupynumeric::is_nan(src) ? static_cast<__half>(0)
-                                    : static_cast<__half>(static_cast<double>(src.real()));
+    return cupynumeric::is_nan(src) ? static_cast<legate::Half>(0)
+                                    : static_cast<legate::Half>(static_cast<double>(src.real()));
   }
 };
 
@@ -199,7 +199,7 @@ template <legate::Type::Code DST_TYPE>
 struct ConvertOp<ConvertCode::SUM, DST_TYPE, legate::Type::Code::FLOAT16> {
   using DST = legate::type_of<DST_TYPE>;
 
-  constexpr DST operator()(const __half& src) const
+  constexpr DST operator()(const legate::Half& src) const
   {
     return cupynumeric::is_nan(src) ? static_cast<DST>(0)
                                     : static_cast<DST>(static_cast<double>(src));

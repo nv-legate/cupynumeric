@@ -153,8 +153,8 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
                   int64_t batch_stride_ew,
                   int64_t batch_stride_ev,
                   const float* a,
-                  complex<float>* ew,
-                  complex<float>* ev)
+                  Complex<float>* ew,
+                  Complex<float>* ev)
   {
     auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
@@ -192,8 +192,8 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   int64_t batch_stride_ew,
                   int64_t batch_stride_ev,
                   const double* a,
-                  complex<double>* ew,
-                  complex<double>* ev)
+                  Complex<double>* ew,
+                  Complex<double>* ev)
   {
     auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
@@ -230,15 +230,15 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   int64_t num_batches,
                   int64_t batch_stride_ew,
                   int64_t batch_stride_ev,
-                  const complex<float>* a,
-                  complex<float>* ew,
-                  complex<float>* ev)
+                  const Complex<float>* a,
+                  Complex<float>* ew,
+                  Complex<float>* ev)
   {
     auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-      geev_template<complex<float>>(
+      geev_template<Complex<float>>(
         CUDA_C_32F,
         CUDA_C_32F,
         m,
@@ -259,15 +259,15 @@ struct GeevImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   int64_t num_batches,
                   int64_t batch_stride_ew,
                   int64_t batch_stride_ev,
-                  const complex<double>* a,
-                  complex<double>* ew,
-                  complex<double>* ev)
+                  const Complex<double>* a,
+                  Complex<double>* ew,
+                  Complex<double>* ev)
   {
     auto stream      = context.get_task_stream();
     bool compute_evs = ev != nullptr;
 
     for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-      geev_template<complex<double>>(
+      geev_template<Complex<double>>(
         CUDA_C_64F,
         CUDA_C_64F,
         m,

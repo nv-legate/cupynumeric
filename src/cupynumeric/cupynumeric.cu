@@ -20,20 +20,20 @@
 
 namespace cupynumeric {
 
-#define REGISTER_REDOPS(OP)                              \
-  {                                                      \
-    context.register_reduction_operator<OP<float>>();    \
-    context.register_reduction_operator<OP<double>>();   \
-    context.register_reduction_operator<OP<int8_t>>();   \
-    context.register_reduction_operator<OP<int16_t>>();  \
-    context.register_reduction_operator<OP<int32_t>>();  \
-    context.register_reduction_operator<OP<int64_t>>();  \
-    context.register_reduction_operator<OP<uint8_t>>();  \
-    context.register_reduction_operator<OP<uint16_t>>(); \
-    context.register_reduction_operator<OP<uint32_t>>(); \
-    context.register_reduction_operator<OP<uint64_t>>(); \
-    context.register_reduction_operator<OP<bool>>();     \
-    context.register_reduction_operator<OP<__half>>();   \
+#define REGISTER_REDOPS(OP)                                  \
+  {                                                          \
+    context.register_reduction_operator<OP<float>>();        \
+    context.register_reduction_operator<OP<double>>();       \
+    context.register_reduction_operator<OP<int8_t>>();       \
+    context.register_reduction_operator<OP<int16_t>>();      \
+    context.register_reduction_operator<OP<int32_t>>();      \
+    context.register_reduction_operator<OP<int64_t>>();      \
+    context.register_reduction_operator<OP<uint8_t>>();      \
+    context.register_reduction_operator<OP<uint16_t>>();     \
+    context.register_reduction_operator<OP<uint32_t>>();     \
+    context.register_reduction_operator<OP<uint64_t>>();     \
+    context.register_reduction_operator<OP<bool>>();         \
+    context.register_reduction_operator<OP<legate::Half>>(); \
   }
 
 void register_reduction_operators(legate::LibraryContext& context)

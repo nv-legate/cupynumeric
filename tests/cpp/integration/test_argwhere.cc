@@ -119,19 +119,19 @@ void argwhere_double()
 
 void argwhere_complex()
 {
-  std::vector<complex<float>> in_vec = {complex<float>(1.0, 0),
-                                        complex<float>(0.0, 0.0),
-                                        54,
-                                        0,
-                                        0.0,
-                                        complex<float>(0, 1.0),
-                                        45,
-                                        0,
-                                        0.0,
-                                        9,
-                                        -0.00,
-                                        4};
-  test_argwhere_basic_for_all_dims<complex<float>>(in_vec);
+  std::vector<legate::Complex<float>> in_vec = {legate::Complex<float>(1.0, 0),
+                                                legate::Complex<float>(0.0, 0.0),
+                                                54,
+                                                0,
+                                                0.0,
+                                                legate::Complex<float>(0, 1.0),
+                                                45,
+                                                0,
+                                                0.0,
+                                                9,
+                                                -0.00,
+                                                4};
+  test_argwhere_basic_for_all_dims<legate::Complex<float>>(in_vec);
 }
 
 void argwhere_bool()

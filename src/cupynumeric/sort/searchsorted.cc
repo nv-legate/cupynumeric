@@ -16,6 +16,8 @@
 
 #include "cupynumeric/sort/searchsorted.h"
 #include "cupynumeric/sort/searchsorted_template.inl"
+#include "legate/redop/redop.h"
+#include "cupynumeric/binary/binary_op_util.h"
 
 namespace cupynumeric {
 
@@ -51,7 +53,7 @@ struct SearchSortedImplBody<VariantKind::CPU, CODE, DIM> {
 
     if (left) {
       auto output_reduction =
-        output_positions.reduce_accessor<MinReduction<int64_t>, true, DIM>(rect_values);
+        output_positions.reduce_accessor<Legion::MinReduction<int64_t>, true, DIM>(rect_values);
       for (size_t idx = 0; idx < num_values; ++idx) {
         VAL key             = input_v_ptr[idx];
         auto v_point        = pitches.unflatten(idx, rect_values.lo);

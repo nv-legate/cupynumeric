@@ -163,19 +163,19 @@ void nonzero_basic()
   nonzero_basic_impl<double>(test_shapes, in_array2, expect_result);
 
   // Test complex type
-  std::vector<complex<float>> in_array3 = {complex<float>(0, 0),
-                                           complex<float>(2.2, 0),
-                                           complex<float>(12, 5),
-                                           complex<float>(0),
-                                           complex<float>(2, 4),
-                                           complex<float>(6, 4),
-                                           complex<float>(8, 9),
-                                           complex<float>(0, 0),
-                                           complex<float>(7.9, 12),
-                                           complex<float>(0),
-                                           complex<float>(0, 0.001),
-                                           complex<float>(0, 0)};
-  nonzero_basic_impl<complex<float>>(test_shapes, in_array3, expect_result);
+  std::vector<legate::Complex<float>> in_array3 = {legate::Complex<float>(0, 0),
+                                                   legate::Complex<float>(2.2, 0),
+                                                   legate::Complex<float>(12, 5),
+                                                   legate::Complex<float>(0),
+                                                   legate::Complex<float>(2, 4),
+                                                   legate::Complex<float>(6, 4),
+                                                   legate::Complex<float>(8, 9),
+                                                   legate::Complex<float>(0, 0),
+                                                   legate::Complex<float>(7.9, 12),
+                                                   legate::Complex<float>(0),
+                                                   legate::Complex<float>(0, 0.001),
+                                                   legate::Complex<float>(0, 0)};
+  nonzero_basic_impl<legate::Complex<float>>(test_shapes, in_array3, expect_result);
 }
 
 void nonzero_basic_max_dim()
@@ -232,11 +232,11 @@ void nonzero_large_array()
   test_nonzero<double>(in_array2, expect_result, test_shape);
 
   // Test complex type for large array
-  std::vector<complex<float>> in_array3(count);
-  in_array3.assign(count, complex<float>(0.0));
-  in_array3[0]    = complex<float>(0.0001, 0.0);
-  in_array3[9999] = complex<float>(0.0, 0.0001);
-  test_nonzero<complex<float>>(in_array3, expect_result, test_shape);
+  std::vector<legate::Complex<float>> in_array3(count);
+  in_array3.assign(count, legate::Complex<float>(0.0));
+  in_array3[0]    = legate::Complex<float>(0.0001, 0.0);
+  in_array3[9999] = legate::Complex<float>(0.0, 0.0001);
+  test_nonzero<legate::Complex<float>>(in_array3, expect_result, test_shape);
 }
 
 void nonzero_empty_array()
