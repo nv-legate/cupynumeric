@@ -774,6 +774,28 @@ class EagerArray(NumPyThunk):
             return out
         return EagerArray(result)
 
+    def take_along_axis(
+        self,
+        indices: Any,
+        axis: int,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any:
+        self.check_eager_args(indices)
+        if self.deferred is not None:
+            return self.deferred.take_along_axis(
+                indices, axis, out=out, mode=mode
+            )
+        out_array = None
+        if out is not None:
+            out_array = out.__numpy_array__()
+        result = np.take_along_axis(self.array, indices.array, axis)
+        if out is not None:
+            assert out_array is not None
+            out_array[:] = result
+            return out
+        return EagerArray(result)
+
     def contract(
         self,
         lhs_modes: list[str],

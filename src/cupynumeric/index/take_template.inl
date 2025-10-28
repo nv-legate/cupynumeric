@@ -40,6 +40,11 @@ inline constexpr int64_t LEGATE_HOST_DEVICE mod(int64_t x, int64_t m)
 
 }  // namespace detail
 
+// This task handles both take() and take_along_axis() with the same code.
+// The Python layer uses promote() to broadcast indices appropriately:
+// - For take(): indices are promoted uniformly, so ind[a,b,c,d] == ind[0,0,c,0]
+// - For take_along_axis(): indices are promoted on dim 1, so ind[a,b,c,d] == ind[a,0,c,d]
+// Thus, reading ind[res_point[0], 0, j, res_point[2]] works correctly for both cases.
 template <typename exec_policy_t, Type::Code CODE, bool clip>
 struct TakeImplBody {
   TaskContext context;
@@ -63,7 +68,7 @@ struct TakeImplBody {
     {
       auto res_point = pitches.unflatten(idx, lo);
       auto j         = res_point[1];
-      auto take_idx  = ind[Point<4>(0, 0, j, 0)];
+      auto take_idx  = ind[Point<4>(res_point[0], 0, j, res_point[2])];
       auto i         = clip ? std::clamp<int64_t>(take_idx, 0, m - 1) : detail::mod(take_idx, m);
 
       res[Point<4>(res_point[0], 0, j, res_point[2])] =
@@ -86,7 +91,7 @@ struct TakeImplBody {
 
       auto res_point = pitches.unflatten(idx, lo_sub);
       auto j         = res_point[0];
-      auto take_idx  = ind[Point<4>(0, 0, j, 0)];
+      auto take_idx  = ind[Point<4>(lo[0], 0, j, res_point[1])];
       auto i         = clip ? std::clamp<int64_t>(take_idx, 0, m - 1) : detail::mod(take_idx, m);
 
       res[Point<4>(lo[0], 0, j, res_point[1])] = src[Point<4>(lo[0], i, 0, res_point[1])];
@@ -108,7 +113,7 @@ struct TakeImplBody {
 
       auto res_point = pitches.unflatten(idx, lo_sub);
       auto j         = res_point[1];
-      auto take_idx  = ind[Point<4>(0, 0, j, 0)];
+      auto take_idx  = ind[Point<4>(res_point[0], 0, j, lo[2])];
       auto i         = clip ? std::clamp<int64_t>(take_idx, 0, m - 1) : detail::mod(take_idx, m);
 
       res[Point<4>(res_point[0], 0, j, lo[2])] = src[Point<4>(res_point[0], i, 0, lo[2])];
@@ -126,7 +131,7 @@ struct TakeImplBody {
     void operator()(size_t idx) const
     {
       auto j        = lo[1] + idx;
-      auto take_idx = ind[Point<4>(0, 0, j, 0)];
+      auto take_idx = ind[Point<4>(lo[0], 0, j, lo[2])];
       auto i        = clip ? std::clamp<int64_t>(take_idx, 0, m - 1) : detail::mod(take_idx, m);
 
       res[Point<4>(lo[0], 0, j, lo[2])] = src[Point<4>(lo[0], i, 0, lo[2])];

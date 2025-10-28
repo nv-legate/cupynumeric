@@ -2021,29 +2021,84 @@ class DeferredArray(NumPyThunk):
         axis: int,
         out: Any | None = None,
         mode: BoundsMode = "raise",
+        along_axis: bool = False,
     ) -> Any:
         # specialize for the case of taking a 1D index on the middle dimension of a 3D array,
         # and reshape to fit that special case
         is_scalar = np.isscalar(indices)
         ind_shape = () if is_scalar else indices.shape
 
-        j = int(np.prod(self.shape[:axis]))
         k = self.shape[axis]
-        m = int(np.prod(ind_shape))
-        n = int(np.prod(self.shape[axis + 1 :]))
-        if (
-            axis != 1
-            or self.shape != (j, k, n)
-            or is_scalar
-            or ind_shape != (m,)
-            or (out is not None and out.shape != (j, m, n))
-        ):
-            out_shape = (
-                self.shape[:axis] + ind_shape + self.shape[(axis + 1) :]
+
+        # Calculate dimensions based on mode
+        if along_axis:
+            # For take_along_axis, calculate dimensions for both source and indices
+            j_src = int(np.prod(self.shape[:axis]))
+            n_src = int(np.prod(self.shape[axis + 1 :]))
+
+            j_ind = int(np.prod(ind_shape[:axis]))
+            m = ind_shape[axis] if not is_scalar else 1
+            n_ind = int(np.prod(ind_shape[axis + 1 :]))
+
+            # Assert no broadcasting: API layer should ensure j_src == j_ind and n_src == n_ind
+            assert j_src == j_ind and n_src == n_ind
+
+            # Use indices dimensions for output
+            j, n = j_ind, n_ind
+            # Expected shape is (j_ind, m, n_ind) based on indices
+            expected_ind_shape: tuple[int, ...] = (j_ind, m, n_ind)
+        else:
+            # For regular take, use array shape
+            j_src = j = int(np.prod(self.shape[:axis]))
+            n_src = n = int(np.prod(self.shape[axis + 1 :]))
+            m = int(np.prod(ind_shape))
+            # Expected shape is 1D: (m,)
+            expected_ind_shape = (m,)
+
+        # Check if reshaping is needed
+        # The fast path requires:
+        # - axis=1 and both source and indices in canonical 3D shape
+        # - For regular take: indices must be 1D (m,)
+        # - For take_along_axis: indices must be 3D (j_ind, m, n_ind)
+        # - No broadcasting: all stores must have same shape after promotion
+        if along_axis:
+            # For take_along_axis:
+            # - Check source shape against SOURCE dimensions (j_src, k, n_src)
+            # - Check indices shape against INDICES dimensions (j, m, n)
+            # Note: j_src == j and n_src == n (guaranteed by assertion above)
+            needs_reshape = (
+                axis != 1
+                or self.shape != (j_src, k, n_src)
+                or is_scalar
+                or ind_shape != expected_ind_shape  # Indices must be (j, m, n)
+                or (out is not None and out.shape != (j, m, n))
             )
+        else:
+            # For regular take, broadcasting doesn't apply
+            # Both source and output use same j, n dimensions
+            needs_reshape = (
+                axis != 1
+                or self.shape != (j, k, n)
+                or is_scalar
+                or ind_shape != expected_ind_shape
+                or (out is not None and out.shape != (j, m, n))
+            )
+
+        if needs_reshape:
+            # Calculate output shape based on mode
+            if along_axis:
+                # For take_along_axis, output shape matches indices shape
+                out_shape = ind_shape
+            else:
+                # For regular take, insert indices dimensions at axis position
+                out_shape = (
+                    self.shape[:axis] + ind_shape + self.shape[(axis + 1) :]
+                )
+
             src = runtime.to_deferred_array(
-                self.reshape((j, k, n), "C"), read_only=True
+                self.reshape((j_src, k, n_src), "C"), read_only=True
             )
+
             if is_scalar:
                 from .._array.util import convert_to_cupynumeric_ndarray
 
@@ -2051,11 +2106,19 @@ class DeferredArray(NumPyThunk):
                     [indices]
                 )._thunk
             else:
-                reshaped_indices = indices.reshape((m,), "C")
+                if along_axis:
+                    # For take_along_axis, indices must maintain multidimensional structure
+                    # to match output shape (j, m, n), not be flattened to (m,)
+                    reshaped_indices = indices.reshape((j, m, n), "C")
+                else:
+                    # For regular take, indices are uniform and can be 1D
+                    reshaped_indices = indices.reshape((m,), "C")
             indices = runtime.to_deferred_array(
                 reshaped_indices, read_only=True
             )
-            result = src._take_using_take_task(indices, 1, out=None, mode=mode)
+            result = src._take_using_take_task(
+                indices, 1, out=None, mode=mode, along_axis=along_axis
+            )
             result = result.reshape(out_shape, order="C")
             if out is not None:
                 out.copy(result)
@@ -2065,7 +2128,17 @@ class DeferredArray(NumPyThunk):
         # is_scalar case exited in the conditional above
         assert not is_scalar
 
-        ind_store = indices.base.promote(0, j).promote(1, k).promote(3, n)
+        # For along_axis mode, indices shape must match output dimensions
+        if along_axis:
+            # Indices already have the right shape (j, m, n), just promote to 4D
+            # Promotion ensures ind[a,b,c,d] == ind[a,0,c,d], so C++ can always read ind[res_point[0], 0, j, res_point[2]]
+            ind_store = indices.base.promote(1, k)
+        else:
+            # For regular take, promote indices uniformly across all dimensions
+            # Promotion ensures ind[a,b,c,d] == ind[0,0,c,0], so C++ reading ind[res_point[0], 0, j, res_point[2]]
+            # gives the same result as ind[0,0,j,0] - thus C++ doesn't need an along_axis flag
+            ind_store = indices.base.promote(0, j).promote(1, k).promote(3, n)
+
         # promote input and output to have the same shape for alignment purposes
         # TODO(tisaac): remove this when aligning on subsets of dimensions is possible
         src_store = self.base.promote(2, m)
@@ -2206,6 +2279,43 @@ class DeferredArray(NumPyThunk):
             return src._take_using_advanced_indexing(
                 indices, axis, out=out, mode=mode
             )
+
+    def take_along_axis(
+        self,
+        indices: Any,
+        axis: int,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any:
+        """
+        Take values from array along an axis using per-element indices.
+        Similar to take(), but indices can vary per position.
+
+        This uses the TAKE task with along_axis=True.
+        Note: Broadcasting and dimension checks are done at the API layer (indexing.py)
+        """
+        src = self
+
+        # Convert indices to int64 if needed
+        if indices.dtype != np.int64:
+            ind_64 = runtime.create_deferred_thunk(
+                shape=indices.shape, dtype=ty.int64
+            )
+            ind_64.convert(indices, warn=True)  # Warn about conversion
+            indices = ind_64
+
+        indices = runtime.to_deferred_array(indices, read_only=True)
+
+        # Check bounds if mode is 'raise'
+        if mode == "raise":
+            lim = src.shape[axis]
+            if indices._less(-lim).any() or indices._greater_equal(lim).any():
+                raise IndexError("index out of bounds")
+
+        # Use TAKE task (broadcasting already handled at API layer)
+        return src._take_using_take_task(
+            indices, axis, out=out, mode=mode, along_axis=True
+        )
 
     @auto_convert("rhs1_thunk", "rhs2_thunk")
     def contract(

@@ -711,11 +711,45 @@ def take_along_axis(a: ndarray, indices: ndarray, axis: int | None) -> ndarray:
         raise ValueError(
             "`indices` and `a` must have the same number of dimensions"
         )
-    return a[
-        _fill_fancy_index_for_along_axis_routines(
-            a.shape, computed_axis, indices
+
+    # The TAKE task uses 4D accessors and reshaping logic that works well
+    # for <= 4D arrays. For higher dimensions, fall back to fancy indexing.
+    # Also check if broadcasting is needed - TAKE task doesn't support it.
+
+    use_take_task = False
+    if a.ndim <= 4:
+        # Check if broadcasting is needed
+        # TAKE task requires exact dimension matches (no broadcasting at all)
+        # Note: np.prod() returns 1 for empty slices
+        j_src = int(np.prod(a.shape[:computed_axis]))
+        n_src = int(np.prod(a.shape[computed_axis + 1 :]))
+        j_ind = int(np.prod(indices.shape[:computed_axis]))
+        n_ind = int(np.prod(indices.shape[computed_axis + 1 :]))
+
+        # Broadcasting is needed if ANY dimension differs
+        # (even if one is 1, that's still broadcasting in NumPy semantics)
+        needs_broadcasting = (j_src != j_ind) or (n_src != n_ind)
+
+        if not needs_broadcasting:
+            use_take_task = True
+
+    if use_take_task:
+        # Use the optimized TAKE task
+        # Note: NumPy's take_along_axis doesn't have a mode parameter,
+        # but we use "raise" to catch out-of-bounds indices
+        result_thunk = a._thunk.take_along_axis(
+            indices._thunk, computed_axis, out=None, mode="raise"
         )
-    ]
+        return ndarray._from_thunk(result_thunk)
+    else:
+        # Fall back to fancy indexing for:
+        # - Arrays with >4 dimensions
+        # - Arrays requiring broadcasting
+        return a[
+            _fill_fancy_index_for_along_axis_routines(
+                a.shape, computed_axis, indices
+            )
+        ]
 
 
 @add_boilerplate("a", "indices", "values")

@@ -177,6 +177,15 @@ class NumPyThunk(ABC):
     ) -> Any: ...
 
     @abstractmethod
+    def take_along_axis(
+        self,
+        indices: Any,
+        axis: int,
+        out: Any | None = None,
+        mode: BoundsMode = "raise",
+    ) -> Any: ...
+
+    @abstractmethod
     def contract(
         self,
         lhs_modes: list[str],
