@@ -1177,7 +1177,9 @@ class DeferredArray(NumPyThunk):
         # Now we need to create a mask tensor where mask_tensor[i, j] = 1
         # if mask_array[i] == j, else 0
         # This is done by broadcasting the indices against a range array
-        mask_deferred = mask_array._thunk
+        mask_thunk = mask_array._thunk
+
+        mask_deferred = runtime.to_deferred_array(mask_thunk, read_only=False)
 
         # Reshape mask_array to (N, 1) for broadcasting
         mask_2d = DeferredArray(
