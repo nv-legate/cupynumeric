@@ -253,11 +253,16 @@ void histogramdd_using_thrust(TaskContext& context,
   auto has_weights  = context.scalar(0).value<bool>();
   auto points_shape = points.shape<2>();
   auto num_points   = points_shape.hi[0] - points_shape.lo[0] + 1;
-  auto num_dims     = points_shape.hi[1] - points_shape.lo[1] + 1;
-  auto hist_store   = context.reduction(0).data();
-  auto hist_rect    = hist_store.shape<1>();
-  auto hist         = hist_store.reduce_accessor<SumReduction<output_t>, true, 1>(hist_rect);
-  size_t first_bin  = has_weights ? 2 : 1;
+
+  if (num_points <= 0) {
+    return;
+  }
+
+  auto num_dims    = points_shape.hi[1] - points_shape.lo[1] + 1;
+  auto hist_store  = context.reduction(0).data();
+  auto hist_rect   = hist_store.shape<1>();
+  auto hist        = hist_store.reduce_accessor<SumReduction<output_t>, true, 1>(hist_rect);
+  size_t first_bin = has_weights ? 2 : 1;
 
   // there are either num_dims + 1 arguments (no weights) or num_dims + 2 arguments (weights)
   assert(num_args == num_dims + 1 || num_args == num_dims + 2);

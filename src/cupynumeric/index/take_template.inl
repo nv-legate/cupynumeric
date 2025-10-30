@@ -156,9 +156,6 @@ struct TakeImplBody {
                                 Point<3>(shape.hi[0], shape.hi[2], shape.hi[3]));
       Pitches<2> res_pitches{};
       auto res_volume = res_pitches.flatten(res_reduced_shape);
-      if (res_volume <= 0) {
-        return;
-      }
 
       thrust::for_each(policy,
                        thrust::counting_iterator<size_t>(0),
@@ -217,6 +214,10 @@ struct TakeImpl {
       work_hi[i] = std::min(src_shape.hi[i], std::min(ind_shape.hi[i], res_shape.hi[i]));
     }
     Rect<4> work_shape{work_lo, work_hi};
+
+    if (work_shape.empty()) {
+      return;
+    }
 
     auto src = args.src.read_accessor<VAL, 4>();
     auto ind = args.ind.read_accessor<int64_t, 4>();
