@@ -152,7 +152,7 @@ Calculation
    ndarray.conjugate
    ndarray.dot
    ndarray.flip
-   .. ndarray.round
+   ndarray.round
    .. ndarray.trace
    ndarray.sum
    ndarray.cumsum
@@ -298,3 +298,11 @@ String representations:
 ..    :toctree: generated/
 
 ..    ndarray.__class_getitem__
+
+cuPyNumeric-specific methods
+----------------------------
+
+.. autosummary::
+   :toctree: generated/
+
+   ndarray.stencil_hint
