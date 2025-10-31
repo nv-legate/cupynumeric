@@ -17,8 +17,12 @@ import numpy as np
 from legate.core import LEGATE_MAX_DIM
 
 import cupynumeric as num
+from cupynumeric._utils import is_np2
 
-from numpy.exceptions import AxisError  # noqa: F401
+if is_np2:
+    from numpy.exceptions import AxisError  # noqa: F401
+else:
+    from numpy import AxisError  # noqa: F401
 
 
 def compare_array(a, b, check_type=True):

@@ -19,14 +19,15 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from numpy.lib.array_utils import normalize_axis_index
 
 from .._array.thunk import perform_scan, perform_unary_reduction
 from .._array.util import add_boilerplate
 from .._ufunc.comparison import not_equal
 from .._ufunc.floating import isnan
 from .._ufunc.math import add, multiply, negative, subtract
+from .._utils import is_np2
 from ..config import ScanCode, UnaryRedCode
+from ..lib.array_utils import normalize_axis_index
 from ..settings import settings as cupynumeric_settings
 from ._unary_red_utils import get_non_nan_unary_red_code
 from .array_dimension import broadcast_shapes, broadcast_to
@@ -112,7 +113,8 @@ def prod(
     Multiple GPUs, Multiple CPUs
     """
     if isinstance(initial, list):
-        raise TypeError("initial should not be a list")
+        exc = TypeError if is_np2 else ValueError  # type: ignore [unreachable]
+        raise exc("initial should not be a list")
 
     return multiply.reduce(
         a,

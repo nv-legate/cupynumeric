@@ -15,11 +15,18 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from numpy.lib.array_utils import normalize_axis_index
+
 from legate.core import get_legate_runtime, types as ty
 
+from ..lib.array_utils import normalize_axis_index
 from ..config import CuPyNumericOpCode
 from ..runtime import runtime
+from cupynumeric._utils import is_np2
+
+if is_np2:
+    from numpy.lib.array_utils import normalize_axis_index
+else:
+    from numpy.core.multiarray import normalize_axis_index  # type: ignore
 
 if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray

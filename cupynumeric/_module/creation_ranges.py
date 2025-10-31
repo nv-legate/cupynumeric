@@ -20,7 +20,6 @@ from types import EllipsisType
 from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.exceptions import AxisError
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
@@ -28,11 +27,17 @@ from .._module.array_dimension import broadcast_arrays
 from .._module.creation_data import asarray
 from .._ufunc.floating import floor, isfinite, isinf
 from .._ufunc.math import power
+from .._utils import is_np2
 from .array_dimension import expand_dims
 from .logic_truth import any
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+
+if is_np2:
+    from numpy.exceptions import AxisError
+else:
+    from numpy import AxisError  # type: ignore[no-redef,attr-defined]
 
 _builtin_max = max
 

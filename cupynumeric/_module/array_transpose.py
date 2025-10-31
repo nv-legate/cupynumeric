@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Sequence
 
 from .._array.util import add_boilerplate
-from numpy.lib.array_utils import normalize_axis_tuple
+from ..lib.array_utils import normalize_axis_tuple
 
 if TYPE_CHECKING:
     from .._array.array import ndarray

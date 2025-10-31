@@ -18,11 +18,11 @@ import math
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 import numpy as np
-from numpy.lib.array_utils import normalize_axis_tuple
 
 from .._array.util import add_boilerplate
 from .._ufunc.comparison import logical_not
 from .._ufunc.floating import isnan
+from ..lib.array_utils import normalize_axis_tuple
 from .array_transpose import moveaxis
 from .creation_data import asarray
 from .creation_shape import zeros

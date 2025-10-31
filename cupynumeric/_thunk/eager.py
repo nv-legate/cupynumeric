@@ -28,6 +28,7 @@ import numpy as np
 from legate.core import Scalar
 
 from .. import _ufunc
+from .._utils import is_np2
 from .._utils.array import is_advanced_indexing
 from ..config import (
     FFT_C2R,
@@ -564,7 +565,12 @@ class EagerArray(NumPyThunk):
                 elif res.dtype == np.float64:
                     self.array[:] = res.astype(np.float32)
                 else:
-                    self.array[:] = res
+                    if not is_np2:
+                        raise RuntimeError(
+                            f"Unsupported data type {res.dtype!r} in eager FFT"
+                        )
+                    else:
+                        self.array[:] = res
 
             else:
                 self.array[:] = res

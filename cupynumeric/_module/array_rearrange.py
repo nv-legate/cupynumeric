@@ -15,10 +15,10 @@
 from __future__ import annotations
 
 import itertools
-from numpy.lib.array_utils import normalize_axis_tuple
 from typing import TYPE_CHECKING, Sequence
 
 from .._array.util import add_boilerplate
+from ..lib.array_utils import normalize_axis_tuple
 from .array_dimension import broadcast
 from .array_transpose import transpose
 from .creation_shape import empty_like

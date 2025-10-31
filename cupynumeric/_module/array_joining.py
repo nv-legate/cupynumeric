@@ -18,10 +18,10 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
-from numpy.lib.array_utils import normalize_axis_index
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
+from ..lib.array_utils import normalize_axis_index
 from .array_dimension import _atleast_nd
 from .array_transpose import moveaxis
 from .creation_ranges import arange

@@ -35,12 +35,6 @@ from ._ufunc import *  # noqa: F403
 from ._utils.array import is_supported_dtype, local_task_array  # noqa: F401
 from ._utils.coverage import clone_module
 
-# Check NumPy version: require 2.x (major version == 2)
-if int(_np.__version__.split(".")[0]) != 2:
-    raise ImportError(
-        f"cuPyNumeric requires NumPy 2.x, but found NumPy {_np.__version__}."
-    )
-
 clone_module(_np, globals(), maybe_convert_to_np_ndarray)
 
 del maybe_convert_to_np_ndarray
