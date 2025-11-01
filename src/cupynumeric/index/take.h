@@ -24,6 +24,7 @@ struct TakeArgs {
   legate::PhysicalStore src;
   legate::PhysicalStore ind;
   legate::PhysicalStore res;
+  std::int8_t axis;
   bool clip;
 };
 

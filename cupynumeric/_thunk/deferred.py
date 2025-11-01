@@ -50,10 +50,12 @@ from legate.core import (
     TaskTarget,
 )
 from legate.core.utils import OrderedSet
+from legate.core import LEGATE_MAX_DIM
 
 from .. import _ufunc
 from ..lib.array_utils import normalize_axis_tuple
 from .._array.doctor import doctor
+from .._array.util import convert_to_cupynumeric_ndarray
 from .._utils.array import (
     is_advanced_indexing,
     max_identity,
@@ -2025,101 +2027,70 @@ class DeferredArray(NumPyThunk):
         mode: BoundsMode = "raise",
         along_axis: bool = False,
     ) -> Any:
-        # specialize for the case of taking a 1D index on the middle dimension of a 3D array,
-        # and reshape to fit that special case
         is_scalar = np.isscalar(indices)
-        ind_shape = () if is_scalar else indices.shape
+
+        # J: tuple of the shape of the dimensions preceding `axis`
+        # k: size in the `axis` direction
+        # M: tuple of the shape of the dimensions added by `indices`
+        # N: tuple of the shape of the dimensions following `axis`
 
         k = self.shape[axis]
+
+        M: tuple[int, ...]
 
         # Calculate dimensions based on mode
         if along_axis:
             # For take_along_axis, calculate dimensions for both source and indices
-            j_src = int(np.prod(self.shape[:axis]))
-            n_src = int(np.prod(self.shape[axis + 1 :]))
+            j_src = self.shape[:axis]
+            n_src = self.shape[axis + 1 :]
 
-            j_ind = int(np.prod(ind_shape[:axis]))
-            m = ind_shape[axis] if not is_scalar else 1
-            n_ind = int(np.prod(ind_shape[axis + 1 :]))
+            j_ind = indices.shape[:axis]
+            M = (indices.shape[axis],)
+            n_ind = indices.shape[axis + 1 :]
 
             # Assert no broadcasting: API layer should ensure j_src == j_ind and n_src == n_ind
             assert j_src == j_ind and n_src == n_ind
 
             # Use indices dimensions for output
-            j, n = j_ind, n_ind
-            # Expected shape is (j_ind, m, n_ind) based on indices
-            expected_ind_shape: tuple[int, ...] = (j_ind, m, n_ind)
+            J, N = j_ind, n_ind
         else:
             # For regular take, use array shape
-            j_src = j = int(np.prod(self.shape[:axis]))
-            n_src = n = int(np.prod(self.shape[axis + 1 :]))
-            m = int(np.prod(ind_shape))
-            # Expected shape is 1D: (m,)
-            expected_ind_shape = (m,)
+            j_src = J = self.shape[:axis]
+            n_src = N = self.shape[axis + 1 :]
+            M = () if is_scalar else indices.shape
 
-        # Check if reshaping is needed
-        # The fast path requires:
-        # - axis=1 and both source and indices in canonical 3D shape
-        # - For regular take: indices must be 1D (m,)
-        # - For take_along_axis: indices must be 3D (j_ind, m, n_ind)
-        # - No broadcasting: all stores must have same shape after promotion
-        if along_axis:
-            # For take_along_axis:
-            # - Check source shape against SOURCE dimensions (j_src, k, n_src)
-            # - Check indices shape against INDICES dimensions (j, m, n)
-            # Note: j_src == j and n_src == n (guaranteed by assertion above)
-            needs_reshape = (
-                axis != 1
-                or self.shape != (j_src, k, n_src)
-                or is_scalar
-                or ind_shape != expected_ind_shape  # Indices must be (j, m, n)
-                or (out is not None and out.shape != (j, m, n))
-            )
-        else:
-            # For regular take, broadcasting doesn't apply
-            # Both source and output use same j, n dimensions
-            needs_reshape = (
-                axis != 1
-                or self.shape != (j, k, n)
-                or is_scalar
-                or ind_shape != expected_ind_shape
-                or (out is not None and out.shape != (j, m, n))
-            )
+        # The working shape includes both an "input" and "output" copy of the
+        # `axis` dimension for alignment purposes
+        working_shape = J + (k,) + M + N
+        out_shape = J + M + N
+        j_size = int(np.prod(J))
+        m_size = int(np.prod(M))
+        n_size = int(np.prod(N))
 
-        if needs_reshape:
-            # Calculate output shape based on mode
-            if along_axis:
-                # For take_along_axis, output shape matches indices shape
-                out_shape = ind_shape
-            else:
-                # For regular take, insert indices dimensions at axis position
-                out_shape = (
-                    self.shape[:axis] + ind_shape + self.shape[(axis + 1) :]
-                )
+        if len(working_shape) > LEGATE_MAX_DIM:
+            # Reshape, take, and return to the original shape
 
             src = runtime.to_deferred_array(
-                self.reshape((j_src, k, n_src), "C"), read_only=True
+                self.reshape((j_size, k, n_size), "C"), read_only=True
             )
 
             if is_scalar:
-                from .._array.util import convert_to_cupynumeric_ndarray
-
-                reshaped_indices = convert_to_cupynumeric_ndarray(
-                    [indices]
-                )._thunk
+                reshaped_indices = indices
             else:
                 if along_axis:
                     # For take_along_axis, indices must maintain multidimensional structure
-                    # to match output shape (j, m, n), not be flattened to (m,)
-                    reshaped_indices = indices.reshape((j, m, n), "C")
+                    # to match output shape
+                    reshaped_indices = indices.reshape(
+                        (j_size, m_size, n_size), "C"
+                    )
                 else:
                     # For regular take, indices are uniform and can be 1D
-                    reshaped_indices = indices.reshape((m,), "C")
-            indices = runtime.to_deferred_array(
-                reshaped_indices, read_only=True
-            )
+                    reshaped_indices = indices.reshape((m_size,), "C")
+                reshaped_indices = runtime.to_deferred_array(
+                    reshaped_indices, read_only=True
+                )
             result = src._take_using_take_task(
-                indices, 1, out=None, mode=mode, along_axis=along_axis
+                reshaped_indices, 1, out=None, mode=mode, along_axis=along_axis
             )
             result = result.reshape(out_shape, order="C")
             if out is not None:
@@ -2127,29 +2098,35 @@ class DeferredArray(NumPyThunk):
                 return out
             return result
 
-        # is_scalar case exited in the conditional above
-        assert not is_scalar
-
         # For along_axis mode, indices shape must match output dimensions
         if along_axis:
-            # Indices already have the right shape (j, m, n), just promote to 4D
-            # Promotion ensures ind[a,b,c,d] == ind[a,0,c,d], so C++ can always read ind[res_point[0], 0, j, res_point[2]]
-            ind_store = indices.base.promote(1, k)
+            # Indices already have the output shape (J, M, N), just promote to add a fictitious "input"
+            ind_store = indices.base.promote(axis, k)
         else:
-            # For regular take, promote indices uniformly across all dimensions
-            # Promotion ensures ind[a,b,c,d] == ind[0,0,c,0], so C++ reading ind[res_point[0], 0, j, res_point[2]]
-            # gives the same result as ind[0,0,j,0] - thus C++ doesn't need an along_axis flag
-            ind_store = indices.base.promote(0, j).promote(1, k).promote(3, n)
+            if is_scalar:
+                ind_store = runtime.to_deferred_array(
+                    convert_to_cupynumeric_ndarray(indices)._thunk,
+                    read_only=True,
+                ).base
+            else:
+                ind_store = indices.base
+            for ind, extent in enumerate(J):
+                ind_store = ind_store.promote(ind, extent)
+            ind_store = ind_store.promote(axis, k)
+            old_size = len(J + (k,) + M)
+            for ind, extent in enumerate(N):
+                ind_store = ind_store.promote(old_size + ind, extent)
 
-        # promote input and output to have the same shape for alignment purposes
-        # TODO(tisaac): remove this when aligning on subsets of dimensions is possible
-        src_store = self.base.promote(2, m)
+        src_store = self.base
+        for ind, extent in enumerate(M):
+            src_store = src_store.promote(axis + 1 + ind, extent)
 
         if out is None:
             out = runtime.create_deferred_thunk(
-                shape=(j, m, n), dtype=self.base.type
+                shape=J + M + N, dtype=self.base.type
             )
-        res_store = out.base.promote(1, k)
+        res_store = out.base.promote(axis, k)
+
         assert src_store.shape == res_store.shape
         assert src_store.shape == ind_store.shape
 
@@ -2163,7 +2140,8 @@ class DeferredArray(NumPyThunk):
         task.add_constraint(align(p_src, p_res))
         task.add_constraint(align(p_src, p_ind))
         # broadcast the outgoing dimension so that indexing into the incoming dimension be done locally
-        task.add_constraint(broadcast(p_src, (1,)))
+        task.add_constraint(broadcast(p_src, (axis,)))
+        task.add_scalar_arg(axis, ty.int8)
         task.add_scalar_arg(mode == "clip", ty.bool_)
         task.execute()
         return out
@@ -2186,37 +2164,15 @@ class DeferredArray(NumPyThunk):
         if (target == TaskTarget.GPU and procs.count == 1) or (
             target != TaskTarget.GPU and procs.count == procs.per_node_count
         ):
-            # there should be no communication in broadcasting the inputs
-            # and reshapes should be fast, use the task
+            # there should be no communication in broadcasting the inputs,
+            # use the task
             return "task"
 
         ## now determine if reshapes are required
-        # filter out trivial dimensions from the indices
-        indices_shape = [a for a in indices_tuple if a != 1]
-        if len(indices_shape) == 0:
-            # a scalar index can be trivially promoted
-            indices_shape = [1]
-        if len(indices_shape) != 1:
-            # there may be nontrivial reshaping before the task,
-            # be conservative and select the index implementation
+        working_dim_count = len(self.shape) + len(indices_tuple)
+        if working_dim_count > LEGATE_MAX_DIM:
+            # using the task would require reshape, conservatively prefer advanced indexing
             return "index"
-        src_shape = [(a, False) for a in self.shape]
-        # mark the targeted axis
-        src_shape[axis] = (src_shape[axis][0], True)
-        # filter out trivial dimensions (not including the target dimension)
-        src_shape = [a for a in src_shape if (a[0] != 1 or a[1])]
-        if src_shape[0][1]:
-            # if the target dimension is the first dimension, we can add a trivial leading dimesion
-            src_shape = [(1, False)] + src_shape
-        if src_shape[-1][1]:
-            # if the target dimension is the last dimension, we can add a trivial tailing dimesion
-            src_shape = [(1, False)] + src_shape
-        if len(src_shape) != 3 or not src_shape[1]:
-            # if, after the shape is standardized, there aren't three dimensions and the
-            # target axis isn't the middle dimension, then the task might require
-            # nontrivial reshaping, be conservative and select the index implementation
-            return "index"
-        # the task does not require reshaping of inputs, use the task
         return "task"
 
     def take(

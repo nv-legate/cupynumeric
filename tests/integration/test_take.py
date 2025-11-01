@@ -23,7 +23,7 @@ import cupynumeric as num
 
 @pytest.fixture(params=("auto", "index", "task"))
 def set_take_default(request):
-    num.settings.take_default = request.param
+    num.settings.settings.take_default = request.param
 
 
 x = mk_seq_array(np, (3, 4, 5))

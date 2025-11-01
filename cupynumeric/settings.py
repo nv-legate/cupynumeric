@@ -281,7 +281,7 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
-    take_default: EnvOnlySetting[str] = EnvOnlySetting(
+    take_default: PrioritizedSetting[str] = PrioritizedSetting(
         "take_default",
         "CUPYNUMERIC_TAKE_DEFAULT",
         default="auto",
