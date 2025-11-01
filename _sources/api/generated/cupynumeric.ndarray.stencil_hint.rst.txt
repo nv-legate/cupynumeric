@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.stencil\_hint
+=================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.stencil_hint

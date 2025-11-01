@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.round
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.round

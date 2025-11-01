@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The N-Dimensional array (cupynumeric.ndarray) &#8212; NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a)</title>
+    <title>The N-Dimensional array (cupynumeric.ndarray) &#8212; NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0)</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=8af59fe7"></script>
+    <script src="../_static/documentation_options.js?v=63f9c29c"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -130,11 +130,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0)</p>
   
 </a></div>
     
@@ -241,11 +241,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (25.11.00.dev+17.gc970ae9a)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (25.11.00.dev+19.ge057efe0)</p>
   
 </a>
 
@@ -400,6 +400,7 @@
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.conjugate.html">cupynumeric.ndarray.conjugate</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dot.html">cupynumeric.ndarray.dot</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.flip.html">cupynumeric.ndarray.flip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.round.html">cupynumeric.ndarray.round</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.sum.html">cupynumeric.ndarray.sum</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.cumsum.html">cupynumeric.ndarray.cumsum</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.mean.html">cupynumeric.ndarray.mean</a></li>
@@ -464,6 +465,7 @@
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__complex__.html">cupynumeric.ndarray.__complex__</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__str__.html">cupynumeric.ndarray.__str__</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.__repr__.html">cupynumeric.ndarray.__repr__</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.stencil_hint.html">cupynumeric.ndarray.stencil_hint</a></li>
 </ul>
 </details></li>
 </ul>
@@ -1177,31 +1179,34 @@ routines, and also by using the low-level ndarray constructor:</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.flip.html#cupynumeric.ndarray.flip" title="cupynumeric.ndarray.flip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.flip</span></code></a>([axis])</p></td>
 <td><p>Reverse the order of elements in an array along the given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.sum.html#cupynumeric.ndarray.sum" title="cupynumeric.ndarray.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.sum</span></code></a>([axis, dtype, out, keepdims, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.round.html#cupynumeric.ndarray.round" title="cupynumeric.ndarray.round"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.round</span></code></a>([decimals, out])</p></td>
+<td><p>Return a with each element rounded to the given number of decimals.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.sum.html#cupynumeric.ndarray.sum" title="cupynumeric.ndarray.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.sum</span></code></a>([axis, dtype, out, keepdims, ...])</p></td>
 <td><p>a.sum(axis=None, dtype=None, out=None, keepdims=False, initial=0, where=None)</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.cumsum.html#cupynumeric.ndarray.cumsum" title="cupynumeric.ndarray.cumsum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.cumsum</span></code></a>([axis, dtype, out])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.cumsum.html#cupynumeric.ndarray.cumsum" title="cupynumeric.ndarray.cumsum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.cumsum</span></code></a>([axis, dtype, out])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.mean.html#cupynumeric.ndarray.mean" title="cupynumeric.ndarray.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.mean</span></code></a>([axis, dtype, out, keepdims])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.mean.html#cupynumeric.ndarray.mean" title="cupynumeric.ndarray.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.mean</span></code></a>([axis, dtype, out, keepdims])</p></td>
 <td><p>Returns the average of the array elements along given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.var.html#cupynumeric.ndarray.var" title="cupynumeric.ndarray.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.var</span></code></a>(a[, axis, dtype, out, ddof, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.var.html#cupynumeric.ndarray.var" title="cupynumeric.ndarray.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.var</span></code></a>(a[, axis, dtype, out, ddof, ...])</p></td>
 <td><p>Returns the variance of the array elements along given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.prod.html#cupynumeric.ndarray.prod" title="cupynumeric.ndarray.prod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.prod</span></code></a>([axis, dtype, out, keepdims, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.prod.html#cupynumeric.ndarray.prod" title="cupynumeric.ndarray.prod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.prod</span></code></a>([axis, dtype, out, keepdims, ...])</p></td>
 <td><p>a.prod(axis=None, dtype=None, out=None, keepdims=False, initial=1, where=True)</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.cumprod.html#cupynumeric.ndarray.cumprod" title="cupynumeric.ndarray.cumprod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.cumprod</span></code></a>([axis, dtype, out])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.cumprod.html#cupynumeric.ndarray.cumprod" title="cupynumeric.ndarray.cumprod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.cumprod</span></code></a>([axis, dtype, out])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.all.html#cupynumeric.ndarray.all" title="cupynumeric.ndarray.all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.all</span></code></a>([axis, out, keepdims, initial, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.all.html#cupynumeric.ndarray.all" title="cupynumeric.ndarray.all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.all</span></code></a>([axis, out, keepdims, initial, ...])</p></td>
 <td><p>Returns True if all elements evaluate to True.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.any.html#cupynumeric.ndarray.any" title="cupynumeric.ndarray.any"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.any</span></code></a>([axis, out, keepdims, initial, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.any.html#cupynumeric.ndarray.any" title="cupynumeric.ndarray.any"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.any</span></code></a>([axis, out, keepdims, initial, ...])</p></td>
 <td><p>Returns True if any of the elements of <cite>a</cite> evaluate to True.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.unique.html#cupynumeric.ndarray.unique" title="cupynumeric.ndarray.unique"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.unique</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.unique.html#cupynumeric.ndarray.unique" title="cupynumeric.ndarray.unique"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.unique</span></code></a>()</p></td>
 <td><p>Find the unique elements of an array.</p></td>
 </tr>
 </tbody>
@@ -1446,6 +1451,17 @@ routines, and also by using the low-level ndarray constructor:</p>
 </table>
 </div>
 </section>
+<section id="cupynumeric-specific-methods">
+<h2>cuPyNumeric-specific methods<a class="headerlink" href="#cupynumeric-specific-methods" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.stencil_hint.html#cupynumeric.ndarray.stencil_hint" title="cupynumeric.ndarray.stencil_hint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.stencil_hint</span></code></a>(low_offsets, high_offsets)</p></td>
+<td><p>Inform cuPyNumeric that this array will be used in a stencil computation in the following code.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 
 
@@ -1518,6 +1534,7 @@ routines, and also by using the low-level ndarray constructor:</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#special-methods">Special methods</a><ul class="nav section-nav flex-column">
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cupynumeric-specific-methods">cuPyNumeric-specific methods</a></li>
 </ul>
   </nav></div>
 
