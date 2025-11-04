@@ -25,13 +25,12 @@ jobs:
     name: CUDA 12.9 tests
     strategy:
       fail-fast: false
-      matrix:
+      matrix: &cuda-build-matrix
         platform:
           - linux
           - linux-aarch64
         target-device:
           - gpu
-          - cpu
         python-version:
           - "3.11"
           - "3.12"
@@ -54,17 +53,7 @@ jobs:
     name: CUDA 12.9 packages
     strategy:
       fail-fast: false
-      matrix:
-        platform:
-          - linux
-          - linux-aarch64
-        target-device:
-          - gpu
-          - cpu
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
+      matrix: *cuda-build-matrix
     uses:
       ./.github/workflows/gh-build-and-test.yml
     with:
@@ -83,17 +72,7 @@ jobs:
     name: CUDA 13.0 tests
     strategy:
       fail-fast: false
-      matrix:
-        platform:
-          - linux
-          - linux-aarch64
-        target-device:
-          - gpu
-          - cpu
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
+      matrix: *cuda-build-matrix
     uses:
       ./.github/workflows/gh-build-and-test.yml
     with:
@@ -112,12 +91,30 @@ jobs:
     name: CUDA 13.0 packages
     strategy:
       fail-fast: false
-      matrix:
+      matrix: *cuda-build-matrix
+    uses:
+      ./.github/workflows/gh-build-and-test.yml
+    with:
+      build-type: nightly
+      platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
+      python-version: ${{ matrix.python-version }}
+      target-device: ${{ matrix.target-device }}
+      build-has-tests: false
+      cuda-version: "13.0.0"
+      refname: ${{ github.ref_name }}
+      default-branch: ${{ github.event.repository.default_branch }}
+    secrets: inherit
+
+  cpu-tests:
+    name: CPU nightly tests
+    strategy:
+      fail-fast: false
+      matrix: &cpu-build-matrix
         platform:
           - linux
           - linux-aarch64
         target-device:
-          - gpu
           - cpu
         python-version:
           - "3.11"
@@ -131,8 +128,25 @@ jobs:
       ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
+      build-has-tests: true
+      refname: ${{ github.ref_name }}
+      default-branch: ${{ github.event.repository.default_branch }}
+    secrets: inherit
+
+  cpu-packages:
+    name: CPU nightly packages
+    strategy:
+      fail-fast: false
+      matrix: *cpu-build-matrix
+    uses:
+      ./.github/workflows/gh-build-and-test.yml
+    with:
+      build-type: nightly
+      platform: ${{ matrix.platform }}
+      ref-sha: ${{ github.event.inputs.ref-sha }}
+      python-version: ${{ matrix.python-version }}
+      target-device: ${{ matrix.target-device }}
       build-has-tests: false
-      cuda-version: "13.0.0"
       refname: ${{ github.ref_name }}
       default-branch: ${{ github.event.repository.default_branch }}
     secrets: inherit
