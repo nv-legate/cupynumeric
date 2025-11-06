@@ -51,25 +51,20 @@ class RepartitionLayoutMapper : public legate::mapping::Mapper {
     bool in_row_major  = task_id > 1;
 
     std::vector<legate::mapping::StoreMapping> mappings;
-    auto inputs  = task.inputs();
-    auto outputs = task.outputs();
+    auto inputs       = task.inputs();
+    auto outputs      = task.outputs();
+    auto in_ordering  = in_row_major ? legate::mapping::DimOrdering::c_order()
+                                     : legate::mapping::DimOrdering::fortran_order();
+    auto out_ordering = out_row_major ? legate::mapping::DimOrdering::c_order()
+                                      : legate::mapping::DimOrdering::fortran_order();
+
     for (auto& input : inputs) {
       mappings.push_back(legate::mapping::StoreMapping::default_mapping(
-        input.data(), options.front(), true /*exact*/));
-      if (in_row_major) {
-        mappings.back().policy().ordering.set_c_order();
-      } else {
-        mappings.back().policy().ordering.set_fortran_order();
-      }
+        input.data(), options.front(), true /*exact*/, in_ordering));
     }
     for (auto& output : outputs) {
       mappings.push_back(legate::mapping::StoreMapping::default_mapping(
-        output.data(), options.front(), true /*exact*/));
-      if (out_row_major) {
-        mappings.back().policy().ordering.set_c_order();
-      } else {
-        mappings.back().policy().ordering.set_fortran_order();
-      }
+        output.data(), options.front(), true /*exact*/, out_ordering));
     }
     return mappings;
   }
