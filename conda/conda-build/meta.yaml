@@ -157,7 +157,14 @@ requirements:
     - legate ={{ legate_version }}=*{{ legate_buildstr }}
 {% if gpu_enabled_bool %}
     - cuda-cccl
-    - cutensor >=2.0,<2.4,!=2.3.0.6 =*_*
+{% if cuda_major<13 %}
+    # cutensor 2.3 drops support for Volta, so avoid that for our CUDA 12 builds
+    - cutensor >=2.0,<2.3 =*_*
+{% else %}
+    # cutensor 2.3 is required for CUDA 13, so we have no choice but to drop
+    # support for Volta on our CUDA 13 packages
+    - cutensor >=2.0,<2.4 =*_*
+{% endif %}
     - libcublas-dev
     - libcusolver-dev
     - libcufft-dev
@@ -184,7 +191,6 @@ requirements:
     - {{ pin_compatible('libcusolver',  min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufile',    min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
-    - cutensor >=2.0,<2.4,!=2.3.0.6 =*_*     # allow CUDA 13 cuTENSOR builds while excluding 2.3.0.6 regression
     - nccl >=2.0,<3
     - cupy
     - libnvjitlink
