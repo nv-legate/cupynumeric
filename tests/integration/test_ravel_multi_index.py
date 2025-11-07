@@ -15,6 +15,7 @@
 
 import numpy as np
 import pytest
+import re
 from utils.generators import mk_seq_array
 from utils.utils import ONE_MAX_DIM_RANGE
 
@@ -104,6 +105,30 @@ class TestRavelMultiIndexErrors:
             np.ravel_multi_index(multi_index_np, shape, order="K")
         with pytest.raises(ValueError, match=message):
             num.ravel_multi_index(multi_index_num, shape, order="K")
+
+    def test_mode_length_mismatch(self) -> None:
+        shape = (3, 3)
+        multi_index_np = (np.array([0]), np.array([0]))
+        multi_index_num = (num.array([0]), num.array([0]))
+
+        np_error_msg = r"list of clipmodes has wrong length"
+        with pytest.raises(ValueError, match=re.escape(np_error_msg)):
+            np.ravel_multi_index(multi_index_np, shape, mode=("wrap",))
+
+        num_error_msg = r"does not match dimensionality of target array"
+        with pytest.raises(ValueError, match=re.escape(num_error_msg)):
+            num.ravel_multi_index(multi_index_num, shape, mode=("wrap",))
+
+    def test_invalid_mode(self) -> None:
+        shape = (3,)
+        error_msg = (
+            r"clipmode must be one of 'clip', 'raise', or 'wrap' (got 'bad')"
+        )
+        with pytest.raises(ValueError, match=re.escape(error_msg)):
+            np.ravel_multi_index(np.array([0]), shape, mode="bad")
+        error_msg = r"invalid mode: bad"
+        with pytest.raises(ValueError, match=re.escape(error_msg)):
+            num.ravel_multi_index(num.array([0]), shape, mode="bad")
 
 
 def test_empty_indices():
@@ -228,6 +253,14 @@ def test_mismatched_input_lengths():
         np.ravel_multi_index(multi_index_wrong_np, shape)
     with pytest.raises(ValueError, match=message):
         num.ravel_multi_index(multi_index_wrong_num, shape)
+
+
+def test_single_array() -> None:
+    shape = (3,)
+    multi_index_num = num.array([2, 1, 0], dtype=int)
+    res_num = num.ravel_multi_index(multi_index_num, shape)
+    res_np = np.ravel_multi_index((np.array([2, 1, 0]),), shape)
+    assert np.allclose(res_num, res_np)
 
 
 def test_degenerate_dimensions():
