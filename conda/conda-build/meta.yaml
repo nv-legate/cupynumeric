@@ -155,6 +155,7 @@ requirements:
     # see https://github.com/nv-legate/cupynumeric.internal/issues/342
     - openblas <=0.3.23 =*openmp*
     - legate ={{ legate_version }}=*{{ legate_buildstr }}
+    - libhwloc
 {% if gpu_enabled_bool %}
     - cuda-cccl
 {% if cuda_major<13 %}
