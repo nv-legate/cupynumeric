@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Black-Scholes options pricing &#8212; NVIDIA cuPyNumeric (25.12.00.dev)</title>
+    <title>Changes: 25.12 &#8212; NVIDIA cuPyNumeric (25.12.00.dev)</title>
   
   
   
@@ -35,7 +35,6 @@
     <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/params.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -51,9 +50,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=4ea706d9"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/black_scholes';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'changes/2512';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
@@ -66,8 +63,6 @@
 
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Cholesky decomposition" href="cholesky.html" />
-    <link rel="prev" title="Examples" href="index.html" />
 
 
 <script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js"></script>
@@ -315,7 +310,7 @@
      aria-label="Table of Contents">
   <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current nav bd-sidenav">
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../user/index.html">User guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../user/usage.html">Usage</a></li>
@@ -332,15 +327,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../user/task.html">Extend cuPyNumeric with Legate-tasks</a></li>
 </ul>
 </details></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Black-Scholes options pricing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cholesky.html">Cholesky decomposition</a></li>
-<li class="toctree-l2"><a class="reference internal" href="stencil.html">Jacobi stencil</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kmeans.html">K-Means Clustering Algorithm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="edge_detection.html">Edge Detection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="newton_raphson_2d.html">Newton Raphson Method In Two Dimensions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="compact_finite_difference.html">Compact Finite Difference Scheme</a></li>
-<li class="toctree-l2"><a class="reference internal" href="torchswe.html">TorchSWE case study</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/black_scholes.html">Black-Scholes options pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/cholesky.html">Cholesky decomposition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/stencil.html">Jacobi stencil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/kmeans.html">K-Means Clustering Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/edge_detection.html">Edge Detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/newton_raphson_2d.html">Newton Raphson Method In Two Dimensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/compact_finite_difference.html">Compact Finite Difference Scheme</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/torchswe.html">TorchSWE case study</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -873,8 +868,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../developer/testing.html">Running tests</a></li>
 </ul>
 </details></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../changes/index.html">Change Log</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../changes/dev.html">Changes: 25.12</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="index.html">Change Log</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="dev.html">Changes: 25.12</a></li>
 </ul>
 </details></li>
 </ul>
@@ -911,10 +906,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    
-    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Examples</a></li>
-    
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Black-Scholes options pricing</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Changes: 25.12</span></li>
   </ul>
 </nav>
 </div>
@@ -931,165 +923,12 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="Black-Scholes-options-pricing">
-<h1>Black-Scholes options pricing<a class="headerlink" href="#Black-Scholes-options-pricing" title="Link to this heading">#</a></h1>
-<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model#Black%E2%80%93Scholes_formula">Black-Scholes formula</a> calculates prices for (European) put and call stock options. The inputs to this formula are:</p>
-<ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(S\)</span> is the current option price</p></li>
-<li><p><span class="math notranslate nohighlight">\(X\)</span> is the strike price</p></li>
-<li><p><span class="math notranslate nohighlight">\(T\)</span> is the time to expiration</p></li>
-<li><p><span class="math notranslate nohighlight">\(r\)</span> is the continuously compounded risk free interest rate</p></li>
-<li><p><span class="math notranslate nohighlight">\(v\)</span> is the implied volatility for the underlying stock</p></li>
-</ul>
-<details><summary><p>License</p>
-</summary><pre>
-
-Copyright 2024 NVIDIA Corporation
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-</pre></details><p>To get started, <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">cupynumeric</span> <span class="pre">as</span> <span class="pre">np</span></code> (just the same way we would import <code class="docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>  <span class="c1"># instead of numpy</span>
-</pre></div>
-</div>
-</div>
-<p>The Cumulative Normal Distribution (CND) is defined as</p>
-<div class="math notranslate nohighlight">
-\[\frac{1}{2\pi}\int_{-\infty}^{x} e^{-t^2/2}\; dt = \frac12\big[1 + \mathtt{erf}\big(\frac{x}{\sqrt{2}}\big)\big]\]</div>
-<p>In order to compute this efficiently, an expansion approximation (from John C. Hull (1997) “Options, Futures, and Other Derivatives”) is used.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">CND</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
-    <span class="c1"># The expansion coefficients for erf are derived from Abramowitz and Stegun, eq 7.1.26</span>
-    <span class="c1"># https://www.cs.bham.ac.uk/~aps/research/projects/as/resources/AandS-a4-v1-2.pdf</span>
-    <span class="n">A1</span> <span class="o">=</span> <span class="mf">0.31938153</span>
-    <span class="n">A2</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.356563782</span>
-    <span class="n">A3</span> <span class="o">=</span> <span class="mf">1.781477937</span>
-    <span class="n">A4</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.821255978</span>
-    <span class="n">A5</span> <span class="o">=</span> <span class="mf">1.330274429</span>
-    <span class="n">RSQRT2PI</span> <span class="o">=</span> <span class="mf">0.39894228040143267793994605993438</span>  <span class="c1"># 1 / sqrt(2*pi)</span>
-
-    <span class="n">K</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">0.2316419</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
-
-    <span class="n">cnd</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">RSQRT2PI</span>
-        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">d</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span>
-        <span class="o">*</span> <span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A1</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A2</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A3</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">A4</span> <span class="o">+</span> <span class="n">K</span> <span class="o">*</span> <span class="n">A5</span><span class="p">)))))</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">d</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">cnd</span><span class="p">,</span> <span class="n">cnd</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>Now that we have a method to compute the CND, we can implement the Black-Scholes formula below</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">black_scholes</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
-    <span class="n">sqrt_T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
-
-    <span class="n">d1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">S</span> <span class="o">/</span> <span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">v</span> <span class="o">*</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">T</span> <span class="o">/</span> <span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">sqrt_T</span><span class="p">)</span>
-    <span class="n">cnd_d1</span> <span class="o">=</span> <span class="n">CND</span><span class="p">(</span><span class="n">d1</span><span class="p">)</span>
-
-    <span class="n">d2</span> <span class="o">=</span> <span class="n">d1</span> <span class="o">-</span> <span class="n">v</span> <span class="o">*</span> <span class="n">sqrt_T</span>
-    <span class="n">cnd_d2</span> <span class="o">=</span> <span class="n">CND</span><span class="p">(</span><span class="n">d2</span><span class="p">)</span>
-
-    <span class="n">exp_rT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">r</span> <span class="o">*</span> <span class="n">T</span><span class="p">)</span>
-
-    <span class="n">call_result</span> <span class="o">=</span> <span class="n">S</span> <span class="o">*</span> <span class="n">cnd_d1</span> <span class="o">-</span> <span class="n">X</span> <span class="o">*</span> <span class="n">exp_rT</span> <span class="o">*</span> <span class="n">cnd_d2</span>
-    <span class="n">put_result</span> <span class="o">=</span> <span class="n">X</span> <span class="o">*</span> <span class="n">exp_rT</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">cnd_d2</span><span class="p">)</span> <span class="o">-</span> <span class="n">S</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">cnd_d1</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">call_result</span><span class="p">,</span> <span class="n">put_result</span>
-</pre></div>
-</div>
-</div>
-<p>Let’s use the <code class="docutils literal notranslate"><span class="pre">black_scholes</span></code> function above to price one million put and call options, keeping everying fixed except the current option price <span class="math notranslate nohighlight">\(S\)</span>.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Because of Legate&#39;s deferred execution model, legate.timing should be used instead</span>
-<span class="c1"># of standard Python datetime utilities. Python datetime.now would return the time</span>
-<span class="c1"># a task is *scheduled*, not necessarily the time a task finishes executing.</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">1000000</span>  <span class="c1"># number of options to price</span>
-<span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>  <span class="c1"># current option price</span>
-<span class="n">X</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># strike price</span>
-<span class="n">T</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># time to expiration</span>
-<span class="n">r</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># continuously compounded risk free interest rate</span>
-<span class="n">v</span> <span class="o">=</span> <span class="mf">0.3</span>  <span class="c1"># implied volatility for the underlying stock</span>
-
-<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-<span class="n">call</span><span class="p">,</span> <span class="n">put</span> <span class="o">=</span> <span class="n">black_scholes</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
-<span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed Time: </span><span class="si">{</span><span class="p">(</span><span class="n">stop</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1000.0</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-/home/bryan/work/legate.core/legate/core/context.py:280: RuntimeWarning: cuPyNumeric has not implemented numpy.result_type and is falling back to canonical numpy. You may notice significantly decreased performance for this function call.
-  result = func(*args, **kwargs)
-Elapsed Time: 45.659 ms
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">call</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;call&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">put</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;put&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Black-Scholes value vs option price, for </span><span class="si">{</span><span class="n">N</span><span class="si">}</span><span class="s2"> options&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Option price $S$&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Value&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/examples_black_scholes_10_0.png" src="../_images/examples_black_scholes_10_0.png" />
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-</div>
+  <section id="changes-25-12">
+<h1>Changes: 25.12<a class="headerlink" href="#changes-25-12" title="Link to this heading">#</a></h1>
+<p class="rubric">Highlights</p>
+<p class="rubric">Improvements</p>
+<p class="rubric">Bug Fixes</p>
+<p class="rubric">Deprecations</p>
 </section>
 
 
@@ -1102,24 +941,6 @@ Elapsed Time: 45.659 ms
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
-    <a class="left-prev"
-       href="index.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Examples</p>
-      </div>
-    </a>
-    <a class="right-next"
-       href="cholesky.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Cholesky decomposition</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
-    </a>
 </div>
                 </footer>
               
