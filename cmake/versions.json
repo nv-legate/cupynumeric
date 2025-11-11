@@ -6,12 +6,12 @@
             "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ inputs.python-version }}-${{ inputs.target-device }}-release-with_tests-${{ inputs.network }}-<<git_tag>>",
             "artifact_workflow": "ci-gh.yml",
             "git_shallow": false,
-            "git_tag": "61fe8b51820ce6eb295853bd4f5d90ee217c118a",
+            "git_tag": "9dd1fc216db2c2523636c296297db109949cb29f",
             "git_url": "git@github.com:nv-legate/legate.internal.git",
             "nightly_workflow": "ci-gh-nightly-release.yml",
             "org": "nv-legate",
             "repo": "legate.internal",
-            "version": "25.11.00"
+            "version": "25.12.00"
         }
     }
 }
