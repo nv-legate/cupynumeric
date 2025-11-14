@@ -3,12 +3,9 @@
 NVIDIA cuPyNumeric
 ==================
 
-cuPyNumeric is a library that aims to provide a distributed and accelerated
-drop-in replacement for `NumPy`_ built on top of the `Legate`_ framework.
-
-With cuPyNumeric you can write code productively in Python, using the familiar
-NumPy API, and have your program scale with no code changes from single-CPU
-computers to multi-node-multi-GPU clusters.
+cuPyNumeric implements the NumPy API on top of the Legate framework,
+providing transparent accelerated computing that scales from a single CPU
+to a single GPU, and up to multi-node, multi-GPU systems.
 
 For example, you can run `the final example of the Python CFD course`_
 completely unmodified on 2048 A100 GPUs in a `DGX SuperPOD`_ and achieve

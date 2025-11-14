@@ -19,28 +19,13 @@ limitations under the License.
 
 # cuPyNumeric
 
-cuPyNumeric is a library that aims to provide a distributed and accelerated
-drop-in replacement for [NumPy](https://numpy.org/) built on top of the
-[Legate](https://github.com/nv-legate/legate) framework.
+cuPyNumeric is a high-performance array computing library that implements the
+NumPy API on top of the Legate framework. It enables you to run existing NumPy
+workflows on GPUs and distributed systems with little to no code changes.
 
-With cuPyNumeric you can write code productively in Python, using the familiar
-NumPy API, and have your program scale with no code changes from single-CPU
-computers to multi-node-multi-GPU clusters.
-
-For example, you can run
-[the final example of the Python CFD course](https://github.com/barbagroup/CFDPython/blob/master/lessons/15_Step_12.ipynb)
-completely unmodified on 2048 A100 GPUs in a
-[DGX SuperPOD](https://www.nvidia.com/en-us/data-center/dgx-superpod/)
-and achieve good weak scaling.
-
-<img src="docs/figures/cfd-demo.png" alt="drawing" width="500"/>
-
-cuPyNumeric works best for programs that have very large arrays of data
-that cannot fit in the memory of a single GPU or a single node and need
-to span multiple nodes and GPUs. While our implementation of the current
-NumPy API is still incomplete, programs that use unimplemented features
-will still work (assuming enough memory) by falling back to the
-canonical NumPy implementation.
+Whether your work involves large-scale data analysis, complex simulations, or
+machine learning, cuPyNumeric allows you to seamlessly scale from a single CPU,
+to a single GPU, and up to thousands of GPUs across multiple nodes.
 
 ## Installation
 
