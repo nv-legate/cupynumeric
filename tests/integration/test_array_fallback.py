@@ -15,6 +15,7 @@
 
 import pytest
 
+import numpy as np
 import cupynumeric as num
 
 
@@ -30,6 +31,20 @@ def test_unimplemented_method_self_fallback():
     assert not ones.std._cupynumeric_metadata.implemented
 
     ones.std()
+
+
+def test_unimplemented_cupynumeric_return():
+    # This test uses pad because it is currently unimplemented, and we want
+    # to verify a behaviour of unimplemented array return values. If pad
+    # becomes implemeneted in the future, this assertion will start to fail,
+    # and a new (unimplemented) array-returning function should be found to
+    # replace it
+    assert not num.pad._cupynumeric_metadata.implemented
+
+    arr = np.array([1, 2, 3])
+    result = num.pad(arr, (2, 2), mode="edge")
+
+    assert isinstance(result, num.ndarray)
 
 
 @pytest.mark.parametrize(

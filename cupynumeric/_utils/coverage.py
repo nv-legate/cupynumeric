@@ -278,7 +278,14 @@ def unimplemented(
             if fallback:
                 args = deep_apply(args, fallback)
                 kwargs = deep_apply(kwargs, fallback)
-            return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if isinstance(result, numpy.ndarray):
+                    from .._array.util import convert_to_cupynumeric_ndarray
+
+                    return convert_to_cupynumeric_ndarray(result)
+                return result
+            else:
+                return func(*args, **kwargs)
 
         if not profiling:
             return run_func(args, kwargs)
