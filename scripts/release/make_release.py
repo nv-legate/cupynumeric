@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from argparse import ArgumentParser
 
-from util.bump_docs_version import rotate_switcher, update_changelog
+from util.bump_docs_version import rotate_switcher
 from util.bump_versions import (
     bump_cross_repo_dependencies,
     bump_pyproject_dependency,
@@ -48,7 +48,6 @@ def parse_args() -> Context:
 
 def post_cut(ctx: Context) -> None:
     rotate_switcher(ctx)
-    update_changelog(ctx)
     bump_version_file(ctx)
     bump_cross_repo_dependencies(ctx)
     bump_pyproject_dependency(ctx)

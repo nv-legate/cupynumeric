@@ -511,7 +511,7 @@ endif()
 
 set(doc_string
         [=[
-Provide targets for cuPyNumeric, an aspiring drop-in replacement for NumPy at scale.
+Provide targets for cuPyNumeric.
 
 Imported Targets:
   - cupynumeric::cupynumeric

@@ -8,7 +8,7 @@ Introduction
 ============
 
 cuPyNumeric is a NumPy-compatible library designed for large-scale computing.
-It is a distributed and accelerated drop-in replacement for the NumPy API,
+It is a distributed and accelerated implementation of the NumPy API,
 meaning that the same code running on a laptop can scale to multi-node,
 multi-GPU execution. cuPyNumeric is built on `Legate`_, which provides scalable
 and accessible GPU acceleration and distributed computing capability by

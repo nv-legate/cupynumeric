@@ -1,5 +1,3 @@
-:orphan:
-
 .. _thirdparty:
 
 Third-party notices

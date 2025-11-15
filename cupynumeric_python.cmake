@@ -84,7 +84,7 @@ install(TARGETS cupynumeric_python
 
 set(doc_string
         [=[
-Provide Python targets for cuPyNumeric, an aspiring drop-in replacement for NumPy at scale.
+Provide Python targets for cuPyNumeric.
 
 Imported Targets:
   - cupynumeric::cupynumeric_python

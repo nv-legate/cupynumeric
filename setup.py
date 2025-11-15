@@ -23,7 +23,7 @@ import versioneer
 setup(
     name="cupynumeric",
     version=versioneer.get_version(),
-    description="An Aspiring Drop-In Replacement for NumPy at Scale",
+    description="NumPy and SciPy on Multi-Node Multi-GPU systems",
     url="https://github.com/nv-legate/cupynumeric",
     author="NVIDIA Corporation",
     license="Apache 2.0",

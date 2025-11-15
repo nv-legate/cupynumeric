@@ -4,12 +4,9 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from .context import Context
 
 
@@ -18,41 +15,6 @@ class SwitcherData(TypedDict, total=False):
     preferred: bool
     url: str
     version: str
-
-
-DEFAULT_CHANGELOG = """\
-..
-  SPDX-FileCopyrightText: Copyright (c) 2025-{current_year} NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-  SPDX-License-Identifier: Apache-2.0
-
-Changes: {version}
-====================
-
-.. rubric:: Highlights
-
-.. rubric:: Improvements
-
-.. rubric:: Bug Fixes
-
-.. rubric:: Deprecations
-
-""".strip()
-
-
-DEFAULT_INDEX = """\
-..
-  SPDX-FileCopyrightText: Copyright (c) 2025-{current_year} NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-  SPDX-License-Identifier: Apache-2.0
-
-Change Log
-==========
-
-.. toctree::
-   :maxdepth: 1
-
-   dev
-
-""".strip()
 
 
 def rotate_switcher(ctx: Context) -> None:
@@ -122,75 +84,3 @@ def rotate_switcher(ctx: Context) -> None:
         with switcher_json.open(mode="w") as fd:
             json.dump(data, fd, indent=4, sort_keys=True)
     ctx.vprint(f"Updated {switcher_json} to {new_version}")
-
-
-def _changes_dir(ctx: Context) -> Path:
-    changes = (
-        ctx.cupynumeric_dir / "docs" / "cupynumeric" / "source" / "changes"
-    )
-    if not changes.is_dir() and not ctx.dry_run:
-        changes.mkdir(parents=True, exist_ok=True)
-    return changes
-
-
-def _ensure_index(changes_dir: Path, ctx: Context) -> None:
-    index = changes_dir / "index.rst"
-    if index.is_file():
-        return
-
-    if not ctx.dry_run:
-        text = DEFAULT_INDEX.format(current_year=datetime.now().year)
-        index.write_text(text)
-        ctx.run_cmd(["git", "add", str(index)])
-    ctx.vprint(f"Created {index}")
-
-
-def _rotate_log_file(changes_dir: Path, ctx: Context) -> Path:
-    ver_file = ctx.version_after_this.replace(".", "")
-    new_log = changes_dir / f"{ver_file}.rst"
-
-    if new_log.is_file():
-        ctx.vprint(f"Changelog already exists: {new_log}")
-        return new_log
-
-    header = DEFAULT_CHANGELOG.format(
-        version=ctx.version_after_this, current_year=datetime.now().year
-    )
-    if not ctx.dry_run:
-        new_log.write_text(header)
-        ctx.run_cmd(["git", "add", str(new_log)])
-    ctx.vprint(f"Wrote new log to {new_log}")
-    return new_log
-
-
-def _update_symlink(changes_dir: Path, new_log: Path, ctx: Context) -> None:
-    dev_link = changes_dir / "dev.rst"
-
-    def create_link() -> None:
-        if ctx.dry_run:
-            return
-        if dev_link.exists() or dev_link.is_symlink():
-            dev_link.unlink()
-        dev_link.symlink_to(new_log.name)
-        ctx.run_cmd(["git", "add", str(dev_link)])
-        ctx.vprint(f"Created symlink {dev_link} -> {new_log.name}")
-
-    if not dev_link.exists():
-        create_link()
-        return
-
-    if not dev_link.is_symlink():
-        raise ValueError(f"Expected {dev_link} to be a symlink")
-
-    if dev_link.readlink().resolve() == new_log.resolve():
-        ctx.vprint(f"dev symlink already up to date: {dev_link}")
-        return
-
-    create_link()
-
-
-def update_changelog(ctx: Context) -> None:
-    changes_dir = _changes_dir(ctx)
-    _ensure_index(changes_dir, ctx)
-    new_log = _rotate_log_file(changes_dir, ctx)
-    _update_symlink(changes_dir, new_log, ctx)
