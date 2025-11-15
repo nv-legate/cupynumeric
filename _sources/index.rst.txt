@@ -21,7 +21,8 @@ good weak scaling.
   api/index
   faqs
   developer/index
-  changes/index
+  acknowledgments
+  oss-licenses
 
 
 Indices and tables

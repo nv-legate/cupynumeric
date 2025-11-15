@@ -34,6 +34,7 @@ Nightly top-of-tree builds of cuPyNumeric are available on a separate channel,
 `legate-nightly`:
 
 .. code-block:: bash
+
    $ conda install -c conda-forge -c legate-nightly cupynumeric
 
 Refer to the `nightly docs <https://nv-legate.github.io/cupynumeric>`_ when using these.
