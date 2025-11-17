@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "cupynumeric/utilities/blas_lapack.h"
 
 namespace cupynumeric {
