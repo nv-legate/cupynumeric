@@ -201,11 +201,11 @@ about:
   home: https://github.com/nv-legate/cupynumeric
   license: Apache-2.0
   license_file: LICENSE
-  summary: 'Drop-in Replacment for NumPy'
+  summary: 'NumPy and SciPy on Multi-Node Multi-GPU systems'
   description: |
-    cuPyNumeric is a Legate library that aims to provide
-    a distributed and accelerated drop-in replacement
-    for the NumPy API on top of the Legion runtime.
+    cuPyNumeric implements the NumPy API on top of the Legate framework,
+    providing transparent accelerated computing that scales from a single CPU
+    to a single GPU, and up to multi-node, multi-GPU systems.
   doc_url: https://github.com/nv-legate/cupynumeric
   dev_url: https://github.com/nv-legate/cupynumeric
 

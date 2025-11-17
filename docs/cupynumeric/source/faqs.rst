@@ -16,11 +16,10 @@ What is the difference between Legate and cuPyNumeric?
 Legate is a task-based runtime software stack that enables development of
 scalable and composable libraries for distributed and accelerated computing.
 
-cuPyNumeric is one of the foundational libraries built using Legate and aspires
-to be a distributed and accelerated drop-in replacement library for NumPy, an
-array programming library widely used in scientific computing. cuPyNumeric scales
-idiomatic NumPy programs to multiple GPUs and CPUs and seamlessly interoperates
-with other Legate libraries.
+cuPyNumeric is one of the foundational libraries built using Legate. It
+implements the NumPy API on top of the Legate runtime, delivering transparent
+acceleration that scales from a single CPU to multi-node, multi-GPU systems
+while interoperating with other Legate libraries.
 
 Check out this `blog post <https://developer.nvidia.com/blog/effortlessly-scale-numpy-from-laptops-to-supercomputers-with-nvidia-cupynumeric/>`_
 to learn more about cuPyNumeric.
@@ -168,14 +167,14 @@ performance :ref:`practices`.
 How do I use Jupyter Notebooks?
 -------------------------------
 
-See https://docs.nvidia.com/legate/latest/jupyter.html.
+See https://docs.nvidia.com/legate/latest/manual/usage/jupyter.html.
 
 How to pass Legion and Realm arguments?
 ---------------------------------------
 
 See :ref:`advanced`.
 
-What is the version of legate?
+What is the version of Legate?
 ------------------------------
 
 Use ``legate-issue`` to know more about the version of Legate, Legion and

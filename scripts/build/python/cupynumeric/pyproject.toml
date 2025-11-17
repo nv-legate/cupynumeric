@@ -20,7 +20,7 @@ build-backend = "scikit_build_core.build"
 name = "nvidia-cupynumeric"
 authors = [{name = "NVIDIA Corporation"}]
 license = {text = "Apache-2.0"}
-description = "cupynumeric - drop in replacement for numpy"
+description = "cuPyNumeric - NumPy and SciPy on Multi-Node Multi-GPU systems"
 classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Database",
