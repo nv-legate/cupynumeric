@@ -17,6 +17,7 @@ import pytest
 from mock import MagicMock
 from pytest_mock import MockerFixture
 from unit.util import powerset
+from cupynumeric._array.util import tuple_pop
 
 import cupynumeric._array.util as m  # module under test
 
@@ -225,6 +226,45 @@ def test_add_boilerplate_mixed(mock_convert: MagicMock) -> None:
     mock_convert.assert_any_call(1)
     mock_convert.assert_any_call(3)
     mock_convert.assert_any_call(4, share=True)
+
+
+def test_add_boilerplate_out_not_writeable_positional(
+    mock_convert: MagicMock,
+) -> None:
+    @m.add_boilerplate()
+    def func(a, out=None):
+        pass
+
+    mock_array = MagicMock()
+    mock_array.flags.writeable = False
+    mock_convert.return_value = mock_array
+
+    with pytest.raises(ValueError, match="out is not writeable"):
+        func(None, 42)
+    mock_convert.assert_called_once_with(42, share=True)
+
+
+def test_add_boilerplate_out_not_writeable_keyword(
+    mock_convert: MagicMock,
+) -> None:
+    @m.add_boilerplate()
+    def func(a, out=None):
+        pass
+
+    mock_array = MagicMock()
+    mock_array.flags.writeable = False
+    mock_convert.return_value = mock_array
+
+    with pytest.raises(ValueError, match="out is not writeable"):
+        func(None, out=42)
+    mock_convert.assert_called_once_with(42, share=True)
+
+
+def test_tuple_pop() -> None:
+    tup = (1, 2, 3, 4)
+    assert tuple_pop(tup, 1) == (1, 3, 4)
+    assert tuple_pop(tup, 0) == (2, 3, 4)
+    assert tuple_pop(tup, 3) == (1, 2, 3)
 
 
 if __name__ == "__main__":
