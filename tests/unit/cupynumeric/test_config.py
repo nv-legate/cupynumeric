@@ -128,6 +128,7 @@ def test_CuPyNumericOpCode() -> None:
         "MP_SOLVE",
         "NONZERO",
         "PACKBITS",
+        "PAD",
         "POTRF",
         "PUTMASK",
         "QR",

@@ -130,6 +130,16 @@ class NumPyThunk(ABC):
         self, repeats: Any, axis: int, scalar_repeats: bool
     ) -> NumPyThunk: ...
 
+    @abstractmethod
+    def pad(
+        self,
+        pad_width: tuple[tuple[int, int], ...],
+        mode: str,
+        constant_value_thunk: Any = None,
+        constant_rows: int = 0,
+        constant_cols: int = 0,
+    ) -> None: ...
+
     @property
     @abstractmethod
     def scalar(self) -> bool: ...

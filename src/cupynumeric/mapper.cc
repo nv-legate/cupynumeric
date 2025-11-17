@@ -528,6 +528,10 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         }
       }
     }
+    case CUPYNUMERIC_PAD: {
+      // PAD task doesn't need special allocation
+      return 0;
+    }
     case CUPYNUMERIC_REPEAT: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         if (const auto scalar_repeats = task.scalar(1).value<bool>(); scalar_repeats) {

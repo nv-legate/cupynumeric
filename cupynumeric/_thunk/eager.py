@@ -733,6 +733,48 @@ class EagerArray(NumPyThunk):
                 array = np.repeat(self.array, repeats, axis)
             return EagerArray(array)
 
+    def pad(
+        self,
+        pad_width: tuple[tuple[int, int], ...],
+        mode: str,
+        constant_value_thunk: Any = None,
+        constant_rows: int = 0,
+        constant_cols: int = 0,
+    ) -> None:
+        if self.deferred is not None:
+            self.deferred.pad(
+                pad_width,
+                mode,
+                constant_value_thunk,
+                constant_rows,
+                constant_cols,
+            )
+        else:
+            # Use numpy for eager execution
+            kwargs: dict[str, Any] = {}
+            if mode == "constant" and constant_value_thunk is not None:
+                const_array = constant_value_thunk.__numpy_array__()
+                if const_array.ndim == 0:
+                    kwargs["constant_values"] = const_array.item()
+                elif constant_rows > 0 and constant_cols > 0:
+                    reshaped = const_array.reshape(
+                        (constant_rows, constant_cols)
+                    )
+                    kwargs["constant_values"] = reshaped.tolist()
+                else:
+                    kwargs["constant_values"] = cast(Any, const_array)
+
+            center_slice = tuple(
+                slice(
+                    pad_width[dim][0],
+                    self.array.shape[dim] - pad_width[dim][1],
+                )
+                for dim in range(self.array.ndim)
+            )
+            core = self.array[center_slice]
+            padded = np.pad(core, pad_width, mode=cast(Any, mode), **kwargs)
+            np.copyto(self.array, padded)
+
     def flip(self, rhs: Any, axes: int | tuple[int, ...] | None) -> None:
         self.check_eager_args(rhs)
         if self.deferred is not None:

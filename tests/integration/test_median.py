@@ -119,7 +119,6 @@ class TestNanMedianErrors:
         msg = "output parameter for reduction operation add"
         # with pytest.raises(expected_exc, match=msg):
         np.nanmedian(array, out=out_a)
-        print("IRINA DEBUG out_a", out_a)
         msg = "data type <class 'numpy.int64'> not inexact"
         with pytest.raises(expected_exc, match=msg):
             num.nanmedian(array, out=out_a)

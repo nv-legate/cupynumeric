@@ -182,6 +182,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_MP_SOLVE: int
     CUPYNUMERIC_NONZERO: int
     CUPYNUMERIC_PACKBITS: int
+    CUPYNUMERIC_PAD: int
     CUPYNUMERIC_POTRF: int
     CUPYNUMERIC_PUTMASK: int
     CUPYNUMERIC_QR: int
@@ -405,6 +406,7 @@ class CuPyNumericOpCode(IntEnum):
     MP_SOLVE = _cupynumeric.CUPYNUMERIC_MP_SOLVE
     NONZERO = _cupynumeric.CUPYNUMERIC_NONZERO
     PACKBITS = _cupynumeric.CUPYNUMERIC_PACKBITS
+    PAD = _cupynumeric.CUPYNUMERIC_PAD
     POTRF = _cupynumeric.CUPYNUMERIC_POTRF
     PUTMASK = _cupynumeric.CUPYNUMERIC_PUTMASK
     QR = _cupynumeric.CUPYNUMERIC_QR
