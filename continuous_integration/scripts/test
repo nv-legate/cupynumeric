@@ -22,6 +22,10 @@ setup_env() {
 setup_test_env() {
     legate-conda-retry install -y "clang-tools>=8" "clang>=8" colorama coverage mock pre-commit pytest-cov pytest-mock "pytest" types-docutils pynvml psutil
 
+    if [[ "${CUPY_REQUIRED_FOR_TESTS:-0}" == "1" ]]; then
+        legate-conda-retry install -y cupy
+    fi
+
     pip install tifffile
 }
 
@@ -71,6 +75,10 @@ test_cupynumeric() {
         "test")
             echo "Executing tests..."
             shift;
+            CUPY_REQUIRED_FOR_TESTS=0
+            if [[ " $* " == *" --use cuda "* ]]; then
+                CUPY_REQUIRED_FOR_TESTS=1
+            fi
             setup_test_env;
             run_legate_issue;
             ./test.py ${WORKERS} -vv --timeout 600 "$@"

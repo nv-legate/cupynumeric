@@ -30,6 +30,7 @@ import numpy as _np
 from . import linalg, random, fft, ma  # noqa: F401
 from ._array.array import ndarray  # noqa: F401
 from ._array.util import maybe_convert_to_np_ndarray
+from ._dlpack import from_dlpack  # noqa: F401
 from ._module import *  # noqa: F403
 from ._ufunc import *  # noqa: F403
 from ._utils.array import is_supported_dtype, local_task_array  # noqa: F401

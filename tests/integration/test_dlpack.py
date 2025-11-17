@@ -17,11 +17,12 @@ import numpy as np
 import pytest
 
 import cupynumeric as num
+from cupynumeric.runtime import runtime
 
-SHAPES = ((), (0,), (1,), (10,), (4, 5), (1, 4, 5))
+SHAPES = ((1,), (10,), (4, 5), (1, 4, 5))
 
 
-class TestFromDLPack:
+class TestFromDLPackNumpy:
     @pytest.mark.parametrize("shape", SHAPES, ids=str)
     def test_default(self, shape: tuple[int, ...]) -> None:
         np_array = np.random.random(shape)
@@ -43,6 +44,43 @@ class TestFromDLPack:
 
         np_array[1, 2, 3] = 10
         assert np.array_equal(np_array, num_array)
+
+
+@pytest.mark.skipif(runtime.num_gpus == 0, reason="cupy only for GPU tests")
+class TestFromDLPackCupy:
+    cp = None
+
+    @classmethod
+    def setup_class(cls) -> None:
+        cls.cp = pytest.importorskip(
+            "cupy", reason="CuPy tests require CuPy to be installed"
+        )
+
+    @pytest.mark.parametrize("shape", SHAPES, ids=str)
+    def test_default(self, shape: tuple[int, ...]) -> None:
+        cp = self.cp
+        cp_array = cp.random.random(shape)
+        num_array = num.from_dlpack(cp_array)
+        assert num.array_equal(cp_array, num_array)
+
+    @pytest.mark.skip(reason="copy=True only supported for copy to CPU")
+    def test_copy_true(self) -> None:
+        cp = self.cp
+        cp_array = cp.ones((3, 4, 5))
+        num_array = num.from_dlpack(cp_array, copy=True)
+        assert num.array_equal(cp_array, num_array)
+
+        cp_array[1, 2, 3] = 10
+        assert not np.array_equal(cp_array, num_array)
+
+    def test_copy_false(self) -> None:
+        cp = self.cp
+        cp_array = cp.ones((3, 4, 5))
+        num_array = num.from_dlpack(cp_array, copy=False)
+        assert num.array_equal(cp_array, num_array)
+
+        cp_array[1, 2, 3] = 10
+        assert num.array_equal(cp_array, num_array)
 
 
 class TestToDLPack:

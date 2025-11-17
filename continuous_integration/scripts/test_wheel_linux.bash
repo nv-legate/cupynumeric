@@ -36,7 +36,7 @@ export LEGION_DEFAULT_ARGS="-ll:show_rsrv"
 
 # Attempt to run the tests...
 mv cupynumeric cupynumeric-moved
-pip install pytest pynvml psutil scipy
+pip install cupy-cuda12x pytest pynvml psutil scipy
 
 echo "Attempt to run an example"
 legate examples/gemm.py

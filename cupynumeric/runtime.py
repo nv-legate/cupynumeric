@@ -276,10 +276,17 @@ class Runtime(object):
             from ._thunk.deferred import DeferredArray
 
             return DeferredArray(array.data)
+
         # See if this is a normal numpy array
         # Make sure to convert numpy matrices to numpy arrays here
         # as the former doesn't behave quite like the latter
         if type(obj) is not np.ndarray:
+            # Check to see if this object implements the dlpack interface
+            if hasattr(obj, "__dlpack__"):
+                from . import from_dlpack
+
+                return from_dlpack(obj)._thunk
+
             # If it's not, make it into a numpy array
             if share:
                 obj = np.asarray(obj, dtype=dtype)
