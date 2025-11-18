@@ -15,7 +15,7 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-      - "cpp-branch-*"
+      - "branch-*"
       - "main"
 
 jobs:
@@ -45,10 +45,10 @@ jobs:
           echo "GIT_ORG=${GIT_ORG}" >> $GITHUB_ENV
           echo "GIT_TAG=${GIT_TAG}" >> $GITHUB_ENV
 
-          if [[ ${{ github.ref_name }} == cpp-branch-* ]]; then
-          echo "GIT_REF=${{ github.ref_name }}" >> $GITHUB_ENV
+          if [[ ${{ github.ref_name }} == branch-* ]]; then
+            echo "GIT_REF=${{ github.ref_name }}" >> $GITHUB_ENV
           else
-          echo "GIT_REF=main" >> $GITHUB_ENV
+            echo "GIT_REF=main" >> $GITHUB_ENV
           fi
 
       - name: Clone dependency
