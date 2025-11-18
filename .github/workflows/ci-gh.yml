@@ -15,7 +15,7 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-      - "cpp-branch-*"
+      - "branch-*"
       - "main"
 
 jobs:
