@@ -17,6 +17,8 @@ import pytest
 
 import numpy as np
 import cupynumeric as num
+from cupynumeric._array.util import maybe_convert_to_np_ndarray
+from cupynumeric._utils.coverage import unimplemented
 
 
 # ref: https://github.com/nv-legate/cupynumeric/pull/430
@@ -34,17 +36,24 @@ def test_unimplemented_method_self_fallback():
 
 
 def test_unimplemented_cupynumeric_return():
-    # This test uses pad because it is currently unimplemented, and we want
-    # to verify a behaviour of unimplemented array return values. If pad
-    # becomes implemeneted in the future, this assertion will start to fail,
-    # and a new (unimplemented) array-returning function should be found to
-    # replace it
-    assert not num.pad._cupynumeric_metadata.implemented
+    # Use the unimplemented decorator directly so this test does not depend on
+    # any specific API remaining unimplemented over time.
+    wrapped_pad = unimplemented(
+        np.pad,
+        prefix="cupynumeric",
+        name="pad_for_test",
+        fallback=maybe_convert_to_np_ndarray,
+    )
+    assert not wrapped_pad._cupynumeric_metadata.implemented
 
-    arr = np.array([1, 2, 3])
-    result = num.pad(arr, (2, 2), mode="edge")
+    arr = num.array([1, 2, 3])
+    expected = np.pad(np.array([1, 2, 3]), (2, 2), mode="edge")
+    result = wrapped_pad(arr, (2, 2), mode="edge")
 
     assert isinstance(result, num.ndarray)
+    # Guard against regressions where the fallback path stops producing
+    # NumPy-equivalent results even though it yields a num.ndarray wrapper.
+    assert np.array_equal(np.array(result), expected)
 
 
 @pytest.mark.parametrize(
