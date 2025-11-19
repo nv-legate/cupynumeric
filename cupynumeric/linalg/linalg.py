@@ -40,6 +40,7 @@ from .._module import dot, empty_like, eye, matmul, ndarray
 from .._module.array_rearrange import flip
 from .._module.creation_matrices import diag
 from .._module.creation_shape import zeros, zeros_like
+from .._module.ssc_searching import where
 from .._module.ssc_sorting import argsort
 from .._ufunc.math import add, sqrt as _sqrt
 from ._exception import LinAlgError
@@ -1204,6 +1205,73 @@ def make_uv(A: ndarray, b: Any, m: int) -> tuple[ndarray, ndarray]:
     U = matmul(A, U)
 
     return (U, V)
+
+
+@add_boilerplate("a")
+def pinv(a: ndarray, rtol: float = 1e-5) -> ndarray:
+    """
+    Compute the (Moore-Penrose) pseudo-inverse of a matrix.
+
+    Parameters
+    ----------
+    a : (M, N) array_like
+        Matrix to be pseudo-inverted.
+    rtol : float, optional
+        Cutoff for small singular values relative to the largest singular value.
+        Singular values less than or equal to ``rtol * largest_singular_value``
+        are set to zero. Default: ``1e-5``.
+
+    Returns
+    -------
+    B : (N, M) ndarray
+        The pseudo-inverse of `a`.
+
+    Raises
+    ------
+    NotImplementedError:
+        If the dimension of the array is greater than 2 or if M < N
+        for two-dimensional arrays
+
+    LinAlgError:
+        If the dimension of the array is less than 2
+
+
+    See Also
+    --------
+    numpy.linalg.pinv : Similar function in NumPy
+
+    Availability
+    --------
+    Single GPU, Single CPU
+
+    Notes
+    ------
+    - The SVD part of the computation supports only single process execution
+    - Does not support batched operations
+    - Does not support `rcond` parameter (use `rtol` instead)
+    - Does not support `hermitian` parameter (will be supported once
+      cupynumeric.svd supports hermitian option)
+    """
+    shape = a.shape
+    if len(shape) < 2:
+        raise LinAlgError(
+            f"{len(shape)}-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+    if len(shape) > 2:
+        raise NotImplementedError(
+            "cuPyNumeric does not yet support stacked 2d arrays"
+        )
+    if shape[0] < shape[1]:
+        raise NotImplementedError("pinv is not supported for M < N")
+
+    a = a.conj()
+    u, s, vt = svd(a, full_matrices=False)
+    tol = rtol * s.max(axis=-1, keepdims=True)
+    s_inv = where(s > tol, 1.0 / s, 0.0)
+    A_pinv = vt.T @ (s_inv[..., np.newaxis] * u.T)
+
+    return A_pinv
 
 
 class ExpmConstants:
