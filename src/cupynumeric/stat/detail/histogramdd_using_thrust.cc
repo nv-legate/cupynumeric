@@ -94,6 +94,9 @@ std::optional<size_t> histogramdd_using_thrust_allocation_pool_size(const Task& 
     case StoreTarget::SYSMEM: {
       return total_size;
     }
+    case StoreTarget::ZCMEM: {
+      return pad(edge_list_size);
+    }
     default: break;
   }
   return 0;
