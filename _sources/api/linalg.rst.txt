@@ -53,6 +53,7 @@ Solving equations and inverting matrices
    :toctree: generated/
 
    linalg.solve
+   linalg.pinv
 
 
 Matrix Functions

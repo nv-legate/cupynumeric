@@ -71,3 +71,23 @@ can use the following:
 
 Please see `Machine and Resource Scoping <https://docs.nvidia.com/legate/latest/api/python/machine.html>`_
 for full information.
+
+Data Offloading
+---------------
+
+Legate provides an API for offloading data from one memory onto another. This
+API accepts cuPyNumeric ndarrays directly. For example, to offload an ndarray
+that is already on device memory onto host memory, you can use the following:
+
+.. code-block:: python
+
+    from legate.core import StoreTarget, offload_to
+
+    offload_to(array, target=StoreTarget.SYSMEM)
+
+The values of ``StoreTarget`` are:
+
+* ``StoreTarget.SYSMEM`` for host memory
+* ``StoreTarget.FBMEM`` for GPU device memory
+* ``StoreTarget.ZCMEM`` for pinned (GPU-accessible) host memory
+* ``StoreTarget.SOCKETMEM`` for NUMA-aware host memory allocations

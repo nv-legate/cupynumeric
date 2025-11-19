@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.pinv
+=======================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: pinv
