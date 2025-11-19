@@ -55,27 +55,28 @@ int64_t histogramdd_points_to_bins(const exe_policy_t& policy,
   auto first_dim   = points_lo[1];
   auto points      = points_store.read_accessor<point_t, 2>(points_rect);
 
+  // edges are going to be written on the host, put them in zero copy if the target memkind is on
+  // the gpu
+  auto edges_memkind = (memkind == Memory::Kind::GPU_FB_MEM) ? Memory::Kind::Z_COPY_MEM : memkind;
+
   // unpack edges
-  auto edges        = create_buffer<thrust::pair<const edge_t*, size_t>>(num_dims, memkind);
+  auto edges        = create_buffer<thrust::pair<const edge_t*, size_t>>(num_dims, edges_memkind);
   auto* edges_array = edges.ptr(0);
 
   int64_t num_bins = 1;
 
-  {  // get each dimension's edges as a (pointer, last_edge) pair
-    std::vector<thrust::pair<const edge_t*, size_t>> host_edges_vec;
-    for (auto const& dim_edges_store : edge_stores) {
-      auto rect      = dim_edges_store.shape<1>();
-      auto dim_edges = dim_edges_store.read_accessor<edge_t, 1>(rect);
-      size_t strides[1];
-      const edge_t* first = dim_edges.ptr(rect, strides);
-      assert(strides[0] == 1);
-      int64_t last_edge = rect.hi - rect.lo;
-      assert(last_edge > 0);
-      host_edges_vec.push_back({first, last_edge});
-      num_bins *=
-        last_edge;  // the index of the last edge is the number of intervals in this dimension
-    }
-    thrust::copy(policy, host_edges_vec.begin(), host_edges_vec.end(), edges_array);
+  for (size_t d = 0; d < num_dims; d++) {
+    auto const& dim_edges_store = edge_stores[d];
+    auto rect                   = dim_edges_store.shape<1>();
+    auto dim_edges              = dim_edges_store.read_accessor<edge_t, 1>(rect);
+    size_t strides[1];
+    const edge_t* first = dim_edges.ptr(rect, strides);
+    assert(strides[0] == 1);
+    int64_t last_edge = rect.hi - rect.lo;
+    assert(last_edge > 0);
+    edges_array[d] = {first, last_edge};
+    num_bins *=
+      last_edge;  // the index of the last edge is the number of intervals in this dimension
   }
 
   // for each point compare its coordinate in each dimension to the edges to
