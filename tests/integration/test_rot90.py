@@ -31,6 +31,21 @@ class TestRot90:
         with pytest.raises(ValueError):
             num.rot90(np.ones((2, 2, 2)), axes=(-2, 1))
 
+    @pytest.mark.parametrize(
+        "shape,axes",
+        [
+            ((2, 2, 2), (-4, 0)),
+            ((2, 2, 2), (0, -4)),
+            ((2, 2, 2), (5, 10)),
+            ((2, 2, 2, 2), (4, 1)),
+            ((3, 3), (-3, 0)),
+        ],
+    )
+    def test_axes_out_of_range(self, shape, axes) -> None:
+        msg = r"out of range for array"
+        with pytest.raises(ValueError, match=msg):
+            num.rot90(np.ones(shape), axes=axes)
+
     @pytest.mark.parametrize("k", range(-3, 13))
     def test_basic(self, k: int) -> None:
         a = [[0, 1, 2], [3, 4, 5]]

@@ -96,6 +96,21 @@ class TestRoll:
         x = num.array([])
         assert np.array_equal(num.roll(x, 1), np.array([]))
 
+    @pytest.mark.parametrize(
+        "shift,axis",
+        [
+            ([[1, 2], [3, 4]], (0, 1)),
+            ([[1, 2]], 0),
+            (np.array([[1, 2], [3, 4]]), 0),
+            ([[1], [2], [3]], 1),
+        ],
+    )
+    def test_roll_invalid_shift_axis_broadcast(self, shift, axis) -> None:
+        x = np.arange(24).reshape(2, 3, 4)
+        msg = r"'shift' and 'axis' should be scalars or 1D sequences"
+        with pytest.raises(ValueError, match=msg):
+            num.roll(x, shift, axis=axis)
+
 
 if __name__ == "__main__":
     import sys
