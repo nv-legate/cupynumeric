@@ -1,6 +1,6 @@
 --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
 --extra-index-url=https://pypi.nvidia.com
-cmake>=3.26.4,!=3.30.0
+cmake>=3.30.4
 ninja
 nvidia-nccl-cu12
 cutensor-cu12>=2.0,<2.3.0.6

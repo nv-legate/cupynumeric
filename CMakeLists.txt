@@ -14,7 +14,7 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
 cmake_path(SET CUPYNUMERIC_CMAKE_DIR NORMALIZE "${CMAKE_CURRENT_LIST_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -28,13 +28,8 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON CACHE STRING "" FORCE)
 ##############################################################################
 # - Download and initialize RAPIDS CMake helpers -----------------------------
 
-set(rapids-cmake-version 24.12)
-set(rapids-cmake-sha "4cb2123dc08ef5d47ecdc9cc51c96bea7b5bb79c")
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
-  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-${rapids-cmake-version}/RAPIDS.cmake
-       ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
-endif()
-include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+include(include_rapids)
+cupynumeric_include_rapids()
 include(rapids-cmake)
 include(rapids-cpm)
 include(rapids-cuda)

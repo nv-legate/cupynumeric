@@ -53,7 +53,7 @@ homepage = "https://github.com/nv-legate/cupynumeric"
 cupynumeric = "cupynumeric"
 
 [tool.scikit-build.cmake]
-version = ">=3.26.4"
+version = ">=3.30.4"
 
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.setuptools_scm"

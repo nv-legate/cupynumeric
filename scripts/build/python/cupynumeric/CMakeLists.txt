@@ -14,7 +14,7 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.26.4)
+cmake_minimum_required(VERSION 3.30.4)
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../../../../VERSION" cupynumeric_version)
 string(STRIP "${cupynumeric_version}" cupynumeric_version)
