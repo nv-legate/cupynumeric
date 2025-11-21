@@ -945,17 +945,17 @@
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#cupynumeric.split" title="Link to this definition">#</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#cupynumeric.split" title="Link to this definition">#</a></dt>
 <dd><p>Split an array into multiple sub-arrays as views into <cite>ary</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ary</strong> (<a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a>) – Array to be divided into sub-arrays.</p></li>
-<li><p><strong>indices_or_sections</strong> (<em>int</em><em> or </em><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a>) – <p>If <cite>indices_or_sections</cite> is an integer, N, the array will be divided
+<li><p><strong>indices_or_sections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> or </em><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a>) – <p>If <cite>indices_or_sections</cite> is an integer, N, the array will be divided
 into N equal arrays along <cite>axis</cite>.  If such a split is not possible,
 an error is raised.</p>
 <p>If <cite>indices_or_sections</cite> is a 1-D array of sorted integers, the entries
@@ -971,17 +971,17 @@ indicate where along <cite>axis</cite> the array is split.  For example,
 <p>If an index exceeds the dimension of the array along <cite>axis</cite>,
 an empty sub-array is returned correspondingly.</p>
 </p></li>
-<li><p><strong>axis</strong> (<em>int</em><em>, </em><em>optional</em>) – The axis along which to split, default is 0.</p></li>
+<li><p><strong>axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – The axis along which to split, default is 0.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>sub-arrays</strong> – A list of sub-arrays as views into <cite>ary</cite>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list[<a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a>]</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If <cite>indices_or_sections</cite> is given as an integer, but
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>indices_or_sections</cite> is given as an integer, but
     a split does not result in equal division.</p>
 </dd>
 </dl>

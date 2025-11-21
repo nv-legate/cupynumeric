@@ -951,7 +951,7 @@ __array__ method returns an array, or any (nested) sequence.</p></li>
 <li><p><strong>dtype</strong> (<em>data-type</em><em>, </em><em>optional</em>) – The desired data-type for the array.  If not given, then the type will
 be determined as the minimum type required to hold the objects in the
 sequence.</p></li>
-<li><p><strong>copy</strong> (<em>bool</em><em>, </em><em>optional</em>) – If true (default), then the object is copied.  Otherwise, a copy will
+<li><p><strong>copy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If true (default), then the object is copied.  Otherwise, a copy will
 only be made if __array__ returns a copy, if obj is a nested sequence,
 or if a copy is needed to satisfy any of the other requirements
 (<cite>dtype</cite>, <cite>order</cite>, etc.).</p></li>
@@ -990,9 +990,9 @@ If object is an array the following holds.</p>
 the same as if <code class="docutils literal notranslate"><span class="pre">copy=True</span></code>, with some exceptions for ‘A’, see the
 Notes section. The default order is ‘K’.</p>
 </p></li>
-<li><p><strong>subok</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, then sub-classes will be passed-through, otherwise
+<li><p><strong>subok</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, then sub-classes will be passed-through, otherwise
 the returned array will be forced to be a base-class array (default).</p></li>
-<li><p><strong>ndmin</strong> (<em>int</em><em>, </em><em>optional</em>) – Specifies the minimum number of dimensions that the resulting
+<li><p><strong>ndmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Specifies the minimum number of dimensions that the resulting
 array should have.  Ones will be pre-pended to the shape as
 needed to meet this requirement.</p></li>
 </ul>

@@ -945,10 +945,10 @@
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">ar</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">return_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">return_inverse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">return_counts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">return_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">return_inverse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">return_counts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#cupynumeric.unique" title="Link to this definition">#</a></dt>
@@ -963,17 +963,17 @@ outputs in addition to the unique elements:
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ar</strong> (<em>array_like</em>) – Input array. Unless <cite>axis</cite> is specified, this will be flattened if it
 is not already 1-D.</p></li>
-<li><p><strong>return_index</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, also return the indices of <cite>ar</cite> (along the specified axis,
+<li><p><strong>return_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, also return the indices of <cite>ar</cite> (along the specified axis,
 if provided, or in the flattened array) that result in the unique
 array.
 Currently not supported.</p></li>
-<li><p><strong>return_inverse</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, also return the indices of the unique array (for the specified
+<li><p><strong>return_inverse</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, also return the indices of the unique array (for the specified
 axis, if provided) that can be used to reconstruct <cite>ar</cite>.
 Currently not supported.</p></li>
-<li><p><strong>return_counts</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, also return the number of times each unique item appears
+<li><p><strong>return_counts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, also return the number of times each unique item appears
 in <cite>ar</cite>.
 Currently not supported.</p></li>
-<li><p><strong>axis</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – The axis to operate on. If None, <cite>ar</cite> will be flattened. If an integer,
+<li><p><strong>axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – The axis to operate on. If None, <cite>ar</cite> will be flattened. If an integer,
 the subarrays indexed by the given axis will be flattened and treated
 as the elements of a 1-D array with the dimension of the given axis,
 see the notes for more details.  Object arrays or structured arrays

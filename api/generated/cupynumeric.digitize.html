@@ -946,10 +946,10 @@
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">right</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">right</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></span><a class="headerlink" href="#cupynumeric.digitize" title="Link to this definition">#</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="headerlink" href="#cupynumeric.digitize" title="Link to this definition">#</a></dt>
 <dd><p>Return the indices of the bins to which each value in input array belongs.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -985,7 +985,7 @@ returned as appropriate.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<em>array_like</em>) – Input array to be binned. Doesn’t need to be 1-dimensional.</p></li>
 <li><p><strong>bins</strong> (<em>array_like</em>) – Array of bins. It has to be 1-dimensional and monotonic.</p></li>
-<li><p><strong>right</strong> (<em>bool</em><em>, </em><em>optional</em>) – Indicating whether the intervals include the right or the left bin
+<li><p><strong>right</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Indicating whether the intervals include the right or the left bin
 edge. Default behavior is (right==False) indicating that the interval
 does not include the right edge. The left bin end is open in this
 case, i.e., bins[i-1] &lt;= x &lt; bins[i] is the default behavior for
@@ -1000,8 +1000,8 @@ monotonically increasing bins.</p></li>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If <cite>bins</cite> is not monotonic.</p></li>
-<li><p><strong>TypeError</strong> – If the type of the input is complex.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>bins</cite> is not monotonic.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.14)"><strong>TypeError</strong></a> – If the type of the input is complex.</p></li>
 </ul>
 </dd>
 </dl>

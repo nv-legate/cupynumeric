@@ -946,7 +946,7 @@
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">choices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">BoundsMode</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'raise'</span></span></em>,</dd>
 </dl>
 
@@ -975,7 +975,7 @@ are mapped to <code class="docutils literal notranslate"><span class="pre">n-1</
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>a</strong> (<a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a><em>[</em><em>int</em><em>]</em>) – This array must contain integers in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">n-1]</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span></code> is the
+<li><p><strong>a</strong> (<a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – This array must contain integers in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">n-1]</span></code>, where <code class="docutils literal notranslate"><span class="pre">n</span></code> is the
 number of choices, unless <code class="docutils literal notranslate"><span class="pre">mode=wrap</span></code> or <code class="docutils literal notranslate"><span class="pre">mode=clip</span></code>, in which
 cases any integers are permissible.</p></li>
 <li><p><strong>choices</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray"><em>ndarray</em></a><em>]</em>) – Choice arrays. <cite>a</cite> and all of the choices must be broadcastable to the
@@ -1003,7 +1003,7 @@ buffered if <code class="docutils literal notranslate"><span class="pre">mode='r
 <dd class="field-odd"><p><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – shape mismatch: If <cite>a</cite> and each choice array are not all broadcastable to the same
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – shape mismatch: If <cite>a</cite> and each choice array are not all broadcastable to the same
     shape.</p>
 </dd>
 </dl>

@@ -947,10 +947,10 @@
 <dd><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric._array.array.ndarray"><span class="pre">ndarray</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#cupynumeric.put_along_axis" title="Link to this definition">#</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cupynumeric.put_along_axis" title="Link to this definition">#</a></dt>
 <dd><p>Put values into the destination array by matching 1d index and data slices.</p>
 <p>This iterates over matching 1d slices oriented along the specified axis in
 the index and data arrays, and uses the former to place values into the
@@ -967,7 +967,7 @@ dimension of arr, but dimensions in Ni and Nj may be 1 to broadcast
 against <cite>arr</cite>.</p></li>
 <li><p><strong>values</strong> (<em>array_like</em><em> (</em><em>Ni</em><em>...</em><em>, </em><em>J</em><em>, </em><em>Nk</em><em>...</em><em>)</em>) – values to insert at those indices. Its shape and dimension are
 broadcast to match that of <cite>indices</cite>.</p></li>
-<li><p><strong>axis</strong> (<em>int</em>) – The axis to take 1d slices along. If axis is None, the destination
+<li><p><strong>axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The axis to take 1d slices along. If axis is None, the destination
 array is treated as if a flattened 1d view had been created of it.
 <cite>axis=None</cite> case is currently supported only for 1D input arrays.</p></li>
 </ul>
