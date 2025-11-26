@@ -281,10 +281,14 @@ in many tiny tasks; runtime overhead dominates useful computation.
 Profiler Output and Interpretation - Inefficient CPU Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. image:: ../_images/profiling_debugging/Inefficient_profile1.png
+   :alt: Inefficient profiler overview
+   :width: 90%
+
 1) CPU
 ^^^^^^^
 
-.. image:: ../_images/profiling_debugging/cpu_inefficient.png
+.. image:: ../_images/profiling_debugging/Inefficient_CPU2.png
    :alt: Inefficient CPU profiler timeline with many tiny tasks
    :width: 90%
 
@@ -298,6 +302,10 @@ time and spot idle gaps between tasks.
 
 **Zoomed in:**
 
+.. image:: ../_images/profiling_debugging/Inefficient_CPU3.png
+   :alt: Inefficient CPU timeline (zoom 2)
+   :width: 90%
+
 CPU Observation:
 Start-up shows a few large initialization tasks. After that, the 4,096-element
 slice loop fragments work into many small tasks, producing a barcode-like
@@ -308,6 +316,10 @@ computations.
 
 CPU Avg
 """""""
+
+.. image:: ../_images/profiling_debugging/Inefficient_CPU_avg4.png
+   :alt: Inefficient CPU timeline (zoom 2)
+   :width: 90%
 
 We observe a sharp startup spike in the CPU average line (~74% utilization),
 followed by a long, low plateau. The spike corresponds to the large
@@ -327,8 +339,8 @@ thousands of slivers.
 2) Utility
 ^^^^^^^^^^^
 
-.. image:: ../_images/profiling_debugging/utility_inefficient.png
-   :alt: Inefficient utility lane with sustained meta-task load
+.. image:: ../_images/profiling_debugging/Inefficient_utility5.png
+   :alt: Inefficient utility lane (raw)
    :width: 90%
 
 What this shows
@@ -346,6 +358,10 @@ overhead dominates while on the other hand the computation is fragmented.
 
 Utility Avg
 """""""""""
+
+.. image:: ../_images/profiling_debugging/Inefficient_utility_avg6.png
+   :alt: Inefficient utility lane (raw)
+   :width: 90%
 
 We observe a quick ramp-up into a long, flat plateau on the utility-average
 line, followed by a drop near the end. The plateau indicates the runtime is
@@ -369,8 +385,8 @@ threshold updates), with the utility lanes mostly quiet between them.
 3) I/O (input/output)
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. image:: ../_images/profiling_debugging/io_inefficient.png
-   :alt: Inefficient I/O lane with scattered top-level activity
+.. image:: ../_images/profiling_debugging/Inefficient_IO7.png
+   :alt: Inefficient I/O lane (raw)
    :width: 90%
 
 What this shows
@@ -400,6 +416,10 @@ The profiler will use shade to indicate state:
 I/O Avg
 """""""
 
+.. image:: ../_images/profiling_debugging/Inefficient_IO_avg8.png
+   :alt: Inefficient I/O lane (raw)
+   :width: 90%
+
 We observe an early spike that settles into a short plateau as the program
 initializes and writes full arrays for the temporaries (``z = x + y``,
 ``z_alt = x*y + 1.0``). This transitions into a long, low baseline reflecting
@@ -426,6 +446,10 @@ Low-level system memory activity: allocations, thread/process setup, OS
 interaction, and other background work. It should be quiet and flat during
 steady computation.
 
+.. image:: ../_images/profiling_debugging/Inefficient_system_avg9.png
+   :alt: Inefficient system lane average
+   :width: 90%
+
 System Observation:
 We observe a small early bump from normal startup work (process/thread creation
 and initial allocation), followed by a flat, low sitting plateau indicating
@@ -437,10 +461,6 @@ overhead, and I/O/Channel traffic).
 5) Channel (chan)
 ^^^^^^^^^^^^^^^^^^
 
-.. image:: ../_images/profiling_debugging/channel_inefficient.png
-   :alt: Inefficient Channel lane with many micro-copies
-   :width: 90%
-
 What this shows
 """""""""""""""
 
@@ -450,6 +470,14 @@ Framebuffer memory, zero-copy memory, and sometimes system/network buffers.
 Tall wide bursts mean large continuous transfers (efficient). Thin, persistent
 baselines means many small transfers, often from over-granular work
 (scatter/gather, slice loops).
+
+.. image:: ../_images/profiling_debugging/Inefficient_channel10.png
+   :alt: Inefficient Channel lane (raw 1)
+   :width: 90%
+
+.. image:: ../_images/profiling_debugging/Inefficient_channel11.png
+   :alt: Inefficient Channel lane (raw 2)
+   :width: 90%
 
 Channel Observation:
 The gray rectangles are merged visuals: when zoomed out, the profiler compacts
@@ -461,6 +489,10 @@ transfers create idle gaps on CPU lanes while tasks wait for data.
 
 Channel Avg
 """""""""""
+
+.. image:: ../_images/profiling_debugging/Inefficient_channel_avg12.png
+   :alt: Inefficient Channel average utilization
+   :width: 90%
 
 One early blip (initial large copy into device memory), then a long, faint
 baseline, which is the flood of small scatter/gather copies from
@@ -478,6 +510,10 @@ bars instead of bar-code slivers.
 
 What this shows
 """""""""""""""
+
+.. image:: ../_images/profiling_debugging/Inefficient_DP_avg13.png
+   :alt: Inefficient dependent partitioning average
+   :width: 90%
 
 Time the runtime spends creating dependent region partitions (subregions
 derived from other regions), this is needed for sliced, indirect, or masked
@@ -511,8 +547,8 @@ Inefficient GPU Results - (4 Ranks 1 GPU each)
 
 All ranks:
 
-.. image:: ../_images/profiling_debugging/gpu_inefficient_all_ranks.png
-   :alt: Inefficient multi-GPU profiler view across ranks
+.. image:: ../_images/profiling_debugging/gpu_Inefficient14.png
+   :alt: Inefficient GPU overview (all ranks)
    :width: 90%
 
 1) GPU Dev
@@ -526,6 +562,10 @@ GPU execution units are busy running element-wise operations, reductions,
 matrix kernels, etc. High steady utilization means kernels are big and
 well-batched; low or jagged utilization means the GPU is either idle or
 getting too many tiny launches.
+
+.. image:: ../_images/profiling_debugging/gpuDev_Inefficient15.png
+   :alt: Inefficient GPU device lane
+   :width: 90%
 
 GPU Dev Observation:
 In the GPU Dev lane we see wide gray bands at zoom compress many
@@ -544,6 +584,10 @@ kernels rather than running a few big ones.
 
 GPU Dev Avg
 """""""""""
+
+.. image:: ../!images/profiling_debugging/gpuDev_Inefficient_avg16.png
+   :alt: Inefficient GPU device average utilization
+   :width: 90%
 
 At startup the line lifts due to big element-wise operations. It then gradually
 sinks lower, oscillating high to low. That indicates persistent GPU activity,
@@ -566,6 +610,10 @@ CPU-side orchestration for GPU work: kernel launches, argument setup,
 enqueueing tasks, and prepping memory transfers. You want brief bursts per
 large kernel, not continuous chatter/oscillation.
 
+.. image:: ../_images/profiling_debugging/gpuHost_Inefficient17.png
+   :alt: Inefficient GPU host lane (raw)
+   :width: 90%
+
 GPU Host Observation:
 Frequent spikes/oscillations mirror GPU Dev, such that the code launches many
 tiny kernels:
@@ -577,6 +625,10 @@ tiny kernels:
 
 GPU Host Avg
 """"""""""""
+
+.. image:: ../_images/profiling_debugging/gpuHost_Inefficient_avg18.png
+   :alt: Inefficient GPU host average utilization
+   :width: 90%
 
 High, jagged baseline after a startup spike means launch overhead is sustained.
 Host time tracks GPU Dev closely, an obvious indication of over-granularity
@@ -599,6 +651,10 @@ directly accessible by the GPU. Useful when data is accessed only once or in
 small pieces. Ideally, you see just a few bursts; heavy use usually means data
 isn't staged efficiently in device memory.
 
+.. image:: ../_images/profiling_debugging/ZC_Inefficient_avg19.png
+   :alt: Inefficient Zerocopy average utilization
+   :width: 90%
+
 Zerocopy Observation:
 The avg line is pinned at a ~0% utilization for the entire run. If this section
 was expanded you would see many blocks gradually getting larger as you scroll
@@ -617,6 +673,10 @@ deallocation, or access overhead. This isn't the math itself, but the memory
 management cost for storing temporaries and outputs in device memory. Ideally
 this lane should stay low and quiet, with only brief bumps for allocation at
 startup and cleanup at shutdown.
+
+.. image:: ../_images/profiling_debugging/fb_Inefficient_avg20.png
+   :alt: Inefficient framebuffer average utilization
+   :width: 90%
 
 Framebuffer Observation:
 The avg line rises gradually to ~2–3% utilization and holds steady through most
@@ -757,11 +817,15 @@ boosting overall utilization.
 Profiler Output and Interpretation - Efficient CPU Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. image:: ../_images/profiling_debugging/efficient_profiler21.png
+   :alt: Efficient profiler overview
+   :width: 90%
+
 CPU
 ^^^
 
-.. image:: ../_images/profiling_debugging/cpu_efficient.png
-   :alt: Efficient CPU profiler timeline with few long tasks
+.. image:: ../_images/profiling_debugging/cpu_efficient22.png
+   :alt: Efficient CPU timeline
    :width: 90%
 
 Why this is good:
@@ -782,8 +846,16 @@ Efficient Code:
 Utility
 ^^^^^^^
 
-.. image:: ../_images/profiling_debugging/utility_efficient.png
-   :alt: Efficient utility lane with short bursts
+.. image:: ../_images/profiling_debugging/utility_avg_efficient23.png
+   :alt: Efficient utility average utilization
+   :width: 90%
+
+.. image:: ../_images/profiling_debugging/utility_efficient24.png
+   :alt: Efficient utility lane (raw 1)
+   :width: 90%
+
+.. image:: ../_images/profiling_debugging/utility_efficient25.png
+   :alt: Efficient utility lane (raw 2)
    :width: 90%
 
 Why this is good:
@@ -804,8 +876,8 @@ Efficient Code:
 I/O
 ^^^
 
-.. image:: ../_images/profiling_debugging/io_efficient.png
-   :alt: Efficient I/O lane with minimal top-level overhead
+.. image:: ../_images/profiling_debugging/io_efficient26.png
+   :alt: Efficient I/O lane
    :width: 90%
 
 Why this is good:
@@ -829,6 +901,10 @@ Efficient Code:
 System
 ^^^^^^
 
+.. image:: ../_images/profiling_debugging/system_efficient27.png
+   :alt: Efficient system lane
+   :width: 90%
+
 Why this is good:
 Near-zero for most of the run, with only a gradual rise to ~8% late in the
 timeline (allocator growth/instance finalization/teardown). No mid-run
@@ -847,8 +923,8 @@ Efficient Code:
 Channel (chan)
 ^^^^^^^^^^^^^^
 
-.. image:: ../_images/profiling_debugging/channel_efficient.png
-   :alt: Efficient Channel lane with a few bulk transfers
+.. image:: ../_images/profiling_debugging/channel_efficient28.png
+   :alt: Efficient Channel lane
    :width: 90%
 
 Why this is good:
@@ -872,12 +948,16 @@ Efficient Multi-GPU Results - (4 Ranks 1 GPU each)
 
 All ranks:
 
-.. image:: ../_images/profiling_debugging/gpu_efficient_all_ranks.png
-   :alt: Efficient multi-GPU profiler view across ranks
+.. image:: ../_images/profiling_debugging/gpu_efficient29.png
+   :alt: Efficient GPU overview (all ranks)
    :width: 90%
 
 GPU Dev
 ^^^^^^^
+
+.. image:: ../_images/profiling_debugging/gpuDev_efficient30.png
+   :alt: Efficient GPU device average utilization
+   :width: 90%
 
 Why this is good:
 Steady compute time: The green “avg” line goes high and stays high while work
@@ -900,6 +980,10 @@ Efficient Code:
 GPU Host
 ^^^^^^^^
 
+.. image:: ../_images/profiling_debugging/gpuHost_efficient31.png
+   :alt: Efficient GPU host average utilization
+   :width: 90%
+
 Why this is good:
 Mostly quiet baseline with a few short bursts aligned to device kernels
 showing minimal launch/orchestration overhead. Avg line stays low between
@@ -918,6 +1002,10 @@ Efficient Code:
 Framebuffer
 ^^^^^^^^^^^
 
+.. image:: ../_images/profiling_debugging/fb_efficient32.png
+   :alt: Efficient framebuffer average utilization
+   :width: 90%
+
 Why this is good:
 Low flat line that stays at ~0% utilization most the run then gradually builds
 up to ~1% utilization at the end, showing memory management isn't a bottleneck.
@@ -935,6 +1023,10 @@ Efficient Code:
 
 Zerocopy
 ^^^^^^^^
+
+.. image:: ../_images/profiling_debugging/ZC_efficient33.png
+   :alt: Efficient Zerocopy average utilization
+   :width: 90%
 
 Why this is good:
 Avg stays at ~0% utilization for the entire run, Zerocopy traffic is
