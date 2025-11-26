@@ -10,8 +10,8 @@ This section assumes familiarity with running cuPyNumeric, extending it with
 Legate Task, and scaling gradient boosting with Legate Boost. For a refresher,
 see:
 
-- Setting up your environment and running **cuPyNumeric**
-- Extending cuPyNumeric with **Legate Task**
+- Setting up your environment and running  `cuPyNumeric <https://docs.nvidia.com/cupynumeric/latest/user/tutorial.html>`_
+- Extending cuPyNumeric with `Legate Task <https://docs.nvidia.com/cupynumeric/25.10/user/task.html>`_
 - Scaling gradient boosting with **Legate Boost**
 
 cuPyNumeric scales familiar NumPy workloads seamlessly across CPUs, GPUs, and
@@ -29,20 +29,26 @@ Legate runtime that address these challenges:
   scalability. Profiling reveals bottlenecks such as idle GPUs,
   synchronization delays, or overly fine-grained tasks, helping you restructure
   code for better scaling.
+
 - Debugging and Out-of-Memory (OOM) strategies – to improve reliability
   in memory-intensive workloads. These tools help diagnose crashes, manage
   GPU/CPU memory effectively, and prevent common anti-patterns so applications
   remain robust under heavy loads.
 
-What you’ll gain: By combining profiling tools with solid OOM-handling
-strategies, you can significantly improve the efficiency, scalability,
-and reliability of cuPyNumeric applications across CPUs, GPUs, and
-multi-node systems.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
 
-For more detail, see the official references:
+   * - **What you'll gain:** By combining profiling tools with solid
+       OOM-handling strategies, you can significantly improve the
+       efficiency, scalability, and reliability of cuPyNumeric
+       applications across CPUs, GPUs, and multi-node systems.
 
-- cuPyNumeric Documentation
-- Legate Documentation
+
+**For more detail, see the official references:**
+
+- `cuPyNumeric Documentation <https://docs.nvidia.com/cupynumeric/latest/index.html>`_ 
+- `Legate Documentation <https://docs.nvidia.com/legate/latest/index.html>`_
 
 
 Usage
