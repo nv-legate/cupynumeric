@@ -1143,9 +1143,8 @@ Rest of OOM Error Message
      Instance 4000000000000000 of size 8388592 covering elements <0>..<1048573>
          created for an operation launched at /home/USER/d/cupynumeric/oom.py:10
 
-Rest of OOM Error Message
-Meaning
-"""""""
+Rest of OOM Error Message – Meaning
+"""""""""""""""""""""""""""""""""""
 
 - corresponding to a LogicalStore allocated at /home/USER/d/cupynumeric/oom.py:16
 
