@@ -52,14 +52,14 @@ Legate runtime that address these challenges:
 Usage
 -----
 
-1.) To install the built-in Legate profiler tool in your Conda environment, run:
+**1.) To install the built-in Legate profiler tool in your Conda environment, run:**
 
 .. code-block:: bash
 
    conda install -c conda-forge -c legate legate-profiler
 
-2.) After installing the Legate profiler (legate-profiler), profile the code
-using the ``--profile`` flag:
+**2.) After installing the Legate profiler (legate-profiler), profile the code
+using the ``--profile`` flag:**
 
 .. code-block:: bash
 
@@ -85,7 +85,7 @@ variable:
 
    LEGATE_CONFIG="--cpus 8 --sysmem 4000 --profile" python ./myprog.py
 
-3.) After a run completes, in the directory you ran the command you’ll see:
+**3.) After a run completes, in the directory you ran the command you’ll see:**
 
 - A folder: ``legate_prof/``, a self-contained HTML report
   (open ``legate_prof/index.html``)
@@ -115,7 +115,7 @@ Examples:
 
 **Note:** Trace files are numbered by rank index (e.g., ``legate_0.prof``, ``legate_1.prof``), not by run. If you run again in the same directory, files with the same rank numbers will be overwritten; for example, a 1-rank run will replace ``legate_0.prof``. The ``legate_prof/`` HTML report directory is also overwritten.
 
-4.) Local Setup: WSL, Miniforge (Conda), and Legate + Legate profiler viewer
+**4.) Local Setup:** WSL, Miniforge (Conda), and Legate + Legate profiler viewer
 
 .. code-block:: bash
 
@@ -141,7 +141,7 @@ Examples:
    conda create -n legate -y -c conda-forge -c legate legate cupynumeric legate-profiler
    conda activate legate
 
-5.) Copy files to your local device: Create a single top-level folder & keep
+**5.) Copy files to your local device:** Create a single top-level folder & keep
 runs separated to avoid name/file clashes:
 
 .. code-block:: bash
@@ -150,8 +150,8 @@ runs separated to avoid name/file clashes:
    scp -r <USER>@<REMOTE_HOST>:<REMOTE_RUN_DIR>/legate_*.prof \
          "<LOCAL_DIR>/<FOLDER_NAME>/name_of_run"
 
-6.) In local machine, use the following command to open files with the profile
-viewer:
+**6.) In local machine, use the following command to open files with the profile
+viewer:**
 
 .. code-block:: bash
 
@@ -161,7 +161,7 @@ viewer:
    # Multi-GPU/Multi-Node: multiple ranks (pass them all: e.g: N0, N1, N2, etc)
    legate_prof view /path/to/legate_*.prof
 
-For more detail, see the official references:
+**For more detail, see the official references:**
 
 -  `Usage — NVIDIA legate <https://docs.nvidia.com/legate/24.11/usage.html>`_
 
