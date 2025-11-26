@@ -1,7 +1,6 @@
 .. _advanced_profiling_debugging:
 
-Advanced Topics in cuPyNumeric
-(Profiling & Debugging)
+Advanced Topics in cuPyNumeric (Profiling & Debugging)
 ======================================================
 
 Overview
