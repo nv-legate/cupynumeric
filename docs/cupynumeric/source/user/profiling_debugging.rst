@@ -585,7 +585,7 @@ kernels rather than running a few big ones.
 GPU Dev Avg
 """""""""""
 
-.. image:: ../!images/profiling_debugging/gpuDev_Inefficient_avg16.png
+.. image:: ../_images/profiling_debugging/gpuDev_Inefficient_avg16.png
    :alt: Inefficient GPU device average utilization
    :width: 90%
 
@@ -1024,7 +1024,7 @@ Efficient Code:
 Zerocopy
 ^^^^^^^^
 
-.. image:: ../_images/profiling_debugging/ZC_efficient33.png
+.. image:: ../_images/profiling_debugging/zc_efficient33.png
    :alt: Efficient Zerocopy average utilization
    :width: 90%
 
@@ -1059,8 +1059,6 @@ transition between average code that “just runs” to efficient, scalable, and
 production-ready code. Profiling turns performance tuning from guesswork into
 an intentional, data-driven process that elevates code quality from functional
 to excellent.
-
-Inefficient (CPU)                               Efficient (CPU)
 
 
 Understanding and Handling Out-of-Memory (OOM) Issues – Example 2
@@ -1371,11 +1369,11 @@ Confirm the per-kind pool sizes match your flags and that each rank has
 sensible values. (If using ``-n`` or multiple ``--ranks-per-node``, scale your
 expectations.) An example would look something like:
 
-.. image:: ../_images/profiling_debugging/show_config.png
-   :alt: Example legate --show-config output
-   :width: 90%
+**CPU Run:**
 
-CPU Run:
+.. image:: ../_images/profiling_debugging/cpu_RPN34.png
+   :alt: Example CPU RPN / diagnostic view
+   :width: 90%
 
 CUDA_ERROR_NO_DEVICE: Harmless in this context, we asked for
 ``--gpus=0`` so Legion/Realm reports “no device” and proceeds on CPU only.
@@ -1400,9 +1398,9 @@ CPU (host RAM):
 
    cat /proc/meminfo | grep MemAvailable
 
-.. image:: ../_images/profiling_debugging/meminfo.png
-   :alt: Example MemAvailable output
-   :width: 70%
+.. image:: ../_images/profiling_debugging/cpu_memavail35.png
+   :alt: Example MemAvailable output on CPU
+   :width: 90%
 
 GPU (device VRAM):
 
@@ -1410,9 +1408,9 @@ GPU (device VRAM):
 
    nvidia-smi
 
-.. image:: ../_images/profiling_debugging/nvidia_smi.png
-   :alt: Example nvidia-smi output
-   :width: 70%
+.. image:: ../_images/profiling_debugging/gpu_memavail36.png
+   :alt: Example nvidia-smi GPU memory view
+   :width: 90%
 
 - Per-GPU Memory-Usage (1 MiB / 40960 MiB): shows headroom.
 - Per-GPU rows (0–3, A100-SXM4-40GB): Model and count.
