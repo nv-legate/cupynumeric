@@ -48,13 +48,13 @@ For more detail, see the official references:
 Usage
 -----
 
-1.) To install the built-in Legate profiler tool in your Conda environment, run:
+1) To install the built-in Legate profiler tool in your Conda environment, run:
 
 .. code-block:: bash
 
    conda install -c conda-forge -c legate legate-profiler
 
-2.) After installing the Legate profiler (legate-profiler), profile the code
+2) After installing the Legate profiler (legate-profiler), profile the code
 using the ``--profile`` flag:
 
 .. code-block:: bash
@@ -74,14 +74,14 @@ using the ``--profile`` flag:
         --mpi=pmix -C gpu \
      legate --gpus 1 --profile myprog.py
 
-3.) Similarly, a program can be run via the ``LEGATE_CONFIG`` environment
+3) Similarly, a program can be run via the ``LEGATE_CONFIG`` environment
 variable:
 
 .. code-block:: bash
 
    LEGATE_CONFIG="--cpus 8 --sysmem 4000 --profile" python ./myprog.py
 
-4.) After a run completes, in the directory you ran the command you’ll see:
+4) After a run completes, in the directory you ran the command you’ll see:
 
 - A folder: ``legate_prof/``, a self-contained HTML report
   (open ``legate_prof/index.html``)
@@ -117,7 +117,7 @@ Examples:
    1-rank run will replace ``legate_0.prof``. The ``legate_prof/`` HTML
    report directory is also overwritten.
 
-5.) Local Setup: WSL, Miniforge (Conda), and Legate + Legate profiler viewer
+5) Local Setup: WSL, Miniforge (Conda), and Legate + Legate profiler viewer
 
 These commands will work directly on a Linux environment.
 
@@ -145,7 +145,7 @@ Miniforge (Conda), and activate it.
    conda create -n legate -y -c conda-forge -c legate legate cupynumeric legate-profiler
    conda activate legate
 
-6.) Copy files to your local device: Create a single top-level folder & keep
+6) Copy files to your local device: Create a single top-level folder & keep
 runs separated to avoid name/file clashes:
 
 .. code-block:: bash
@@ -154,7 +154,7 @@ runs separated to avoid name/file clashes:
    scp -r <USER>@<REMOTE_HOST>:<REMOTE_RUN_DIR>/legate_*.prof \
          "<LOCAL_DIR>/<FOLDER_NAME>/name_of_run"
 
-7.) In local machine, use the following command to open files with the profile
+7) In local machine, use the following command to open files with the profile
 viewer:
 
 .. code-block:: bash
@@ -285,7 +285,7 @@ in many tiny tasks; runtime overhead dominates useful computation.
 Profiler Output and Interpretation - Inefficient CPU Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1.) CPU
+1) CPU
 ^^^^^^^
 
 .. image:: ../_images/profiling_debugging/cpu_inefficient.png
@@ -328,7 +328,7 @@ What would good look like? A handful of long bars for the main operations,
 then just two long masked updates (plus/minus 2.0 step), as opposed to
 thousands of slivers.
 
-2.) Utility
+2) Utility
 ^^^^^^^^^^^
 
 .. image:: ../_images/profiling_debugging/utility_inefficient.png
@@ -370,7 +370,7 @@ What would good look like? Short, discrete bursts around a few large
 tasks/operations (in-place add, one masked overwrite, two whole-array
 threshold updates), with the utility lanes mostly quiet between them.
 
-3.) I/O (input/output)
+3) I/O (input/output)
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: ../_images/profiling_debugging/io_inefficient.png
@@ -420,7 +420,7 @@ What would good look like? Brief I/O bursts only: write once to a preallocated
 output, one masked overwrite, then quiet channels, few wide transfers, no long
 baseline.
 
-4.) System
+4) System
 ^^^^^^^^^^
 
 What this shows
@@ -438,7 +438,7 @@ shuts down and cleans up. Bottom line: good/neutral, system stays low and
 stable; the real bottlenecks are elsewhere (CPU fragmentation, Utility
 overhead, and I/O/Channel traffic).
 
-5.) Channel (chan)
+5) Channel (chan)
 ^^^^^^^^^^^^^^^^^^
 
 .. image:: ../_images/profiling_debugging/channel_inefficient.png
@@ -477,7 +477,7 @@ then perform two whole-array threshold updates. Between bursts the baseline
 stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid
 bars instead of bar-code slivers.
 
-6.) Dependent Partitioning (dp)
+6) Dependent Partitioning (dp)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 What this shows
@@ -519,7 +519,7 @@ All ranks:
    :alt: Inefficient multi-GPU profiler view across ranks
    :width: 90%
 
-1.) GPU Dev
+1) GPU Dev
 ^^^^^^^^^^^
 
 What this shows
@@ -560,7 +560,7 @@ GPU Dev lane shows long solid bars with a high, steady average line, minimal
 gaps between kernels, and compute overlapping cleanly with a few bulk copies
 (seen in Channel).
 
-2.) GPU Host
+2) GPU Host
 ^^^^^^^^^^^^
 
 What this shows
@@ -592,7 +592,7 @@ Brief bursts at kernel starts, then long idle periods while the device
 executes. No dense “barcode” of micro-launches. Will look very similar to GPU
 Dev.
 
-3.) Zerocopy
+3) Zerocopy
 ^^^^^^^^^^^^
 
 What this shows
@@ -610,7 +610,7 @@ down due to the 4,096-element slice loop, but their duty cycle is so small that
 utilization rounds to zero. Any zero-copy use here is incidental and negligible
 compared with other streams. Zerocopy is not a bottleneck.
 
-4.) Framebuffer
+4) Framebuffer
 ^^^^^^^^^^^^^^^
 
 What this shows
