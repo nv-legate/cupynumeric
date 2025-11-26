@@ -10,9 +10,9 @@ This section assumes familiarity with running cuPyNumeric, extending it with
 Legate Task, and scaling gradient boosting with Legate Boost. For a refresher,
 see:
 
-- Setting up your environment and running cuPyNumeric
-- Extending cuPyNumeric with Legate Task
-- Scaling gradient boosting with Legate Boost
+- Setting up your environment and running **cuPyNumeric**
+- Extending cuPyNumeric with **Legate Task**
+- Scaling gradient boosting with **Legate Boost**
 
 cuPyNumeric scales familiar NumPy workloads seamlessly across CPUs, GPUs, and
 multi-node clusters. Previous sections covered how to get code running; here
