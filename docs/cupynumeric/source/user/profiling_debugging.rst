@@ -286,10 +286,6 @@ Profiler Output and Interpretation - Inefficient CPU Results
 1) CPU
 ^^^^^^^
 
-.. image:: ../_images/profiling_debugging/Inefficient_CPU2.png
-   :alt: Inefficient CPU profiler timeline with many tiny tasks
-   :width: 90%
-
 What this shows
 """""""""""""""
 
@@ -298,13 +294,18 @@ cores. Long, solid bars means a few large tasks/operations (good). Dense
 “bar-code” slivers means many tiny tasks (bad). This is where you read task
 time and spot idle gaps between tasks.
 
+.. image:: ../_images/profiling_debugging/Inefficient_CPU2.png
+   :alt: Inefficient CPU profiler timeline with many tiny tasks
+   :width: 90%
+
 **Zoomed in:**
 
 .. image:: ../_images/profiling_debugging/Inefficient_CPU3.png
    :alt: Inefficient CPU timeline (zoom 2)
    :width: 90%
 
-CPU Observation:
+**CPU Observation:**
+
 Start-up shows a few large initialization tasks. After that, the 4,096-element
 slice loop fragments work into many small tasks, producing a barcode-like
 pattern. This displays overly fine-grained work that increases
@@ -330,7 +331,7 @@ sliver is a tiny task from the slice loop. This fragmentation is bad: it
 reduces sustained CPU utilization, increases context switching, and hurts cache
 locality, so time shifts from steady computation to orchestrating tiny tasks.
 
-What would good look like? A handful of long bars for the main operations,
+**What would good look like?** A handful of long bars for the main operations,
 then just two long masked updates (plus/minus 2.0 step), as opposed to
 thousands of slivers.
 
@@ -350,7 +351,8 @@ the user’s computation. You want short bursts around big tasks/operations.
 A sustained plateau means the scheduler is the bottleneck (threads are waiting
 on runtime work).
 
-Utility Observation:
+**Utility Observation:**
+
 Sustained high activity almost the entire run, with only a late drop, runtime
 overhead dominates while on the other hand the computation is fragmented.
 
@@ -376,7 +378,7 @@ instances for the runtime to allocate and track. Bottom line: bad, time is
 more so spent orchestrating rather than computing, often coinciding with idle
 gaps on the CPU lanes.
 
-What would good look like? Short, discrete bursts around a few large
+**What would good look like?** Short, discrete bursts around a few large
 tasks/operations (in-place add, one masked overwrite, two whole-array
 threshold updates), with the utility lanes mostly quiet between them.
 
@@ -397,7 +399,8 @@ heavy top-level coordination; a thin, steady baseline suggests many small
 I/O/driver events. GPU or CPU gaps often correlate with I/O or Channel
 activity, but can also come from Utility (mapping) or dependencies.
 
-I/O observation:
+**I/O observation:**
+
 We see early heavy activity due to big copies, then a long low baseline of
 small transfers, followed by a tall plateau near the end. The large data
 movement pattern itself comes through Channel (scatter writes + tiny chunks),
@@ -430,7 +433,7 @@ zero. Bottom line: Bad, more time is going to data movement/coordination
 instead of compute, and it correlates with high Utility and fragmented CPU
 (idle/long-poll symptoms).
 
-What would good look like? Brief I/O bursts only: write once to a preallocated
+**What would good look like?** Brief I/O bursts only: write once to a preallocated
 output, one masked overwrite, then quiet channels, few wide transfers, no long
 baseline.
 
@@ -448,7 +451,8 @@ steady computation.
    :alt: Inefficient system lane average
    :width: 90%
 
-System Observation:
+**System Observation:**
+
 We observe a small early bump from normal startup work (process/thread creation
 and initial allocation), followed by a flat, low sitting plateau indicating
 minimal ongoing system overhead, and a slight dip at the end as the program
@@ -477,7 +481,8 @@ baselines means many small transfers, often from over-granular work
    :alt: Inefficient Channel lane (raw 2)
    :width: 90%
 
-Channel Observation:
+**Channel Observation:**
+
 The gray rectangles are merged visuals: when zoomed out, the profiler compacts
 hundreds/thousands of micro-copies into gray bands; zooming in reveals the
 individual narrow copy boxes, confirming over-granularity. Net effect: poor
@@ -497,7 +502,7 @@ baseline, which is the flood of small scatter/gather copies from
 ``nonzero(...)`` indexing and the ``CHUNK = 4096`` loop. Each tiny slice
 forces its own DMA operation.
 
-What would good look like? A handful of short, tall bursts around the major
+**What would good look like?** A handful of short, tall bursts around the major
 steps: write once into ``z``, do a single masked overwrite for the condition,
 then perform two whole-array threshold updates. Between bursts the baseline
 stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid
@@ -520,7 +525,8 @@ niche, hyper-specific metric that often reads near zero in simple workloads,
 but can matter in more complex applications (e.g., sparse matrix operations,
 irregular graphs, adaptive meshes) where partition shapes change frequently.
 
-DP Observation:
+**DP Observation:**
+
 The dp avg line is flat at ~0% utilization for the whole run, indicating
 partition work is negligible in total time. In dp0 you still see a long gray
 “merged” band: that's the view compacting many ultra-short partition events
@@ -565,7 +571,8 @@ getting too many tiny launches.
    :alt: Inefficient GPU device lane
    :width: 90%
 
-GPU Dev Observation:
+**GPU Dev Observation:**
+
 In the GPU Dev lane we see wide gray bands at zoom compress many
 micro-kernels; zooming in reveals dense strips, each a tiny kernel from the
 4,096-element slices or the scatter path. Above that we see many repeated,
@@ -592,7 +599,7 @@ sinks lower, oscillating high to low. That indicates persistent GPU activity,
 but fine granularity: per-chunk/per-scatter kernels are short, so launch
 overhead and synchronization eats into total time.
 
-What would good look like? A few long, contiguous kernels that keep the device
+**What would good look like?** A few long, contiguous kernels that keep the device
 busy: one large vector add, one single masked overwrite (no scatter), etc. The
 GPU Dev lane shows long solid bars with a high, steady average line, minimal
 gaps between kernels, and compute overlapping cleanly with a few bulk copies
@@ -612,7 +619,8 @@ large kernel, not continuous chatter/oscillation.
    :alt: Inefficient GPU host lane (raw)
    :width: 90%
 
-GPU Host Observation:
+**GPU Host Observation:**
+
 Frequent spikes/oscillations mirror GPU Dev, such that the code launches many
 tiny kernels:
 
@@ -632,7 +640,7 @@ High, jagged baseline after a startup spike means launch overhead is sustained.
 Host time tracks GPU Dev closely, an obvious indication of over-granularity
 (per-launch cost comparable to work done).
 
-What would good look like? Sparse, short spikes only when launching those few
+**What would good look like?** Sparse, short spikes only when launching those few
 large kernels. The GPU Host lane is a little lower and quieter than GPU Dev.
 Brief bursts at kernel starts, then long idle periods while the device
 executes. No dense “barcode” of micro-launches. Will look very similar to GPU
@@ -653,7 +661,8 @@ isn't staged efficiently in device memory.
    :alt: Inefficient Zerocopy average utilization
    :width: 90%
 
-Zerocopy Observation:
+**Zerocopy Observation:**
+
 The avg line is pinned at a ~0% utilization for the entire run. If this section
 was expanded you would see many blocks gradually getting larger as you scroll
 down due to the 4,096-element slice loop, but their duty cycle is so small that
@@ -686,7 +695,7 @@ allocation/instance traffic, likely from:
 - Scatter updates (``z[cond_idx] = …``) forcing additional partitioned storage.
 - The ``CHUNK = 4096`` loop repeatedly touching small subregions.
 
-What would good look like? A small bump at initialization (allocate main
+**What would good look like?** A small bump at initialization (allocate main
 arrays), flat near zero during steady compute, and a dip at the end (cleanup).
 No continuous Framebuffer overhead, just data living in device memory for long
 stretches while kernels run.
@@ -826,7 +835,8 @@ CPU
    :alt: Efficient CPU timeline
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Few longer bars, minimal “barcode.” Work is consolidated into large tasks;
 cores stay busy with little orchestration. CPU avg: Large, contiguous vector
 ops (add, mask, updates) keep per-task overhead tiny vs compute, so the
@@ -856,7 +866,8 @@ Utility
    :alt: Efficient utility lane (raw 2)
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Quiet baseline with brief bursts at the end. Mapping/scheduling is compact;
 most time is in real compute. The late burst corresponds to final mapping/sync
 before completion. Little “confetti” in the utility lanes means few meta-tasks;
@@ -878,7 +889,8 @@ I/O
    :alt: Efficient I/O lane
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 The lane is dominated by a long, tall plateau that is a single TopLevelTask
 block with only a few short blips for init/teardown, there is no mid-run I/O
 plateaus. The avg line stays flat/low between blips with no steady chatter,
@@ -903,7 +915,8 @@ System
    :alt: Efficient system lane
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Near-zero for most of the run, with only a gradual rise to ~8% late in the
 timeline (allocator growth/instance finalization/teardown). No mid-run
 plateaus, the OS/allocator work isn't the bottleneck; compute and bulk copies
@@ -925,7 +938,8 @@ Channel (chan)
    :alt: Efficient Channel lane
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Quiet baseline for most of the run; no thin, persistent copy noise. A couple
 of tall plateaus only when needed for bulk transfers/flush at the end.
 Indicates high effective throughput: few large DMA copies, minimal per-copy
@@ -944,7 +958,7 @@ Efficient Code:
 Efficient Multi-GPU Results - (4 Ranks 1 GPU each)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All ranks:
+**All ranks:**
 
 .. image:: ../_images/profiling_debugging/gpu_efficient29.png
    :alt: Efficient GPU overview (all ranks)
@@ -957,7 +971,8 @@ GPU Dev
    :alt: Efficient GPU device average utilization
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Steady compute time: The green “avg” line goes high and stays high while work
 runs. That means the GPU is busy doing math, not waiting around. Few, wide
 kernels: Solid, thick bars mean big kernels that do lots of work per launch
@@ -982,7 +997,8 @@ GPU Host
    :alt: Efficient GPU host average utilization
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Mostly quiet baseline with a few short bursts aligned to device kernels
 showing minimal launch/orchestration overhead. Avg line stays low between
 bursts; no comb/“barcode” pattern of micro-launches. The host is mostly idle
@@ -1004,7 +1020,8 @@ Framebuffer
    :alt: Efficient framebuffer average utilization
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Low flat line that stays at ~0% utilization most the run then gradually builds
 up to ~1% utilization at the end, showing memory management isn't a bottleneck.
 Alloc/teardown bumps are short; there's no mid-run allocation mess, so data
@@ -1026,7 +1043,8 @@ Zerocopy
    :alt: Efficient Zerocopy average utilization
    :width: 90%
 
-Why this is good:
+**Why this is good:**
+
 Avg stays at ~0% utilization for the entire run, Zerocopy traffic is
 negligible. Only a few short alloc/free ticks near the end; no background
 chatter. No measurable Zerocopy activity. That means that Zerocopy wasn’t used
@@ -1074,13 +1092,13 @@ operation needs to create a new instance that exceeds the reserved capacity of
 a pool, the runtime raises an out-of-memory error for that memory kind (e.g.,
 ``SYSTEM_MEM`` or ``FBMEM``) and reports the task/store that triggered it.
 
-Why this matters: Most “mystery OOMs” aren’t total node exhaustion, they’re
+**Why this matters:** Most “mystery OOMs” aren’t total node exhaustion, they’re
 per-process, per-kind pool exhaustion. The fix is often to:
 
 1. Right-size those pools.
 2. Reduce peak live instances so they fit.
 
-For more information on Legate Core visit: Overview — NVIDIA legate.core
+**For more information on Legate Core visit:** `Overview — NVIDIA legate.core <https://docs.nvidia.com/legate/24.06/overview.html>`_ 
 
 
 Demo Script
