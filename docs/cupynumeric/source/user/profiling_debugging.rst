@@ -288,7 +288,7 @@ Profiler Output and Interpretation - Inefficient CPU Results
 1.) CPU
 ^^^^^^^
 
-.. figure:: ../_images/profiling_debugging/cpu_inefficient.png
+.. image:: ../_images/profiling_debugging/cpu_inefficient.png
    :alt: Inefficient CPU profiler timeline with many tiny tasks
    :width: 90%
 
@@ -331,7 +331,7 @@ thousands of slivers.
 2.) Utility
 ^^^^^^^^^^^
 
-.. figure:: ../_images/profiling_debugging/utility_inefficient.png
+.. image:: ../_images/profiling_debugging/utility_inefficient.png
    :alt: Inefficient utility lane with sustained meta-task load
    :width: 90%
 
@@ -373,7 +373,7 @@ threshold updates), with the utility lanes mostly quiet between them.
 3.) I/O (input/output)
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. figure:: ../_images/profiling_debugging/io_inefficient.png
+.. image:: ../_images/profiling_debugging/io_inefficient.png
    :alt: Inefficient I/O lane with scattered top-level activity
    :width: 90%
 
@@ -441,7 +441,7 @@ overhead, and I/O/Channel traffic).
 5.) Channel (chan)
 ^^^^^^^^^^^^^^^^^^
 
-.. figure:: ../_images/profiling_debugging/channel_inefficient.png
+.. image:: ../_images/profiling_debugging/channel_inefficient.png
    :alt: Inefficient Channel lane with many micro-copies
    :width: 90%
 
@@ -515,7 +515,7 @@ Inefficient GPU Results - (4 Ranks 1 GPU each)
 
 All ranks:
 
-.. figure:: ../_images/profiling_debugging/gpu_inefficient_all_ranks.png
+.. image:: ../_images/profiling_debugging/gpu_inefficient_all_ranks.png
    :alt: Inefficient multi-GPU profiler view across ranks
    :width: 90%
 
@@ -764,7 +764,7 @@ Profiler Output and Interpretation - Efficient CPU Results
 CPU
 ^^^
 
-.. figure:: ../_images/profiling_debugging/cpu_efficient.png
+.. image:: ../_images/profiling_debugging/cpu_efficient.png
    :alt: Efficient CPU profiler timeline with few long tasks
    :width: 90%
 
@@ -786,7 +786,7 @@ Efficient Code:
 Utility
 ^^^^^^^
 
-.. figure:: ../_images/profiling_debugging/utility_efficient.png
+.. image:: ../_images/profiling_debugging/utility_efficient.png
    :alt: Efficient utility lane with short bursts
    :width: 90%
 
@@ -808,7 +808,7 @@ Efficient Code:
 I/O
 ^^^
 
-.. figure:: ../_images/profiling_debugging/io_efficient.png
+.. image:: ../_images/profiling_debugging/io_efficient.png
    :alt: Efficient I/O lane with minimal top-level overhead
    :width: 90%
 
@@ -851,7 +851,7 @@ Efficient Code:
 Channel (chan)
 ^^^^^^^^^^^^^^
 
-.. figure:: ../_images/profiling_debugging/channel_efficient.png
+.. image:: ../_images/profiling_debugging/channel_efficient.png
    :alt: Efficient Channel lane with a few bulk transfers
    :width: 90%
 
@@ -876,7 +876,7 @@ Efficient Multi-GPU Results - (4 Ranks 1 GPU each)
 
 All ranks:
 
-.. figure:: ../_images/profiling_debugging/gpu_efficient_all_ranks.png
+.. image:: ../_images/profiling_debugging/gpu_efficient_all_ranks.png
    :alt: Efficient multi-GPU profiler view across ranks
    :width: 90%
 
@@ -1284,7 +1284,7 @@ Confirm the per-kind pool sizes match your flags and that each rank has
 sensible values. (If using ``-n`` or multiple ``--ranks-per-node``, scale your
 expectations.) An example would look something like:
 
-.. figure:: ../_images/profiling_debugging/show_config.png
+.. image:: ../_images/profiling_debugging/show_config.png
    :alt: Example legate --show-config output
    :width: 90%
 
@@ -1313,7 +1313,7 @@ CPU (host RAM):
 
    cat /proc/meminfo | grep MemAvailable
 
-.. figure:: ../_images/profiling_debugging/meminfo.png
+.. image:: ../_images/profiling_debugging/meminfo.png
    :alt: Example MemAvailable output
    :width: 70%
 
@@ -1323,7 +1323,7 @@ GPU (device VRAM):
 
    nvidia-smi
 
-.. figure:: ../_images/profiling_debugging/nvidia_smi.png
+.. image:: ../_images/profiling_debugging/nvidia_smi.png
    :alt: Example nvidia-smi output
    :width: 70%
 
