@@ -23,12 +23,12 @@ bottlenecks, managing memory effectively, and preventing failures before
 they disrupt a job. This section focuses on two advanced capabilities in cuPyNumeric and the
 Legate runtime that address these challenges:
 
-- Profiling cuPyNumeric applications – to tune performance and analyze
+- **Profiling cuPyNumeric applications** – to tune performance and analyze
   scalability. Profiling reveals bottlenecks such as idle GPUs,
   synchronization delays, or overly fine-grained tasks, helping you restructure
   code for better scaling.
 
-- Debugging and Out-of-Memory (OOM) strategies – to improve reliability
+- **Debugging and Out-of-Memory (OOM) strategies** – to improve reliability
   in memory-intensive workloads. These tools help diagnose crashes, manage
   GPU/CPU memory effectively, and prevent common anti-patterns so applications
   remain robust under heavy loads.
@@ -93,8 +93,6 @@ variable:
 
 The ``legate_*.prof`` files are what you need to view locally on your
 machine.
-
-Examples:
 
 .. code-block:: text
 
