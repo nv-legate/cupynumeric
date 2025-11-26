@@ -1552,7 +1552,7 @@ the live working set so the next phase has the headroom and is less likely to
 hit OOM or suffer from cache-induced slowdowns.
 
 1) Drop references:
-"""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^
 
 The ``del`` statement in Python deletes a reference to an object. It removes
 the binding between a variable name and the object it refers to in the current
@@ -1568,7 +1568,7 @@ may be needed.
   references it.
 
 2) Run the garbage collector:
-"""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Some objects participate in reference cycles and won't be reclaimed by
 refcounts (reference counting) alone. Calling ``gc.collect()`` forces a cycle
@@ -1577,7 +1577,7 @@ live Python heap between phases and reclaim memory by cleaning up objects
 that are no longer in use.
 
 3) Flush allocator pools (if also using CuPy):
-""""""""""""""""""""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If your process uses CuPy arrays or kernels alongside cuPyNumeric, CuPy’s
 device/pinned memory pools may hold on to large caches.
