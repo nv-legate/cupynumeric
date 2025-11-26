@@ -20,9 +20,7 @@ the focus shifts to making workloads production-ready. At scale, success is
 not just about adding GPUs or nodes, it requires ensuring that applications
 remain efficient, stable, and resilient under load. That means finding
 bottlenecks, managing memory effectively, and preventing failures before
-they disrupt a job.
-
-This section focuses on two advanced capabilities in cuPyNumeric and the
+they disrupt a job. This section focuses on two advanced capabilities in cuPyNumeric and the
 Legate runtime that address these challenges:
 
 - Profiling cuPyNumeric applications – to tune performance and analyze
@@ -54,13 +52,13 @@ Legate runtime that address these challenges:
 Usage
 -----
 
-1) To install the built-in Legate profiler tool in your Conda environment, run:
+1.) To install the built-in Legate profiler tool in your Conda environment, run:
 
 .. code-block:: bash
 
    conda install -c conda-forge -c legate legate-profiler
 
-2) After installing the Legate profiler (legate-profiler), profile the code
+2.) After installing the Legate profiler (legate-profiler), profile the code
 using the ``--profile`` flag:
 
 .. code-block:: bash
@@ -80,14 +78,14 @@ using the ``--profile`` flag:
         --mpi=pmix -C gpu \
      legate --gpus 1 --profile myprog.py
 
-3) Similarly, a program can be run via the ``LEGATE_CONFIG`` environment
+Similarly, a program can be run via the ``LEGATE_CONFIG`` environment
 variable:
 
 .. code-block:: bash
 
    LEGATE_CONFIG="--cpus 8 --sysmem 4000 --profile" python ./myprog.py
 
-4) After a run completes, in the directory you ran the command you’ll see:
+3.) After a run completes, in the directory you ran the command you’ll see:
 
 - A folder: ``legate_prof/``, a self-contained HTML report
   (open ``legate_prof/index.html``)
@@ -115,22 +113,14 @@ Examples:
    legate_0.prof ... legate_7.prof
    legate_prof/
 
-.. note::
+**Note:** Trace files are numbered by rank index (e.g., ``legate_0.prof``, ``legate_1.prof``), not by run. If you run again in the same directory, files with the same rank numbers will be overwritten; for example, a 1-rank run will replace ``legate_0.prof``. The ``legate_prof/`` HTML report directory is also overwritten.
 
-   Trace files are numbered by rank index (e.g., ``legate_0.prof``,
-   ``legate_1.prof``), not by run. If you run again in the same directory,
-   files with the same rank numbers will be overwritten; for example, a
-   1-rank run will replace ``legate_0.prof``. The ``legate_prof/`` HTML
-   report directory is also overwritten.
-
-5) Local Setup: WSL, Miniforge (Conda), and Legate + Legate profiler viewer
-
-These commands will work directly on a Linux environment.
-
-For Windows OS – open Ubuntu/WSL2 (Windows Subsystem for Linux), install
-Miniforge (Conda), and activate it.
+4.) Local Setup: WSL, Miniforge (Conda), and Legate + Legate profiler viewer
 
 .. code-block:: bash
+
+   #These commands will work directly on a Linux environment.
+   #For Windows OS – open Ubuntu/WSL2 (Windows Subsystem for Linux), install Miniforge (Conda), and activate it.
 
    # Download installer
    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
@@ -151,7 +141,7 @@ Miniforge (Conda), and activate it.
    conda create -n legate -y -c conda-forge -c legate legate cupynumeric legate-profiler
    conda activate legate
 
-6) Copy files to your local device: Create a single top-level folder & keep
+5.) Copy files to your local device: Create a single top-level folder & keep
 runs separated to avoid name/file clashes:
 
 .. code-block:: bash
@@ -160,7 +150,7 @@ runs separated to avoid name/file clashes:
    scp -r <USER>@<REMOTE_HOST>:<REMOTE_RUN_DIR>/legate_*.prof \
          "<LOCAL_DIR>/<FOLDER_NAME>/name_of_run"
 
-7) In local machine, use the following command to open files with the profile
+6.) In local machine, use the following command to open files with the profile
 viewer:
 
 .. code-block:: bash
@@ -173,7 +163,7 @@ viewer:
 
 For more detail, see the official references:
 
-- Usage — NVIDIA legate
+-  `Usage — NVIDIA legate <https://docs.nvidia.com/legate/24.11/usage.html>`_
 
 
 Profiling cuPyNumeric Applications with Legate Profilers – Example 1
