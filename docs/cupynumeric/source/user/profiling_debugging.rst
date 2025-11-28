@@ -331,9 +331,12 @@ sliver is a tiny task from the slice loop. This fragmentation is bad: it
 reduces sustained CPU utilization, increases context switching, and hurts cache
 locality, so time shifts from steady computation to orchestrating tiny tasks.
 
-**What would good look like?** A handful of long bars for the main operations,
-then just two long masked updates (plus/minus 2.0 step), as opposed to
-thousands of slivers.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **What would good look like?** A handful of long bars for the main operations, then just two long masked           updates (plus/minus 2.0 step), as opposed to thousands of slivers.
+
 
 2) Utility
 ^^^^^^^^^^^
@@ -378,9 +381,11 @@ instances for the runtime to allocate and track. Bottom line: bad, time is
 more so spent orchestrating rather than computing, often coinciding with idle
 gaps on the CPU lanes.
 
-**What would good look like?** Short, discrete bursts around a few large
-tasks/operations (in-place add, one masked overwrite, two whole-array
-threshold updates), with the utility lanes mostly quiet between them.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **What would good look like?** Short, discrete bursts around a few large tasks/operations (in-place add,           one masked overwrite, two whole-array threshold updates), with the utility lanes mostly quiet between them.
 
 3) I/O (input/output)
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -433,9 +438,11 @@ zero. Bottom line: Bad, more time is going to data movement/coordination
 instead of compute, and it correlates with high Utility and fragmented CPU
 (idle/long-poll symptoms).
 
-**What would good look like?** Brief I/O bursts only: write once to a preallocated
-output, one masked overwrite, then quiet channels, few wide transfers, no long
-baseline.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **What would good look like?** Brief I/O bursts only: write once to a preallocated output, one masked               overwrite, then quiet channels, few wide transfers, no long baseline.
 
 4) System
 ^^^^^^^^^^
@@ -502,11 +509,11 @@ baseline, which is the flood of small scatter/gather copies from
 ``nonzero(...)`` indexing and the ``CHUNK = 4096`` loop. Each tiny slice
 forces its own DMA operation.
 
-**What would good look like?** A handful of short, tall bursts around the major
-steps: write once into ``z``, do a single masked overwrite for the condition,
-then perform two whole-array threshold updates. Between bursts the baseline
-stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid
-bars instead of bar-code slivers.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **What would good look like?** A handful of short, tall bursts around the major steps: write once into             ``z``, do a single masked overwrite for the condition, then perform two whole-array threshold updates.             Between bursts the baseline stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid bars        instead of bar-code slivers.
 
 6) Dependent Partitioning (dp)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -599,11 +606,11 @@ sinks lower, oscillating high to low. That indicates persistent GPU activity,
 but fine granularity: per-chunk/per-scatter kernels are short, so launch
 overhead and synchronization eats into total time.
 
-**What would good look like?** A few long, contiguous kernels that keep the device
-busy: one large vector add, one single masked overwrite (no scatter), etc. The
-GPU Dev lane shows long solid bars with a high, steady average line, minimal
-gaps between kernels, and compute overlapping cleanly with a few bulk copies
-(seen in Channel).
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **What would good look like?** A few long, contiguous kernels that keep the device busy: one large vector          add, one single masked overwrite (no scatter), etc. The GPU Dev lane shows long solid bars with a high,            steady average line, minimal gaps between kernels, and compute overlapping cleanly with a few bulk copies          (seen in Channel).
 
 2) GPU Host
 ^^^^^^^^^^^^
@@ -640,11 +647,11 @@ High, jagged baseline after a startup spike means launch overhead is sustained.
 Host time tracks GPU Dev closely, an obvious indication of over-granularity
 (per-launch cost comparable to work done).
 
-**What would good look like?** Sparse, short spikes only when launching those few
-large kernels. The GPU Host lane is a little lower and quieter than GPU Dev.
-Brief bursts at kernel starts, then long idle periods while the device
-executes. No dense “barcode” of micro-launches. Will look very similar to GPU
-Dev.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **What would good look like?** Sparse, short spikes only when launching those few large kernels. The GPU           Host lane is a little lower and quieter than GPU Dev. Brief bursts at kernel starts, then long idle periods        while the device executes. No dense “barcode” of micro-launches. Will look very similar to GPU Dev.
 
 3) Zerocopy
 ^^^^^^^^^^^^
@@ -695,11 +702,11 @@ allocation/instance traffic, likely from:
 - Scatter updates (``z[cond_idx] = …``) forcing additional partitioned storage.
 - The ``CHUNK = 4096`` loop repeatedly touching small subregions.
 
-**What would good look like?** A small bump at initialization (allocate main
-arrays), flat near zero during steady compute, and a dip at the end (cleanup).
-No continuous Framebuffer overhead, just data living in device memory for long
-stretches while kernels run.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
 
+   * - **What would good look like?** A small bump at initialization (allocate main arrays), flat near zero during        steady compute, and a dip at the end (cleanup). No continuous Framebuffer overhead, just data living in            device memory for long stretches while kernels run.
 
 Efficient Code
 ~~~~~~~~~~~~~~
@@ -1486,10 +1493,11 @@ How to decrease per-rank reservations or ranks: (lower)
 ``--fbmem <MiB>``, ``--sysmem <MiB>``, and/or ``--zcmem <MiB>``; or reduce
 ``--ranks-per-node``.
 
-Per-rank rule: Pools are per process, If you’re launching multiple processes
-per node, reduce per-rank reservations or the number of ranks
-(``--ranks-per-node``). Your per-rank ``--fbmem`` must fit under what the
-scheduler can give each rank/device.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **Per-rank rule:** Pools are per process, If you’re launching multiple processes per node, reduce per-rank         reservations or the number of ranks (``--ranks-per-node``). Your per-rank ``--fbmem`` must fit under what          the scheduler can give each rank/device.
 
 B. Prefetch The Data
 ~~~~~~~~~~~~~~~~~~~~
@@ -1604,9 +1612,11 @@ instance for a subrange (e.g., ``b[1:-1]``) and later a larger one (full
 ``stencil_hint`` allocates the larger instance once before compute, so
 downstream ops reuse it and no mid-band growth occurs.
 
-Note: This technique, when run in place of our original example with the same
-memory allocation ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40
-oom.py``, easily passes without an OOM.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **Note:** This technique, when run in place of our original example with the same memory allocation                ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 oom.py``, easily passes without an OOM.
 
 Technique 2 - cuPyNumeric Prefetch via a whole-array touch (no temporaries)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1642,9 +1652,11 @@ the placement effect without creating a second full-size array. After this,
 run your heavy ops; the instance already exists at the needed size, so there's
 no mid-band growth.
 
-Note: This technique, when run in place of our original example with the same
-memory allocation ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40
-oom.py``, easily passes without an OOM.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **Note:** This technique, when run in place of our original example with the same memory allocation                ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 oom.py``, easily passes without an OOM.
 
 C. Releasing Memory Between Phases (del, GC, and allocator pools)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1688,7 +1700,7 @@ device/pinned memory pools may hold on to large caches.
   the CUDA driver.
 - ``PinnedMemoryPool.free_all_blocks()`` releases cached pinned host buffers.
 
-Note: This frees library caches, not your Python objects, and it doesn't
+**Note:** This frees library caches, not your Python objects, and it doesn't
 change Legate’s reserved pool sizes (``--sysmem`` / ``--fbmem`` /
 ``--zcmem``). It just makes more room inside those pools for the next phase.
 
@@ -1756,12 +1768,15 @@ RAM. Other options include ``FBMEM`` (GPU VRAM) and ``ZCMEM`` (pinned host
 memory for zero-copy). The call makes the CPU copy exclusive (VRAM copies are
 discarded), which is what frees space.
 
-Important: the runtime doesn't pre-check capacity. If the target memory lacks
+**Important:** the runtime doesn't pre-check capacity. If the target memory lacks
 space, your program can still fail. Make sure the ``--sysmem`` is large enough
 before offloading.
 
-Trade-off: spilling over to host can save you from OOM but may cost performance
-if frequent transfers are needed.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **Trade-off:** spilling over to host can save you from OOM but may cost performance if frequent transfers          are needed.
 
 E. If Applicable: Coding Practices to Reduce Peak Memory (Indirect OOM handling)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1937,6 +1952,9 @@ Quick re-checks before rerun (Steps to Diagnose OOM: Steps 2–3):
 Result: Path A expands the pool; Path B & C lowers peak usage. Either resolves
 the example OOM for ``d = c + 3`` and makes the cause and fix explicit.
 
-Important: These mitigation strategies are being implemented on a very simple
-example. For more complex, larger programs, consider also using offloading, on
-top of or instead of some of these techniques.
+.. list-table::
+   :widths: 100
+   :header-rows: 0
+
+   * - **Important:** These mitigation strategies are being implemented on a very simple example. For more                complex, larger programs, consider also using offloading, on top of or instead of some of these techniques.
+
