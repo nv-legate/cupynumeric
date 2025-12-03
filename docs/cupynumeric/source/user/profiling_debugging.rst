@@ -87,12 +87,9 @@ variable:
 
 **3.) After a run completes, in the directory you ran the command you’ll see:**
 
-- A folder: ``legate_prof/``, a self-contained HTML report
-  (open ``legate_prof/index.html``)
 - One or more raw trace files: ``legate_*.prof`` (one per rank)
 
-The ``legate_*.prof`` files are what you need to view locally on your
-machine.
+The ``legate_*.prof`` files are what you need to view locally on your machine.
 
 .. code-block:: text
 
