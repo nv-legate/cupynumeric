@@ -681,9 +681,20 @@ def histogram2d(
         # check cases [int, array] or [array, int]
         #
         if isinstance(x_bins, int) and not isinstance(y_bins, int):
-            x_bins = np.linspace(xcoords.min(), xcoords.max(), num=x_bins + 1)
+            if range is not None:
+                x_bins = np.linspace(range[0][0], range[0][1], num=x_bins + 1)
+            else:
+                x_bins = np.linspace(
+                    xcoords.min(), xcoords.max(), num=x_bins + 1
+                )
         elif isinstance(y_bins, int) and not isinstance(x_bins, int):
-            y_bins = np.linspace(ycoords.min(), ycoords.max(), num=y_bins + 1)
+            if range is not None:
+                y_bins = np.linspace(range[1][0], range[1][1], num=y_bins + 1)
+            else:
+                y_bins = np.linspace(
+                    ycoords.min(), ycoords.max(), num=y_bins + 1
+                )
+
         #
         # everything else is handled by histogramdd()
         #
@@ -702,11 +713,18 @@ def histogram2d(
         coords_adapter, bins_adapter, range_adapter, density, weights
     )
     assert len(bins_set) == num_dims
-    assert result.shape[0] == num_dims
-    bins_rx = convert_to_cupynumeric_ndarray(bins_set[0]).astype(
-        bins_adapter[0].dtype
-    )
-    bins_ry = convert_to_cupynumeric_ndarray(bins_set[1]).astype(
-        bins_adapter[1].dtype
-    )
+    assert result.ndim == num_dims
+
+    if hasattr(bins_adapter[0], "dtype"):
+        x_dtype = bins_adapter[0].dtype
+    else:
+        x_dtype = bins_set[0].dtype  # type: ignore[union-attr]
+
+    if hasattr(bins_adapter[1], "dtype"):
+        y_dtype = bins_adapter[1].dtype
+    else:
+        y_dtype = bins_set[1].dtype  # type: ignore[union-attr]
+
+    bins_rx = convert_to_cupynumeric_ndarray(bins_set[0]).astype(x_dtype)
+    bins_ry = convert_to_cupynumeric_ndarray(bins_set[1]).astype(y_dtype)
     return result, bins_rx, bins_ry

@@ -64,184 +64,75 @@ def test_histogram2d_no_weights_border():
     assert allclose(np_yb, num_yb, atol=eps)
 
 
-@pytest.mark.parametrize("density", (False, True))
-def test_histogramdd_weights(density):
+@pytest.mark.parametrize(
+    "bin_x, bin_y",
+    [
+        (5, np.array([2.0, 4.0, 6.0, 8.0], dtype=float)),
+        (np.array([1.0, 2.5, 4.0, 5.0], dtype=float), 6),
+    ],
+    ids=["int_array", "array_int"],
+)
+def test_histogram2d_mixed_bins(
+    bin_x: int | np.ndarray, bin_y: int | np.ndarray
+) -> None:
     eps = 1.0e-8
 
-    coords_array = np.ndarray(
-        shape=(5, 3),
-        buffer=np.array(
-            [
-                2.0,
-                10.0,
-                3.1,
-                4.5,
-                6.2,
-                5.9,
-                7.15,
-                6.0,
-                8.3,
-                9.1,
-                2.7,
-                8.7,
-                7.2,
-                6.85,
-                3.5,
-            ]
+    a1x = np.array([1.5, 2.3, 3.1, 4.2, 1.8, 3.5, 4.0], dtype=float)
+    a1y = np.array([2.1, 3.5, 4.2, 5.8, 2.9, 4.8, 6.1], dtype=float)
+
+    bins = (bin_x, bin_y)
+
+    np_out, np_xb, np_yb = np.histogram2d(a1x, a1y, bins=bins)
+    num_out, num_xb, num_yb = num.histogram2d(a1x, a1y, bins=bins)
+
+    assert allclose(np_out, num_out, atol=eps)
+    assert allclose(np_xb, num_xb, atol=eps)
+    assert allclose(np_yb, num_yb, atol=eps)
+
+
+@pytest.mark.parametrize(
+    "bin_x, bin_y, range_x, range_y",
+    [
+        (4, 5, [1.0, 5.0], [2.0, 8.0]),
+        (
+            5,
+            np.array([2.0, 4.0, 6.0, 8.0], dtype=float),
+            [1.0, 5.5],
+            [2.0, 8.0],
         ),
-        dtype=np.dtype(np.float64),
-    )
+        (
+            np.array([1.0, 2.5, 4.0, 5.5], dtype=float),
+            6,
+            [1.0, 5.5],
+            [2.0, 8.0],
+        ),
+    ],
+    ids=["int_int", "int_array", "array_int"],
+)
+def test_histogram2d_with_range(
+    bin_x: int | np.ndarray,
+    bin_y: int | np.ndarray,
+    range_x: list[float],
+    range_y: list[float],
+) -> None:
+    eps = 1.0e-8
 
-    bin_x = np.array([1.9, 3.5, 7.0, 11.0])
-    bin_y = np.array([2.0, 3.1, 4.3, 6.1, 7.7])
-    bin_z = np.array([1.0, 3.0, 12.0])
+    a1x = np.array([1.5, 2.3, 3.1, 4.2, 1.8, 3.5, 4.0, 5.2], dtype=float)
+    a1y = np.array([2.1, 3.5, 4.2, 5.8, 2.9, 4.8, 6.1, 7.3], dtype=float)
 
-    weights = np.array(
-        [55.0, 34.0, 25.7, 77.5, 89.2], dtype=np.dtype(np.float64)
-    )
+    bins = (bin_x, bin_y)
+    range_param = [range_x, range_y]
 
-    np_out, np_bins_out = np.histogramdd(
-        coords_array,
-        bins=[bin_x, bin_y, bin_z],
-        weights=weights,
-        density=density,
+    np_out, np_xb, np_yb = np.histogram2d(
+        a1x, a1y, bins=bins, range=range_param
     )
-    num_out, num_bins_out = num.histogramdd(
-        coords_array,
-        bins=[bin_x, bin_y, bin_z],
-        weights=weights,
-        density=density,
+    num_out, num_xb, num_yb = num.histogram2d(
+        a1x, a1y, bins=bins, range=range_param
     )
 
     assert allclose(np_out, num_out, atol=eps)
-    #
-    # need to loop, because the bins arrays are of different sizes
-    # hence .shape attribute cannot exist:
-    #
-    for np_bin, num_bin in zip(np_bins_out, num_bins_out):
-        assert allclose(np_bin, num_bin, atol=eps)
-
-
-@pytest.mark.parametrize("density", (False, True))
-def test_histogramdd_weights_int_bins(density):
-    eps = 1.0e-8
-
-    coords_array = np.ndarray(
-        shape=(5, 3),
-        buffer=np.array(
-            [
-                2.0,
-                10.0,
-                3.1,
-                4.5,
-                6.2,
-                5.9,
-                7.15,
-                6.0,
-                8.3,
-                9.1,
-                2.7,
-                8.7,
-                7.2,
-                6.85,
-                3.5,
-            ]
-        ),
-        dtype=np.dtype(np.float64),
-    )
-
-    bin_x = 5
-    bin_y = 4
-    bin_z = 3
-
-    weights = np.array(
-        [55.0, 34.0, 25.7, 77.5, 89.2], dtype=np.dtype(np.float64)
-    )
-
-    np_out, np_bins_out = np.histogramdd(
-        coords_array,
-        bins=[bin_x, bin_y, bin_z],
-        weights=weights,
-        density=density,
-    )
-    num_out, num_bins_out = num.histogramdd(
-        coords_array,
-        bins=[bin_x, bin_y, bin_z],
-        weights=weights,
-        density=density,
-    )
-
-    assert allclose(np_out, num_out, atol=eps)
-    #
-    # need to loop, because the bins arrays are of different sizes
-    # hence .shape attribute cannot exist:
-    #
-    for np_bin, num_bin in zip(np_bins_out, num_bins_out):
-        assert allclose(np_bin, num_bin, atol=eps)
-
-
-@pytest.mark.parametrize("density", (False, True))
-def test_histogramdd_weights_bins_ranges(density):
-    eps = 1.0e-8
-
-    coords_array = np.ndarray(
-        shape=(5, 3),
-        buffer=np.array(
-            [
-                2.0,
-                10.0,
-                3.1,
-                4.5,
-                6.2,
-                5.9,
-                7.15,
-                6.0,
-                8.3,
-                9.1,
-                2.7,
-                8.7,
-                7.2,
-                6.85,
-                3.5,
-            ]
-        ),
-        dtype=np.dtype(np.float64),
-    )
-
-    bin_x = 5
-    bin_y = 4
-    bin_z = 3
-
-    range_x = [3.0, 7.9]
-    range_y = [4.2, 9.5]
-    range_z = [4.0, 8.3]
-
-    weights = np.array(
-        [55.0, 34.0, 25.7, 77.5, 89.2], dtype=np.dtype(np.float64)
-    )
-
-    np_out, np_bins_out = np.histogramdd(
-        coords_array,
-        bins=[bin_x, bin_y, bin_z],
-        range=[range_x, range_y, range_z],
-        weights=weights,
-        density=density,
-    )
-    num_out, num_bins_out = num.histogramdd(
-        coords_array,
-        bins=[bin_x, bin_y, bin_z],
-        range=[range_x, range_y, range_z],
-        weights=weights,
-        density=density,
-    )
-
-    assert allclose(np_out, num_out, atol=eps)
-    #
-    # need to loop, because the bins arrays are of different sizes
-    # hence .shape attribute cannot exist:
-    #
-    for np_bin, num_bin in zip(np_bins_out, num_bins_out):
-        assert allclose(np_bin, num_bin, atol=eps)
+    assert allclose(np_xb, num_xb, atol=eps)
+    assert allclose(np_yb, num_yb, atol=eps)
 
 
 if __name__ == "__main__":
