@@ -268,6 +268,73 @@ def test_histogramdd_points_outside_of_range(density, dim, limits):
     assert (np_all_nan and num_all_nan) or allclose(np_hist, num_hist)
 
 
+def test_histogramdd_single_int_bins() -> None:
+    eps = 1.0e-8
+
+    coords_array = np.array(
+        [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0], [8.0, 9.0, 10.0]]
+    )
+
+    bins = 5
+
+    np_out, np_bins_out = np.histogramdd(coords_array, bins=bins)
+    num_out, num_bins_out = num.histogramdd(coords_array, bins=bins)
+
+    assert allclose(np_out, num_out, atol=eps)
+    for np_bin, num_bin in zip(np_bins_out, num_bins_out):
+        assert allclose(np_bin, num_bin, atol=eps)
+
+
+def test_histogramdd_non_monotonic_bins() -> None:
+    coords_array = np.array([[2.0, 3.0], [5.0, 6.0], [8.0, 9.0]])
+
+    bin_x_np = np.array([1.0, 5.0, 3.0, 10.0])
+    bin_y_np = np.array([2.0, 4.0, 6.0, 8.0])
+
+    bin_x_num = num.array([1.0, 5.0, 3.0, 10.0])
+    bin_y_num = num.array([2.0, 4.0, 6.0, 8.0])
+
+    msg = r"monotonically"
+    with pytest.raises(ValueError, match=msg):
+        np.histogramdd(coords_array, bins=[bin_x_np, bin_y_np])
+
+    with pytest.raises(ValueError, match=msg):
+        num.histogramdd(num.array(coords_array), bins=[bin_x_num, bin_y_num])
+
+
+def test_histogramdd_invalid_range() -> None:
+    coords_array = np.array([[2.0, 3.0], [5.0, 6.0], [8.0, 9.0]])
+
+    bins = [3, 3]
+    invalid_range = [[5.0, 2.0], [1.0, 10.0]]
+
+    msg = r"(max must be larger than min|must be None or pairs of increasing values)"
+    with pytest.raises(ValueError, match=msg):
+        np.histogramdd(coords_array, bins=bins, range=invalid_range)
+
+    with pytest.raises(ValueError, match=msg):
+        num.histogramdd(
+            num.array(coords_array), bins=bins, range=invalid_range
+        )
+
+
+def test_histogramdd_weights_size_mismatch() -> None:
+    coords_array = np.array([[2.0, 3.0], [5.0, 6.0], [8.0, 9.0]])
+
+    bins = [3, 3]
+    weights_np = np.array([1.0, 2.0])
+    weights_num = num.array([1.0, 2.0])
+
+    msg = r"(weights.*same|same.*length)"
+    with pytest.raises(ValueError, match=msg):
+        np.histogramdd(coords_array, bins=bins, weights=weights_np)
+
+    with pytest.raises(ValueError, match=msg):
+        num.histogramdd(
+            num.array(coords_array), bins=bins, weights=weights_num
+        )
+
+
 if __name__ == "__main__":
     import sys
 
