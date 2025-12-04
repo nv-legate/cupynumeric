@@ -1136,11 +1136,13 @@ CPU-only run (deterministic OOM)
 .. code-block:: bash
 
    # LEGATE_TEST=1: verbose allocation diagnostics
-   LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 oom.py
+   LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 --provenance oom.py
 
 ``LEGATE_TEST=1`` enables diagnostic/verbose mode: detailed allocation
 information such as logical store creation, instance sizes, and memory
 reservations, as opposed to a brief undescriptive error message.
+
+``--provenance`` tells Legate/legion to record call provenance. From ``25.11`` onward, this flag (or ``--profile``) is required to get the ``[/path/to/file.py:LINE]`` locations in OOM messages and traces. Enabling call provenance will cause stack trace information to be included in Legion profiles, progress output, nvtx ranges, and some error messages. Without provenance enabled, you’ll still see the task name and memory kind, but not the exact Python source location.
 
 ``legate --cpus 1 --gpus 0 --sysmem 40 oom.py`` runs the script ``oom.py``
 with one CPU worker and a fixed system memory pool of 40 MiB. Legate will
@@ -1154,7 +1156,7 @@ GPU run (FBMEM behavior)
 .. code-block:: bash
 
    # Single GPU, intentionally tight framebuffer pool
-   LEGATE_TEST=1 legate --cpus 2 --gpus 1 --fbmem 40 --sysmem 512 oom.py
+   LEGATE_TEST=1 legate --cpus 2 --gpus 1 --fbmem 40 --sysmem 512 --provenance oom.py
 
 Tip: Flags are per process. If you use multiple ranks per node, each rank needs
 its own slice of ``--sysmem`` / ``--fbmem``.
@@ -1383,7 +1385,7 @@ mis-sizing pools per rank.
    # legate --show-config
    # print the pools you'd use.. "&&" ..then run the repro with verbose OOM info:
    legate --cpus 1 --gpus 0 --sysmem 40 --show-config \
-   && LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 oom.py
+   && LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 --provenance oom.py
 
 Confirm the per-kind pool sizes match your flags and that each rank has
 sensible values. (If using ``-n`` or multiple ``--ranks-per-node``, scale your
@@ -1613,7 +1615,7 @@ downstream ops reuse it and no mid-band growth occurs.
    :widths: 100
    :header-rows: 0
 
-   * - **Note:** This technique, when run in place of our original example with the same memory allocation                ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 oom.py``, easily passes without an OOM.
+   * - **Note:** This technique, when run in place of our original example with the same memory allocation                ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 --provenance oom.py``, easily passes without an OOM.
 
 Technique 2 - cuPyNumeric Prefetch via a whole-array touch (no temporaries)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1653,7 +1655,7 @@ no mid-band growth.
    :widths: 100
    :header-rows: 0
 
-   * - **Note:** This technique, when run in place of our original example with the same memory allocation                ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 oom.py``, easily passes without an OOM.
+   * - **Note:** This technique, when run in place of our original example with the same memory allocation                ``LEGATE_TEST=1 legate --cpus 1 --gpus 0 --sysmem 40 --provenance oom.py``, easily passes without an OOM.
 
 C. Releasing Memory Between Phases (del, GC, and allocator pools)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
