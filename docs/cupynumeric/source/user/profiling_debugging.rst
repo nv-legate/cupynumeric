@@ -1142,7 +1142,7 @@ CPU-only run (deterministic OOM)
 information such as logical store creation, instance sizes, and memory
 reservations, as opposed to a brief undescriptive error message.
 
-``--provenance`` tells Legate/legion to record call provenance. From ``25.11`` onward, this flag (or ``--profile``) is required to get the ``[/path/to/file.py:LINE]`` locations in OOM messages and traces. Enabling call provenance will cause stack trace information to be included in Legion profiles, progress output, nvtx ranges, and some error messages. Without provenance enabled, you’ll still see the task name and memory kind, but not the exact Python source location.
+``--provenance`` tells Legate/Legion to record call provenance. From ``25.11`` onward, this flag (or ``--profile``) is required to get the ``[/path/to/file.py:LINE]`` locations in OOM messages and traces. Enabling call provenance will cause stack trace information to be included in Legion profiles, progress output, nvtx ranges, and some error messages. Without provenance enabled, you’ll still see the task name and memory kind, but not the exact Python source location.
 
 ``legate --cpus 1 --gpus 0 --sysmem 40 oom.py`` runs the script ``oom.py``
 with one CPU worker and a fixed system memory pool of 40 MiB. Legate will
