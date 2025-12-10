@@ -137,7 +137,7 @@ jobs:
       - name: Wheel upload
         env:
           BUILD_NAME: mac-arm64-py${{ matrix.PY_VER }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheel-${{ env.BUILD_NAME }}
           path: wheelhouse/*.whl
