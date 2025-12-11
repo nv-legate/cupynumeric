@@ -89,7 +89,7 @@ jobs:
           mkdir -p "${ARTIFACTS_DIR}"
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: ${{ needs.build-docs.outputs.output-artifact-name }}
           path: ${{ env.ARTIFACTS_DIR }}
