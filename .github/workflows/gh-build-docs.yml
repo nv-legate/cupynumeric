@@ -118,7 +118,7 @@ jobs:
           echo "docs_dir=${PARENT_DIR}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4

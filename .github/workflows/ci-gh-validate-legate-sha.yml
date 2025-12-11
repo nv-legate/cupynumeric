@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: cupynumeric.internal
 
@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Clone dependency
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: "${{ env.GIT_ORG }}/${{ env.GIT_REPO }}"
           ref: ${{ env.GIT_REF }}
