@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.event.repository.name }} (= this repo)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
 
