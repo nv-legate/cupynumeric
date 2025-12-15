@@ -102,7 +102,7 @@ jobs:
           echo "sha=$sha" >> $GITHUB_OUTPUT
       - if: github.repository_owner == 'nv-legate'
         name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-east-2
           role-duration-seconds: 28800  # 8 hours
