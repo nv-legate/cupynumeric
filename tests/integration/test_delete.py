@@ -291,6 +291,32 @@ def test_slice_axis_out_of_bounds():
         num.delete(arr_num, obj, axis=axis)
 
 
+def test_boolean_mask_with_axis() -> None:
+    arr = mk_seq_array(np, (5, 8))
+    arr_num = mk_seq_array(num, (5, 8))
+    mask = np.array([True, False, True, False, True, False, True, False])
+
+    res_np = np.delete(arr, mask, axis=1)
+    res_num = num.delete(arr_num, mask, axis=1)
+    assert allclose(res_np, res_num)
+
+
+def test_boolean_mask_wrong_size_with_axis() -> None:
+    arr = mk_seq_array(np, (5, 8))
+    arr_num = mk_seq_array(num, (5, 8))
+
+    mask = np.array(
+        [True, False, True, False, True, False, True, False, True, False]
+    )
+
+    message = r"boolean array argument obj to delete must be one dimensional and match the axis length"
+
+    with pytest.raises(ValueError, match=message):
+        np.delete(arr, mask, axis=1)
+    with pytest.raises(ValueError, match=message):
+        num.delete(arr_num, mask, axis=1)
+
+
 if __name__ == "__main__":
     import sys
 
