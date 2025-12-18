@@ -34,6 +34,7 @@ on:
 
 jobs:
   setup-build:
+#jrp    if: ${{ !github.event.act }}
     name: Setup build
     runs-on: linux-amd64-cpu4
     outputs:
@@ -83,6 +84,8 @@ jobs:
       - build
     runs-on: linux-amd64-cpu4
     timeout-minutes: 20
+    env:
+      BUILD_TYPE: ${{ inputs.build-type }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -90,90 +93,112 @@ jobs:
         run: |
           set -xeuo pipefail
 
-          MATRIX_JSON='{"include": ['
+          if [ "${{ inputs.target-device }}" = "gpu" ] && [ "${{ inputs.platform }}" = "linux" ]; then
+            export MATRICES="
+              ci:
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'GPU test', test_options: 'test --use cuda --gpus 1 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: false}
+              nightly:
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'GPU test', test_options: 'test --use cuda --gpus 1 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: false}
+            "
+          fi
+          if [ "${{ inputs.target-device }}" = "cpu" ] && [ "${{ inputs.platform }}" = "linux" ]; then
+            export MATRICES="
+              ci:
+                - { runner: 'linux-amd64-cpu16', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'mypy', test_options: 'mypy', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'Unit tests', test_options: 'unit', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'CPP tests', test_options: 'cpp', proxycache: true}
+              nightly:
+                - { runner: 'linux-amd64-cpu16', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'mypy', test_options: 'mypy', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'Unit tests', test_options: 'unit', proxycache: true}
+                - { runner: 'linux-amd64-cpu16', test_name: 'CPP tests', test_options: 'cpp', proxycache: true}
+            "
+          fi
+          # Do not run the tests for ci builds
+          if [ "${{ inputs.target-device }}" = "gpu" ] && [ "${{ inputs.platform }}" = "linux-aarch64" ] && [ "${{ inputs.build-type }}" != "ci" ]; then
+            export MATRICES="
+              ci:
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: 'GPU test', test_options: 'test --use cuda --gpus 1 --debug', proxycache: false}
+                - { runner: 'linux-aarch64-2gpu', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: false}
+                - { runner: 'linux-aarch64-2gpu', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: false}
+              nightly:
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: 'GPU test', test_options: 'test --use cuda --gpus 1 --debug', proxycache: false}
+                - { runner: 'linux-aarch64-2gpu', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: false}
+                - { runner: 'linux-aarch64-2gpu', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
+                - { runner: 'linux-arm64-gpu-l4-latest-1', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: false}
+            "
+          fi
 
-          RUNNERS=(
-            'linux-amd64-gpu-l4-latest-1:gpu:gpu:linux'
-            'linux-amd64-gpu-t4-latest-2-llr:gpu:2gpu:linux'
-            'linux-amd64-cpu16:cpu:cpu:linux'
-            'linux-aarch64-2gpu:gpu:gpu:linux-aarch64'
-            'linux-aarch64-2gpu:gpu:2gpu:linux-aarch64'
-            'linux-arm64-cpu16:cpu:cpu:linux-aarch64'
-            'macos-latest:cpu:cpu:mac')
+          if [ "${{ inputs.target-device }}" = "cpu" ] && [ "${{ inputs.platform }}" = "linux-aarch64" ]; then
+            export MATRICES="
+              ci:
+                - { runner: 'linux-arm64-cpu16', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'mypy', test_options: 'mypy', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'Unit tests', test_options: 'unit', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'CPP tests', test_options: 'cpp', proxycache: true}
+              nightly:
+                - { runner: 'linux-arm64-cpu16', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'mypy', test_options: 'mypy', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'Unit tests', test_options: 'unit', proxycache: true}
+                - { runner: 'linux-arm64-cpu16', test_name: 'CPP tests', test_options: 'cpp', proxycache: true}
+            "
+          fi
+          # Use the nightly matrix for branch tests
+          MATRIX_TYPE="${BUILD_TYPE}"
+          if [[ "${MATRIX_TYPE}" == "branch" ]]; then
+            MATRIX_TYPE="nightly"
+          fi
+          export MATRIX_TYPE
+          TEST_MATRIX=$(yq -n 'env(MATRICES) | .[strenv(MATRIX_TYPE)]')
+          export TEST_MATRIX
 
-          TEST_CONFIGS=(
-            '1 CPU test:test --cpus 1 --debug:cpu'
-            '1 CPU test:test --cpus 1 --debug:gpu'
-            '2 CPU test:test --cpus 2 --debug:cpu'
-            '2 CPU test:test --cpus 2 --debug:gpu'
-            # Set the number of workers manually because nvidia runners report 6
-            # gpus when only one is really available this workaround can be
-            # removed when the number of available gpus is reported correctly
-            # (when we run on VMs)
-            'GPU test:test --use cuda --gpus 1 --debug:gpu'
-            '2 GPU test:test --use cuda --gpus 2 --debug:2gpu'
-            'OpenMP test:test --use openmp --omps 1 --ompthreads 2 --debug:gpu'
-            'OpenMP test:test --use openmp --omps 1 --ompthreads 2 --debug:cpu'
-            '2 NUMA OpenMPs test:test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug:gpu'
-            '2 NUMA OpenMPs test:test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug:cpu'
-            'Eager execution test:test --use eager --debug:gpu'
-            'Eager execution test:test --use eager --debug:cpu'
-            'mypy:mypy:cpu'
-            'Unit tests:unit:cpu'
-            'CPP tests:cpp:cpu'
-            # TODO: Uncomment the following lines once
-            # https://github.com/nv-legate/cupynumeric.internal/issues/654 has
-            # been fixed.
-            # 'CPP tests:cpp:gpu'
-            # 'CPP tests:cpp:2gpu'
-          )
+          MATRIX="$(
+            yq -n -o json 'env(TEST_MATRIX)' | \
+            jq -c '{include: .}'
+          )"
 
-          for RUNNER in "${RUNNERS[@]}"; do
-            IFS=':' read -ra RUNNER_INFO <<< "$RUNNER"
-            RUNNER_NAME=${RUNNER_INFO[0]}
-            RUNNER_TYPE=${RUNNER_INFO[1]}
-            RUNNER_DEVICE=${RUNNER_INFO[2]}
-            RUNNER_PLATFORM=${RUNNER_INFO[3]}
-
-            if [[ "$RUNNER_TYPE" == "${{ inputs.target-device }}" && "$RUNNER_PLATFORM" == "${{ inputs.platform }}" ]]; then
-
-              for TEST_CONFIG in "${TEST_CONFIGS[@]}"; do
-                IFS=':' read -ra CONFIG_INFO <<< "$TEST_CONFIG"
-                TEST_NAME=${CONFIG_INFO[0]}
-                TEST_OPTIONS=${CONFIG_INFO[1]}
-                TEST_TARGET_DEVICE=${CONFIG_INFO[2]}
-
-                if [[ "${RUNNER_TYPE}" == "gpu" ]]; then
-                  SETUP_PYTHON_PROXY_CACHE=false
-                else
-                  SETUP_PYTHON_PROXY_CACHE=true
-                fi
-
-                # Note: we don't have enough linux-aarch64 GPU runners to
-                # support per commit testing. This is why these tests are waived
-                # here.
-                WAIVE_TEST="${{ inputs.target-device == 'gpu' && inputs.build-type == 'ci' && inputs.platform == 'linux-aarch64' }}"
-
-                if [[ "$TEST_TARGET_DEVICE" == "$RUNNER_DEVICE" ]]; then
-                  if [[ "${WAIVE_TEST}" == "false" ]]; then
-                    MATRIX_JSON+="{\"runner\": {\"name\": \"$RUNNER_NAME\", \"type\": \"$RUNNER_TYPE\", \"platform\": \"$RUNNER_PLATFORM\", \"setup-python-proxy-cache\": ${SETUP_PYTHON_PROXY_CACHE}}, \"test-config\": {\"name\": \"$TEST_NAME\", \"test-options\": \"$TEST_OPTIONS\"}},"
-                  fi
-                fi
-              done
-            fi
-          done
-
-          # Remove the trailing comma
-          MATRIX_JSON=$(echo "$MATRIX_JSON" | sed 's/,$//')
-          # Terminate JSON expression
-          MATRIX_JSON+=']}'
-
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "matrix=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
 
   test:
     needs:
       - setup-test
-    name: ${{ matrix.test-config.name }} (${{ inputs.platform }}, ${{ inputs.target-device }})
+    name: ${{ matrix.test_name }} ${{ inputs.python-version }} ${{ inputs.cuda-version}}
 
     strategy:
       fail-fast: false
@@ -187,16 +212,16 @@ jobs:
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      has-gpu: ${{ matrix.runner.type == 'gpu' }}
+      has-gpu: ${{ inputs.target-device == 'gpu' }}
       legate-gh-ci-tag: "v1.45"
-      name: ${{ matrix.test-config.name }}
+      name: ${{ matrix.test_name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
-      runs-on: ${{ matrix.runner.name }}
+      runs-on: ${{ matrix.runner }}
       target-device: ${{ inputs.target-device }}
-      test-options: ${{ matrix.test-config.test-options }}
-      setup-python-proxy-cache: ${{ matrix.runner.setup-python-proxy-cache }}
+      test-options: ${{ matrix.test_options }}
+      setup-python-proxy-cache: ${{ matrix.proxycache }}
       enable-core-dumps: false
       timeout: 150
       cuda-version: ${{ inputs.cuda-version }}
