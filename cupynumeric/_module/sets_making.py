@@ -152,13 +152,7 @@ def in1d(
     GPU acceleration for optimal performance.
     """
     # Ciruclar import
-    from .._module.creation_shape import (
-        full,
-        ones,
-        ones_like,
-        zeros,
-        zeros_like,
-    )
+    from .._module.creation_shape import full, ones, zeros
 
     # Check kind
     if kind not in (None, "sort", "table"):
@@ -173,10 +167,6 @@ def in1d(
             return ones(ar1.shape, dtype=bool)
         else:
             return zeros(ar1.shape, dtype=bool)
-
-    # Handle object arrays
-    if ar2.dtype == object:
-        ar2 = ar2.reshape(-1, 1)
 
     # Handle NaNs
     supports_nan = np.issubdtype(ar1.dtype, np.floating) or np.issubdtype(
@@ -203,16 +193,12 @@ def in1d(
         kind = "sort"
 
     if use_table_method:
-        if ar2.size == 0:
-            if invert:
-                return ones_like(ar1, dtype=bool)
-            else:
-                return zeros_like(ar1, dtype=bool)
-
         ar2_min = ar2.min()
         ar2_max = ar2.max()
 
-        ar2_range = ar2_max - ar2_min
+        # For int8, range = max(127) - min(-128) = 255 > max(127)
+        # so ar2_range = int(ar2_max) - int(ar2_min) don't make sense.
+        ar2_range = int(ar2_max) - int(ar2_min)
 
         # Constraints on whether we can actually use the table method:
         #  1. Assert memory usage is not too large
@@ -231,8 +217,6 @@ def in1d(
                 "maximum integer of the datatype. "
                 "Please set `kind` to None or 'sort'."
             )
-        else:
-            kind = "sort"
 
     elif kind == "table":
         raise ValueError(
