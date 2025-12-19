@@ -2,6 +2,7 @@
     "packages": {
         "legate": {
             "always_download": false,
+            "anaconda_channel": "legate-nightly",
             "anaconda_label": "main",
             "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ inputs.python-version }}-${{ inputs.target-device }}-release-with_tests-${{ inputs.network }}-<<git_tag>>",
             "artifact_workflow": "ci-gh.yml",
