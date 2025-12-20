@@ -2,16 +2,17 @@
     "packages": {
         "legate": {
             "always_download": false,
+            "anaconda_channel": "legate-nightly",
             "anaconda_label": "main",
             "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ inputs.python-version }}-${{ inputs.target-device }}-release-with_tests-${{ inputs.network }}-<<git_tag>>",
             "artifact_workflow": "ci-gh.yml",
             "git_shallow": false,
-            "git_tag": "ea970a3bb1e3e8892562e67f2e7245e478760aec",
+            "git_tag": "40a4e586599ac9c382bf3068c6e9187bc2ad200a",
             "git_url": "git@github.com:nv-legate/legate.internal.git",
             "nightly_workflow": "ci-gh-nightly-release.yml",
             "org": "nv-legate",
             "repo": "legate.internal",
-            "version": "25.12.00"
+            "version": "26.01.00"
         }
     }
 }

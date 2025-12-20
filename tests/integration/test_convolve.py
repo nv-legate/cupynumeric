@@ -22,6 +22,7 @@ import cupynumeric as num
 from cupynumeric.runtime import runtime
 
 CUDA_TEST = runtime.num_gpus > 0
+MULTI_GPU = runtime.num_gpus > 1
 
 SHAPES = [(100,), (10, 10), (10, 10, 10), (32, 2, 32)]
 FILTER_SHAPES = [(5,), (3, 5), (3, 5, 3), (32, 1, 32)]
@@ -56,6 +57,20 @@ LARGE_SHAPES = [
         ),
     ),
 ]
+
+SPECIAL_SHAPES = [
+    pytest.param((262144,), (16384,)),
+    pytest.param((8, 8, 8), (65, 65, 65)),
+    pytest.param((100, 100, 100), (7, 9, 11)),
+    pytest.param(
+        (200, 200, 200),
+        (7, 15, 15),
+        marks=pytest.mark.xfail(
+            MULTI_GPU, run=False, reason="test fails on multi-GPU in pipeline"
+        ),
+    ),
+]
+
 
 DTYPES = [
     np.int8,
@@ -119,10 +134,22 @@ def check_convolve(a, v):
 
 @pytest.mark.parametrize(
     "shape, filter_shape",
+    list(zip(SHAPES, FILTER_SHAPES)) + LARGE_SHAPES + SPECIAL_SHAPES,
+    ids=str,
+)
+def test_int(shape: tuple[int, ...], filter_shape: tuple[int, ...]) -> None:
+    a = num.random.randint(0, 5, shape)
+    v = num.random.randint(0, 5, filter_shape)
+
+    check_convolve(a, v)
+
+
+@pytest.mark.parametrize(
+    "shape, filter_shape",
     list(zip(SHAPES, FILTER_SHAPES)) + LARGE_SHAPES,
     ids=str,
 )
-def test_double(shape, filter_shape):
+def test_double(shape: tuple[int, ...], filter_shape: tuple[int, ...]) -> None:
     a = num.random.rand(*shape)
     v = num.random.rand(*filter_shape)
 
@@ -135,11 +162,12 @@ def test_double(shape, filter_shape):
     list(zip(SHAPES, FILTER_SHAPES)) + LARGE_SHAPES,
     ids=str,
 )
-def test_int(shape, filter_shape):
-    a = num.random.randint(0, 5, shape)
-    v = num.random.randint(0, 5, filter_shape)
+def test_float(shape: tuple[int, ...], filter_shape: tuple[int, ...]) -> None:
+    a = num.random.rand(*shape).astype(num.float32)
+    v = num.random.rand(*filter_shape).astype(num.float32)
 
     check_convolve(a, v)
+    check_convolve(v, a)
 
 
 @pytest.mark.parametrize("dtype", DTYPES, ids=str)

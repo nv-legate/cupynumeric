@@ -331,6 +331,24 @@ using ACC_TYPE = legate::AccessorRO<std::int8_t, LEGATE_MAX_DIM>;
 
 constexpr std::size_t DEFAULT_ALIGNMENT = 16;
 
+// Compute the total batch size for a given array and number of fixed dimensions
+// Fixed dimensions are the trailing dimensions that are not part of the batch
+// For example, for batched matrix operations, num_fixed_dims would be 2 (the matrix dimensions)
+template <typename Array>
+[[nodiscard]] std::int64_t compute_batchsize(const Array& array, std::int32_t num_fixed_dims)
+{
+  auto domain                  = array.domain();
+  std::int64_t batchsize_total = 1;
+  auto dim                     = domain.dim;
+
+  for (std::int32_t i = 0; i < dim - num_fixed_dims; ++i) {
+    auto extent = domain.rect_data[i + dim] - domain.rect_data[i] + 1;
+    batchsize_total *= extent;
+  }
+
+  return batchsize_total;
+}
+
 }  // namespace
 
 std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
@@ -391,20 +409,23 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     // FIXME(wonchanl): These tasks actually don't need unbound pools on CPUs. They are being used
     // only to finish up the first implementation quickly
     case CUPYNUMERIC_QR: [[fallthrough]];
-    case CUPYNUMERIC_SOLVE: [[fallthrough]];
     case CUPYNUMERIC_SVD: [[fallthrough]];
     case CUPYNUMERIC_SYEV: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         auto a_array                 = task.input(0);
-        auto dim                     = a_array.dim();
-        auto a_domain                = a_array.domain();
-        std::int64_t batchsize_total = 1;
-
-        for (std::int32_t i = 0; i < dim - 2; ++i) {
-          auto extent = a_domain.rect_data[i + dim] - a_domain.rect_data[i] + 1;
-          batchsize_total *= extent;
-        }
+        std::int64_t batchsize_total = compute_batchsize(a_array, 2);
         return aligned_size(batchsize_total * sizeof(std::int32_t), DEFAULT_ALIGNMENT);
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_SOLVE: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        auto a_array                 = task.input(0);
+        std::int64_t batchsize_total = compute_batchsize(a_array, 2);
+        // additional space for batchsize*2*pointers to store the pointers to the matrices and the
+        // right-hand sides
+        return aligned_size(batchsize_total * (sizeof(std::int32_t) + 2 * sizeof(void*)),
+                            DEFAULT_ALIGNMENT);
       }
       return std::nullopt;
     }

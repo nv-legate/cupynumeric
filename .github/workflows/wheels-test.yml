@@ -92,7 +92,7 @@ jobs:
         run: |
           sha=$(echo ${{github.sha}} | head -c 10)
           echo "sha=$sha" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -117,7 +117,7 @@ jobs:
         env:
           BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
           BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12-py${{ matrix.PY_VER }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: final-dist
           name: cupynumeric-wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}

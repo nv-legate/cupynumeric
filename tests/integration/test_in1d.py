@@ -390,6 +390,49 @@ def test_large_complex_numbers():
     assert allclose(result_unique, expected_unique)
 
 
+def test_in1d_invalid_kind() -> None:
+    ar1 = mk_seq_array(np, (5,))
+    ar2 = mk_seq_array(np, (3,))
+    ar1_num = num.array(ar1)
+    ar2_num = num.array(ar2)
+
+    msg_np = r"Invalid kind"
+    with pytest.raises(ValueError, match=msg_np):
+        np.in1d(ar1, ar2, kind="invalid")
+
+    msg_num = r"kind must be None, 'sort', or 'table'"
+    with pytest.raises(ValueError, match=msg_num):
+        num.in1d(ar1_num, ar2_num, kind="invalid")
+
+
+def test_in1d_table_non_integer_dtype() -> None:
+    ar1 = mk_seq_array(np, (5,)).astype(np.float64)
+    ar2 = mk_seq_array(np, (3,)).astype(np.float64)
+    ar1_num = num.array(ar1)
+    ar2_num = num.array(ar2)
+
+    msg = r"The 'table' method is only supported for boolean or integer arrays"
+    with pytest.raises(ValueError, match=msg):
+        np.in1d(ar1, ar2, kind="table")
+
+    with pytest.raises(ValueError, match=msg):
+        num.in1d(ar1_num, ar2_num, kind="table")
+
+
+def test_in1d_table_range_overflow() -> None:
+    # Create arrays with very large range that exceeds int8 limit
+    ar1 = np.array([1, 2, 3], dtype=np.int8)
+    ar2 = np.array([-128, 127], dtype=np.int8)  # Full int8 range: -128 to 127
+    ar1_num = num.array([1, 2, 3], dtype=np.int8)
+    ar2_num = num.array([-128, 127], dtype=np.int8)
+
+    msg = r"You have specified kind='table'.*exceed.*maximum integer"
+    with pytest.raises(RuntimeError, match=msg):
+        np.in1d(ar1, ar2, kind="table")
+    with pytest.raises(RuntimeError, match=msg):
+        num.in1d(ar1_num, ar2_num, kind="table")
+
+
 # ============================================================================
 # Tests for isin function
 # ============================================================================

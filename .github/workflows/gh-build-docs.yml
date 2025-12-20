@@ -89,7 +89,7 @@ jobs:
           mkdir -p "${ARTIFACTS_DIR}"
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ${{ needs.build-docs.outputs.output-artifact-name }}
           path: ${{ env.ARTIFACTS_DIR }}
@@ -118,7 +118,7 @@ jobs:
           echo "docs_dir=${PARENT_DIR}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.1
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4

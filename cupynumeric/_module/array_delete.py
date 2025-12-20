@@ -115,11 +115,6 @@ def delete(arr: ndarray, obj: Any, axis: int | None = None) -> ndarray:
         mask[obj] = False  # type: ignore [assignment]
         return arr[mask]
     else:
-        if axis < -arr.ndim or axis >= arr.ndim:
-            raise IndexError(
-                f"axis {axis} is out of bounds for array of dimension {arr.ndim}"
-            )
-
         if not isinstance(obj, slice) and np.issubdtype(obj.dtype, bool):
             if obj.size != arr.shape[axis]:
                 raise ValueError(

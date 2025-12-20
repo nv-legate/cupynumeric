@@ -75,7 +75,7 @@ jobs:
       matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
     runs-on: mac-arm64-llr
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -96,7 +96,7 @@ jobs:
 
       - if: github.repository_owner == 'nv-legate'
         name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-east-2
           role-duration-seconds: 28800  # 8 hours
@@ -115,7 +115,7 @@ jobs:
           echo "legate_prefix=${legate_prefix}" >> "${GITHUB_ENV}"
 
       - name: Build the wheel
-        uses: pypa/cibuildwheel@7c619efba910c04005a835b110b057fc28fd6e93  # v3.2.0
+        uses: pypa/cibuildwheel@63fd63b352a9a8bdcc24791c9dbee952ee9a8abc  # v3.3.0
         with:
           package-dir: ./scripts/build/python/cupynumeric/
           output-dir: wheelhouse
@@ -137,7 +137,7 @@ jobs:
       - name: Wheel upload
         env:
           BUILD_NAME: mac-arm64-py${{ matrix.PY_VER }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wheel-${{ env.BUILD_NAME }}
           path: wheelhouse/*.whl

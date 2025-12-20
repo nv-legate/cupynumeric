@@ -850,7 +850,7 @@ __host__ void direct_convolution(AccessorWO<VAL, DIM> out,
     }
     if (out_dense) {
       size_t bytes = sizeof(VAL) * out_pitch;
-      CUPYNUMERIC_CHECK_CUDA(cudaMemsetAsync(out_ptr, 0, bytes));
+      CUPYNUMERIC_CHECK_CUDA(cudaMemsetAsync(out_ptr, 0, bytes, stream));
     } else {
       out_pitch = 1;
       ConvolutionInitArgs<DIM> args;
