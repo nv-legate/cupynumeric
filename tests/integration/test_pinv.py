@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from utils.comparisons import allclose
-from cupynumeric.linalg.linalg import LinAlgError
+from cupynumeric.linalg import LinAlgError
 
 import cupynumeric as num
 
