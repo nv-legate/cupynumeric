@@ -47,7 +47,7 @@ static inline void complex_gemm_template(
 }
 
 template <>
-struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
+struct GemmImplBody<VariantKind::OMP, Type::Code::FLOAT32> {
   TaskContext context;
   explicit GemmImplBody(TaskContext context) : context(context) {}
 
@@ -58,7 +58,7 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
 };
 
 template <>
-struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
+struct GemmImplBody<VariantKind::OMP, Type::Code::FLOAT64> {
   TaskContext context;
   explicit GemmImplBody(TaskContext context) : context(context) {}
 
@@ -70,7 +70,7 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
 };
 
 template <>
-struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
+struct GemmImplBody<VariantKind::OMP, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit GemmImplBody(TaskContext context) : context(context) {}
 
@@ -90,7 +90,7 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
 };
 
 template <>
-struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
+struct GemmImplBody<VariantKind::OMP, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit GemmImplBody(TaskContext context) : context(context) {}
 
@@ -112,7 +112,7 @@ struct GemmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 /*static*/ void GemmTask::omp_variant(TaskContext context)
 {
   blas_set_num_threads(omp_get_max_threads());
-  gemm_template<VariantKind::CPU>(context);
+  gemm_template<VariantKind::OMP>(context);
 }
 
 }  // namespace cupynumeric

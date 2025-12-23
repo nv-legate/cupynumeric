@@ -49,7 +49,7 @@ static inline void complex_trsm_template(Trsm trsm, VAL* lhs, const VAL* rhs, in
 }
 
 template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
+struct TrsmImplBody<VariantKind::OMP, Type::Code::FLOAT32> {
   TaskContext context;
   explicit TrsmImplBody(TaskContext context) : context(context) {}
 
@@ -60,7 +60,7 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
 };
 
 template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
+struct TrsmImplBody<VariantKind::OMP, Type::Code::FLOAT64> {
   TaskContext context;
   explicit TrsmImplBody(TaskContext context) : context(context) {}
 
@@ -71,7 +71,7 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
 };
 
 template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
+struct TrsmImplBody<VariantKind::OMP, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit TrsmImplBody(TaskContext context) : context(context) {}
 
@@ -88,7 +88,7 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
 };
 
 template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
+struct TrsmImplBody<VariantKind::OMP, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit TrsmImplBody(TaskContext context) : context(context) {}
 
@@ -107,7 +107,7 @@ struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 /*static*/ void TrsmTask::omp_variant(TaskContext context)
 {
   blas_set_num_threads(omp_get_max_threads());
-  trsm_template<VariantKind::CPU>(context);
+  trsm_template<VariantKind::OMP>(context);
 }
 
 }  // namespace cupynumeric
