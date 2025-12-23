@@ -300,6 +300,64 @@ class TestEigh(object):
         with pytest.raises(np.linalg.LinAlgError, match=msg):
             np.linalg.eigh(arr_np)
 
+    def test_eigh_1d_array(self) -> None:
+        arr = np.array([1, 2, 3])
+        msg = (
+            r"1-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+        with pytest.raises(LinAlgError, match=re.escape(msg)):
+            num.linalg.eigh(arr)
+        with pytest.raises(LinAlgError, match=re.escape(msg)):
+            np.linalg.eigh(arr)
+
+    def test_eigh_float16(self) -> None:
+        arr = np.array([[1, 2], [3, 4]], dtype=np.float16)
+        msg = r"array type float16 is unsupported in linalg"
+        with pytest.raises(TypeError, match=msg):
+            num.linalg.eigh(arr)
+        with pytest.raises(TypeError, match=msg):
+            np.linalg.eigh(arr)
+
+    def test_eigh_invalid_uplo(self) -> None:
+        arr = np.array([[1, 2], [3, 4]], dtype=np.float64)
+        msg = r"UPLO X not supported"
+        with pytest.raises(ValueError, match=msg):
+            num.linalg.eigh(arr, UPLO="X")
+
+    def test_eigvalsh_1d_array(self) -> None:
+        arr = np.array([1, 2, 3])
+        msg = (
+            r"1-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+        with pytest.raises(LinAlgError, match=re.escape(msg)):
+            num.linalg.eigvalsh(arr)
+        with pytest.raises(LinAlgError, match=re.escape(msg)):
+            np.linalg.eigvalsh(arr)
+
+    def test_eigvalsh_non_square(self) -> None:
+        arr = np.array([[1, 2, 3], [4, 5, 6]])  # 2x3 matrix
+        msg = r"Last 2 dimensions of the array must be square"
+        with pytest.raises(LinAlgError, match=msg):
+            num.linalg.eigvalsh(arr)
+        with pytest.raises(LinAlgError, match=msg):
+            np.linalg.eigvalsh(arr)
+
+    def test_eigvalsh_float16(self) -> None:
+        arr = np.array([[1, 2], [3, 4]], dtype=np.float16)
+        msg = r"array type float16 is unsupported in linalg"
+        with pytest.raises(TypeError, match=msg):
+            num.linalg.eigvalsh(arr)
+        with pytest.raises(TypeError, match=msg):
+            np.linalg.eigvalsh(arr)
+
+    def test_eigvalsh_invalid_uplo(self) -> None:
+        arr = np.array([[1, 2], [3, 4]], dtype=np.float64)
+        msg = r"UPLO Y not supported"
+        with pytest.raises(ValueError, match=msg):
+            num.linalg.eigvalsh(arr, UPLO="Y")
+
 
 if __name__ == "__main__":
     import sys
