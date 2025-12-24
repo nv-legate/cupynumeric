@@ -15,7 +15,7 @@ python:
 numpy_version:
   # Not 2.1.0 which segfaults on asarray() sometimes, see
   # https://github.com/numpy/numpy/pull/27249
-  - ">=1.22,!=2.1.0"
+  - ">=1.22,!=2.1.0,<2.4.0"
 
 c_stdlib:
   - sysroot

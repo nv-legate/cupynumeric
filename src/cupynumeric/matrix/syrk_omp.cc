@@ -33,7 +33,7 @@ static inline void syrk_template(Syrk syrk, VAL* lhs, const VAL* rhs, int32_t m,
 }
 
 template <>
-struct SyrkImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
+struct SyrkImplBody<VariantKind::OMP, Type::Code::FLOAT32> {
   TaskContext context;
   explicit SyrkImplBody(TaskContext context) : context(context) {}
 
@@ -44,7 +44,7 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
 };
 
 template <>
-struct SyrkImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
+struct SyrkImplBody<VariantKind::OMP, Type::Code::FLOAT64> {
   TaskContext context;
   explicit SyrkImplBody(TaskContext context) : context(context) {}
 
@@ -55,7 +55,7 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
 };
 
 template <>
-struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
+struct SyrkImplBody<VariantKind::OMP, Type::Code::COMPLEX64> {
   TaskContext context;
   explicit SyrkImplBody(TaskContext context) : context(context) {}
 
@@ -76,7 +76,7 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
 };
 
 template <>
-struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
+struct SyrkImplBody<VariantKind::OMP, Type::Code::COMPLEX128> {
   TaskContext context;
   explicit SyrkImplBody(TaskContext context) : context(context) {}
 
@@ -96,7 +96,7 @@ struct SyrkImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
 /*static*/ void SyrkTask::omp_variant(TaskContext context)
 {
   blas_set_num_threads(omp_get_max_threads());
-  syrk_template<VariantKind::CPU>(context);
+  syrk_template<VariantKind::OMP>(context);
 }
 
 }  // namespace cupynumeric

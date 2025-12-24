@@ -223,7 +223,7 @@ jobs:
       test-options: ${{ matrix.test_options }}
       setup-python-proxy-cache: ${{ matrix.proxycache }}
       enable-core-dumps: false
-      timeout: 150
+      timeout: 50
       cuda-version: ${{ inputs.cuda-version }}
     secrets: inherit
 
