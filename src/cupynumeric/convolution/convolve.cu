@@ -846,7 +846,7 @@ __host__ void direct_convolution(AccessorWO<VAL, DIM> out,
         out_dense = false;
         break;
       }
-      out_pitch *= strides[d];
+      out_pitch *= (subrect.hi[d] - subrect.lo[d] + 1);
     }
     if (out_dense) {
       size_t bytes = sizeof(VAL) * out_pitch;
