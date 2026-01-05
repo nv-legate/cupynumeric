@@ -55,8 +55,8 @@ jobs:
           #
           export MATRIX="
           # arm64
-          #- { PY_VER: '3.11' }
-          #- { PY_VER: '3.12' }
+          - { PY_VER: '3.11' }
+          - { PY_VER: '3.12' }
           - { PY_VER: '3.13' }
           "
 
@@ -133,6 +133,14 @@ jobs:
             SCCACHE_S3_KEY_PREFIX=legate-mac
             SCCACHE_S3_NO_CREDENTIALS=false
             SCCACHE_S3_USE_SSL=true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.PY_VER }}
+
+      - name: Run Tests
+        run: ./continuous_integration/scripts/test_wheel_mac.bash
 
       - name: Wheel upload
         env:

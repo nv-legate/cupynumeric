@@ -1,19 +1,11 @@
 ---
-name: pr
+name: ci
 
 on:
   push:
     branches:
-      - "pull-request/[0-9]+"
-
-concurrency:
-  group: >-
-    ${{
-      (startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'branch-')) &&
-      format('{0}-{1}', github.workflow, github.run_id) ||
-      format('{0}-{1}', github.workflow, github.ref_name)
-    }}
-  cancel-in-progress: true
+      - "branch-*"
+      - "main"
 
 defaults:
   run:
@@ -41,7 +33,6 @@ jobs:
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
-      matrix_filter: group_by(.ARCH) | map(max_by(.PY_VER|split(".")|map(tonumber)))
   wheels-test:
     needs: [wheels-build, legate-sha]
     secrets: inherit
@@ -49,7 +40,6 @@ jobs:
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
-      matrix_filter: group_by(.ARCH) | map(max_by(.PY_VER|split(".")|map(tonumber)))
   wheels-mac:
     name: wheels-mac (optional)
     needs: legate-sha
@@ -58,4 +48,3 @@ jobs:
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
-      matrix_filter: '[max_by(.PY_VER|split(".")|map(tonumber))]'
