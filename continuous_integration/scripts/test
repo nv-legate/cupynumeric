@@ -35,7 +35,9 @@ setup_docs_env() {
 }
 
 setup_mypy_env() {
-    legate-conda-retry install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0" types-docutils scipy-stubs
+    # Restricting sphinx to >=4.0.4 and <9.1.0 (9.0.4 works) to work around mypy failure
+    # See https://github.com/nv-legate/cupynumeric.internal/issues/1332
+    legate-conda-retry install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0,<9.1.0" types-docutils scipy-stubs
 }
 
 setup_unit_env() {
