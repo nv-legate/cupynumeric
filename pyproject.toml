@@ -28,6 +28,7 @@ cache_dir = "./.cache/pytest"
 [tool.mypy]
 python_version = "3.11"
 cache_dir = "./.cache/mypy"
+exclude = "^cupynumeric/_sphinxext/"
 
 pretty = true
 show_error_codes = true
