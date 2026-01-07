@@ -99,17 +99,17 @@ jobs:
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'GPU test', test_options: 'test --use cuda --gpus 1 --debug', proxycache: false}
-                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: false}
-                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: false}
               nightly:
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '1 CPU test', test_options: 'test --cpus 1 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: '2 CPU test', test_options: 'test --cpus 2 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'GPU test', test_options: 'test --use cuda --gpus 1 --debug', proxycache: false}
-                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2', test_name: '2 GPU test', test_options: 'test --use cuda --gpus 2 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'OpenMP test', test_options: 'test --use openmp --omps 1 --ompthreads 2 --debug', proxycache: false}
-                - { runner: 'linux-amd64-gpu-t4-latest-2-llr', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
+                - { runner: 'linux-amd64-gpu-t4-latest-2', test_name: '2 NUMA OpenMPs test', test_options: 'test --use openmp --omps 2 --ompthreads 2 --numamem 2048 --debug', proxycache: false}
                 - { runner: 'linux-amd64-gpu-l4-latest-1', test_name: 'Eager execution test', test_options: 'test --use eager --debug', proxycache: false}
             "
           fi
