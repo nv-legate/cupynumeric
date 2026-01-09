@@ -41,6 +41,6 @@ setup(
     package_data={"cupynumeric": ["_sphinxext/_templates/*.rst"]},
     include_package_data=True,
     cmdclass=versioneer.get_cmdclass(),
-    install_requires=["cffi", "numpy>=1.22,!=2.1.0", "opt_einsum>=3.3"],
+    install_requires=["cffi", "numpy>=1.22,!=2.1.0,<2.4.0", "opt_einsum>=3.3"],
     zip_safe=False,
 )

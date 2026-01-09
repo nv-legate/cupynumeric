@@ -58,3 +58,4 @@ jobs:
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
+      matrix_filter: '[max_by(.PY_VER|split(".")|map(tonumber))]'
