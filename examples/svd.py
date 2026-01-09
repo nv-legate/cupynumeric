@@ -35,7 +35,9 @@ def check_result(a, u, s, vh):
     print("PASS!" if num.allclose(a, a2) else "FAIL!")
 
 
-def svd(m, n, full_matrices, dtype, perform_check, timing):
+def svd(
+    m, n, full_matrices, dtype, *, perform_check=False, print_timing=False
+):
     if np.issubdtype(dtype, np.integer):
         a = num.random.randint(0, 1000, size=m * n).astype(dtype)
         a = a.reshape((m, n))
@@ -56,7 +58,7 @@ def svd(m, n, full_matrices, dtype, perform_check, timing):
     if perform_check:
         check_result(a, u, s, vh)
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
 
     return total
@@ -120,12 +122,13 @@ if __name__ == "__main__":
         svd,
         args.benchmark,
         "SVD",
-        (
-            args.m,
-            args.n,
-            args.full_matrices,
-            args.dtype,
-            args.check,
-            args.timing,
-        ),
+        [
+            ("rows", args.m),
+            ("columns", args.n),
+            ("full matrices", args.full_matrices),
+            ("datatype", args.dtype),
+        ],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
     )

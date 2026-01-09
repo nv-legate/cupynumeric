@@ -49,9 +49,10 @@ def run_quantiles(
     lower,
     upper,
     str_method,
-    perform_check,
-    timing,
-    package,
+    *,
+    perform_check=False,
+    print_timing=False,
+    package=None,
 ):
     num.random.seed(1729)
     newtype = np.dtype(datatype).type
@@ -84,12 +85,16 @@ def run_quantiles(
     else:
         # do we need to synchronize?
         assert True
-    if timing:
+    if print_timing:
         print("Elapsed Time: " + str(total) + " ms")
     return total
 
 
 if __name__ == "__main__":
+
+    def tuple_of_ints(arg):
+        return tuple(map(int, arg.split(",")))
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--check",
@@ -107,11 +112,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s",
         "--shape",
-        type=int,
-        nargs="+",
-        default=[1000],
+        type=tuple_of_ints,
+        default=(1000,),
         dest="shape",
-        help="array reshape (default '[100000]')",
+        help="array reshape tuple (default '(1000,)')",
     )
     parser.add_argument(
         "-d",
@@ -160,15 +164,16 @@ if __name__ == "__main__":
         run_quantiles,
         args.benchmark,
         "Quantiles",
-        (
-            args.shape,
-            args.axis,
-            args.datatype,
-            args.lower,
-            args.upper,
-            args.method,
-            args.check,
-            args.timing,
-            args.package,
-        ),
+        [
+            ("shape", args.shape),
+            ("axis", args.axis),
+            ("precision", args.datatype),
+            ("lower", args.lower),
+            ("upper", args.upper),
+            ("method", args.method),
+        ],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
+        package=args.package,
     )

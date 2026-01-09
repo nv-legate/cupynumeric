@@ -21,7 +21,7 @@ import itertools
 from benchmark import parse_args, run_benchmark
 
 
-def take_pairs(M: int, N: int, timing: bool) -> None:
+def take_pairs(M: int, N: int, *, print_timing: bool = True) -> None:
     timer.start()
     data_array = np.arange(M * N, dtype=np.int32).reshape((M, N))
     indices = np.array(list(a for a in itertools.combinations(range(N), 2)))
@@ -29,7 +29,7 @@ def take_pairs(M: int, N: int, timing: bool) -> None:
     value = result.sum()
     print(f"result sum: {value}")
     total = timer.stop()
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
 
 
@@ -62,5 +62,10 @@ if __name__ == "__main__":
     args, np, timer = parse_args(parser)
 
     run_benchmark(
-        take_pairs, args.benchmark, "take pairs", (args.M, args.N, args.timing)
+        take_pairs,
+        args.benchmark,
+        "take pairs",
+        [("rows", args.M), ("columns", args.N)],
+        ["time (milliseconds)"],
+        print_timing=args.timing,
     )

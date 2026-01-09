@@ -20,7 +20,9 @@ import argparse
 from benchmark import parse_args, run_benchmark
 
 
-def run_lstm(batch_size, hidden_size, sentence_length, word_size, timing):
+def run_lstm(
+    batch_size, hidden_size, sentence_length, word_size, *, print_timing=False
+):
     timer.start()
 
     X = np.random.randn(sentence_length, batch_size, hidden_size)
@@ -64,7 +66,7 @@ def run_lstm(batch_size, hidden_size, sentence_length, word_size, timing):
         Hout[t] = IFOGf[t, :, 2 * d : 3 * d] * Ct[t]
 
     total = timer.stop()
-    if timing:
+    if print_timing:
         print("Elapsed Time: " + str(total) + " ms")
     return total
 
@@ -102,5 +104,12 @@ if __name__ == "__main__":
         run_lstm,
         args.benchmark,
         "LSTM Forward",
-        (args.batch, args.hidden, args.sentence, args.word, args.timing),
+        [
+            ("batch size", args.batch),
+            ("hidden size", args.hidden),
+            ("sentence length", args.sentence),
+            ("word size", args.word),
+        ],
+        ["time (milliseconds)"],
+        print_timing=args.timing,
     )

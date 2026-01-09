@@ -20,7 +20,9 @@ import argparse
 from benchmark import parse_args, run_benchmark
 
 
-def run_lstm(batch_size, hidden_size, sentence_length, word_size, timing):
+def run_lstm(
+    batch_size, hidden_size, sentence_length, word_size, *, print_timing=False
+):
     timer.start()
 
     WLSTM = np.random.randn(
@@ -74,7 +76,7 @@ def run_lstm(batch_size, hidden_size, sentence_length, word_size, timing):
             dh0[0] += np.sum(dHin[t, :, word_size:], 0)
 
     total = timer.stop()
-    if timing:
+    if print_timing:
         print("Elapsed Time: " + str(total) + " ms")
     return total
 
@@ -112,5 +114,12 @@ if __name__ == "__main__":
         run_lstm,
         args.benchmark,
         "LSTM Backward",
-        (args.batch, args.hidden, args.sentence, args.word, args.timing),
+        [
+            ("batch size", args.batch),
+            ("hidden size", args.hidden),
+            ("sentence length", args.sentence),
+            ("word size", args.word),
+        ],
+        ["time (milliseconds)"],
+        print_timing=args.timing,
     )

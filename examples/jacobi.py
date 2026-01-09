@@ -37,7 +37,7 @@ def check(A, x, b):
     return np.allclose(A.dot(x), b)
 
 
-def run_jacobi(N, iters, warmup, perform_check, timing, verbose):
+def run_jacobi(N, iters, warmup, perform_check, print_timing, verbose):
     A, b = generate_random(N)
 
     print("Solving system...")
@@ -60,7 +60,7 @@ def run_jacobi(N, iters, warmup, perform_check, timing, verbose):
             f"{np.count_nonzero(np.isinf(x))} infs in x"
         )
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
     return total
 
@@ -118,12 +118,13 @@ if __name__ == "__main__":
         run_jacobi,
         args.benchmark,
         "Jacobi",
-        (
-            args.N,
-            args.iters,
-            args.warmup,
-            args.check,
-            args.timing,
-            args.verbose,
-        ),
+        [
+            ("problem size", args.N),
+            ("iterations", args.iters),
+            ("warmup iterations", args.warmup),
+        ],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
+        verbose=args.verbose,
     )

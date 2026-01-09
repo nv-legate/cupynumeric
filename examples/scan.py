@@ -67,7 +67,7 @@ def check_scan(OP, A, B, ax):
         assert False
 
 
-def run_scan(OP, shape, dt, ax, check):
+def run_scan(OP, shape, dt, ax, *, perform_check=False):
     print(f"Problem Size:    shape={shape}")
 
     print(f"Problem Type:    OP={OP}")
@@ -82,7 +82,7 @@ def run_scan(OP, shape, dt, ax, check):
     total = timer.stop()
     print(f"Elapsed Time:  {total}ms")
     # error checking
-    if check:
+    if perform_check:
         check_scan(OP, A, B, ax)
 
 
@@ -135,5 +135,12 @@ if __name__ == "__main__":
         run_scan,
         args.benchmark,
         "Scan",
-        (args.OP, args.shape, args.dt, args.axis, args.check),
+        [
+            ("operation", args.OP),
+            ("shape", args.shape),
+            ("datatype", args.dt),
+            ("axis", args.axis),
+        ],
+        ["time (milliseconds)"],
+        perform_check=args.check,
     )

@@ -171,24 +171,26 @@ def compute_advanced_indexing_3d(steps, N, timing, warmup):
     return total
 
 
-def run_indexing_routines(N, steps, warmup, timing, verbose, routine):
+def run_indexing_routines(
+    N, steps, warmup, routine, *, print_timing=False, verbose=False
+):
     # simple operation to warm up the library
     assert not math.isnan(np.sum(np.zeros((N, N)).dot(np.zeros((N,)))))
     gc.collect()
     time = 0
     if routine == "diagonal" or routine == "all":
-        time += compute_diagonal(steps, N, timing, warmup)
+        time += compute_diagonal(steps, N, print_timing, warmup)
     if routine == "choose" or routine == "all":
-        time += compute_choose(steps, N, timing, warmup)
+        time += compute_choose(steps, N, print_timing, warmup)
     if routine == "repeat" or routine == "all":
-        time += compute_repeat(steps, N, timing, warmup)
+        time += compute_repeat(steps, N, print_timing, warmup)
     if routine == "ai1" or routine == "all":
-        time += compute_advanced_indexing_1d(steps, N, timing, warmup)
+        time += compute_advanced_indexing_1d(steps, N, print_timing, warmup)
     if routine == "ai2" or routine == "all":
-        time += compute_advanced_indexing_2d(steps, N, timing, warmup)
+        time += compute_advanced_indexing_2d(steps, N, print_timing, warmup)
     if routine == "ai3" or routine == "all":
-        time += compute_advanced_indexing_3d(steps, N, timing, warmup)
-    if timing:
+        time += compute_advanced_indexing_3d(steps, N, print_timing, warmup)
+    if print_timing:
         print("Total Elapsed Time: " + str(time) + " ms")
     return time
 
@@ -248,5 +250,13 @@ if __name__ == "__main__":
         run_indexing_routines,
         args.benchmark,
         "Indexing Routines",
-        (args.N, args.I, args.warmup, args.timing, args.verbose, args.routine),
+        [
+            ("problem size", args.N),
+            ("iterations", args.I),
+            ("warmup iterations", args.warmup),
+            ("routine", args.routine),
+        ],
+        ["time (milliseconds)"],
+        print_timing=args.timing,
+        verbose=args.verbose,
     )

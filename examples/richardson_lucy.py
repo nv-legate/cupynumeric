@@ -23,7 +23,7 @@ float_type = "float32"
 
 
 def run_richardson_lucy(
-    shape, filter_shape, num_iter, warmup, timing, conv_method
+    shape, filter_shape, num_iter, warmup, conv_method, *, print_timing=False
 ):
     image = np.random.rand(*shape).astype(float_type)
     psf = np.random.rand(*filter_shape).astype(float_type)
@@ -42,7 +42,7 @@ def run_richardson_lucy(
         )
 
     total = timer.stop()
-    if timing:
+    if print_timing:
         print("Elapsed Time: " + str(total) + " ms")
     return total
 
@@ -128,12 +128,13 @@ if __name__ == "__main__":
         run_richardson_lucy,
         args.benchmark,
         "Richardson Lucy",
-        (
-            (args.X, args.Y, args.Z),
-            (args.FX, args.FY, args.FZ),
-            args.I,
-            args.warmup,
-            args.timing,
-            args.conv_method,
-        ),
+        [
+            ("shape", (args.X, args.Y, args.Z)),
+            ("filter shape", (args.FX, args.FY, args.FZ)),
+            ("iterations", args.I),
+            ("warmup iterations", args.warmup),
+            ("convolution method", args.conv_method),
+        ],
+        ["time (milliseconds)"],
+        print_timing=args.timing,
     )

@@ -50,7 +50,7 @@ def make_random_matrix(
     return mat
 
 
-def run_tssvd(m, n, perform_check, timing):
+def run_tssvd(m, n, *, perform_check=False, print_timing=False):
     A = make_random_matrix(m, n)
 
     timer.start()
@@ -60,7 +60,7 @@ def run_tssvd(m, n, perform_check, timing):
     if perform_check:
         check_result(A, u, s, vh)
 
-    if timing:
+    if print_timing:
         print(f"TSSVD elapsed Time: {total:.3f} ms")
 
     return total
@@ -106,5 +106,8 @@ if __name__ == "__main__":
         run_tssvd,
         args.benchmark,
         "TSSVD",
-        (args.m, args.n, args.check, args.timing),
+        [("rows", args.m), ("columns", args.n)],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
     )

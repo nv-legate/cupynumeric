@@ -79,12 +79,13 @@ def run_cg(
     N,
     corners,
     conv_iters,
-    max_iters,
     warmup,
-    conv_threshold,
-    perform_check,
-    timing,
-    verbose,
+    *,
+    max_iters=None,
+    conv_threshold=1.0e-10,
+    perform_check=False,
+    print_timing=False,
+    verbose=False,
 ):
     # A, b = generate_random(N)
     A, b = generate_2D(N, corners)
@@ -100,15 +101,22 @@ def run_cg(
         min(max_iters, b.shape[0]) if max_iters is not None else b.shape[0]
     )
 
+    r_start = -1.0
+    r_end = -1.0
+    if verbose:
+        print(f"Residual {-warmup}: {rsold}")
     timer.start()
     for i in range(-warmup, max_iters):
         if i == 0:
+            r_start = np.sqrt(rsold)
             timer.start()
         Ap = A.dot(p)
         alpha = rsold / (p.dot(Ap))
         x = x + alpha * p
         r = r - alpha * Ap
         rsnew = r.dot(r)
+        if verbose:
+            print(f"Residual {i + 1}: {rsnew}")
         # We only do the convergence test every conv_iters or on the last
         # iteration
         if (
@@ -117,24 +125,27 @@ def run_cg(
             and np.sqrt(rsnew) < conv_threshold
         ):
             converged = i
+            r_end = np.sqrt(rsnew)
             break
-        if verbose:
-            print("Residual: " + str(rsnew))
         beta = rsnew / rsold
         p = r + beta * p
         rsold = rsnew
     total = timer.stop()
 
+    num_iters = 0
     if converged < 0:
+        r_end = np.sqrt(rsold)
+        num_iters = max_iters
         print("Convergence FAILURE!")
     else:
-        print("Converged in %d iterations" % (converged))
+        num_iters = converged + 1
+        print("Converged in %d iterations" % (num_iters))
     if perform_check:
         check(A, x, b)
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
-    return total
+    return (total, num_iters, r_start, r_end)
 
 
 def precondition(A, N, corners):
@@ -150,12 +161,13 @@ def run_preconditioned_cg(
     N,
     corners,
     conv_iters,
-    max_iters,
     warmup,
-    conv_threshold,
-    perform_check,
-    timing,
-    verbose,
+    *,
+    max_iters=None,
+    conv_threshold=1.0e-10,
+    perform_check=False,
+    print_timing=False,
+    verbose=False,
 ):
     print("Solving system with preconditioner...")
     # A, b = generate_random(N)
@@ -173,9 +185,12 @@ def run_preconditioned_cg(
         min(max_iters, b.shape[0]) if max_iters is not None else b.shape[0]
     )
 
+    r_start = -1.0
+    r_end = -1.0
     timer.start()
     for i in range(-warmup, max_iters):
         if i == 0:
+            r_start = np.sqrt(rzold)
             timer.start()
         Ap = A.dot(p)
         alpha = rzold / (p.dot(Ap))
@@ -200,16 +215,20 @@ def run_preconditioned_cg(
         rzold = rznew
     total = timer.stop()
 
+    num_iters = 0
     if converged < 0:
+        r_end = np.sqrt(rzold)
+        num_iters = max_iters
         print("Convergence FAILURE!")
     else:
-        print("Converged in %d iterations" % (converged))
+        num_iters = converged + 1
+        print("Converged in %d iterations" % (num_iters))
     if perform_check:
         check(A, x, b)
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
-    return total
+    return (total, num_iters, r_start, r_end)
 
 
 if __name__ == "__main__":
@@ -261,7 +280,8 @@ if __name__ == "__main__":
         "-n",
         "--num",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="N",
         help="number of elements in one dimension",
     )
@@ -293,15 +313,21 @@ if __name__ == "__main__":
         run_preconditioned_cg if args.precondition else run_cg,
         args.benchmark,
         "PreCG" if args.precondition else "CG",
-        (
-            args.N,
-            args.corners,
-            args.conv_iters,
-            args.max_iters,
-            args.warmup,
-            args.conv_threshold,
-            args.check,
-            args.timing,
-            args.verbose,
-        ),
+        [
+            ("problem size", args.N),
+            ("corners", args.corners),
+            ("convergence check interval", args.conv_iters),
+            ("warmup iterations", args.warmup),
+        ],
+        [
+            "time (milliseconds)",
+            "iterations",
+            "initial residual norm",
+            "final residual norm",
+        ],
+        max_iters=args.max_iters,
+        conv_threshold=args.conv_threshold,
+        perform_check=args.check,
+        print_timing=args.timing,
+        verbose=args.verbose,
     )
