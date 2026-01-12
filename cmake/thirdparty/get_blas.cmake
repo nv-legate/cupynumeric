@@ -55,11 +55,11 @@ function(find_or_configure_OpenBLAS)
   endif()
 
   # BLAS emits a bunch of warnings, -w is the "silence all warnings" flag for clang and
-  # GCC
+  # GCC. GCC 14 errors on incompatible pointer types, we should update openblas soon.
   if(MSVC)
     message(FATAL_ERROR "Don't know how to silence warnings with MSVC")
   endif()
-  set(c_flags "${CMAKE_C_FLAGS} -w")
+  set(c_flags "${CMAKE_C_FLAGS} -w -Wno-incompatible-pointer-types")
   set(f_flags "${CMAKE_Fortran_FLAGS} -w")
   rapids_cpm_find(BLAS ${FIND_PKG_ARGS}
       CPM_ARGS
