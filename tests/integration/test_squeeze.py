@@ -138,6 +138,33 @@ def test_array_axis(size):
             assert np.array_equal(res_num, res_np)
 
 
+class TestInvalid:
+    @pytest.mark.parametrize(
+        "axis,shape",
+        [
+            (0, (1, 3, 4)),  # axis=0, squeeze first dimension
+            (1, (3, 1, 4)),  # axis=1, squeeze middle dimension
+        ],
+    )
+    def test_squeeze_int_axis_coverage(self, axis: int, shape: tuple) -> None:
+        np_arr = np.ones(shape)
+        num_arr = num.ones(shape)
+
+        # axis changes to tuple in array.squeeze(), so call the thunk method directly
+        thunk_result = num_arr._thunk.squeeze(axis=axis)
+        np_result = np_arr.squeeze(axis=axis)
+
+        assert thunk_result.shape == np_result.shape
+
+    def test_squeeze_invalid_axis_type(self) -> None:
+        num_arr = num.ones((1, 3, 4))
+
+        # Pass an invalid axis type (e.g., a string) to trigger the else branch
+        with pytest.raises(TypeError):
+            # Directly call the thunk method to bypass public API validation
+            num_arr._thunk.squeeze("invalid_axis_type")
+
+
 if __name__ == "__main__":
     import sys
 

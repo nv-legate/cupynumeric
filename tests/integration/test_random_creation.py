@@ -463,6 +463,63 @@ class TestRandomErrors:
         self.assert_exc_from_both("random_sample", expected_exc, size=size)
 
 
+class TestLegacyRandomMethods:
+    @pytest.mark.skipif(
+        EAGER_TEST, reason="'EagerArray' object has no attribute 'random'"
+    )
+    def test_random_base_method(self) -> None:
+        from cupynumeric.config import RandGenCode
+
+        arr = num.empty(10, dtype=np.float64)
+
+        # Call the base random() method directly with UNIFORM code
+        arr._thunk.random(RandGenCode.UNIFORM)
+
+        # Verify it produced values in [0, 1)
+        assert arr.shape == (10,)
+        assert arr.dtype == np.float64
+        result = np.array(arr)
+        assert np.all((result >= 0) & (result < 1))
+
+    def test_random_uniform_direct_call(self) -> None:
+        arr = num.empty(10, dtype=np.float64)
+
+        # Call the legacy random_uniform method directly
+        arr._thunk.random_uniform()
+
+        # Verify it produced values in [0, 1)
+        assert arr.shape == (10,)
+        assert arr.dtype == np.float64
+
+        result = np.array(arr)
+        assert np.all((result >= 0) & (result < 1))
+
+    def test_random_normal_direct_call(self) -> None:
+        arr = num.empty(10, dtype=np.float64)
+
+        # Call the legacy random_normal method directly
+        arr._thunk.random_normal()
+
+        # Verify it produced values (normal distribution, mean≈0, std≈1)
+        assert arr.shape == (10,)
+        assert arr.dtype == np.float64
+
+        result = np.array(arr)
+        assert np.all(np.abs(result) < 10)
+
+    def test_random_integer_direct_call(self) -> None:
+        arr = num.empty(10, dtype=np.int64)
+
+        # Call the legacy random_integer method directly
+        arr._thunk.random_integer(0, 100)
+
+        assert arr.shape == (10,)
+        assert arr.dtype == np.int64
+
+        result = np.array(arr)
+        assert np.all((result >= 0) & (result < 100))
+
+
 if __name__ == "__main__":
     import sys
 

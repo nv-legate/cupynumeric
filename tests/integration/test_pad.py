@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+
 import numpy as np
 import pytest
 from utils.generators import mk_seq_array
 
 import cupynumeric as num
+
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 class TestPadConstant:
@@ -705,6 +709,30 @@ class TestPadCornerCases:
         )
 
         assert np.array_equal(res_np, res_num)
+
+    def test_invalid_pad_mode(self) -> None:
+        arr = num.array([[1, 2], [3, 4]])
+
+        # Directly call thunk method to test C++ implementation path
+        # Public API validates modes earlier, so we test internal path
+        with pytest.raises(ValueError):
+            arr._thunk.pad(((1, 1), (1, 1)), mode="reflect")
+
+    def test_pad_edge_color_shape(self) -> None:
+        np_arr = np.array([1])
+        num_arr = num.array([1])
+        np_result = np.pad(np_arr, ((0, 0)), mode="edge")
+        num_result = num.pad(num_arr, ((0, 0)), mode="edge")
+        assert np.array_equal(np_result, np.array(num_result))
+
+    @pytest.mark.skipif(
+        EAGER_TEST, reason="'EagerArray' DID NOT RAISE <class 'ValueError'>"
+    )
+    def test_pad_constant_no_value(self) -> None:
+        arr = num.array([1, 2, 3])
+        with pytest.raises(ValueError, match="constant mode requires"):
+            # Call thunk method directly to test internal path
+            arr._thunk.pad(((1, 1),), mode="constant")
 
 
 class TestPadDtypes:
