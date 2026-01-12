@@ -75,6 +75,15 @@ jobs:
       matrix: ${{ fromJSON(needs.compute-matrix.outputs.MATRIX) }}
     runs-on: mac-arm64-llr
     steps:
+      - name: Telemetry setup
+        uses: rapidsai/shared-actions/telemetry-dispatch-setup@main
+        continue-on-error: true
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' && github.run_attempt == '1' }}
+        with:
+          extra_attributes: "legate.PACKAGER=conda,legate.CUDA_VER=none,legate.PY_VER=${{ matrix.PY_VER }},legate.ARCH=mac"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
         with:
           repository: ${{ inputs.repo }}
@@ -149,3 +158,9 @@ jobs:
         with:
           name: wheel-${{ env.BUILD_NAME }}
           path: wheelhouse/*.whl
+      - name: Telemetry upload attributes
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-job-artifacts@main
+        continue-on-error: true
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' && github.run_attempt == '1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}

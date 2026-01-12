@@ -12,7 +12,17 @@ defaults:
     shell: bash -eou pipefail {0}
 
 jobs:
+  telemetry-setup:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    env:
+      OTEL_SERVICE_NAME: 'ci-cupynumeric'
+    steps:
+      - name: Telemetry setup
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   legate-sha:
+    needs: telemetry-setup
     runs-on: linux-amd64-cpu4
     outputs:
       LEGATE_SHA: ${{ steps.legate-sha.outputs.sha }}
@@ -27,14 +37,14 @@ jobs:
           sha=$(jq .packages.legate.git_tag cmake/versions.json)
           echo "sha=$sha" >> $GITHUB_OUTPUT
   wheels-build:
-    needs: legate-sha
+    needs: [legate-sha, telemetry-setup]
     secrets: inherit
     uses: ./.github/workflows/wheels-build.yml
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
   wheels-test:
-    needs: [wheels-build, legate-sha]
+    needs: [wheels-build, legate-sha, telemetry-setup]
     secrets: inherit
     uses: ./.github/workflows/wheels-test.yml
     with:
@@ -42,9 +52,21 @@ jobs:
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
   wheels-mac:
     name: wheels-mac (optional)
-    needs: legate-sha
+    needs: [legate-sha, telemetry-setup]
     secrets: inherit
     uses: ./.github/workflows/wheels-mac.yml
     with:
       build-type: pull-request
       legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
+  telemetry-summarize:
+    # This job must use a self-hosted runner to record telemetry traces.
+    runs-on: linux-amd64-cpu4
+    needs: [wheels-build, wheels-test, wheels-mac]
+    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
+    continue-on-error: true
+    steps:
+      - name: Telemetry summarize
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OTEL_SERVICE_NAME: 'ci-cupynumeric'
