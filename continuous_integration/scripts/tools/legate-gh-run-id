@@ -9,7 +9,7 @@
 set -euo pipefail
 
 # Default values for the environment variables.
-LEGATE_WORKFLOW_NAME=${LEGATE_WORKFLOW_NAME:-"pr.yml"}
+LEGATE_WORKFLOW_NAME=${LEGATE_WORKFLOW_NAME:-"ci.yml"}
 LEGATE_REPO_NAME=${LEGATE_REPO_NAME:-"nv-legate/legate.internal"}
 
 # Check if the script was called with exactly 1 argument

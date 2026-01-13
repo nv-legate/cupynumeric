@@ -346,6 +346,19 @@ def test_argmin_argmax_use_case():
     assert np.allclose(res_np[:, 1], np.max(np_arr, axis=1))
 
 
+def test_int32_indices() -> None:
+    np_arr = np.array([[10, 20], [30, 40]])
+    num_arr = num.array([[10, 20], [30, 40]])
+
+    np_idx = np.array([[0, 0], [1, 1]], dtype=np.int32)
+    num_idx = num.array([[0, 0], [1, 1]], dtype=np.int32)
+
+    np_result = np.take_along_axis(np_arr, np_idx, axis=0)
+    num_result = num.take_along_axis(num_arr, num_idx, axis=0)
+
+    assert np.array_equal(np_result, np.array(num_result))
+
+
 class TestTakeAlongAxisErrors:
     def setup_method(self):
         self.a = num.ones((3, 3))

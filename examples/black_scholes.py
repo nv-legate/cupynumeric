@@ -99,26 +99,21 @@ if __name__ == "__main__":
 
     args, np, timer = parse_args(parser)
 
+    dtype = None
+
     if args.P == 16:
-        run_benchmark(
-            run_black_scholes,
-            args.benchmark,
-            "Black Scholes",
-            (args.N, np.float16),
-        )
+        dtype = np.float16
     elif args.P == 32:
-        run_benchmark(
-            run_black_scholes,
-            args.benchmark,
-            "Black Scholes",
-            (args.N, np.float32),
-        )
+        dtype = np.float32
     elif args.P == 64:
-        run_benchmark(
-            run_black_scholes,
-            args.benchmark,
-            "Black Scholes",
-            (args.N, np.float64),
-        )
+        dtype = np.float64
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
+
+    run_benchmark(
+        run_black_scholes,
+        args.benchmark,
+        "Black Scholes",
+        [("problem size", args.N), ("precision", dtype)],
+        ["time (milliseconds)"],
+    )

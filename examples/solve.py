@@ -33,7 +33,7 @@ def check_result(a, b, x):
         assert False
 
 
-def solve(n, nrhs, dtype, perform_check, timing):
+def solve(n, nrhs, dtype, *, perform_check=False, print_timing=False):
     a = num.random.rand(n, n).astype(dtype=dtype)
     b = num.random.rand(n, nrhs).astype(dtype=dtype)
 
@@ -44,7 +44,7 @@ def solve(n, nrhs, dtype, perform_check, timing):
     if perform_check:
         check_result(a, b, x)
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
 
         if dtype in ["complex64", "complex128"]:
@@ -104,5 +104,12 @@ if __name__ == "__main__":
         solve,
         args.benchmark,
         "Solve",
-        (args.n, args.nrhs, args.dtype, args.check, args.timing),
+        [
+            ("problem size", args.n),
+            ("righthand sides", args.nrhs),
+            ("datatype", args.dtype),
+        ],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
     )

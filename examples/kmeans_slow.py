@@ -72,7 +72,7 @@ def find_centroids(
     return distance_sum
 
 
-def run_kmeans(C, D, T, I, N, S, benchmarking):  # noqa: E741
+def run_kmeans(C, D, T, I, N, S, *, benchmarking=False):  # noqa: E741
     print("Running kmeans...")
     print("Number of data points: " + str(N))
     print("Number of dimensions: " + str(D))
@@ -178,50 +178,33 @@ if __name__ == "__main__":
 
     args, np, timer = parse_args(parser)
 
+    name = None
+    dtype = None
+
     if args.P == 16:
-        run_benchmark(
-            run_kmeans,
-            args.benchmark,
-            "KMEANS(H)",
-            (
-                args.C,
-                args.D,
-                np.float16,
-                args.I,
-                args.N * 1000,
-                args.S,
-                args.benchmark > 1,
-            ),
-        )
+        name = "KMEANS(H)"
+        dtype = np.float16
     elif args.P == 32:
-        run_benchmark(
-            run_kmeans,
-            args.benchmark,
-            "KMEANS(S)",
-            (
-                args.C,
-                args.D,
-                np.float32,
-                args.I,
-                args.N * 1000,
-                args.S,
-                args.benchmark > 1,
-            ),
-        )
+        name = "KMEANS(S)"
+        dtype = np.float32
     elif args.P == 64:
-        run_benchmark(
-            run_kmeans,
-            args.benchmark,
-            "KMEANS(D)",
-            (
-                args.C,
-                args.D,
-                np.float64,
-                args.I,
-                args.N * 1000,
-                args.S,
-                args.benchmark > 1,
-            ),
-        )
+        name = "KMEANS(D)"
+        dtype = np.float64
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
+
+    run_benchmark(
+        run_kmeans,
+        args.benchmark,
+        name,
+        [
+            ("centroids", args.C),
+            ("dimensions", args.D),
+            ("precision", dtype),
+            ("iterations", args.I),
+            ("elements", args.N * 1000),
+            ("sample interval", args.S),
+        ],
+        ["time (milliseconds)"],
+        benchmarking=args.benchmark > 0,
+    )

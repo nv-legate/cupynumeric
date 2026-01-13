@@ -202,11 +202,12 @@ if __name__ == "__main__":
         run_black_scholes_benchmark,
         args.benchmark,
         "Black Scholes",
-        (
-            args.n_vol_steps,
-            args.n_time_steps,
-            args.n_money_steps,
-            args.iters,
-            args.warmup,
-        ),
+        [
+            ("volatily steps", args.n_vol_steps),
+            ("time steps", args.n_time_steps),
+            ("money steps", args.n_money_steps),
+            ("iterations", args.iters),
+            ("warmup iterations", args.warmup),
+        ],
+        ["time (milliseconds)"],
     )

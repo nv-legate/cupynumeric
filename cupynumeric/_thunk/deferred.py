@@ -507,27 +507,6 @@ def _process_boolean_array_index_get(
 
             out = out._copy_store(out_tmp)
 
-    # Apply inverted transpose to restore the original dimension order
-    if ctx.inverted_transpose_indices is not None:
-        if key.ndim == 1:
-            # Single-dimensional boolean array case
-            assert out.ndim == len(ctx.inverted_transpose_indices), (
-                f"Dimension mismatch: output has {out.ndim} dimensions but "
-                f"inverted transpose expects {len(ctx.inverted_transpose_indices)} dimensions"
-            )
-            out = out.transpose(ctx.inverted_transpose_indices)
-        else:
-            # Multi-dimensional boolean array case
-            if out.ndim > 1:
-                # Create identity permutation for the output dimensions
-                output_transpose = list(range(out.ndim))
-
-                # Move the first dimension (collapsed boolean result) to the correct position
-                if ctx.transpose_index < out.ndim:
-                    boolean_dim = output_transpose.pop(0)
-                    output_transpose.insert(ctx.transpose_index, boolean_dim)
-                    out = out.transpose(tuple(output_transpose))
-
     return False, rhs, out, ctx.transformed_array
 
 

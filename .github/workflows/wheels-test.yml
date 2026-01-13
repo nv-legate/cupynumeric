@@ -60,11 +60,11 @@ jobs:
           # amd64
           - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.9.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.9.1', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           # arm64 - disabled due to ARM GPU runner availability
           # - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
           # - { ARCH: 'arm64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
-          # - { ARCH: 'arm64', PY_VER: '3.13', CUDA_VER: '12.9.0', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
+          # - { ARCH: 'arm64', PY_VER: '3.13', CUDA_VER: '12.9.1', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
           "
 
           MATRIX="$(
@@ -87,6 +87,14 @@ jobs:
       env:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
+      - name: Telemetry setup
+        uses: rapidsai/shared-actions/telemetry-dispatch-setup@main
+        continue-on-error: true
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' && github.run_attempt == '1' }}
+        with:
+          extra_attributes: "legate.PACKAGER=conda,legate.CUDA_VER=${{ matrix.CUDA_VER }},legate.PY_VER=${{ matrix.PY_VER }},legate.ARCH=${{ matrix.ARCH }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Get the SHA
         id: get-sha
         run: |
@@ -123,3 +131,9 @@ jobs:
           name: cupynumeric-wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}
       - name: Run tests
         run: ${{ inputs.script }}
+      - name: Telemetry upload attributes
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-job-artifacts@main
+        continue-on-error: true
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' && github.run_attempt == '1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}

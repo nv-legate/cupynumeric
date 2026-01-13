@@ -35,7 +35,9 @@ def check_equal_numpy(input, output, package):
         assert False
 
 
-def cholesky(n, dtype, perform_check, timing, package):
+def cholesky(
+    n, dtype, *, perform_check=False, print_timing=False, package=None
+):
     input = num.eye(n, dtype=dtype)
 
     timer.start()
@@ -45,7 +47,7 @@ def cholesky(n, dtype, perform_check, timing, package):
     if perform_check:
         check_equal_numpy(input, out1, package)
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
         flops = (n**3) / 3 + 2 * n / 3
         print(f"{flops / total / 1000000} GOP/s")
@@ -90,5 +92,9 @@ if __name__ == "__main__":
         cholesky,
         args.benchmark,
         "Cholesky",
-        (args.n, args.dtype, args.check, args.timing, args.package),
+        [("problem size", args.n), ("precision", args.dtype)],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
+        package=args.package,
     )

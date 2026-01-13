@@ -121,26 +121,32 @@ if __name__ == "__main__":
 
     args, np, timer = parse_args(parser)
 
+    name = None
+    dtype = None
     if args.P == 16:
-        run_benchmark(
-            run_linear_regression,
-            args.benchmark,
-            "LINREG(H)",
-            (args.N, args.F, np.float16, args.I, args.warmup, args.S, args.B),
-        )
+        name = "LINREG(H)"
+        dtype = np.float16
     elif args.P == 32:
-        run_benchmark(
-            run_linear_regression,
-            args.benchmark,
-            "LINREG(S)",
-            (args.N, args.F, np.float32, args.I, args.warmup, args.S, args.B),
-        )
+        name = "LINREG(S)"
+        dtype = np.float32
     elif args.P == 64:
-        run_benchmark(
-            run_linear_regression,
-            args.benchmark,
-            "LINREG(D)",
-            (args.N, args.F, np.float64, args.I, args.warmup, args.S, args.B),
-        )
+        name = "LINREG(D)"
+        dtype = np.float64
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
+
+    run_benchmark(
+        run_linear_regression,
+        args.benchmark,
+        name,
+        [
+            ("problem size", args.N),
+            ("features", args.F),
+            ("precision", dtype),
+            ("iterations", args.I),
+            ("warmup iterations", args.warmup),
+            ("sample interval", args.S),
+            ("include intercept", args.B),
+        ],
+        ["time (milliseconds)"],
+    )

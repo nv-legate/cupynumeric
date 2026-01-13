@@ -369,7 +369,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       // - element size from output type
       auto max_output_volume = input_volume * input_dim;  // Conservative upper bound
       auto element_size      = task.output(0).type().size();
-      auto max_out_size      = max_output_volume * element_size;
+
+      auto max_out_size = aligned_size(max_output_volume * element_size, DEFAULT_ALIGNMENT);
 
       switch (memory_kind) {
         case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
@@ -377,8 +378,10 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           return max_out_size;
         }
         case legate::mapping::StoreTarget::FBMEM: {
-          // Add extra buffer for intermediate calculations (offsets array)
-          return max_out_size + input_volume * sizeof(std::int64_t);
+          // Add extra buffer for intermediate calculations (offsets array and reduction buffer)
+          auto input_size = aligned_size(input_volume * sizeof(std::int64_t), DEFAULT_ALIGNMENT);
+          auto reduction_size = aligned_size(sizeof(std::int64_t), DEFAULT_ALIGNMENT);
+          return max_out_size + input_size + reduction_size;
         }
         case legate::mapping::StoreTarget::ZCMEM: {
           return 0;

@@ -332,6 +332,21 @@ class TestTakeErrors:
         with pytest.raises(expected_exc):
             num.take(self.A_num, num.array(indices), axis=axis, out=out_num)
 
+    def test_invalid_take_algorithm(self) -> None:
+        from cupynumeric.settings import settings
+
+        arr = num.array([1, 2, 3, 4, 5])
+
+        # Save original value
+        original = settings.take_default
+        try:
+            settings.take_default = "invalid_algo"
+            result = arr.take(0)
+            assert result == 1
+        finally:
+            # Restore original value
+            settings.take_default = original
+
 
 if __name__ == "__main__":
     import sys

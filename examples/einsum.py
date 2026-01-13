@@ -177,12 +177,13 @@ if __name__ == "__main__":
         run_einsum,
         args.benchmark,
         "Einsum",
-        (
-            args.expr,
-            args.N,
-            args.iters,
-            args.warmup,
-            dtypes[args.dtype],
-            cupy_compatibility,
-        ),
+        [
+            ("expression", args.expr),
+            ("problem size", args.N),
+            ("iterations", args.iters),
+            ("warmup iterations", args.warmup),
+            ("precision", dtypes[args.dtype]),
+            ("cupy compatibility", cupy_compatibility),
+        ],
+        ["time (milliseconds)"],
     )

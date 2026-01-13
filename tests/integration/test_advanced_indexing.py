@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 
 import numpy as np
 import pytest
@@ -20,6 +21,8 @@ from utils.generators import mk_seq_array
 from utils.utils import ONE_MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
 import cupynumeric as num
+
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 @pytest.fixture
@@ -1212,6 +1215,73 @@ def test_advanced_indexing_int_mask_no_einsum():
     assert np.array_equal(actual, expected), (
         "Multiple array indices should work"
     )
+
+
+def test_integer_indexing_out_of_bounds() -> None:
+    arr = num.arange(12, dtype=np.float32).reshape(3, 4)
+    idx = num.array([0, 999], dtype=np.int64)
+    with pytest.raises(IndexError):
+        _ = arr[idx, :]
+
+
+@pytest.mark.skipif(
+    EAGER_TEST, reason="'EagerArray' object has no attribute '_zip_indices'"
+)
+def test_too_many_index_arrays() -> None:
+    arr = num.arange(12).reshape(3, 4)
+    idx1 = num.array([0])
+    idx2 = num.array([1])
+    idx3 = num.array([2])
+    idx4 = num.array([0])  # 4 arrays for 2D array - too many!
+    expect_msg = r"wrong number of index arrays passed"
+    with pytest.raises(ValueError, match=expect_msg):
+        # This should try to use 4 index arrays on a 2D array
+        _ = arr._thunk._zip_indices(
+            0, (idx1._thunk, idx2._thunk, idx3._thunk, idx4._thunk)
+        )
+
+
+def test_boolean_array_dimension_mismatch() -> None:
+    arr = num.arange(12).reshape(3, 4)  # 2D array, ndim=2
+    bool_idx = num.ones((4, 3), dtype=bool)  # 2D bool array
+
+    if EAGER_TEST:
+        # EagerArray uses NumPy which raises IndexError
+        with pytest.raises(IndexError):
+            _ = arr[:, bool_idx]
+    else:
+        # DeferredArray raises ValueError
+        with pytest.raises(
+            ValueError, match="Boolean array has .* dimensions"
+        ):
+            _ = arr[:, bool_idx]
+
+
+def test_advanced_indexing_dimension_mismatch() -> None:
+    arr = num.arange(6).reshape(2, 3)  # 2D array
+    # Try to use too many index arrays
+    idx1 = num.array([0])
+    idx2 = num.array([1])
+    idx3 = num.array([0])  # 3rd index for 2D array
+
+    with pytest.raises((ValueError, IndexError)):
+        # This should trigger dimension mismatch
+        _ = arr[idx1, idx2, idx3]
+
+
+def test_newaxis_in_boolean_indexing() -> None:
+    np_arr = np.arange(12, dtype=np.float32).reshape(3, 4)
+    num_arr = num.arange(12, dtype=np.float32).reshape(3, 4)
+
+    # Boolean mask + newaxis
+    np_mask = np.array([True, False, True])
+    num_mask = num.array([True, False, True])
+
+    np_result = np_arr[np_mask, np.newaxis, :]
+    num_result = num_arr[num_mask, np.newaxis, :]
+
+    assert np_result.shape == num_result.shape
+    assert np.allclose(np_result, np.array(num_result))
 
 
 if __name__ == "__main__":

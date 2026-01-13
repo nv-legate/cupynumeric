@@ -26,9 +26,9 @@ export CMAKE_BUILD_PARALLEL_LEVEL=${PARALLEL_LEVEL}
 
 if [[ "${CI:-false}" == "true" ]]; then
   echo "Installing extra system packages"
-  dnf install -y gcc-toolset-11-libatomic-devel
+  dnf install -y gcc-toolset-14-libatomic-devel
     # Enable gcc-toolset-11 environment
-  source /opt/rh/gcc-toolset-11/enable
+  source /opt/rh/gcc-toolset-14/enable
   # Verify compiler version
   gcc --version
   g++ --version

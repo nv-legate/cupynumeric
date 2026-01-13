@@ -58,14 +58,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.45
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.46
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      legate-gh-ci-tag: "v1.45"
+      legate-gh-ci-tag: "v1.46"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -205,7 +205,7 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.45
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.46
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
@@ -213,7 +213,7 @@ jobs:
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
       has-gpu: ${{ inputs.target-device == 'gpu' }}
-      legate-gh-ci-tag: "v1.45"
+      legate-gh-ci-tag: "v1.46"
       name: ${{ matrix.test_name }}
       network: "ucx"
       platform: ${{ inputs.platform }}

@@ -211,6 +211,15 @@ def test_reshape_same_shape():
     assert np.array_equal(np.reshape(arr, shape), num.reshape(arr, shape))
 
 
+def test_empty_reshape_1d() -> None:
+    np_arr = np.arange(5)[0:0]
+    num_arr = num.arange(5)[0:0]
+    np_result = np_arr.reshape(0, 1)
+    num_result = num_arr.reshape(0, 1)
+    assert np_result.shape == num_result.shape
+    assert np_result.shape == (0, 1)
+
+
 class TestReshapeErrors:
     def setup_method(self):
         self.a = num.arange(24)

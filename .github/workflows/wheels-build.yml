@@ -19,7 +19,7 @@ on:
         default: "cpu16"
       cuda_ver:
         type: string
-        default: "12.9.0"
+        default: "12.9.1"
       linux_ver:
         type: string
         default: "rockylinux8"
@@ -95,6 +95,14 @@ jobs:
       env:
         BUILD_MODE: ${{ matrix.BUILD_MODE }}
     steps:
+      - name: Telemetry setup
+        uses: rapidsai/shared-actions/telemetry-dispatch-setup@main
+        continue-on-error: true
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' && github.run_attempt == '1' }}
+        with:
+          extra_attributes: "legate.PACKAGER=conda,legate.CUDA_VER=${{ inputs.cuda_ver }},legate.PY_VER=${{ matrix.PY_VER }},legate.ARCH=${{ matrix.ARCH }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Get the SHA
         id: get-sha
         run: |
@@ -137,3 +145,9 @@ jobs:
         with:
           name: cupynumeric-wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}
           path: final-dist/*.whl
+      - name: Telemetry upload attributes
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-job-artifacts@main
+        continue-on-error: true
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' && github.run_attempt == '1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}

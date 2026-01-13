@@ -34,7 +34,7 @@ def check_result(a, q, r):
         print(f"cunumeric I-qTq max: {q_max}")
 
 
-def qr(m, n, dtype, perform_check, timing):
+def qr(m, n, dtype, *, perform_check=False, print_timing=False):
     a = num.random.rand(m, n).astype(dtype=dtype)
 
     timer.start()
@@ -44,7 +44,7 @@ def qr(m, n, dtype, perform_check, timing):
     if perform_check:
         check_result(a, q, r)
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
 
     return total
@@ -95,5 +95,8 @@ if __name__ == "__main__":
         qr,
         args.benchmark,
         "QR",
-        (args.m, args.n, args.dtype, args.check, args.timing),
+        [("rows", args.m), ("columns", args.n), ("precision", args.dtype)],
+        ["time (milliseconds)"],
+        perform_check=args.check,
+        print_timing=args.timing,
     )

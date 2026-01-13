@@ -30,7 +30,7 @@ def initialize(N):
     return grid
 
 
-def run_stencil(N, I, warmup, timing):  # noqa: E741
+def run_stencil(N, I, warmup, *, print_timing=False):  # noqa: E741
     grid = initialize(N)
 
     print("Running Jacobi stencil...")
@@ -49,7 +49,7 @@ def run_stencil(N, I, warmup, timing):  # noqa: E741
         center[:] = work
     total = timer.stop()
 
-    if timing:
+    if print_timing:
         print(f"Elapsed Time: {total} ms")
     return total
 
@@ -94,5 +94,11 @@ if __name__ == "__main__":
         run_stencil,
         args.benchmark,
         "Stencil",
-        (args.N, args.I, args.warmup, args.timing),
+        [
+            ("problem size", args.N),
+            ("iterations", args.I),
+            ("warmup iterations", args.warmup),
+        ],
+        ["time (milliseconds)"],
+        print_timing=args.timing,
     )
