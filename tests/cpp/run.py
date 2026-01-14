@@ -102,9 +102,7 @@ def main():
         "--binary-path",
         dest="binary_path",
         required=False,
-        default=str(
-            CUPYNUMERIC_DIR / "build" / "tests" / "cpp" / "bin" / "cpp_tests"
-        ),
+        default=str(CUPYNUMERIC_DIR / "build" / "tests" / "cpp" / "cpp_tests"),
         help="Path to binary under test.",
     )
     parser.add_argument(
