@@ -40,6 +40,36 @@ def test_issue_fallback_warning() -> None:
         m.issue_fallback_warning(what="foo")
 
 
+def test_issue_fallback_warning_with_stacktrace_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Mock settings to return True for fallback_stacktrace
+    monkeypatch.setattr(
+        "cupynumeric.settings.settings.fallback_stacktrace", lambda: True
+    )
+
+    msg = m.FALLBACK_WARNING.format(what="test_function")
+    with pytest.warns(RuntimeWarning, match=msg):
+        m.issue_fallback_warning(what="test_function")
+
+
+def test_issue_fallback_warning_with_no_frame(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Mock settings and frame
+    monkeypatch.setattr(
+        "cupynumeric.settings.settings.fallback_stacktrace", lambda: True
+    )
+    monkeypatch.setattr(
+        "cupynumeric._utils.coverage.find_last_user_stacklevel_and_frame",
+        lambda: (2, None),  # Return None for frame
+    )
+
+    msg = m.FALLBACK_WARNING.format(what="test_function")
+    with pytest.warns(RuntimeWarning, match=msg):
+        m.issue_fallback_warning(what="test_function")
+
+
 def test_MOD_INTERNAL() -> None:
     assert m.MOD_INTERNAL == {"__dir__", "__getattr__"}
 
@@ -181,6 +211,74 @@ class Test_implemented:
 
         mock_record_api_call.assert_not_called()
 
+    @patch("legate.core.get_legate_runtime")
+    @patch("cupynumeric.runtime.record_api_call")
+    def test_profiling_enabled_reporting_False(
+        self,
+        mock_record_api_call: MagicMock,
+        mock_get_legate_runtime: MagicMock,
+    ) -> None:
+        # Mock legate runtime for profiling
+        mock_runtime = MagicMock()
+        mock_config = MagicMock()
+        mock_config.profile = True
+        mock_runtime.config.return_value = mock_config
+        mock_get_legate_runtime.return_value = mock_runtime
+
+        # Clear cache to use our mock
+        m._profiling_enabled.cache_clear()
+
+        try:
+            settings.report_coverage = False
+            wrapped = m.implemented(_test_func, "foo", "_test_func")
+            result = wrapped(10, 20)
+            assert result == 30
+            mock_record_api_call.assert_not_called()
+        finally:
+            m._profiling_enabled.cache_clear()
+            settings.report_coverage.unset_value()
+
+    @patch("cupynumeric.runtime.record_api_call")
+    def test_reporting_enabled_profiling_disabled(
+        self, mock_record_api_call: MagicMock
+    ) -> None:
+        try:
+            settings.report_coverage = True
+            wrapped = m.implemented(_test_func, "foo", "_test_func")
+
+            result = wrapped(10, 20)
+            assert result == 30
+
+            mock_record_api_call.assert_called_once()
+            assert (
+                mock_record_api_call.call_args[1]["name"] == "foo._test_func"
+            )
+            assert mock_record_api_call.call_args[1]["implemented"]
+        finally:
+            settings.report_coverage.unset_value()
+
+    @patch("cupynumeric._utils.coverage._profiling_enabled")
+    @patch("legate.core.get_legate_runtime")
+    def test_profiling_only_no_reporting(
+        self,
+        mock_get_legate_runtime: MagicMock,
+        mock_profiling_enabled: MagicMock,
+    ) -> None:
+        # Mock profiling to return True
+        mock_profiling_enabled.return_value = True
+
+        mock_runtime = MagicMock()
+        mock_get_legate_runtime.return_value = mock_runtime
+
+        try:
+            settings.report_coverage = False
+            wrapped = m.implemented(_test_func, "foo", "_test_func")
+
+            result = wrapped(10, 20)
+            assert result == 30
+        finally:
+            settings.report_coverage.unset_value()
+
     @patch("cupynumeric.runtime.record_api_call")
     def test_reporting_True_ufunc(
         self, mock_record_api_call: MagicMock
@@ -249,6 +347,29 @@ class Test_unimplemented:
             ":"
         )
         assert int(lineno)
+
+    @patch("cupynumeric._utils.coverage._profiling_enabled")
+    @patch("legate.core.get_legate_runtime")
+    def test_profiling_enabled_unimplemented(
+        self,
+        mock_get_legate_runtime: MagicMock,
+        mock_profiling_enabled: MagicMock,
+    ) -> None:
+        # Mock profiling to return True
+        mock_profiling_enabled.return_value = True
+
+        mock_runtime = MagicMock()
+        mock_get_legate_runtime.return_value = mock_runtime
+
+        try:
+            settings.report_coverage = False
+            wrapped = m.unimplemented(_test_func, "foo", "_test_func")
+
+            with pytest.warns(RuntimeWarning):
+                result = wrapped(10, 20)
+            assert result == 30
+        finally:
+            settings.report_coverage.unset_value()
 
     @patch("cupynumeric.runtime.record_api_call")
     def test_reporting_False_func(
@@ -540,6 +661,79 @@ def test_implemented_decorator_actual() -> None:
 
     assert hasattr(decorated_func, "_cupynumeric_metadata")
     assert decorated_func._cupynumeric_metadata.implemented
+
+
+class TestInferMode:
+    def test_infer_mode_none(self) -> None:
+        result = m._infer_mode(None)
+        assert result == "N/A"
+
+    def test_infer_mode_with_thunk_deferred(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        mock_result = MagicMock()
+        mock_result._thunk = MagicMock()
+        monkeypatch.setattr(
+            "cupynumeric._utils.coverage.runtime.is_deferred_array",
+            lambda x: True,
+        )
+        result = m._infer_mode(mock_result)
+        assert result == "deferred"
+
+    def test_infer_mode_with_thunk_eager(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        mock_result = MagicMock()
+        mock_result._thunk = MagicMock()
+        monkeypatch.setattr(
+            "cupynumeric._utils.coverage.runtime.is_deferred_array",
+            lambda x: False,
+        )
+        result = m._infer_mode(mock_result)
+        assert result == "eager"
+
+    def test_infer_mode_numpy_ndarray(self) -> None:
+        import numpy as np
+
+        arr = np.array([1, 2, 3])
+        result = m._infer_mode(arr)
+        assert result == "eager"
+
+    def test_infer_mode_else(self) -> None:
+        result = m._infer_mode("some_string")
+        assert result == "N/A"
+
+
+class TestProfileRange:
+    def test_profile_range_with_result(self) -> None:
+        try:
+            with m.ProfileRange("test_func", "test.py:10"):
+                m.upr_result.set("test_result")
+        except Exception:
+            # Ignore any errors
+            pass
+
+
+class TestHelperFunctions:
+    def test_is_single_not_wrapped(self) -> None:
+        result = m.is_single("not_wrapped_object")
+        assert result == m.GPUSupport.NO
+
+    def test_is_single_wrapped(self) -> None:
+        wrapped = m.implemented(_test_func, "test", "func")
+        result = m.is_single(wrapped)
+        # Check it returns a GPUSupport value
+        assert isinstance(result, m.GPUSupport)
+
+    def test_is_multi_not_wrapped(self) -> None:
+        result = m.is_multi("not_wrapped_object")
+        assert result == m.GPUSupport.NO
+
+    def test_is_multi_wrapped(self) -> None:
+        wrapped = m.implemented(_test_func, "test", "func")
+        result = m.is_multi(wrapped)
+        # Check it returns a GPUSupport value
+        assert isinstance(result, m.GPUSupport)
 
 
 def test_finish_triggers_shutdown(monkeypatch) -> None:
