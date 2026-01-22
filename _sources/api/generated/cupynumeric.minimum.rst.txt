@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autoufunc:: minimum
+.. autofunction:: minimum

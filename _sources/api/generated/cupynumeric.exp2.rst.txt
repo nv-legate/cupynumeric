@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autoufunc:: exp2
+.. autofunction:: exp2

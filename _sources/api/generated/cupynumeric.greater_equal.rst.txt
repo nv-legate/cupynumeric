@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autoufunc:: greater_equal
+.. autofunction:: greater_equal

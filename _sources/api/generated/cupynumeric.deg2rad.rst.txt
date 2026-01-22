@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autoufunc:: deg2rad
+.. autofunction:: deg2rad
