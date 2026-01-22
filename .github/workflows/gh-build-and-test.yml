@@ -234,7 +234,7 @@ jobs:
     if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == false }}
     name: Upload package to Anaconda Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.45
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.46
     with:
       build-has-tests: false
       build-mode: ""
