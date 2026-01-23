@@ -13,11 +13,15 @@
 # limitations under the License.
 #
 
+import os
+
 import numpy as np
 import pytest
 from utils.comparisons import allclose as _allclose
 
 import cupynumeric as num
+
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 def allclose(A: np.ndarray, B: np.ndarray) -> bool:
@@ -146,6 +150,37 @@ def check_3d_r2c(N, dtype=np.float64):
     out_num = num.fft.hfft(Z_num)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
+
+
+def test_rfft_single_precision_cast(monkeypatch: pytest.MonkeyPatch) -> None:
+    data = np.random.rand(8).astype(np.float32)
+    orig_rfftn = np.fft.rfftn
+
+    def rfftn_force_complex128(*args, **kwargs):  # type: ignore[no-untyped-def]
+        out = orig_rfftn(*args, **kwargs)
+        if out.dtype != np.complex128:
+            out = out.astype(np.complex128)
+        return out
+
+    monkeypatch.setattr(np.fft, "rfftn", rfftn_force_complex128)
+    result = num.fft.rfft(num.array(data))
+    assert result.dtype == np.complex64
+
+
+@pytest.mark.skipif(
+    not EAGER_TEST,
+    reason="eager-only: deferred/cuda path does not exercise eager FFT",
+)
+def test_rfft_single_precision_unsupported_dtype(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = np.random.rand(8).astype(np.float32)
+    if np.fft.rfft(data).dtype == np.complex128:
+        pytest.skip("numpy returns complex128; error path not reachable")
+    monkeypatch.setattr("cupynumeric._thunk.eager.is_np2", False)
+    msg = r"Unsupported data type .* in eager FFT"
+    with pytest.raises(RuntimeError, match=msg):
+        num.fft.rfft(num.array(data))
 
 
 def check_4d_r2c(N, dtype=np.float64):

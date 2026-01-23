@@ -70,6 +70,15 @@ def test_basic():
     assert np.array_equal(anp, a)
 
 
+def test_setitem_eager_paths() -> None:
+    arr = num.arange(5)
+    arr[2] = 9
+    arr[1:3] = [7, 8]
+    arr[[0, 4]] = [1, 2]
+
+    assert np.array_equal(arr, np.array([1, 7, 8, 3, 2]))
+
+
 if __name__ == "__main__":
     import sys
 

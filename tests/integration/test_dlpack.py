@@ -92,6 +92,18 @@ class TestToDLPack:
         result = np.from_dlpack(num_array)
         assert np.array_equal(np_array, result)
 
+    def test_dlpack_deferred_thunk(self) -> None:
+        num_array = num.arange(4, dtype=np.float32)
+        # If eager, force conversion; in cuda stage it's already deferred.
+        if runtime.is_eager_array(num_array._thunk):
+            num_array._thunk.to_deferred_array(read_only=False)
+
+        capsule = num_array.__dlpack__()
+        assert capsule is not None
+
+        device = num_array.__dlpack_device__()
+        assert device is not None
+
 
 if __name__ == "__main__":
     import sys

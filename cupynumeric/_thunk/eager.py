@@ -643,7 +643,9 @@ class EagerArray(NumPyThunk):
             return self.deferred.reshape(newshape, order)
         child = self.array.reshape(newshape, order=order)
         # See if we are aliased or not
-        if child.base is None:
+        # `ndarray.base` is not reliable here: NumPy can return a copy whose
+        # `.base` is non-None (e.g. order='F' flattening). Use shares_memory.
+        if not np.shares_memory(child, self.array):
             result = EagerArray(child)
         else:
             result = EagerArray(

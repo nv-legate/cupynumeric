@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 
 import numpy as np
 import pytest
@@ -23,6 +24,7 @@ from cupynumeric.runtime import runtime
 
 CUDA_TEST = runtime.num_gpus > 0
 MULTI_GPU = runtime.num_gpus > 1
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 SHAPES = [(100,), (10, 10), (10, 10, 10), (32, 2, 32)]
 FILTER_SHAPES = [(5,), (3, 5), (3, 5, 3), (32, 1, 32)]
@@ -105,6 +107,25 @@ def test_empty():
         num.convolve([], [], mode="same")
     with pytest.raises(expected_exc):
         np.convolve([], [], mode="same")
+
+
+@pytest.mark.skipif(not EAGER_TEST, reason="warning is only emitted in eager")
+def test_convolve_warns_direct_in_1d(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CUPYNUMERIC_WARN", "1")
+    msg = r"the method direct is ignored for the 1D convolution"
+    a = num.array([1, 2, 3])
+    v = num.array([0, 1, 0])
+    with pytest.warns(UserWarning, match=msg):
+        num.convolve(a, v, mode="same", method="direct")
+
+
+@pytest.mark.skipif(EAGER_TEST, reason="deferred/cuda behavior")
+def test_convolve_direct_ignored_matches_default() -> None:
+    a = num.array([1, 2, 3])
+    v = num.array([0, 1, 0])
+    baseline = num.convolve(a, v, mode="same")
+    out = num.convolve(a, v, mode="same", method="direct")
+    assert allclose(out, baseline)
 
 
 def test_diff_dims():

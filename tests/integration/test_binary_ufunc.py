@@ -17,12 +17,15 @@ import argparse
 import operator
 import os
 import sys
+from typing import Any
 
 import numpy as np
 import pytest
 from utils.comparisons import allclose
 
 import cupynumeric as num
+from cupynumeric._array.array import ndarray
+from cupynumeric.runtime import runtime
 
 EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
@@ -176,6 +179,63 @@ def test_math_ops_arr_scalar(op, arr, scalar) -> None:
 @pytest.mark.parametrize("scalar2", scalars)
 def test_math_ops_scalar_scalar(op, scalar1, scalar2) -> None:
     check_op(op, (scalar1, scalar2))
+
+
+def _make_deferred_array(data: np.ndarray) -> Any:
+    """
+    Create a deferred-backed ndarray even when running in eager stage.
+
+    We avoid relying on temporarily setting CUPYNUMERIC_FORCE_THUNK=deferred
+    because EnvOnlySetting values are cached after first access.
+    """
+    arr = num.array(data)
+    thunk = arr._thunk
+    if runtime.is_eager_array(thunk):
+        deferred_thunk = thunk.to_deferred_array(read_only=False)
+        return ndarray._from_thunk(deferred_thunk)
+    return arr
+
+
+def test_eager_binary_ufunc_converts_deferred_rhs() -> None:
+    lhs = num.arange(3)
+    rhs = _make_deferred_array(np.arange(3))
+
+    out = lhs + rhs
+    assert np.array_equal(np.array(out), np.array([0, 2, 4]))
+
+
+def test_eager_binary_ufunc_rhs_with_deferred_thunk() -> None:
+    lhs = num.arange(3)
+    rhs = num.arange(3)
+    deferred = _make_deferred_array(np.arange(3))
+
+    _ = rhs + deferred
+
+    out = lhs + rhs
+    assert np.array_equal(np.array(out), np.array([0, 2, 4]))
+
+
+def test_eager_binary_ufunc_out_deferred() -> None:
+    lhs = num.arange(3)
+    rhs = num.arange(3)
+    out = _make_deferred_array(np.empty(3))
+    assert runtime.is_deferred_array(out._thunk)
+
+    lhs._thunk._add(rhs, out=out)
+    assert np.array_equal(np.array(out), np.array([0, 2, 4]))
+
+
+def test_eager_binary_ufunc_out_with_deferred_thunk() -> None:
+    lhs = num.arange(3)
+    rhs = num.arange(3)
+    out = num.arange(3)
+    # Force `out._thunk` to remain eager but have a deferred thunk attached.
+    if runtime.is_eager_array(out._thunk):
+        out._thunk.to_deferred_array(read_only=False)
+        assert out._thunk.deferred is not None
+
+    lhs._thunk._add(rhs, out=out)
+    assert np.array_equal(np.array(out), np.array([0, 2, 4]))
 
 
 trig_ops = [

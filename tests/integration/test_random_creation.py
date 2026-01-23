@@ -39,6 +39,35 @@ def test_randn():
     assert_distribution(a_num, 0.0, 1.0, mean_tol=0.05)
 
 
+def test_bitgenerator_bytes_scalar() -> None:
+    rng = num.random.default_rng(123)
+    msg = r"invalid literal for int\(\)"
+    if EAGER_TEST:
+        with pytest.raises(ValueError, match=msg):
+            rng.bytes(1)
+    else:
+        # In cuda/deferred mode this path is implemented and should not raise.
+        out = rng.bytes(1)
+        if isinstance(out, (bytes, bytearray)):
+            assert len(out) == 1
+        else:
+            arr = np.asarray(out)
+            assert arr.dtype == np.uint8
+            assert arr.size == 1
+
+
+def test_bitgenerator_chisquare_scalar() -> None:
+    rng = num.random.default_rng(123)
+    out = rng.chisquare(2.0, size=1)
+    assert out.shape == (1,)
+
+
+def test_bitgenerator_gamma_scalar() -> None:
+    rng = num.random.default_rng(123)
+    out = rng.gamma(2.0, scale=1.0, size=1)
+    assert out.shape == (1,)
+
+
 def reseed_and_gen_random(
     func: str, seed: Any, *args: Any, **kwargs: Any
 ) -> tuple[Any, Any]:
