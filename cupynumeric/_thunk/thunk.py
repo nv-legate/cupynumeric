@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from ..types import (
         BitOrder,
         BoundsMode,
+        TransposeMode,
         CastingKind,
         ConvolveMethod,
         ConvolveMode,
@@ -1469,7 +1470,7 @@ class NumPyThunk(ABC):
     def where(self, rhs1: Any, rhs2: Any, rhs3: Any) -> None: ...
 
     @abstractmethod
-    def cholesky(self, src: Any) -> None: ...
+    def cholesky(self, src: Any, lower: bool, zeroout: bool) -> None: ...
 
     @abstractmethod
     def eig(self, ew: Any, ev: Any) -> None: ...
@@ -1488,6 +1489,19 @@ class NumPyThunk(ABC):
 
     @abstractmethod
     def solve(self, a: Any, b: Any) -> None: ...
+
+    @abstractmethod
+    def cho_solve(self, c: Any, lower: bool) -> None: ...
+
+    @abstractmethod
+    def solve_triangular(
+        self,
+        a: Any,
+        b: Any,
+        trans: TransposeMode,
+        lower: bool,
+        unit_diagonal: bool,
+    ) -> None: ...
 
     @abstractmethod
     def svd(self, u: Any, s: Any, vh: Any) -> None: ...

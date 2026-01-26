@@ -21,6 +21,7 @@ import numpy as np
 from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..runtime import runtime
 from cupynumeric._utils import is_np2
+from ..types import TransposeMode
 
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index
@@ -43,6 +44,7 @@ from .._module.creation_shape import zeros, zeros_like
 from .._module.ssc_searching import where
 from .._module.ssc_sorting import argsort
 from .._ufunc.math import add, sqrt as _sqrt
+from .._ufunc.floating import isfinite
 from ._exception import LinAlgError
 
 if TYPE_CHECKING:
@@ -50,7 +52,7 @@ if TYPE_CHECKING:
 
 
 @add_boilerplate("a")
-def cholesky(a: ndarray) -> ndarray:
+def cholesky(a: ndarray, upper: bool = False) -> ndarray:
     """
     Cholesky decomposition.
 
@@ -67,6 +69,10 @@ def cholesky(a: ndarray) -> ndarray:
     a : (..., M, M) array_like
         Hermitian (symmetric if all elements are real), positive-definite
         input matrix.
+
+    upper : bool, optional
+        Whether to compute the upper or lower triangular Cholesky factorization
+        (Default: lower triangular)
 
     Returns
     -------
@@ -95,7 +101,78 @@ def cholesky(a: ndarray) -> ndarray:
     elif shape[-1] != shape[-2]:
         raise ValueError("Last 2 dimensions of the array must be square")
 
-    return _thunk_cholesky(a)
+    return _thunk_cholesky(a, lower=not upper)
+
+
+@add_boilerplate("a")
+def cho_factor(
+    a: ndarray,
+    lower: bool = False,
+    overwrite_a: bool = False,
+    check_finite: bool = True,
+) -> tuple[ndarray, bool]:
+    """
+    Compute the Cholesky decomposition of a matrix, to use in cho_solve.
+
+    Returns a matrix containing the Cholesky decomposition,
+    ``A = L L*`` or ``A = U* U`` of a Hermitian positive-definite matrix `a`.
+    The return value can be directly used as the first parameter to cho_solve.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Matrix to be decomposed
+    lower : bool, optional
+        Whether to compute the upper or lower triangular Cholesky factorization
+        (Default: upper triangular)
+    overwrite_a : bool, optional
+        Whether to overwrite data in a (may improve performance). Default is False.
+    check_finite : bool, optional
+        Whether to check that the input matrix contains only finite numbers.
+        Disabling may give a performance gain, but may result in problems
+        (crashes, non-termination) if the inputs do contain infinities or NaNs.
+        Default is True.
+
+    Returns
+    -------
+    c : (..., M, M) ndarray
+        Matrix whose upper or lower triangle contains the Cholesky factor
+        of `a`. Other parts of the matrix contain random data.
+    lower : bool
+        Flag indicating whether the factor is in the lower or upper triangle
+
+    Raises
+    ------
+    LinAlgError
+        Raised if decomposition fails.
+
+    See Also
+    --------
+    cho_solve : Solve a linear set equations using the Cholesky factorization of a matrix.
+    scipy.linalg.cho_factor
+
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    shape = a.shape
+    if len(shape) < 2:
+        raise ValueError(
+            f"{len(shape)}-dimensional array given. "
+            "Array must be at least two-dimensional"
+        )
+    elif shape[-1] != shape[-2]:
+        raise ValueError("Last 2 dimensions of the array must be square")
+
+    if check_finite:
+        if not isfinite(a).all():
+            raise ValueError("Input contains non-finite values")
+
+    # Compute the Cholesky decomposition (always returns lower triangle)
+    c = _thunk_cholesky(a, lower=lower, zeroout=False, overwrite_a=overwrite_a)
+
+    return c, lower
 
 
 @add_boilerplate("a")
@@ -462,6 +539,242 @@ def solve(a: ndarray, b: ndarray, out: ndarray | None = None) -> ndarray:
         return empty_like(b)
 
     return _thunk_solve(a, b, out)
+
+
+@add_boilerplate("c", "b")
+def cholesky_solve(
+    c: ndarray,
+    b: ndarray,
+    lower: bool,
+    overwrite_b: bool = False,
+    check_finite: bool = True,
+) -> ndarray:
+    """
+    Solve a system of linear equations with a positive-definite matrix.
+
+    Parameters
+    ----------
+    c : (..., M, M) array_like
+        Cholesky factorization of a, as given by cho_factor.
+    b : {(M,), (..., M, K)}, array_like
+        Ordinate or "dependent variable" values.
+    lower : bool
+        Use only data contained in the lower triangle of c.
+    overwrite_b : bool, optional
+        Allow overwriting data in b (may enhance performance). Default is False.
+    check_finite : bool, optional
+        Whether to check that the input matrices contain only finite numbers. Disabling may give a performance gain. Default is True.
+
+    Returns
+    -------
+    x : {(..., M,), (..., M, K)} ndarray
+        Solution to the system a x = b.  Returned shape is identical to `b`.
+
+    Raises
+    ------
+    LinAlgError
+        If `a` is singular
+
+    Notes
+    ------
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    scipy.linalg.cho_solve
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+
+    if c.ndim < 2:
+        raise LinAlgError(
+            f"{c.ndim}-dimensional array given. Array must be at least two-dimensional"
+        )
+    if b.ndim < 1:
+        raise LinAlgError(
+            f"{b.ndim}-dimensional array given. Array must be at least one-dimensional"
+        )
+    if np.dtype("e") in (c.dtype, b.dtype):
+        raise TypeError("array type float16 is unsupported in linalg")
+    if c.shape[-2] != c.shape[-1]:
+        raise LinAlgError("Last 2 dimensions of the array must be square")
+    if c.ndim == 2 and c.shape[1] != b.shape[0]:
+        if b.ndim == 1:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension 0, "
+                f"with signature (m,m),(m)->(m) (size {b.shape[0]} "
+                f"is different from {c.shape[1]})"
+            )
+        else:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension 0, "
+                f"with signature (m,m),(m,n)->(m,n) (size {b.shape[0]} "
+                f"is different from {c.shape[1]})"
+            )
+    if c.ndim > 2:
+        if c.ndim != b.ndim:
+            raise ValueError(
+                "Batched matrices require signature (...,m,m),(...,m,n)->(...,m,n)"
+            )
+        if c.shape[-1] != b.shape[-2]:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension "
+                f"{b.ndim - 2}, with signature (...,m,m),(...,m,n)->(...,m,n)"
+                f" (size {b.shape[-2]} is different from {c.shape[-1]})"
+            )
+
+    if c.size == 0 or b.size == 0:
+        return empty_like(b)
+
+    return _thunk_cho_solve(c, b, lower, overwrite_b, check_finite)
+
+
+def cho_solve(
+    c_and_lower: tuple[ndarray, bool],
+    b: ndarray,
+    overwrite_b: bool = False,
+    check_finite: bool = True,
+) -> ndarray:
+    """
+    Solve a system of linear equations with a positive-definite matrix.
+
+    Parameters
+    ----------
+    c_and_lower : tuple[ndarray, bool]
+        Tuple containing the cholesky factorization of a, as given by cho_factor.
+    b : {(M,), (..., M, K)}, array_like
+        Ordinate or "dependent variable" values.
+    overwrite_b : bool, optional
+        Allow overwriting data in b (may enhance performance). Default is False.
+    check_finite : bool, optional
+        Whether to check that the input matrices contain only finite numbers. Disabling may give a performance gain. Default is True.
+
+    Returns
+    -------
+    x : {(..., M,), (..., M, K)} ndarray
+        Solution to the system a x = b.  Returned shape is identical to `b`.
+
+    Raises
+    ------
+    LinAlgError
+        If `a` is singular
+
+    Notes
+    ------
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    scipy.linalg.cho_solve
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    c, lower = c_and_lower
+    return cholesky_solve(c, b, lower, overwrite_b, check_finite)
+
+
+@add_boilerplate("a", "b")
+def solve_triangular(
+    a: ndarray,
+    b: ndarray,
+    trans: TransposeMode = 0,
+    lower: bool = False,
+    unit_diagonal: bool = False,
+    overwrite_b: bool = False,
+    check_finite: bool = True,
+) -> ndarray:
+    """
+    Solve a triangular matrix equation, or system of linear scalar equations.
+
+    Computes the "exact" solution, `x`, of the well-determined, i.e., full
+    rank, linear matrix equation `ax = b`.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Coefficient matrix.
+    b : {(M,), (..., M, K)}, array_like
+        Ordinate or "dependent variable" values.
+    lower : bool, optional
+        Use only data contained in the lower triangle of a. Default is to use upper triangle.
+    trans : {0, 1, 2, 'N', 'T', 'C'}, optional
+        Use transpose of a. Default is to use no transpose. 0: no transpose, 1: transpose, 2: conjugate transpose.
+    unit_diagonal : bool, optional
+        If True, the diagonal elements of a are assumed to be unity and will not be referenced.
+    overwrite_b : bool, optional
+        Allow overwriting data in b (may enhance performance). Default is False. Default is False.
+    check_finite : bool, optional
+        Whether to check that the input matrices contain only finite numbers. Disabling may give a performance gain. Default is True.
+
+    Returns
+    -------
+    x : {(..., M,), (..., M, K)} ndarray
+        Solution to the system a x = b.  Returned shape is identical to `b`.
+
+    Raises
+    ------
+    LinAlgError
+        If `a` is singular
+
+    Notes
+    ------
+    Multi-GPU/CPU usage is limited to data parallel matrix-wise batching.
+
+    See Also
+    --------
+    scipy.linalg.solve_triangular
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    if a.ndim < 2:
+        raise LinAlgError(
+            f"{a.ndim}-dimensional array given. Array must be at least two-dimensional"
+        )
+    if b.ndim < 1:
+        raise LinAlgError(
+            f"{b.ndim}-dimensional array given. Array must be at least one-dimensional"
+        )
+    if np.dtype("e") in (a.dtype, b.dtype):
+        raise TypeError("array type float16 is unsupported in linalg")
+    if a.shape[-2] != a.shape[-1]:
+        raise LinAlgError("Last 2 dimensions of the array must be square")
+    if a.ndim == 2 and a.shape[1] != b.shape[0]:
+        if b.ndim == 1:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension 0, "
+                f"with signature (m,m),(m)->(m) (size {b.shape[0]} "
+                f"is different from {a.shape[1]})"
+            )
+        else:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension 0, "
+                f"with signature (m,m),(m,n)->(m,n) (size {b.shape[0]} "
+                f"is different from {a.shape[1]})"
+            )
+    if a.ndim > 2:
+        if a.ndim != b.ndim:
+            raise ValueError(
+                "Batched matrices require signature (...,m,m),(...,m,n)->(...,m,n)"
+            )
+        if a.shape[-1] != b.shape[-2]:
+            raise ValueError(
+                "Input operand 1 has a mismatch in its dimension "
+                f"{b.ndim - 2}, with signature (...,m,m),(...,m,n)->(...,m,n)"
+                f" (size {b.shape[-2]} is different from {a.shape[-1]})"
+            )
+
+    if a.size == 0 or b.size == 0:
+        return empty_like(b)
+
+    return _thunk_solve_triangular(
+        a, b, trans, lower, unit_diagonal, overwrite_b, check_finite
+    )
 
 
 @add_boilerplate("a")
@@ -946,7 +1259,12 @@ def norm(
         raise ValueError("Improper number of dimensions to norm")
 
 
-def _thunk_cholesky(a: ndarray) -> ndarray:
+def _thunk_cholesky(
+    a: ndarray,
+    lower: bool = True,
+    zeroout: bool = True,
+    overwrite_a: bool = False,
+) -> ndarray:
     """Cholesky decomposition.
 
     Return the Cholesky decomposition, `L * L.H`, of the square matrix `a`,
@@ -962,6 +1280,14 @@ def _thunk_cholesky(a: ndarray) -> ndarray:
     a : (..., M, M) array_like
         Hermitian (symmetric if all elements are real), positive-definite
         input matrix.
+    lower : bool, optional
+        Whether to compute the upper or lower triangular Cholesky factorization
+        (Default: lower triangular)
+    zeroout : bool, optional
+        Whether to zero out the upper or lower triangle of the output matrix
+        (Default: True)
+    overwrite_a : bool, optional
+        Whether to overwrite data in a (may improve performance). Default is False.
 
     Returns
     -------
@@ -985,10 +1311,26 @@ def _thunk_cholesky(a: ndarray) -> ndarray:
     input = a
     if input.dtype.kind not in ("f", "c"):
         input = input.astype("float64")
-    output = ndarray._from_inputs(
-        shape=input.shape, dtype=input.dtype, inputs=(input,)
-    )
-    output._thunk.cholesky(input._thunk)
+
+    align_batchdim = input.ndim > 3
+    shape_org = input.shape
+    if align_batchdim:
+        input = input.reshape(
+            (np.prod(shape_org[:-2]), shape_org[-2], shape_org[-1])
+        )
+
+    if overwrite_a:
+        output = input
+    else:
+        output = ndarray._from_inputs(
+            shape=input.shape, dtype=input.dtype, inputs=(input,)
+        )
+
+    output._thunk.cholesky(input._thunk, lower=lower, zeroout=zeroout)
+
+    if align_batchdim:
+        output = output.reshape(shape_org)
+
     return output
 
 
@@ -1151,6 +1493,98 @@ def _thunk_solve(
 
     if expand_b:
         out = out.reshape((b.shape[0],))
+
+    return out
+
+
+def _thunk_cho_solve(
+    c: ndarray, b: ndarray, lower: bool, overwrite_b: bool, check_finite: bool
+) -> ndarray:
+    if c.dtype.kind not in ("f", "c"):
+        c = c.astype("float64")
+    if b.dtype.kind not in ("f", "c"):
+        b = b.astype("float64")
+    if c.dtype != b.dtype:
+        dtype = np.result_type(c.dtype, b.dtype)
+        c = c.astype(dtype)
+        b = b.astype(dtype)
+
+    if check_finite:
+        if not isfinite(c).all():
+            raise ValueError("Input contains non-finite values")
+        if not isfinite(b).all():
+            raise ValueError("Input contains non-finite values")
+
+    if overwrite_b:
+        out = b
+    else:
+        out = b.copy()
+
+    if b.ndim == 1:
+        out = out.reshape((b.shape[0], 1))
+
+    align_batchdim = c.ndim != 3
+    if align_batchdim:
+        batchdim = np.prod(c.shape[:-2]) if c.ndim > 3 else 1
+        c = c.reshape((batchdim, c.shape[-2], c.shape[-1]))
+        out = out.reshape((batchdim, out.shape[-2], out.shape[-1]))
+
+    out._thunk.cho_solve(c._thunk, lower)
+
+    if align_batchdim:
+        out = out.reshape(b.shape)
+
+    return out
+
+
+def _thunk_solve_triangular(
+    a: ndarray,
+    b: ndarray,
+    trans: TransposeMode,
+    lower: bool,
+    unit_diagonal: bool,
+    overwrite_b: bool,
+    check_finite: bool,
+) -> ndarray:
+    if a.dtype.kind not in ("f", "c"):
+        a = a.astype("float64")
+    if b.dtype.kind not in ("f", "c"):
+        b = b.astype("float64")
+    if a.dtype != b.dtype:
+        dtype = np.result_type(a.dtype, b.dtype)
+        a = a.astype(dtype)
+        b = b.astype(dtype)
+
+    if check_finite:
+        if not isfinite(a).all():
+            raise ValueError("Input contains non-finite values")
+        if not isfinite(b).all():
+            raise ValueError("Input contains non-finite values")
+
+    align_batchdim = a.ndim > 3
+    shape_org = b.shape
+    if align_batchdim:
+        a = a.reshape((np.prod(a.shape[:-2]), a.shape[-2], a.shape[-1]))
+        b = b.reshape((np.prod(b.shape[:-2]), b.shape[-2], b.shape[-1]))
+
+    expand_b = b.ndim == 1
+    if expand_b:
+        b = b.reshape((b.shape[0], 1))
+
+    if overwrite_b:
+        out = b
+    else:
+        out = ndarray._from_inputs(shape=b.shape, dtype=b.dtype, inputs=(a, b))
+
+    out._thunk.solve_triangular(
+        a._thunk, b._thunk, trans, lower, unit_diagonal
+    )
+
+    if expand_b:
+        out = out.reshape((out.shape[0],))
+
+    if align_batchdim:
+        out = out.reshape(shape_org)
 
     return out
 

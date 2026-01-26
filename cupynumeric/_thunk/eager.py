@@ -60,6 +60,7 @@ if TYPE_CHECKING:
         CastingKind,
         ConvolveMethod,
         ConvolveMode,
+        TransposeMode,
         NdShape,
         OrderType,
         SelectKind,
@@ -2043,13 +2044,13 @@ class EagerArray(NumPyThunk):
             else:
                 self.array[:] = np.triu(rhs.array, k)
 
-    def cholesky(self, src: Any) -> None:
+    def cholesky(self, src: Any, lower: bool, zeroout: bool) -> None:
         self.check_eager_args(src)
         if self.deferred is not None:
-            self.deferred.cholesky(src)
+            self.deferred.cholesky(src, lower, zeroout)
         else:
             try:
-                result = np.linalg.cholesky(src.array)
+                result = np.linalg.cholesky(src.array, upper=not lower)
             except np.linalg.LinAlgError as e:
                 from ..linalg import LinAlgError
 
@@ -2140,6 +2141,49 @@ class EagerArray(NumPyThunk):
         else:
             try:
                 result = np.linalg.solve(a.array, b.array)
+            except np.linalg.LinAlgError as e:
+                from ..linalg import LinAlgError
+
+                raise LinAlgError(e) from e
+            self.array[:] = result
+
+    def cho_solve(self, c: Any, lower: bool) -> None:
+        self.check_eager_args(c)
+        if self.deferred is not None:
+            self.deferred.cho_solve(c, lower)
+        else:
+            try:
+                from scipy.linalg import cho_solve  # type: ignore [import-untyped]
+
+                result = cho_solve((c.array, lower), self.array, True, False)
+            except np.linalg.LinAlgError as e:
+                from ..linalg import LinAlgError
+
+                raise LinAlgError(e) from e
+            self.array[:] = result
+
+    def solve_triangular(
+        self,
+        a: Any,
+        b: Any,
+        trans: TransposeMode,
+        lower: bool,
+        unit_diagonal: bool,
+    ) -> None:
+        self.check_eager_args(a, b)
+        if self.deferred is not None:
+            self.deferred.solve_triangular(a, b, trans, lower, unit_diagonal)
+        else:
+            try:
+                from scipy.linalg import solve_triangular  # type: ignore [import-untyped]
+
+                result = solve_triangular(
+                    a.array,
+                    b.array,
+                    trans=trans,
+                    lower=lower,
+                    unit_diagonal=unit_diagonal,
+                )
             except np.linalg.LinAlgError as e:
                 from ..linalg import LinAlgError
 
