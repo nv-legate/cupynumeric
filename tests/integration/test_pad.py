@@ -60,6 +60,25 @@ class TestPadConstant:
 
         assert np.array_equal(res_np, res_num)
 
+    def test_constant_values_scalar_and_matrix_eager(self) -> None:
+        np_array = np.array([[1, 2], [3, 4]])
+        num_array = num.array(np_array)
+
+        res_np = np.pad(np_array, 1, mode="constant", constant_values=(2, 2))
+        res_num = num.pad(
+            num_array, 1, mode="constant", constant_values=(2, 2)
+        )
+        assert np.array_equal(res_np, res_num)
+
+        const_matrix = np.array([[1, 2], [3, 4]])
+        res_np = np.pad(
+            np_array, 1, mode="constant", constant_values=const_matrix
+        )
+        res_num = num.pad(
+            num_array, 1, mode="constant", constant_values=const_matrix
+        )
+        assert np.array_equal(res_np, res_num)
+
     def test_asymmetric_padding(self):
         np_array = np.array([[1, 2], [3, 4]])
         num_array = num.array([[1, 2], [3, 4]])

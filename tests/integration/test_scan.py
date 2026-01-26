@@ -203,6 +203,15 @@ def test_scalar(op):
     assert np.array_equal(out_np, out_num)
 
 
+@pytest.mark.parametrize("op", ("nancumsum", "nancumprod"))
+def test_nan_scalar_convert(op: str) -> None:
+    arr_np = np.array([np.nan], dtype=np.float32)
+    arr_num = num.array(arr_np)
+    out_np = getattr(np, op)(arr_np, dtype=np.float64)
+    out_num = getattr(num, op)(arr_num, dtype=np.float64)
+    assert np.array_equal(out_np, out_num, equal_nan=True)
+
+
 class TestScanErrors:
     @pytest.mark.parametrize("op", ("cumsum", "cumprod"))
     def test_array_with_nan(self, op):

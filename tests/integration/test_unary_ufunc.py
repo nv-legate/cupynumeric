@@ -89,6 +89,14 @@ def check_result(op, in_np, out_np, out_num, **isclose_kwargs):
     return result
 
 
+def test_unary_ufunc_out_deferred() -> None:
+    arr = num.array([1.0, -2.0], dtype=np.float32)
+    out = num.from_dlpack(np.empty(arr.shape, dtype=arr.dtype))
+
+    num.negative(arr, out=out)
+    assert np.array_equal(out, np.array([-1.0, 2.0], dtype=np.float32))
+
+
 def check_op(op, in_np, out_dtype="d", **check_kwargs):
     in_num = num.array(in_np)
 

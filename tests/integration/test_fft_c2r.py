@@ -157,6 +157,24 @@ def check_3d_c2r(N, dtype=np.float64):
     assert allclose(Z, Z_num)
 
 
+def test_irfft_single_precision_cast(monkeypatch: pytest.MonkeyPatch) -> None:
+    data = np.random.rand(8).astype(np.float32) + 1j * np.random.rand(
+        8
+    ).astype(np.float32)
+    orig_irfftn = np.fft.irfftn
+
+    def irfftn_force_float64(*args, **kwargs):  # type: ignore[no-untyped-def]
+        out = orig_irfftn(*args, **kwargs)
+        if out.dtype != np.float64:
+            out = out.astype(np.float64)
+        return out
+
+    monkeypatch.setattr(np.fft, "irfftn", irfftn_force_float64)
+
+    result = num.fft.irfft(num.array(data))
+    assert result.dtype == np.float32
+
+
 def check_4d_c2r(N, dtype=np.float64):
     print(f"\n=== 4D C2R {dtype}               ===")
     Z = (

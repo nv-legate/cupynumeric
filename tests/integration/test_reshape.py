@@ -122,6 +122,13 @@ class TestSquare:
         assert np.array_equal(a.ravel(), anp.ravel())
 
 
+def test_reshape_non_contiguous_eager() -> None:
+    arr = num.arange(12).reshape(3, 4)
+    reshaped = arr.reshape((12,), order="F")
+    expected = np.reshape(np.arange(12).reshape(3, 4), (12,), order="F")
+    assert np.array_equal(reshaped, expected)
+
+
 RECT_CASES = (
     (10, 2, 10),
     (20, 10),
