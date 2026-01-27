@@ -17,96 +17,150 @@
 #pragma once
 
 // Useful for IDEs
+#include <legate/task/exception.h>
+#include "cupynumeric/cupynumeric_task.h"
 #include "cupynumeric/matrix/potrf.h"
+#include "cupynumeric/pitches.h"
 
 namespace cupynumeric {
 
 using namespace legate;
 
+template <VariantKind KIND>
+struct CopyBlockImpl {
+  TaskContext context;
+  explicit CopyBlockImpl(TaskContext context) : context(context) {}
+
+  void operator()(void* dst, const void* src, size_t n);
+};
+
 template <VariantKind KIND, Type::Code CODE>
-struct PotrfImplBody;
-
-template <VariantKind KIND>
-struct PotrfImplBody<KIND, Type::Code::FLOAT32> {
+struct BatchedTriluImplBody {
   TaskContext context;
-  explicit PotrfImplBody(TaskContext context) : context(context) {}
+  explicit BatchedTriluImplBody(TaskContext context) : context(context) {}
 
-  void operator()(float* array, int32_t m, int32_t n);
+  using VAL = type_of<CODE>;
+
+  void operator()(
+    VAL* array, int32_t m, int32_t n, bool lower, int32_t num_blocks, int64_t block_stride);
 };
 
-template <VariantKind KIND>
-struct PotrfImplBody<KIND, Type::Code::FLOAT64> {
+template <VariantKind KIND, Type::Code CODE>
+struct PotrfImplBody {
   TaskContext context;
   explicit PotrfImplBody(TaskContext context) : context(context) {}
 
-  void operator()(double* array, int32_t m, int32_t n);
-};
+  using VAL = type_of<CODE>;
 
-template <VariantKind KIND>
-struct PotrfImplBody<KIND, Type::Code::COMPLEX64> {
-  TaskContext context;
-  explicit PotrfImplBody(TaskContext context) : context(context) {}
-
-  void operator()(legate::Complex<float>* array, int32_t m, int32_t n);
-};
-
-template <VariantKind KIND>
-struct PotrfImplBody<KIND, Type::Code::COMPLEX128> {
-  TaskContext context;
-  explicit PotrfImplBody(TaskContext context) : context(context) {}
-
-  void operator()(legate::Complex<double>* array, int32_t m, int32_t n);
+  void operator()(
+    VAL* array, int32_t m, int32_t n, bool lower, int32_t num_blocks, int64_t block_stride);
 };
 
 template <Type::Code CODE>
-struct support_potrf : std::false_type {};
-template <>
-struct support_potrf<Type::Code::FLOAT64> : std::true_type {};
-template <>
-struct support_potrf<Type::Code::FLOAT32> : std::true_type {};
-template <>
-struct support_potrf<Type::Code::COMPLEX64> : std::true_type {};
-template <>
-struct support_potrf<Type::Code::COMPLEX128> : std::true_type {};
+struct _cholesky_supported {
+  static constexpr bool value = CODE == Type::Code::FLOAT64 || CODE == Type::Code::FLOAT32 ||
+                                CODE == Type::Code::COMPLEX64 || CODE == Type::Code::COMPLEX128;
+};
 
 template <VariantKind KIND>
 struct PotrfImpl {
   TaskContext context;
-  explicit PotrfImpl(TaskContext context) : context(context) {}
+  bool lower;
+  bool zeroout;
+  explicit PotrfImpl(TaskContext context, bool lower, bool zeroout)
+    : context(context), lower(lower), zeroout(zeroout)
+  {
+  }
 
-  template <Type::Code CODE, std::enable_if_t<support_potrf<CODE>::value>* = nullptr>
-  void operator()(legate::PhysicalStore array) const
+  template <
+    Type::Code CODE,
+    int32_t DIM,
+    std::enable_if_t<_cholesky_supported<CODE>::value && (DIM >= 2) && (DIM < 4)>* = nullptr>
+  void operator()(Array& input_array, Array& output_array) const
   {
     using VAL = type_of<CODE>;
 
-    auto shape = array.shape<2>();
+    auto shape = input_array.shape<DIM>();
+    if (shape != output_array.shape<DIM>()) {
+      throw legate::TaskException("Potrf is not supported when input/output shapes differ");
+    }
 
     if (shape.empty()) {
       return;
     }
 
-    size_t strides[2];
+    auto num_rows = shape.hi[DIM - 2] - shape.lo[DIM - 2] + 1;
+    auto num_cols = shape.hi[DIM - 1] - shape.lo[DIM - 1] + 1;
 
-    auto arr = array.write_accessor<VAL, 2>(shape).ptr(shape, strides);
-    auto m   = static_cast<int32_t>(shape.hi[0] - shape.lo[0] + 1);
-    auto n   = static_cast<int32_t>(shape.hi[1] - shape.lo[1] + 1);
-    assert(m > 0 && n > 0);
+    assert(num_rows == num_cols);
 
-    PotrfImplBody<KIND, CODE>{context}(arr, m, n);
+    // Calculate number of blocks (1 for DIM==2, product of batch dimensions for DIM>2)
+    int32_t num_blocks = 1;
+    for (int32_t i = 0; i < (DIM - 2); ++i) {
+      num_blocks *= (shape.hi[i] - shape.lo[i] + 1);
+    }
+
+    size_t in_strides[DIM];
+    size_t out_strides[DIM];
+
+    auto input  = input_array.read_accessor<VAL, DIM>(shape).ptr(shape, in_strides);
+    auto output = output_array.write_accessor<VAL, DIM>(shape).ptr(shape, out_strides);
+
+    if (num_blocks > 1) {
+      // Check that last two dimensions are contiguous
+      if (in_strides[DIM - 1] != num_rows || in_strides[DIM - 2] != 1) {
+        throw legate::TaskException(
+          "Bad input accessor in potrf, last two dimensions must be contiguous");
+      }
+      if (out_strides[DIM - 1] != num_rows || out_strides[DIM - 2] != 1) {
+        throw legate::TaskException(
+          "Bad output accessor in potrf, last two dimensions must be contiguous");
+      }
+    }
+
+    auto lda          = num_rows;
+    auto block_stride = num_rows * num_cols;  // == num_rows*num_rows
+
+    // some OMP variants use CPU implementation
+    constexpr VariantKind CPU_OR_GPU =
+      (KIND == VariantKind::GPU) ? VariantKind::GPU : VariantKind::CPU;
+    if (input != output) {
+      CopyBlockImpl<CPU_OR_GPU>{context}(output, input, sizeof(VAL) * block_stride * num_blocks);
+    }
+    PotrfImplBody<CPU_OR_GPU, CODE>{context}(
+      output, num_rows, lda, lower, num_blocks, block_stride);
+    if (zeroout) {
+      BatchedTriluImplBody<KIND, CODE>{context}(output, num_rows, lower, num_blocks, block_stride);
+    }
   }
 
-  template <Type::Code CODE, std::enable_if_t<!support_potrf<CODE>::value>* = nullptr>
-  void operator()(legate::PhysicalStore array) const
+  template <
+    Type::Code CODE,
+    int32_t DIM,
+    std::enable_if_t<!_cholesky_supported<CODE>::value || (DIM < 2) || (DIM >= 4)>* = nullptr>
+  void operator()(Array& input_array, Array& output_array) const
   {
     assert(false);
   }
 };
 
 template <VariantKind KIND>
-static void potrf_template(TaskContext& context)
+static void potrf_task_context_dispatch(TaskContext& context)
 {
-  auto array = context.output(0);
-  type_dispatch(array.type().code(), PotrfImpl<KIND>{context}, array);
+  legate::PhysicalStore input  = context.input(0);
+  legate::PhysicalStore output = context.output(0);
+  if (input.type() != output.type()) {
+    throw legate::TaskException("potrf is not yet supported when input/output types differ");
+  }
+  if (input.dim() != output.dim()) {
+    throw legate::TaskException("input/output have different dims in potrf");
+  }
+  auto scalars = context.scalars();
+  assert(scalars.size() == 2);
+  bool lower   = scalars[0].value<bool>();
+  bool zeroout = scalars[1].value<bool>();
+  double_dispatch(
+    input.dim(), input.type().code(), PotrfImpl<KIND>{context, lower, zeroout}, input, output);
 }
 
 }  // namespace cupynumeric

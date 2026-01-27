@@ -1,4 +1,4 @@
-/* Copyright 2024 NVIDIA Corporation
+/* Copyright 2025 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  *
  */
 
-#include "cupynumeric/matrix/trsm.h"
-#include "cupynumeric/matrix/trsm_template.inl"
+#include "cupynumeric/matrix/potrs.h"
+#include "cupynumeric/matrix/potrs_template.inl"
 
 #include "cupynumeric/utilities/blas_lapack.h"
 #include <omp.h>
@@ -24,10 +24,10 @@ namespace cupynumeric {
 
 using namespace legate;
 
-/*static*/ void TrsmTask::omp_variant(TaskContext context)
+/*static*/ void PotrsTask::omp_variant(TaskContext context)
 {
   blas_set_num_threads(omp_get_max_threads());
-  trsm_template<VariantKind::OMP>(context);
+  potrs_template<VariantKind::OMP>(context);
 }
 
 }  // namespace cupynumeric

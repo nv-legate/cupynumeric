@@ -84,7 +84,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98  # v5
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}

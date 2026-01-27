@@ -129,9 +129,7 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       }
       return mappings;
     }
-    case CUPYNUMERIC_POTRF:
     case CUPYNUMERIC_QR:
-    case CUPYNUMERIC_TRSM:
     case CUPYNUMERIC_SVD:
     case CUPYNUMERIC_SYRK:
     case CUPYNUMERIC_GEMM:
@@ -151,6 +149,9 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       }
       return mappings;
     }
+    case CUPYNUMERIC_POTRF:
+    case CUPYNUMERIC_POTRS:
+    case CUPYNUMERIC_TRSM:
     case CUPYNUMERIC_SOLVE: {
       std::vector<StoreMapping> mappings;
       auto dimensions = task.input(0).dim();
@@ -212,23 +213,6 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
         StoreMapping::default_mapping(output_ew.data(), options.front(), true /*exact*/, ordering));
 
       return mappings;
-    }
-    // CHANGE: If this code is changed, make sure all layouts are
-    // consistent with those assumed in batched_cholesky.cu, etc
-    case CUPYNUMERIC_BATCHED_CHOLESKY: {
-      std::vector<StoreMapping> mappings;
-      auto inputs  = task.inputs();
-      auto outputs = task.outputs();
-      mappings.reserve(inputs.size() + outputs.size());
-      for (auto& input : inputs) {
-        mappings.push_back(StoreMapping::default_mapping(
-          input.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
-      }
-      for (auto& output : outputs) {
-        mappings.push_back(StoreMapping::default_mapping(
-          output.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
-      }
-      return std::move(mappings);
     }
     case CUPYNUMERIC_TRILU: {
       if (task.scalars().size() == 2) {
@@ -406,9 +390,17 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         }
       }
     }
-    case CUPYNUMERIC_BATCHED_CHOLESKY: [[fallthrough]];
+    case CUPYNUMERIC_TRSM: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        auto a_array                 = task.input(0);
+        std::int64_t batchsize_total = compute_batchsize(a_array, 2);
+        return batchsize_total > 1
+                 ? aligned_size(batchsize_total * sizeof(std::int32_t), DEFAULT_ALIGNMENT)
+                 : 0;
+      }
+      return 0;
+    }
     case CUPYNUMERIC_GEEV: [[fallthrough]];
-    case CUPYNUMERIC_POTRF: [[fallthrough]];
     // FIXME(wonchanl): These tasks actually don't need unbound pools on CPUs. They are being used
     // only to finish up the first implementation quickly
     case CUPYNUMERIC_QR: [[fallthrough]];
@@ -421,6 +413,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       }
       return std::nullopt;
     }
+    case CUPYNUMERIC_POTRF: [[fallthrough]];
+    case CUPYNUMERIC_POTRS: [[fallthrough]];
     case CUPYNUMERIC_SOLVE: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         auto a_array                 = task.input(0);

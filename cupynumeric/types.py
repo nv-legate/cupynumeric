@@ -37,3 +37,5 @@ ConvolveMode: TypeAlias = Literal["full", "valid", "same"]
 ConvolveMethod: TypeAlias = Literal["auto", "direct", "fft"]
 
 SelectKind: TypeAlias = Literal["introselect"]
+
+TransposeMode: TypeAlias = Literal[0, "N", 1, "T", 2, "C"]

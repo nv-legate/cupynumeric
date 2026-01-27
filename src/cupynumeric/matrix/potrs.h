@@ -1,4 +1,4 @@
-/* Copyright 2024 NVIDIA Corporation
+/* Copyright 2025 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,12 @@
 #pragma once
 
 #include "cupynumeric/cupynumeric_task.h"
-#include "cupynumeric/cupynumeric_c.h"
 
 namespace cupynumeric {
 
-class BatchedCholeskyTask : public CuPyNumericTask<BatchedCholeskyTask> {
+class PotrsTask : public CuPyNumericTask<PotrsTask> {
  public:
-  static inline const auto TASK_CONFIG =
-    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_BATCHED_CHOLESKY}};
+  static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_POTRS}};
 
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 

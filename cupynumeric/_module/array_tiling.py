@@ -781,7 +781,13 @@ def _pad_python(
     elif mode in {"reflect", "symmetric"}:
         method = kwargs.get("reflect_type", "even")
         if method not in {"even", "odd"}:
-            raise ValueError("reflect_type must be 'even' or 'odd'")
+            # NumPy treats unknown reflect_type as the default "even"
+            # (i.e. it does not raise). Match NumPy behavior for compatibility.
+            runtime.warn(
+                "unknown reflect_type {method}; falling back to 'even'",
+                category=UserWarning,
+            )
+            method = "even"
         include_edge = True if mode == "symmetric" else False
 
         for axis, pad_pair in zip(axes, pad_width_tuple):

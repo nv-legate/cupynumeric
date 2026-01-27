@@ -31,6 +31,34 @@ def test_matrix():
     assert np.array_equal(np_out, num_out)
 
 
+def test_matrix_upper_untouched():
+    arr = [[1, -2j], [2j, 5]]
+    arr_mod = arr.copy()
+    arr_mod[0][1] = 23
+
+    num_out = num.linalg.cholesky(arr)
+    num_out_mod = num.linalg.cholesky(arr_mod)
+    assert np.array_equal(num_out, num_out_mod)
+
+
+def test_matrix_batchdim():
+    arr = [[[1, -2j], [2j, 5]], [[1, -2j], [2j, 5]]]
+    np_out = np.linalg.cholesky(arr)
+    num_out = num.linalg.cholesky(arr)
+    assert np.array_equal(np_out, num_out)
+
+
+def test_matrix_batchdim_upper_untouched():
+    arr = [[[1, -2j], [2j, 5]], [[1, -2j], [2j, 5]]]
+    arr_mod = arr.copy()
+    arr_mod[0][0][1] = 23
+    arr_mod[1][0][1] = 23 + 1j
+
+    num_out = num.linalg.cholesky(arr)
+    num_out_mod = num.linalg.cholesky(arr_mod)
+    assert np.array_equal(num_out, num_out_mod)
+
+
 def test_array_negative_1dim():
     arr = num.random.randint(0, 9, size=(3,))
     with pytest.raises(ValueError):
@@ -46,9 +74,10 @@ def test_array_negative():
         np.linalg.cholesky(arr)
 
 
-def test_diagonal():
+@pytest.mark.parametrize("upper", (False, True))
+def test_diagonal(upper: bool):
     a = num.eye(10) * 10.0
-    b = num.linalg.cholesky(a)
+    b = num.linalg.cholesky(a, upper=upper)
     assert allclose(b**2.0, a)
 
 
@@ -57,13 +86,33 @@ def _get_real_symm_posdef(n: int, dtype: np.dtype):
     return a + a.T + num.eye(n, dtype=dtype) * n * 2
 
 
+def _get_hermitian_posdef_dtype(n, dtype):
+    a = num.random.rand(n, n)
+
+    if np.issubdtype(dtype, np.complexfloating):
+        a = a + 1j * num.random.rand(n, n)
+        a = a + a.T.conj() + num.eye(n) * n * 3
+    else:
+        a = a + a.T + num.eye(n) * n * 2
+    return a.astype(dtype)
+
+
 @pytest.mark.parametrize("n", SIZES)
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
-def test_real(n: int, dtype: np.dtype):
+@pytest.mark.parametrize("upper", (False, True))
+def test_real(n: int, dtype: np.dtype, upper: bool):
     b = _get_real_symm_posdef(n, dtype)
-    c = num.linalg.cholesky(b)
+    c = num.linalg.cholesky(b, upper=upper)
     c_np = c.__array__()
-    b2 = np.dot(c_np, c_np.T)
+
+    # Extract only the relevant triangle
+    if upper:
+        # Upper triangular: A = U.T @ U
+        b2 = np.dot(c_np.T, c_np)
+    else:
+        # Lower triangular: A = L @ L.T
+        b2 = np.dot(c_np, c_np.T)
+
     if dtype == np.float32:
         assert allclose(b, b2, rtol=1e-4, atol=1e-5)
     else:
@@ -72,15 +121,24 @@ def test_real(n: int, dtype: np.dtype):
 
 @pytest.mark.parametrize("n", SIZES)
 @pytest.mark.parametrize("dtype", COMPLEX_DTYPES)
-def test_complex(n: int, dtype: np.dtype):
+@pytest.mark.parametrize("upper", (False, True))
+def test_complex(n: int, dtype: np.dtype, upper: bool):
     a = (
         num.random.rand(n, n).astype(dtype)
         + num.random.rand(n, n).astype(dtype) * 1.0j
     )
     b = a + a.T.conj() + num.eye(n, dtype=dtype) * n * 3
-    c = num.linalg.cholesky(b)
+    c = num.linalg.cholesky(b, upper=upper)
     c_np = c.__array__()
-    b2 = np.dot(c_np, c_np.T.conj())
+
+    # Extract only the relevant triangle
+    if upper:
+        # Upper triangular: A = U.H @ U
+        b2 = np.dot(c_np.T.conj(), c_np)
+    else:
+        # Lower triangular: A = L @ L.H
+        b2 = np.dot(c_np, c_np.T.conj())
+
     if dtype == np.complex64:
         assert allclose(b, b2, rtol=1e-4, atol=1e-5)
     else:
@@ -88,9 +146,15 @@ def test_complex(n: int, dtype: np.dtype):
 
     d = num.empty((2, n, n), dtype=dtype)
     d[1] = b
-    c = num.linalg.cholesky(d[1])
+    c = num.linalg.cholesky(d[1], upper=upper)
     c_np = c.__array__()
-    b2 = np.dot(c_np, c_np.T.conj())
+
+    # Extract only the relevant triangle
+    if upper:
+        b2 = np.dot(c_np.T.conj(), c_np)
+    else:
+        b2 = np.dot(c_np, c_np.T.conj())
+
     if dtype == np.complex64:
         assert allclose(d[1], b2, rtol=1e-4, atol=1e-5)
     else:
@@ -99,16 +163,23 @@ def test_complex(n: int, dtype: np.dtype):
 
 @pytest.mark.parametrize("n", SIZES)
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
-def test_batched_3d(n: int, dtype: np.dtype):
+@pytest.mark.parametrize("upper", (False, True))
+def test_batched_3d(n: int, dtype: np.dtype, upper: bool):
     batch = 4
     a = _get_real_symm_posdef(n, dtype)
     multiplier = np.arange(batch) + 1
     a_batched = num.einsum("i,jk->ijk", multiplier, a)
-    test_c = num.linalg.cholesky(a_batched)
+    test_c = num.linalg.cholesky(a_batched, upper=upper)
     for i in range(batch):
         test = test_c[i, :]
         c_np = test.__array__()
-        a2 = np.dot(c_np, c_np.T)
+
+        # Extract only the relevant triangle
+        if upper:
+            a2 = np.dot(c_np.T.conj(), c_np)
+        else:
+            a2 = np.dot(c_np, c_np.T.conj())
+
         ref_a = multiplier[i] * a
         if dtype == np.float32:
             assert allclose(ref_a, a2, rtol=1e-4, atol=1e-5)
@@ -128,18 +199,25 @@ def test_batched_empty(dtype: np.dtype):
 
 @pytest.mark.parametrize("n", SIZES)
 @pytest.mark.parametrize("dtype", FLOAT_DTYPES)
-def test_batched_4d(n: int, dtype: np.dtype):
+@pytest.mark.parametrize("upper", (False, True))
+def test_batched_4d(n: int, dtype: np.dtype, upper: bool):
     batch = 2
     a = _get_real_symm_posdef(n, dtype)
     outer = np.einsum("i,j->ij", np.arange(batch) + 1, np.arange(batch) + 1)
 
     a_batched = num.einsum("ij,kl->ijkl", outer, a)
-    test_c = num.linalg.cholesky(a_batched)
+    test_c = num.linalg.cholesky(a_batched, upper=upper)
     for i in range(batch):
         for j in range(batch):
             test = test_c[i, j, :]
             c_np = test.__array__()
-            a2 = np.dot(c_np, c_np.T)
+
+            # Extract only the relevant triangle
+            if upper:
+                a2 = np.dot(c_np.T, c_np)
+            else:
+                a2 = np.dot(c_np, c_np.T)
+
             if dtype == np.float32:
                 assert allclose(
                     a_batched[i, j, :, :], a2, rtol=1e-4, atol=1e-5

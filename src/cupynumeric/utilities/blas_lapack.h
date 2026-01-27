@@ -412,6 +412,39 @@ int dpotrf_(const char* uplo, int32_t* n, double* a, int32_t* lda, int32_t* info
 int cpotrf_(const char* uplo, int32_t* n, _Complex float* a, int32_t* lda, int32_t* info);
 int zpotrf_(const char* uplo, int32_t* n, _Complex double* a, int32_t* lda, int32_t* info);
 
+int spotrs_(const char* uplo,
+            int32_t* n,
+            int32_t* nrhs,
+            float* a,
+            int32_t* lda,
+            float* b,
+            int32_t* ldb,
+            int32_t* info);
+int dpotrs_(const char* uplo,
+            int32_t* n,
+            int32_t* nrhs,
+            double* a,
+            int32_t* lda,
+            double* b,
+            int32_t* ldb,
+            int32_t* info);
+int cpotrs_(const char* uplo,
+            int32_t* n,
+            int32_t* nrhs,
+            _Complex float* a,
+            int32_t* lda,
+            _Complex float* b,
+            int32_t* ldb,
+            int32_t* info);
+int zpotrs_(const char* uplo,
+            int32_t* n,
+            int32_t* nrhs,
+            _Complex double* a,
+            int32_t* lda,
+            _Complex double* b,
+            int32_t* ldb,
+            int32_t* info);
+
 int sgeev_(const char* jobvl,
            const char* jobvr,
            int32_t* n,

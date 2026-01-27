@@ -143,7 +143,6 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/index/zip.cc
   src/cupynumeric/item/read.cc
   src/cupynumeric/item/write.cc
-  src/cupynumeric/matrix/batched_cholesky.cc
   src/cupynumeric/matrix/contract.cc
   src/cupynumeric/matrix/diag.cc
   src/cupynumeric/matrix/geev.cc
@@ -152,6 +151,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/matrix/matvecmul.cc
   src/cupynumeric/matrix/dot.cc
   src/cupynumeric/matrix/potrf.cc
+  src/cupynumeric/matrix/potrs.cc
   src/cupynumeric/matrix/qr.cc
   src/cupynumeric/matrix/solve.cc
   src/cupynumeric/matrix/svd.cc
@@ -214,7 +214,6 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/index/take_omp.cc
     src/cupynumeric/index/wrap_omp.cc
     src/cupynumeric/index/zip_omp.cc
-    src/cupynumeric/matrix/batched_cholesky_omp.cc
     src/cupynumeric/matrix/contract_omp.cc
     src/cupynumeric/matrix/diag_omp.cc
     src/cupynumeric/matrix/geev_omp.cc
@@ -223,6 +222,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/matrix/matvecmul_omp.cc
     src/cupynumeric/matrix/dot_omp.cc
     src/cupynumeric/matrix/potrf_omp.cc
+    src/cupynumeric/matrix/potrs_omp.cc
     src/cupynumeric/matrix/qr_omp.cc
     src/cupynumeric/matrix/solve_omp.cc
     src/cupynumeric/matrix/svd_omp.cc
@@ -274,7 +274,6 @@ if(Legion_USE_CUDA)
     src/cupynumeric/index/zip.cu
     src/cupynumeric/item/read.cu
     src/cupynumeric/item/write.cu
-    src/cupynumeric/matrix/batched_cholesky.cu
     src/cupynumeric/matrix/contract.cu
     src/cupynumeric/matrix/diag.cu
     src/cupynumeric/matrix/geev.cu
@@ -283,6 +282,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/matrix/matvecmul.cu
     src/cupynumeric/matrix/dot.cu
     src/cupynumeric/matrix/potrf.cu
+    src/cupynumeric/matrix/potrs.cu
     src/cupynumeric/matrix/qr.cu
     src/cupynumeric/matrix/solve.cu
     src/cupynumeric/matrix/svd.cu

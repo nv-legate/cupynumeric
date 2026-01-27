@@ -27,7 +27,9 @@ from legate.core import (
 from ..config import CuPyNumericOpCode
 from ..runtime import runtime
 from ..settings import settings
+from ._eigen import prepare_manual_task_for_batched_matrices
 from ._exception import LinAlgError
+from ..types import TransposeMode
 
 legate_runtime = get_legate_runtime()
 
@@ -72,14 +74,6 @@ def transpose_copy(
     task.execute()
 
 
-def potrf_single(library: Library, output: LogicalStore) -> None:
-    task = legate_runtime.create_auto_task(library, CuPyNumericOpCode.POTRF)
-    task.throws_exception(LinAlgError)
-    task.add_output(output)
-    task.add_input(output)
-    task.execute()
-
-
 def mp_potrf(
     library: Library,
     n: int,
@@ -98,6 +92,25 @@ def mp_potrf(
     task.execute()
 
 
+def potrf_batched(
+    library: Library,
+    output: DeferredArray,
+    input: DeferredArray,
+    lower: bool,
+    zeroout: bool,
+) -> None:
+    task = legate_runtime.create_auto_task(library, CuPyNumericOpCode.POTRF)
+    task.add_output(output.base)
+    task.add_input(input.base)
+    task.add_scalar_arg(lower, ty.bool_)
+    task.add_scalar_arg(zeroout, ty.bool_)
+    ndim = input.base.ndim
+    task.add_broadcast(input.base, (ndim - 2, ndim - 1))
+    task.add_alignment(input.base, output.base)
+    task.throws_exception(LinAlgError)
+    task.execute()
+
+
 def potrf(library: Library, p_output: LogicalStorePartition, i: int) -> None:
     task = legate_runtime.create_manual_task(
         library, CuPyNumericOpCode.POTRF, (i + 1, i + 1), lower_bounds=(i, i)
@@ -105,6 +118,75 @@ def potrf(library: Library, p_output: LogicalStorePartition, i: int) -> None:
     task.throws_exception(LinAlgError)
     task.add_output(p_output)
     task.add_input(p_output)
+    task.add_scalar_arg(True, ty.bool_)  # lower triangular
+    task.add_scalar_arg(False, ty.bool_)  # zero out upper triangle
+
+    task.execute()
+
+
+def potrs_batched(
+    library: Library,
+    x: LogicalStore,
+    c: LogicalStore,
+    c_shape: tuple[int, ...],
+    lower: bool,
+) -> None:
+    nrhs = x.shape[-1]
+    tilesize_c, color_shape = prepare_manual_task_for_batched_matrices(c_shape)
+    tilesize_x = tuple(tilesize_c[:-1]) + (nrhs,)
+
+    # partition defined py local batchsize
+    tiled_c = c.partition_by_tiling(tilesize_c)
+    tiled_x = x.partition_by_tiling(tilesize_x)
+
+    task = get_legate_runtime().create_manual_task(
+        library, CuPyNumericOpCode.POTRS, color_shape
+    )
+    task.throws_exception(LinAlgError)
+
+    partition = tuple(dimension(i) for i in range(len(color_shape)))
+    task.add_input(tiled_c, partition)
+    task.add_input(tiled_x, partition)
+    task.add_output(tiled_x, partition)
+
+    task.add_scalar_arg(lower, ty.bool_)
+    task.execute()
+
+
+def trsm_batched(
+    library: Library,
+    x: LogicalStore,
+    a: LogicalStore,
+    b: LogicalStore,
+    a_shape: tuple[int, ...],
+    side: bool,
+    lower: bool,
+    transa: int,
+    unit_diagonal: bool,
+) -> None:
+    nrhs = b.shape[-1]
+    tilesize_a, color_shape = prepare_manual_task_for_batched_matrices(a_shape)
+    tilesize_b = tuple(tilesize_a[:-1]) + (nrhs,)
+
+    # partition defined py local batchsize
+    tiled_a = a.partition_by_tiling(tilesize_a)
+    tiled_b = b.partition_by_tiling(tilesize_b)
+    tiled_x = x.partition_by_tiling(tilesize_b)
+
+    task = get_legate_runtime().create_manual_task(
+        library, CuPyNumericOpCode.TRSM, color_shape
+    )
+    task.throws_exception(LinAlgError)
+
+    partition = tuple(dimension(i) for i in range(len(color_shape)))
+    task.add_input(tiled_a, partition)
+    task.add_input(tiled_b, partition)
+    task.add_output(tiled_x, partition)
+
+    task.add_scalar_arg(side, ty.bool_)
+    task.add_scalar_arg(lower, ty.bool_)
+    task.add_scalar_arg(transa, ty.int32)
+    task.add_scalar_arg(unit_diagonal, ty.bool_)
     task.execute()
 
 
@@ -123,6 +205,12 @@ def trsm(
     task.add_output(lhs)
     task.add_input(rhs)
     task.add_input(lhs)
+
+    task.add_scalar_arg(False, ty.bool_)  # side
+    task.add_scalar_arg(True, ty.bool_)  # lower
+    task.add_scalar_arg(2, ty.int32)  # transpose mode `C`
+    task.add_scalar_arg(False, ty.bool_)  # unit diagonal
+
     task.execute()
 
 
@@ -164,10 +252,6 @@ def gemm(
     task.add_input(rhs2)
     task.add_input(lhs)
     task.execute()
-
-
-MIN_CHOLESKY_TILE_SIZE = 16 if settings.test() else 2048
-MIN_CHOLESKY_MATRIX_SIZE = 32 if settings.test() else 8192
 
 
 # TODO: We need a better cost model
@@ -226,49 +310,74 @@ def _rounding_divide(
     return tuple((lh + rh - 1) // rh for (lh, rh) in zip(lhs, rhs))
 
 
-def _batched_cholesky(
-    library: Library, output: DeferredArray, input: DeferredArray
+def cho_solve_deferred(
+    x: DeferredArray, c: DeferredArray, lower: bool
 ) -> None:
-    # the only feasible implementation for right now is that
-    # each cholesky submatrix fits on a single proc. We will have
-    # wildly varying memory available depending on the system.
-    # Just use a fixed cutoff to provide some sensible warning.
-    # TODO: find a better way to inform the user dims are too big
-    task = legate_runtime.create_auto_task(
-        library, CuPyNumericOpCode.BATCHED_CHOLESKY
-    )
-    task.add_input(input.base)
-    task.add_output(output.base)
-    ndim = input.base.ndim
-    task.add_broadcast(input.base, (ndim - 2, ndim - 1))
-    task.add_broadcast(output.base, (ndim - 2, ndim - 1))
-    task.add_alignment(input.base, output.base)
-    task.throws_exception(LinAlgError)
-    task.execute()
-
-
-def cholesky_deferred(output: DeferredArray, input: DeferredArray) -> None:
     library = runtime.library
-    if len(input.base.shape) > 2:
+
+    potrs_batched(library, x.base, c.base, c.shape, lower)
+
+
+def solve_triangular_deferred(
+    x: DeferredArray,
+    a: DeferredArray,
+    b: DeferredArray,
+    trans: TransposeMode,
+    lower: bool,
+    unit_diagonal: bool,
+) -> None:
+    library = runtime.library
+    transa: int
+
+    # default to transpose for invalid input (mimic scipy)
+    transa = 1
+
+    match trans:
+        case 0 | "N":
+            transa = 0
+        case 1 | "T":
+            transa = 1
+        case 2 | "C":
+            transa = 2
+
+    trsm_batched(
+        library,
+        x.base,
+        a.base,
+        b.base,
+        a.shape,
+        True,
+        lower,
+        transa,
+        unit_diagonal,
+    )
+
+
+MIN_CHOLESKY_TILE_SIZE = 16 if settings.test() else 2048
+MIN_CHOLESKY_MATRIX_SIZE = 32 if settings.test() else 8192
+
+
+def cholesky_deferred(
+    output: DeferredArray, input: DeferredArray, lower: bool, zeroout: bool
+) -> None:
+    library = runtime.library
+    batched = len(input.base.shape) > 2
+    if batched or not lower or output == input or runtime.num_procs == 1:
         size = input.base.shape[-1]
-        # Choose 32768 as dimension cutoff for warning
-        # so that for float64 anything larger than
-        # 8 GiB produces a warning
-        if size > 32768:
+        if batched and size > 32768:
+            # Choose 32768 as dimension cutoff for warning
+            # so that for float64 anything larger than
+            # 8 GiB produces a warning
             runtime.warn(
                 "batched cholesky is only valid"
                 " when the square submatrices fit"
                 f" on a single proc, n > {size} may be too large",
                 category=UserWarning,
             )
-        return _batched_cholesky(library, output, input)
-
-    if runtime.num_procs == 1:
-        transpose_copy_single(library, input.base, output.base)
-        potrf_single(library, output.base)
-        tril_single(library, output.base)
+        potrf_batched(library, output, input, lower, zeroout)
         return
 
+    # parallel implementation for individual matrices
     shape = tuple(output.base.shape)
     tile_shape: tuple[int, ...]
     if (
@@ -279,8 +388,8 @@ def cholesky_deferred(output: DeferredArray, input: DeferredArray) -> None:
         mp_potrf(
             library, shape[0], MIN_CHOLESKY_TILE_SIZE, input.base, output.base
         )
-
-        tril_single(library, output.base)
+        if zeroout:
+            tril_single(library, output.base)
     else:
         initial_color_shape = choose_color_shape(runtime, shape)
         tile_shape = _rounding_divide(shape, initial_color_shape)

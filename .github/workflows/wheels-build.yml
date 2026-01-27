@@ -115,7 +115,7 @@ jobs:
           aws-region: us-east-2
           role-duration-seconds: 28800  # 8 hours
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-nv-legate
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@v6.0.2
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}

@@ -74,7 +74,11 @@ from ..config import (
     UnaryOpCode,
     UnaryRedCode,
 )
-from ..linalg._cholesky import cholesky_deferred
+from ..linalg._cholesky import (
+    cholesky_deferred,
+    solve_triangular_deferred,
+    cho_solve_deferred,
+)
 from ..linalg._eigen import eig_deferred, eigh_deferred
 from ..linalg._qr import qr_deferred
 from ..linalg._solve import solve_deferred
@@ -97,6 +101,7 @@ if TYPE_CHECKING:
         CastingKind,
         ConvolveMethod as ConvolveMethodType,
         ConvolveMode,
+        TransposeMode,
         NdShape,
         OrderType,
         SelectKind,
@@ -4659,8 +4664,8 @@ class DeferredArray(NumPyThunk):
         return result
 
     @auto_convert("src")
-    def cholesky(self, src: Any) -> None:
-        cholesky_deferred(self, src)
+    def cholesky(self, src: Any, lower: bool, zeroout: bool) -> None:
+        cholesky_deferred(self, src, lower, zeroout)
 
     @auto_convert("ew", "ev")
     def eig(self, ew: Any, ev: Any) -> None:
@@ -4685,6 +4690,21 @@ class DeferredArray(NumPyThunk):
     @auto_convert("a", "b")
     def solve(self, a: Any, b: Any) -> None:
         solve_deferred(self, a, b)
+
+    @auto_convert("c")
+    def cho_solve(self, c: Any, lower: bool) -> None:
+        cho_solve_deferred(self, c, lower)
+
+    @auto_convert("a", "b")
+    def solve_triangular(
+        self,
+        a: Any,
+        b: Any,
+        trans: TransposeMode,
+        lower: bool,
+        unit_diagonal: bool,
+    ) -> None:
+        solve_triangular_deferred(self, a, b, trans, lower, unit_diagonal)
 
     @auto_convert("u", "s", "vh")
     def svd(self, u: Any, s: Any, vh: Any) -> None:

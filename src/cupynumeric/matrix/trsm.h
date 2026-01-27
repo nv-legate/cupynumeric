@@ -23,6 +23,9 @@ namespace cupynumeric {
 class TrsmTask : public CuPyNumericTask<TrsmTask> {
  public:
   static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_TRSM}};
+  static const char* ERROR_MESSAGE;
+
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 
  public:
   static void cpu_variant(legate::TaskContext context);

@@ -24,84 +24,231 @@ namespace cupynumeric {
 using namespace legate;
 
 template <typename Trsm, typename VAL>
-static inline void trsm_template(Trsm trsm, VAL* lhs, const VAL* rhs, int32_t m, int32_t n)
+static inline void trsm_template(Trsm trsm,
+                                 const VAL* a,
+                                 const VAL* b,
+                                 VAL* x,
+                                 int32_t m,
+                                 int32_t n,
+                                 int32_t num_blocks,
+                                 int64_t a_block_stride,
+                                 int64_t b_block_stride,
+                                 bool side_left,
+                                 bool lower,
+                                 int32_t transa_op,
+                                 bool unit_diag)
 {
-  auto side   = CblasRight;
-  auto uplo   = CblasLower;
-  auto transa = CblasTrans;
-  auto diag   = CblasNonUnit;
+  auto side   = side_left ? CblasLeft : CblasRight;
+  auto uplo   = lower ? CblasLower : CblasUpper;
+  auto transa = (transa_op == 0) ? CblasNoTrans
+                                 : CblasTrans;  // For real types, Trans and ConjTrans are the same
+  auto diag   = unit_diag ? CblasUnit : CblasNonUnit;
 
-  trsm(CblasColMajor, side, uplo, transa, diag, m, n, 1.0, rhs, n, lhs, m);
+  // Copy b to x if they're different
+  if (b != x) {
+    std::memcpy(x, b, sizeof(VAL) * m * n * num_blocks);
+  }
+
+  auto lda = side_left ? m : n;
+
+  if (num_blocks == 1) {
+    // Single solve
+    trsm(CblasColMajor, side, uplo, transa, diag, m, n, 1.0, a, lda, x, m);
+  } else {
+    // Batched solve - loop over batches
+    for (int32_t i = 0; i < num_blocks; ++i) {
+      trsm(CblasColMajor,
+           side,
+           uplo,
+           transa,
+           diag,
+           m,
+           n,
+           1.0,
+           a + i * a_block_stride,
+           lda,
+           x + i * b_block_stride,
+           m);
+    }
+  }
 }
 
 template <typename Trsm, typename VAL>
-static inline void complex_trsm_template(Trsm trsm, VAL* lhs, const VAL* rhs, int32_t m, int32_t n)
+static inline void complex_trsm_template(Trsm trsm,
+                                         const VAL* a,
+                                         const VAL* b,
+                                         VAL* x,
+                                         int32_t m,
+                                         int32_t n,
+                                         int32_t num_blocks,
+                                         int64_t a_block_stride,
+                                         int64_t b_block_stride,
+                                         bool side_left,
+                                         bool lower,
+                                         int32_t transa_op,
+                                         bool unit_diag)
 {
-  auto side   = CblasRight;
-  auto uplo   = CblasLower;
-  auto transa = CblasConjTrans;
-  auto diag   = CblasNonUnit;
+  auto side   = side_left ? CblasLeft : CblasRight;
+  auto uplo   = lower ? CblasLower : CblasUpper;
+  auto transa = (transa_op == 0) ? CblasNoTrans : (transa_op == 1) ? CblasTrans : CblasConjTrans;
+  auto diag   = unit_diag ? CblasUnit : CblasNonUnit;
 
   VAL alpha = 1.0;
 
-  trsm(CblasColMajor, side, uplo, transa, diag, m, n, &alpha, rhs, n, lhs, m);
+  // Copy b to x if they're different
+  if (b != x) {
+    std::memcpy(x, b, sizeof(VAL) * m * n * num_blocks);
+  }
+
+  auto lda = side_left ? m : n;
+
+  if (num_blocks == 1) {
+    // Single solve
+    trsm(CblasColMajor, side, uplo, transa, diag, m, n, &alpha, a, lda, x, m);
+  } else {
+    // Batched solve - loop over batches
+    for (int32_t i = 0; i < num_blocks; ++i) {
+      trsm(CblasColMajor,
+           side,
+           uplo,
+           transa,
+           diag,
+           m,
+           n,
+           &alpha,
+           a + i * a_block_stride,
+           lda,
+           x + i * b_block_stride,
+           m);
+    }
+  }
 }
 
 template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT32> {
-  TaskContext context;
-  explicit TrsmImplBody(TaskContext context) : context(context) {}
-
-  void operator()(float* lhs, const float* rhs, int32_t m, int32_t n)
-  {
-    trsm_template(cblas_strsm, lhs, rhs, m, n);
-  }
-};
-
-template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT64> {
-  TaskContext context;
-  explicit TrsmImplBody(TaskContext context) : context(context) {}
-
-  void operator()(double* lhs, const double* rhs, int32_t m, int32_t n)
-  {
-    trsm_template(cblas_dtrsm, lhs, rhs, m, n);
-  }
-};
-
-template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX64> {
-  TaskContext context;
-  explicit TrsmImplBody(TaskContext context) : context(context) {}
-
-  void operator()(legate::Complex<float>* lhs_,
-                  const legate::Complex<float>* rhs_,
-                  int32_t m,
-                  int32_t n)
-  {
-    auto lhs = reinterpret_cast<__complex__ float*>(lhs_);
-    auto rhs = reinterpret_cast<const __complex__ float*>(rhs_);
-
-    complex_trsm_template(cblas_ctrsm, lhs, rhs, m, n);
-  }
-};
+void TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT32>::operator()(const float* a,
+                                                                     const float* b,
+                                                                     float* x,
+                                                                     int32_t m,
+                                                                     int32_t n,
+                                                                     int32_t num_blocks,
+                                                                     int64_t a_block_stride,
+                                                                     int64_t b_block_stride,
+                                                                     bool side,
+                                                                     bool lower,
+                                                                     int32_t transa,
+                                                                     bool unit_diagonal)
+{
+  trsm_template(cblas_strsm,
+                a,
+                b,
+                x,
+                m,
+                n,
+                num_blocks,
+                a_block_stride,
+                b_block_stride,
+                side,
+                lower,
+                transa,
+                unit_diagonal);
+}
 
 template <>
-struct TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX128> {
-  TaskContext context;
-  explicit TrsmImplBody(TaskContext context) : context(context) {}
+void TrsmImplBody<VariantKind::CPU, Type::Code::FLOAT64>::operator()(const double* a,
+                                                                     const double* b,
+                                                                     double* x,
+                                                                     int32_t m,
+                                                                     int32_t n,
+                                                                     int32_t num_blocks,
+                                                                     int64_t a_block_stride,
+                                                                     int64_t b_block_stride,
+                                                                     bool side,
+                                                                     bool lower,
+                                                                     int32_t transa,
+                                                                     bool unit_diagonal)
+{
+  trsm_template(cblas_dtrsm,
+                a,
+                b,
+                x,
+                m,
+                n,
+                num_blocks,
+                a_block_stride,
+                b_block_stride,
+                side,
+                lower,
+                transa,
+                unit_diagonal);
+}
 
-  void operator()(legate::Complex<double>* lhs_,
-                  const legate::Complex<double>* rhs_,
-                  int32_t m,
-                  int32_t n)
-  {
-    auto lhs = reinterpret_cast<__complex__ double*>(lhs_);
-    auto rhs = reinterpret_cast<const __complex__ double*>(rhs_);
+template <>
+void TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX64>::operator()(
+  const legate::Complex<float>* a_,
+  const legate::Complex<float>* b_,
+  legate::Complex<float>* x_,
+  int32_t m,
+  int32_t n,
+  int32_t num_blocks,
+  int64_t a_block_stride,
+  int64_t b_block_stride,
+  bool side,
+  bool lower,
+  int32_t transa,
+  bool unit_diagonal)
+{
+  auto a = reinterpret_cast<const __complex__ float*>(a_);
+  auto b = reinterpret_cast<const __complex__ float*>(b_);
+  auto x = reinterpret_cast<__complex__ float*>(x_);
 
-    complex_trsm_template(cblas_ztrsm, lhs, rhs, m, n);
-  }
-};
+  complex_trsm_template(cblas_ctrsm,
+                        a,
+                        b,
+                        x,
+                        m,
+                        n,
+                        num_blocks,
+                        a_block_stride,
+                        b_block_stride,
+                        side,
+                        lower,
+                        transa,
+                        unit_diagonal);
+}
+
+template <>
+void TrsmImplBody<VariantKind::CPU, Type::Code::COMPLEX128>::operator()(
+  const legate::Complex<double>* a_,
+  const legate::Complex<double>* b_,
+  legate::Complex<double>* x_,
+  int32_t m,
+  int32_t n,
+  int32_t num_blocks,
+  int64_t a_block_stride,
+  int64_t b_block_stride,
+  bool side,
+  bool lower,
+  int32_t transa,
+  bool unit_diagonal)
+{
+  auto a = reinterpret_cast<const __complex__ double*>(a_);
+  auto b = reinterpret_cast<const __complex__ double*>(b_);
+  auto x = reinterpret_cast<__complex__ double*>(x_);
+
+  complex_trsm_template(cblas_ztrsm,
+                        a,
+                        b,
+                        x,
+                        m,
+                        n,
+                        num_blocks,
+                        a_block_stride,
+                        b_block_stride,
+                        side,
+                        lower,
+                        transa,
+                        unit_diagonal);
+}
 
 /*static*/ void TrsmTask::cpu_variant(TaskContext context)
 {

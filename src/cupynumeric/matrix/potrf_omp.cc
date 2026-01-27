@@ -14,6 +14,7 @@
  *
  */
 
+#include "cupynumeric/cupynumeric_task.h"
 #include "cupynumeric/matrix/potrf.h"
 #include "cupynumeric/matrix/potrf_template.inl"
 
@@ -24,60 +25,43 @@ namespace cupynumeric {
 
 using namespace legate;
 
-template <>
-void PotrfImplBody<VariantKind::OMP, Type::Code::FLOAT32>::operator()(float* array,
-                                                                      int32_t m,
-                                                                      int32_t n)
-{
-  char uplo    = 'L';
-  int32_t info = 0;
-  spotrf_(&uplo, &n, array, &m, &info);
-  if (info != 0) {
-    throw legate::TaskException("Matrix is not positive definite");
-  }
-}
+// BatchedTriluImplBody for OMP - zeros out upper or lower triangle with OpenMP parallelization
+template <Type::Code CODE>
+struct BatchedTriluImplBody<VariantKind::OMP, CODE> {
+  TaskContext context;
+  explicit BatchedTriluImplBody(TaskContext context) : context(context) {}
 
-template <>
-void PotrfImplBody<VariantKind::OMP, Type::Code::FLOAT64>::operator()(double* array,
-                                                                      int32_t m,
-                                                                      int32_t n)
-{
-  char uplo    = 'L';
-  int32_t info = 0;
-  dpotrf_(&uplo, &n, array, &m, &info);
-  if (info != 0) {
-    throw legate::TaskException("Matrix is not positive definite");
-  }
-}
+  using VAL = type_of<CODE>;
 
-template <>
-void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX64>::operator()(
-  legate::Complex<float>* array, int32_t m, int32_t n)
-{
-  char uplo    = 'L';
-  int32_t info = 0;
-  cpotrf_(&uplo, &n, reinterpret_cast<__complex__ float*>(array), &m, &info);
-  if (info != 0) {
-    throw legate::TaskException("Matrix is not positive definite");
-  }
-}
+  void operator()(VAL* array, int32_t n, bool lower, int32_t num_blocks, int64_t block_stride) const
+  {
+    // Parallelize across batches
+#pragma omp parallel for schedule(static)
+    for (int32_t batch = 0; batch < num_blocks; ++batch) {
+      VAL* block_ptr = array + batch * block_stride;
 
-template <>
-void PotrfImplBody<VariantKind::OMP, Type::Code::COMPLEX128>::operator()(
-  legate::Complex<double>* array, int32_t m, int32_t n)
-{
-  char uplo    = 'L';
-  int32_t info = 0;
-  zpotrf_(&uplo, &n, reinterpret_cast<__complex__ double*>(array), &m, &info);
-  if (info != 0) {
-    throw legate::TaskException("Matrix is not positive definite");
+      // Column-major layout: element at (row, col) is at block_ptr[col * n + row]
+      for (int32_t col = 0; col < n; ++col) {
+        if (lower) {
+          // Zero out upper triangle (elements where row < col)
+          for (int32_t row = 0; row < col; ++row) {
+            block_ptr[col * n + row] = VAL(0);
+          }
+        } else {
+          // Zero out lower triangle (elements where row > col)
+          for (int32_t row = col + 1; row < n; ++row) {
+            block_ptr[col * n + row] = VAL(0);
+          }
+        }
+      }
+    }
   }
-}
+};
 
 /*static*/ void PotrfTask::omp_variant(TaskContext context)
 {
   blas_set_num_threads(omp_get_max_threads());
-  potrf_template<VariantKind::OMP>(context);
+  potrf_task_context_dispatch<VariantKind::OMP>(context);
 }
 
 }  // namespace cupynumeric
