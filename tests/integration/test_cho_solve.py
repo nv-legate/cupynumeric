@@ -136,6 +136,7 @@ def test_cho_solve_2d(
 
 
 @pytest.mark.parametrize("size", SIZES_BATCHED)
+@pytest.mark.parametrize("nrhs", (1, 13))
 @pytest.mark.parametrize(
     "a_dtype", (np.float32, np.float64, np.complex64, np.complex128)
 )
@@ -144,10 +145,9 @@ def test_cho_solve_2d(
 )
 @pytest.mark.parametrize("lower", (True, False))
 def test_cho_solve_batched(
-    size: tuple, a_dtype: np.dtype, b_dtype: np.dtype, lower: bool
+    size: tuple, nrhs: int, a_dtype: np.dtype, b_dtype: np.dtype, lower: bool
 ):
     """Test cho_solve with batched matrices."""
-    nrhs = size[0] + 1
     size_b = tuple(size[:-1]) + (nrhs,)
 
     # Create batched positive definite matrices

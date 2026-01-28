@@ -146,6 +146,7 @@ def test_solve_triangular_2d(
 
 
 @pytest.mark.parametrize("size", SIZES_BATCHED)
+@pytest.mark.parametrize("nrhs", (1, 13))
 @pytest.mark.parametrize(
     "a_dtype", (np.float32, np.float64, np.complex64, np.complex128)
 )
@@ -155,10 +156,14 @@ def test_solve_triangular_2d(
 @pytest.mark.parametrize("lower", (True, False))
 @pytest.mark.parametrize("trans", (0, 1, 2))
 def test_solve_triangular_batched(
-    size: tuple, a_dtype: np.dtype, b_dtype: np.dtype, lower: bool, trans: int
+    size: tuple,
+    nrhs: int,
+    a_dtype: np.dtype,
+    b_dtype: np.dtype,
+    lower: bool,
+    trans: int,
 ):
     """Test solve_triangular with batched matrices."""
-    nrhs = size[0] + 1
     size_b = tuple(size[:-1]) + (nrhs,)
 
     # Create batched matrices with strong diagonal

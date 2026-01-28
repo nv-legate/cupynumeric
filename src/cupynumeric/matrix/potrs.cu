@@ -44,24 +44,22 @@ static inline void potrs_template(Potrs potrs,
 
   auto info = create_buffer<int32_t>(num_blocks, Memory::Kind::Z_COPY_MEM);
 
-  if (num_blocks == 1) {
-    // Single solve - use regular (non-batched) API
-    CHECK_CUSOLVER(potrs(handle, uplo, m, n, a, m, x, m, info.ptr(0)));
-  } else {
-    // Batched solve - loop over batches using single API
-    // Note: cuSOLVER batched potrs API only supports nrhs=1,
-    // so we manually loop for n > 1
-    for (int32_t i = 0; i < num_blocks; ++i) {
-      CHECK_CUSOLVER(potrs(
-        handle, uplo, m, n, a + i * a_block_stride, m, x + i * x_block_stride, m, info.ptr(i)));
-    }
+  // Batched solve - loop over batches using single API
+  // Note: cuSOLVER batched potrs API only supports nrhs=1,
+  // so we manually loop for n > 1
+  for (int32_t i = 0; i < num_blocks; ++i) {
+    CHECK_CUSOLVER(
+      potrs(handle, uplo, m, n, a + i * a_block_stride, m, x + i * x_block_stride, m, info.ptr(i)));
   }
 
   CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
 
   for (int32_t i = 0; i < num_blocks; ++i) {
     if (info[i] != 0) {
-      throw legate::TaskException("Singular matrix");
+      std::stringstream ss;
+      ss << "Incorrect value in potrs() " << std::abs(info[i]) << "-th argument in batch " << i
+         << ".";
+      throw legate::TaskException(ss.str());
     }
   }
 
@@ -94,7 +92,7 @@ static inline void potrs_batched_template(PotrsBatched potrs_batched,
     x_array[i] = x + i * x_block_stride;
   }
 
-  auto info = create_buffer<int32_t>(num_blocks, Memory::Kind::Z_COPY_MEM);
+  auto info = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
 
   // Call batched POTRS (only supports nrhs=1)
   CHECK_CUSOLVER(potrs_batched(
@@ -102,10 +100,10 @@ static inline void potrs_batched_template(PotrsBatched potrs_batched,
 
   CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
 
-  for (int32_t i = 0; i < num_blocks; ++i) {
-    if (info[i] != 0) {
-      throw legate::TaskException("Singular matrix");
-    }
+  if (info[0] != 0) {
+    std::stringstream ss;
+    ss << "Incorrect value in batched potrs() " << std::abs(info[0]) << "-th argument.";
+    throw legate::TaskException(ss.str());
   }
 
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
