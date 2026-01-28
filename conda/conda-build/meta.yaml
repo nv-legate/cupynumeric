@@ -194,6 +194,11 @@ requirements:
     - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
     - nccl >=2.0,<3
     - cupy
+{% if cuda_major<13 %}
+    - cutensor >=2.0,<2.3 =*_*
+{% else %}
+    - cutensor >=2.0,<2.4 =*_*
+{% endif %}
     - libnvjitlink
 {% endif %}
 
