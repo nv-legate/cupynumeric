@@ -35,10 +35,10 @@ Legate runtime that address these challenges:
    :widths: 100
    :header-rows: 0
 
-   * - **What you'll gain:** By combining profiling tools with solid
-       OOM-handling strategies, you can significantly improve the
-       efficiency, scalability, and reliability of cuPyNumeric
-       applications across CPUs, GPUs, and multi-node systems.
+   * - **What you'll gain:** By combining profiling with practical OOM-handling strategies, 
+       you can improve efficiency and scaling by identifying memory pressure and over-granular 
+       execution, while reducing OOM crashes and runtime stalls across CPUs, GPUs, and multi-node 
+       systems.
 
 
 **For more detail, see the official references:**
