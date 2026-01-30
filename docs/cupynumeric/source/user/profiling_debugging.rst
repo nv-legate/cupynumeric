@@ -16,9 +16,7 @@ see:
 
 cuPyNumeric scales familiar NumPy workloads seamlessly across CPUs, GPUs, and
 multi-node clusters. Previous sections covered how to get code running; here
-the focus shifts to making workloads production-ready. At scale, success is
-not just about adding GPUs or nodes, it requires ensuring that applications
-remain efficient, stable, and resilient under load. That means finding
+the focus shifts to making workloads production-ready. This includes finding
 bottlenecks, managing memory effectively, and preventing failures before
 they disrupt a job. This section focuses on two advanced capabilities in cuPyNumeric and the
 Legate runtime that address these challenges:
