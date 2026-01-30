@@ -278,6 +278,14 @@ Profiler Output and Interpretation - Inefficient CPU Results
    :alt: Inefficient profiler overview
    :width: 90%
 
+**Interpretation:** The profiler is presented as a timeline. The **x-axis** is time, the **y-axis** is organized 
+by resource/utilization lanes. each horizontal lane represents a particular resource stream 
+(CPU workers, GPU Device/Host, runtime/Utility threads, memory pools like Framebuffer/Zerocopy, 
+and copy/Channel). Colored boxes show work on that resource; the box width is how long it ran, 
+gaps indicate idle/waiting, and dense “barcode” slivers usually mean many tiny tasks (high overhead), 
+while long solid blocks indicate fewer, larger tasks (better utilization).
+
+
 1) CPU
 ^^^^^^^
 
@@ -557,6 +565,14 @@ All ranks:
    :alt: Inefficient GPU overview (all ranks)
    :width: 90%
 
+**Interpretation:** The profiler is presented as a timeline. The **x-axis** is time, the **y-axis** is organized 
+by resource/utilization lanes. each horizontal lane represents a particular resource stream 
+(CPU workers, GPU Device/Host, runtime/Utility threads, memory pools like Framebuffer/Zerocopy, 
+and copy/Channel). Colored boxes show work on that resource; the box width is how long it ran, 
+gaps indicate idle/waiting, and dense “barcode” slivers usually mean many tiny tasks (high overhead), 
+while long solid blocks indicate fewer, larger tasks (better utilization).
+
+
 1) GPU Dev
 ^^^^^^^^^^^
 
@@ -830,6 +846,14 @@ Profiler Output and Interpretation - Efficient CPU Results
    :alt: Efficient profiler overview
    :width: 90%
 
+**Interpretation:** The profiler is presented as a timeline. The **x-axis** is time, the **y-axis** is organized 
+by resource/utilization lanes. each horizontal lane represents a particular resource stream 
+(CPU workers, GPU Device/Host, runtime/Utility threads, memory pools like Framebuffer/Zerocopy, 
+and copy/Channel). Colored boxes show work on that resource; the box width is how long it ran, 
+gaps indicate idle/waiting, and dense “barcode” slivers usually mean many tiny tasks (high overhead), 
+while long solid blocks indicate fewer, larger tasks (better utilization).
+
+
 CPU
 ^^^
 
@@ -965,6 +989,14 @@ Efficient Multi-GPU Results - (4 Ranks 1 GPU each)
 .. image:: ../_images/profiling_debugging/gpu_efficient29.png
    :alt: Efficient GPU overview (all ranks)
    :width: 90%
+
+**Interpretation:** The profiler is presented as a timeline. The **x-axis** is time, the **y-axis** is organized 
+by resource/utilization lanes. each horizontal lane represents a particular resource stream 
+(CPU workers, GPU Device/Host, runtime/Utility threads, memory pools like Framebuffer/Zerocopy, 
+and copy/Channel). Colored boxes show work on that resource; the box width is how long it ran, 
+gaps indicate idle/waiting, and dense “barcode” slivers usually mean many tiny tasks (high overhead), 
+while long solid blocks indicate fewer, larger tasks (better utilization).
+
 
 GPU Dev
 ^^^^^^^
