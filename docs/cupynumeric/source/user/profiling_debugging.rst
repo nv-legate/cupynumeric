@@ -11,7 +11,7 @@ Legate Task, and scaling gradient boosting with Legate Boost. For a refresher,
 see:
 
 - Setting up your environment and running  `cuPyNumeric <https://docs.nvidia.com/cupynumeric/latest/user/tutorial.html>`_
-- Extending cuPyNumeric with `Legate Task <https://docs.nvidia.com/cupynumeric/25.10/user/task.html>`_
+- Extending cuPyNumeric with `Legate Task <https://docs.nvidia.com/cupynumeric/latest/user/task.html>`_
 - Scaling gradient boosting with **Legate Boost**
 
 cuPyNumeric scales familiar NumPy workloads seamlessly across CPUs, GPUs, and
