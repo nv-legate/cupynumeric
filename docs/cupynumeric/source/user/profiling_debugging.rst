@@ -1110,6 +1110,16 @@ production-ready code. Profiling turns performance tuning from guesswork into
 an intentional, data-driven process that elevates code quality from functional
 to excellent.
 
+One of the most powerful features is that the view is traceable across resources. 
+You can click a task in one panel (e.g., GPU Dev) and use its task identifier 
+(or other metadata) to search and locate the same operation elsewhere. For example, 
+in Utility to see when it was mapped/launched, or in Channel to see whether data 
+movement occurred around it. This interactive cross-panel “follow the task” workflow 
+makes it much easier to connect a performance symptom (GPU idle time, dense micro-tasks, 
+unexpected transfers) back to the runtime activity and operations that caused it. 
+The search also supports multiple keys (not only task IDs), which helps quickly group 
+and investigate related work.
+
 
 Understanding and Handling Out-of-Memory (OOM) Issues – Example 2
 ------------------------------------------------------------------
