@@ -156,7 +156,7 @@ viewer:**
 
 **For more detail, see the official references:**
 
--  `Usage — NVIDIA legate <https://docs.nvidia.com/legate/24.11/usage.html>`_
+-  `Usage — NVIDIA legate <https://docs.nvidia.com/legate/latest/manual/usage/index.html>`_
 
 
 Profiling cuPyNumeric Applications with Legate Profilers – Example 1
@@ -1099,8 +1099,6 @@ per-process, per-kind pool exhaustion. The fix is often to:
 
 1. Right-size those pools.
 2. Reduce peak live instances so they fit.
-
-**For more information on Legate Core visit:** `Overview — NVIDIA legate.core <https://docs.nvidia.com/legate/24.06/overview.html>`_ 
 
 
 Demo Script
