@@ -53,6 +53,11 @@ def fetch_test_names(binary_path):
         if not line.strip():
             continue
 
+        # Skip the comment in the test name
+        index = line.find("#")
+        if index != -1:
+            line = line[:index]
+
         # Check if this is a test group
         if line[0] != " ":
             test_group = line.strip()
