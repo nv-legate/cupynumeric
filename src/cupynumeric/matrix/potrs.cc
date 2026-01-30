@@ -46,9 +46,11 @@ static inline void potrs_template(Potrs potrs,
           x + i * x_block_stride,
           &m,
           &info);
-  }
-  if (info != 0) {
-    throw legate::TaskException("Singular matrix");
+    if (info != 0) {
+      std::stringstream ss;
+      ss << "Incorrect value in potrs() " << std::abs(info) << "-th argument.";
+      throw legate::TaskException(ss.str());
+    }
   }
 }
 

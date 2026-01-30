@@ -117,15 +117,15 @@ struct TrsmImpl {
 
     if (num_blocks > 1) {
       // Check that last two dimensions are contiguous
-      if (a_strides[DIM - 1] != nrows_a || a_strides[DIM - 2] != 1) {
+      if ((ncols_a > 1 && (a_strides[DIM - 1] != nrows_a)) || a_strides[DIM - 2] != 1) {
         throw legate::TaskException(
           "Bad a accessor in trsm, last two dimensions must be contiguous");
       }
-      if (b_strides[DIM - 1] != m || b_strides[DIM - 2] != 1) {
+      if ((n > 1 && (b_strides[DIM - 1] != m) || b_strides[DIM - 2] != 1)) {
         throw legate::TaskException(
           "Bad b accessor in trsm, last two dimensions must be contiguous");
       }
-      if (x_strides[DIM - 1] != m || x_strides[DIM - 2] != 1) {
+      if ((n > 1 && (x_strides[DIM - 1] != m || x_strides[DIM - 2] != 1))) {
         throw legate::TaskException(
           "Bad x accessor in trsm, last two dimensions must be contiguous");
       }
