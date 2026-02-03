@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026-2026 NVIDIA CORPORATION & AFFILIATES.
+#                         All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+name: Release Wheels
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  legate-sha:
+    runs-on: linux-amd64-cpu4
+    outputs:
+      LEGATE_SHA: ${{ steps.legate-sha.outputs.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Get the Legate SHA
+        id: legate-sha
+        run: |
+          sha=$(jq .packages.legate.git_tag cmake/versions.json)
+          echo "sha=$sha" >> $GITHUB_OUTPUT
+  wheels-build:
+    needs: legate-sha
+    secrets: inherit
+    uses: ./.github/workflows/wheels-build.yml
+    with:
+      legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
+      build-type: pull-request
+  wheels-mac:
+    name: wheels-mac (optional)
+    needs: legate-sha
+    secrets: inherit
+    uses: ./.github/workflows/wheels-mac.yml
+    with:
+      legate-sha: ${{ needs.legate-sha.outputs.LEGATE_SHA }}
+      build-type: pull-request
+      run-tests: false
+
+  upload-pypi:
+    environment: pypi
+    permissions:
+      id-token: write
+    name: Upload to PyPI
+    needs: [wheels-build, wheels-mac]
+    runs-on: linux-amd64-cpu4
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Display downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -la dist/
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          verbose: true

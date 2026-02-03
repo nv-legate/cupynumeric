@@ -14,6 +14,9 @@ on:
       legate-sha:
         required: true
         type: string
+      run-tests:
+        type: boolean
+        default: true
       matrix_filter:
         type: string
         default: "."
@@ -144,11 +147,13 @@ jobs:
             SCCACHE_S3_USE_SSL=true
 
       - name: Set up Python
+        if: ${{ inputs.run-tests }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.PY_VER }}
 
       - name: Run Tests
+        if: ${{ inputs.run-tests }}
         run: ./continuous_integration/scripts/test_wheel_mac.bash
 
       - name: Wheel upload
