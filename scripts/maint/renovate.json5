@@ -1,0 +1,151 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-License-Identifier: Apache-2.0
+{
+    $schema: "https://docs.renovatebot.com/renovate-schema.json",
+    commitMessagePrefix: "chore(deps):",
+    commitMessageTopic: "{{depName}}",
+    customManagers: [
+        {
+            // Update conda_build_config.yaml `*_version` entries while preserving the
+            // existing constraint "shape" (operators, excludes, etc).
+            //
+            // The actual version selection logic lives in
+            // scripts/maint/renovate_update_conda_upper_bounds.py, which:
+            // - Updates the last "<..."/"<=..." upper bound in the constraint
+            // - Preserves the operator (< vs <=) and the number of components
+            // - Leaves other parts of the constraint unchanged (e.g., "!=2.1.0")
+            //
+            // Auto-replace only updates the list item line (currentValue -> newValue)
+            // so Renovate's sanity checks pass. The helper then restores the
+            // original constraint style using the post-upgrade data file.
+            customType: "regex",
+            datasourceTemplate: "conda",
+            description: "Update conda package upper bounds (preserve constraint style)",
+            managerFilePatterns: [
+                // Match all conda_build_config.yaml files in any conda subdirectory
+                "/conda/.*/conda_build_config\\.yaml$/",
+            ],
+            matchStringsStrategy: "recursive",
+            matchStrings: [
+                // First match grabs a single *_version block and captures depName.
+                // It stops at the first list item to avoid spanning multiple deps.
+                "(?<block>[ \\t]*(?<depName>[a-z0-9_]+)_version:\\s*\\r?\\n(?:[ \\t]*#[^\\r\\n]*\\r?\\n|[ \\t]*\\r?\\n)*[ \\t]*-\\s*[\"\\'][^\"\\']*[\"\\'][^\\r\\n]*\\r?\\n)",
+                // Second match (within the block) captures the list item line and
+                // the currentValue string inside the quotes.
+                "(?<listItemLine>[ \\t]*-\\s*[\"\\'](?<currentValue>[^\"\\']*<\\=?\\d[^\"\\']*)[\"\\'][^\\r\\n]*)",
+            ],
+            versioningTemplate: "conda",
+        },
+        {
+            // Track the default Legate branch and update git_tag to the latest commit.
+            customType: "regex",
+            datasourceTemplate: "git-refs",
+            depNameTemplate: "Legate",
+            description: "Update Legate git_tag from main",
+            managerFilePatterns: ["/cmake/versions\\.json$/"],
+            matchStrings: [
+                '"git_tag"\\s*:\\s*"(?<currentDigest>[0-9a-f]{40})"',
+            ],
+            currentValueTemplate: "main",
+            packageNameTemplate: "https://github.com/nv-legate/legate.internal.git",
+        },
+    ],
+    extends: ["config:recommended", ":disableRateLimiting"],
+    enabledManagers: ["custom.regex"],
+    labels: ["Build"],
+    reviewers: ["team:nv-legate/qa-reviewers"],
+    packageRules: [
+        {
+            description: "Use replace range strategy for custom regex updates",
+            matchManagers: ["regex"],
+            rangeStrategy: "replace",
+        },
+        {
+            description: "Use conda-forge for conda upper bound lookups",
+            matchDatasources: ["conda"],
+            matchManagers: ["custom.regex"],
+            registryUrls: ["https://api.anaconda.org/package/conda-forge"],
+        },
+        {
+            description: "Group conda upper bound updates",
+            matchDatasources: ["conda"],
+            matchManagers: ["custom.regex"],
+            groupName: "Conda upper bounds",
+            groupSlug: "conda-upper-bounds",
+        },
+        {
+            description: "Keep major conda upper bound updates in separate PRs",
+            matchDatasources: ["conda"],
+            matchManagers: ["custom.regex"],
+            matchUpdateTypes: ["major"],
+            groupName: "Conda upper bounds (major): {{depName}}",
+        },
+        {
+            description: "Group Legate git ref updates",
+            matchDatasources: ["git-refs"],
+            matchManagers: ["custom.regex"],
+            groupName: "Legate git refs",
+            groupSlug: "legate-git-refs",
+        },
+        {
+            commitMessageExtra: "upper bound refresh",
+            description: "Commit message and PR body for conda upper bound updates",
+            matchDatasources: ["conda"],
+            matchManagers: ["custom.regex"],
+            prBodyNotes: [
+                "This PR updates the upper bounds for conda package dependencies.",
+                "Please review the changes and ensure they don't break compatibility.",
+                "Run the full test suite before merging.",
+            ],
+        },
+        {
+            commitMessageExtra: "upper bound refresh (preserves excludes)",
+            description: "Custom commit message for packages with excludes",
+            // Match any version string that contains != (version excludes)
+            matchCurrentValue: "/.*!=/",
+            matchManagers: ["custom.regex"],
+        },
+        {
+            description: "Run upper-bound helper for conda updates",
+            matchManagers: ["custom.regex"],
+            matchDatasources: ["conda"],
+            postUpgradeTasks: {
+                commands: [
+                    "python3 scripts/maint/renovate_update_conda_upper_bounds.py --dep {{{depName}}} --new-version {{{newVersion}}}",
+                ],
+                dataFileTemplate: '{"depName":"{{{depName}}}","newVersion":"{{{newVersion}}}","currentValue":"{{{currentValue}}}","packageFile":"{{{packageFile}}}"}',
+                fileFilters: ["conda/**/conda_build_config.yaml"],
+            },
+        },
+        {
+            description: "Update Legate version metadata after git ref updates",
+            matchManagers: ["custom.regex"],
+            matchDatasources: ["git-refs"],
+            matchPackageNames: ["Legate"],
+            postUpgradeTasks: {
+                commands: [
+                    "python3 scripts/maint/renovate_update_legate_version.py --new-version {{{newVersion}}}",
+                ],
+                fileFilters: ["cmake/versions.json"],
+            },
+        },
+        {
+            commitMessageExtra: "git ref refresh",
+            description: "Commit message and PR body for Legate git ref updates",
+            matchDatasources: ["git-refs"],
+            matchManagers: ["custom.regex"],
+            prBodyNotes: [
+                "This PR updates the pinned git SHA from the default branch.",
+                "Please review and run targeted tests as needed.",
+            ],
+        },
+    ],
+    prBodyColumns: ["Package", "Change"],
+    prConcurrentLimit: 3,
+    prCreation: "immediate",
+    recreateWhen: "auto",
+    pruneStaleBranches: true,
+    rebaseWhen: "auto",
+    semanticCommits: "enabled",
+    timezone: "UTC",
+}
