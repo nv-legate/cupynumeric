@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
+#                         All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+---
+name: Renovate
+
+concurrency:
+  group: renovate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    # Run every week at 2am UTC on Monday
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Dry run mode'
+        type: boolean
+        required: false
+        default: false
+      logLevel:
+        description: 'Log level'
+        type: choice
+        required: false
+        default: 'info'
+        options:
+          - trace
+          - debug
+          - info
+          - warn
+          - error
+          - fatal
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  statuses: read
+  checks: read
+
+jobs:
+  renovate:
+    runs-on: linux-amd64-cpu4
+    if: ${{ github.repository_owner == 'nv-legate' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get Renovate config
+        id: config
+        run: |
+          {
+            echo "dry_run=${{ inputs.dryRun || 'false' }}"
+            echo "log_level=${{ inputs.logLevel || 'info' }}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v44.2.6
+        env:
+          LOG_LEVEL: ${{ steps.config.outputs.log_level }}
+          RENOVATE_DRY_RUN: ${{ steps.config.outputs.dry_run }}
+          RENOVATE_ALLOWED_COMMANDS: '["^python3 scripts/maint/renovate_update_conda_upper_bounds\\.py --dep [a-z0-9_]+ --new-version [0-9]+(?:\\.[0-9]+)*$","^python3 scripts/maint/renovate_update_legate_version\\.py --new-version [0-9a-f]{40}$"]'
+          GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+          RENOVATE_HOST_RULES: '[{"matchHost":"https://api.github.com/repos/nv-legate/legate.internal","hostType":"github","token":"${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}"}]'
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_REQUIRE_CONFIG: required
+        with:
+          configurationFile: .github/renovate-global.json5
+          token: ${{ steps.app-token.outputs.token }}
