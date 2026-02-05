@@ -75,7 +75,7 @@ jobs:
           RENOVATE_DRY_RUN: ${{ steps.config.outputs.dry_run }}
           RENOVATE_ALLOWED_COMMANDS: '["^python3 scripts/maint/renovate_update_conda_upper_bounds\\.py --dep [a-z0-9_]+ --new-version [0-9]+(?:\\.[0-9]+)*$","^python3 scripts/maint/renovate_update_legate_version\\.py --new-version [0-9a-f]{40}$"]'
           GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
-          RENOVATE_HOST_RULES: '[{"matchHost":"https://api.github.com/repos/nv-legate/legate.internal","hostType":"github","token":"${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}"}]'
+          RENOVATE_HOST_RULES: '[{"matchHost":"https://api.github.com/repos/nv-legate/legate.internal","hostType":"github","token":"${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}"},{"matchHost":"github.com","hostType":"git-refs","token":"${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}"}]'
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_REQUIRE_CONFIG: required
         with:
