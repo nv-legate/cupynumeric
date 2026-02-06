@@ -224,12 +224,55 @@ struct UnaryRedOp<UnaryRedCode::MIN, TYPE_CODE> {
   __CUDA_HD__ static VAL convert(const RHS& rhs, const VAL) { return rhs; }
 };
 
+namespace {
+template <typename T>
+struct accumulation_type {
+  using type = T;
+};
+
+template <>
+struct accumulation_type<bool> {
+  using type = std::int64_t;
+};
+
+template <>
+struct accumulation_type<std::int8_t> {
+  using type = std::int64_t;
+};
+
+template <>
+struct accumulation_type<std::int16_t> {
+  using type = std::int64_t;
+};
+
+template <>
+struct accumulation_type<std::int32_t> {
+  using type = std::int64_t;
+};
+
+template <>
+struct accumulation_type<std::uint8_t> {
+  using type = std::uint64_t;
+};
+
+template <>
+struct accumulation_type<std::uint16_t> {
+  using type = std::uint64_t;
+};
+
+template <>
+struct accumulation_type<std::uint32_t> {
+  using type = std::uint64_t;
+};
+
+}  // namespace
+
 template <legate::Type::Code TYPE_CODE>
 struct UnaryRedOp<UnaryRedCode::PROD, TYPE_CODE> {
   static constexpr bool valid = TYPE_CODE != legate::Type::Code::COMPLEX128;
 
   using RHS = legate::type_of<TYPE_CODE>;
-  using VAL = RHS;
+  using VAL = typename accumulation_type<RHS>::type;
   using OP  = legate::ProdReduction<VAL>;
 
   template <bool EXCLUSIVE>
@@ -252,7 +295,7 @@ struct UnaryRedOp<UnaryRedCode::SUM, TYPE_CODE> {
   static constexpr bool valid = true;
 
   using RHS = legate::type_of<TYPE_CODE>;
-  using VAL = RHS;
+  using VAL = typename accumulation_type<RHS>::type;
   using OP  = legate::SumReduction<VAL>;
 
   template <bool EXCLUSIVE>
@@ -602,10 +645,9 @@ struct UnaryRedOp<UnaryRedCode::CONTAINS, TYPE_CODE> {
   static constexpr bool valid = false;
   // This class only provides the typedefs necessary to match the other operators.
   // It does not provide fold/convert functions.
-  using RHS     = legate::type_of<TYPE_CODE>;
-  using VAL     = bool;
-  using _RED_OP = UnaryRedOp<UnaryRedCode::SUM, legate::Type::Code::BOOL>;
-  using OP      = _RED_OP::OP;
+  using RHS = legate::type_of<TYPE_CODE>;
+  using VAL = bool;
+  using OP  = legate::SumReduction<VAL>;
 };
 
 }  // namespace cupynumeric

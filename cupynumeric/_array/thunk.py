@@ -105,14 +105,6 @@ def perform_unary_op(
     return out
 
 
-def _need_upcast_for_reduction(op: UnaryRedCode, dtype: np.dtype[Any]) -> bool:
-    return op in (UnaryRedCode.SUM, UnaryRedCode.PROD) and dtype.kind in (
-        "b",
-        "i",
-        "u",
-    )
-
-
 _NON_DECOMPOSABLE_OPS: dict[UnaryRedCode, npt.DTypeLike] = {
     UnaryRedCode.ALL: bool,
     UnaryRedCode.ANY: bool,
@@ -123,6 +115,36 @@ _NON_DECOMPOSABLE_OPS: dict[UnaryRedCode, npt.DTypeLike] = {
     UnaryRedCode.NANARGMAX: np.int64,
     UnaryRedCode.NANARGMIN: np.int64,
 }
+
+
+_REDUCTION_UFUNC: dict[UnaryRedCode, np.ufunc] = {
+    UnaryRedCode.ALL: np.logical_and,
+    UnaryRedCode.ANY: np.logical_or,
+    UnaryRedCode.MAX: np.maximum,
+    UnaryRedCode.MIN: np.minimum,
+    UnaryRedCode.NANMAX: np.maximum,
+    UnaryRedCode.NANMIN: np.minimum,
+    UnaryRedCode.NANPROD: np.multiply,
+    UnaryRedCode.NANSUM: np.add,
+    UnaryRedCode.PROD: np.multiply,
+    UnaryRedCode.SUM: np.add,
+}
+
+
+def _unary_reduction_task_accumulation_dtype(
+    op: UnaryRedCode, src_dtype: npt.DTypeLike
+) -> np.dtype[Any]:
+    dtype = np.dtype(src_dtype)
+    if op in (UnaryRedCode.SUM, UnaryRedCode.PROD) and dtype.kind in (
+        "b",
+        "i",
+        "u",
+    ):
+        return np.dtype(np.uint64 if dtype.kind == "u" else np.int64)
+    elif op in _NON_DECOMPOSABLE_OPS:
+        return np.dtype(_NON_DECOMPOSABLE_OPS[op])
+    else:
+        return dtype
 
 
 def perform_unary_reduction(
@@ -148,28 +170,50 @@ def perform_unary_reduction(
             "multi-axis only supported for decomposable reductions"
         )
 
-    res_dtype: npt.DTypeLike | None
-
+    # the dtype that the task uses to compute the reduction
+    task_accum_dtype = _unary_reduction_task_accumulation_dtype(op, src.dtype)
+    # the dtype that numpy uses to compute the reduction
+    numpy_accum_dtype: np.dtype[Any]
     if op in _NON_DECOMPOSABLE_OPS:
         if dtype is not None:
             raise TypeError(
                 f"Cannot override dtype for reduction operator {op.name}"
             )
-        dtype = src.dtype
-        res_dtype = _NON_DECOMPOSABLE_OPS[op]
+        numpy_accum_dtype = np.dtype(_NON_DECOMPOSABLE_OPS[op])
+    elif op in _REDUCTION_UFUNC:
+        # use `ufunc.resolve_dtypes()` to determine what dtype numpy would use
+        ufunc = _REDUCTION_UFUNC[op]
+        op_dtypes: tuple[npt.DTypeLike, npt.DTypeLike, npt.DTypeLike]
+        if out is not None:
+            op_dtypes = (out.dtype, src.dtype, None)
+        else:
+            op_dtypes = (None, src.dtype, None)
+        computed_dtypes: tuple[np.dtype[Any], ...]
+        if dtype:
+            computed_dtypes = ufunc.resolve_dtypes(
+                op_dtypes,
+                signature=(dtype, None, None),
+                casting="unsafe",
+                reduction=True,
+            )
+        else:
+            computed_dtypes = ufunc.resolve_dtypes(
+                op_dtypes, casting="unsafe", reduction=True
+            )
+        numpy_accum_dtype = computed_dtypes[0]
     else:
         if dtype is not None:
-            # If 'dtype' exists, that determines both the accumulation dtype
-            # and the output dtype
-            pass
+            numpy_accum_dtype = dtype
         elif out is not None:
-            dtype = out.dtype
-        elif _need_upcast_for_reduction(op, src.dtype):
-            # upcast to conserve precision
-            dtype = np.dtype(np.uint64 if src.dtype.kind == "u" else np.int64)
+            numpy_accum_dtype = out.dtype
         else:
-            dtype = src.dtype
-        res_dtype = dtype
+            numpy_accum_dtype = task_accum_dtype
+
+    out_dtype: np.dtype[Any]
+    if out is not None:
+        out_dtype = out.dtype
+    else:
+        out_dtype = numpy_accum_dtype
 
     # TODO: Need to require initial to be given when the array is empty
     #       or a where mask is given.
@@ -196,20 +240,23 @@ def perform_unary_reduction(
 
     if out is None:
         out = ndarray._from_inputs(
-            shape=out_shape, dtype=res_dtype, inputs=(src, where)
+            shape=out_shape, dtype=out_dtype, inputs=(src, where)
         )
     elif out.shape != out_shape:
         errmsg = f"the output shapes do not match: expected {out_shape} but got {out.shape}"
         raise ValueError(errmsg)
 
-    if dtype != src.dtype:
-        src = src.astype(dtype)
+    if numpy_accum_dtype != task_accum_dtype:
+        src = src.astype(numpy_accum_dtype)
+        task_accum_dtype = _unary_reduction_task_accumulation_dtype(
+            op, numpy_accum_dtype
+        )
 
-    if out.dtype == res_dtype:
+    if out.dtype == task_accum_dtype:
         result = out
     else:
         result = ndarray._from_inputs(
-            shape=out_shape, dtype=res_dtype, inputs=(src, where)
+            shape=out_shape, dtype=task_accum_dtype, inputs=(src, where)
         )
 
     # src might have taken eager path above:
