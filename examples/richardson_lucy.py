@@ -48,6 +48,10 @@ def run_richardson_lucy(
 
 
 if __name__ == "__main__":
+
+    def tuple_of_ints(arg):
+        return tuple(map(int, arg.split(",")))
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-i",
@@ -66,46 +70,20 @@ if __name__ == "__main__":
         help="warm-up iterations",
     )
     parser.add_argument(
-        "-x",
-        type=int,
-        default=20,
-        dest="X",
-        help="number of elements in X dimension",
+        "--shape",
+        type=tuple_of_ints,
+        nargs="+",
+        default=[(20, 20, 20)],
+        dest="shape",
+        help="number of elements in X,Y,Z dimensions (default '20,20,20')",
     )
     parser.add_argument(
-        "-y",
-        type=int,
-        default=20,
-        dest="Y",
-        help="number of elements in Y dimension",
-    )
-    parser.add_argument(
-        "-z",
-        type=int,
-        default=20,
-        dest="Z",
-        help="number of elements in Z dimension",
-    )
-    parser.add_argument(
-        "-fx",
-        type=int,
-        default=4,
-        dest="FX",
-        help="number of filter weights in X dimension",
-    )
-    parser.add_argument(
-        "-fy",
-        type=int,
-        default=4,
-        dest="FY",
-        help="number of filter weights in Y dimension",
-    )
-    parser.add_argument(
-        "-fz",
-        type=int,
-        default=4,
-        dest="FZ",
-        help="number of filter weights in Z dimension",
+        "--filter-shape",
+        type=tuple_of_ints,
+        nargs="+",
+        default=[(4, 4, 4)],
+        dest="filter_shape",
+        help="number of filter weights in X,Y,Z dimendins (default '4,4,4')",
     )
     parser.add_argument(
         "-t",
@@ -129,8 +107,8 @@ if __name__ == "__main__":
         args.benchmark,
         "Richardson Lucy",
         [
-            ("shape", (args.X, args.Y, args.Z)),
-            ("filter shape", (args.FX, args.FY, args.FZ)),
+            ("shape", args.shape),
+            ("filter shape", args.filter_shape),
             ("iterations", args.I),
             ("warmup iterations", args.warmup),
             ("convolution method", args.conv_method),

@@ -140,7 +140,8 @@ if __name__ == "__main__":
         "-d",
         "--dims",
         type=int,
-        default=2,
+        nargs="+",
+        default=[2],
         dest="D",
         help="number of dimensions for each input data point",
     )
@@ -156,7 +157,8 @@ if __name__ == "__main__":
         "-n",
         "--num",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="N",
         help="number of elements in the data set in thousands",
     )
@@ -193,6 +195,7 @@ if __name__ == "__main__":
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
 
+    N = [n * 1000 for n in args.N]
     run_benchmark(
         run_kmeans,
         args.benchmark,
@@ -202,7 +205,7 @@ if __name__ == "__main__":
             ("dimensions", args.D),
             ("precision", dtype),
             ("iterations", args.I),
-            ("elements", args.N * 1000),
+            ("elements", N),
             ("sample interval", args.S),
         ],
         ["time (milliseconds)"],

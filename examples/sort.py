@@ -113,7 +113,8 @@ if __name__ == "__main__":
         "-s",
         "--shape",
         type=tuple_of_ints,
-        default=(1000000,),
+        nargs="+",
+        default=[(1000000,)],
         dest="shape",
         help="array reshape tuple (default '(1000000,)')",
     )

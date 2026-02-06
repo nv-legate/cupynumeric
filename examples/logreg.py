@@ -92,7 +92,8 @@ if __name__ == "__main__":
         "-f",
         "--features",
         type=int,
-        default=32,
+        nargs="+",
+        default=[32],
         dest="F",
         help="number of features for each input data point",
     )
@@ -116,7 +117,8 @@ if __name__ == "__main__":
         "-n",
         "--num",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="N",
         help="number of elements in the data set in thousands",
     )

@@ -158,7 +158,8 @@ if __name__ == "__main__":
         "-v",
         "--vol-steps",
         type=int,
-        default=40,
+        nargs="+",
+        default=[40],
         dest="n_vol_steps",
         help="number of volatility steps",
     )
@@ -167,7 +168,8 @@ if __name__ == "__main__":
         "-t",
         "--time-steps",
         type=int,
-        default=365,
+        nargs="+",
+        default=[365],
         dest="n_time_steps",
         help="number of time steps",
     )
@@ -175,7 +177,8 @@ if __name__ == "__main__":
         "-m",
         "--money-steps",
         type=int,
-        default=60,
+        nargs="+",
+        default=[60],
         dest="n_money_steps",
         help="number of money steps",
     )

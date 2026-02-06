@@ -79,7 +79,8 @@ if __name__ == "__main__":
         "-m",
         "--rows",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="m",
         help="number of rows in the matrix",
     )
@@ -87,7 +88,8 @@ if __name__ == "__main__":
         "-n",
         "--cols",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="n",
         help="number of cols in the matrix",
     )

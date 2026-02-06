@@ -39,7 +39,8 @@ if __name__ == "__main__":
         "-m",
         "--num-rows",
         type=int,
-        default=10000,
+        nargs="+",
+        default=[10000],
         dest="M",
         help="number of rows in test matrix",
     )
@@ -47,7 +48,8 @@ if __name__ == "__main__":
         "-n",
         "--num-cols",
         type=int,
-        default=32,
+        nargs="+",
+        default=[32],
         dest="N",
         help="number of columns in test matrix",
     )
