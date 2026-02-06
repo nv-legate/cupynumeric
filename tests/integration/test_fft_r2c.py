@@ -167,6 +167,26 @@ def test_rfft_single_precision_cast(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.dtype == np.complex64
 
 
+def test_fftn_axes_and_shape_length_mismatch() -> None:
+    arr = num.ones((4, 5), dtype=np.float64)
+    arr_np = np.ones((4, 5), dtype=np.float64)
+    msg = r"Shape and axes have different lengths"
+    with pytest.raises(ValueError):
+        np.fft.fftn(arr_np, s=(4, 5), axes=(0,))
+    with pytest.raises(ValueError, match=msg):
+        num.fft.fftn(arr, s=(4, 5), axes=(0,))
+
+
+def test_fftn_axis_out_of_bounds() -> None:
+    arr = num.ones((4, 5), dtype=np.float64)
+    arr_np = np.ones((4, 5), dtype=np.float64)
+    msg = r"Axis is out of bounds"
+    with pytest.raises(Exception):
+        np.fft.fftn(arr_np, axes=(3,))
+    with pytest.raises(ValueError, match=msg):
+        num.fft.fftn(arr, axes=(3,))
+
+
 @pytest.mark.skipif(
     not EAGER_TEST,
     reason="eager-only: deferred/cuda path does not exercise eager FFT",

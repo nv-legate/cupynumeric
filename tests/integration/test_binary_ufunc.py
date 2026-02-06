@@ -17,6 +17,7 @@ import argparse
 import operator
 import os
 import sys
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -24,7 +25,6 @@ import pytest
 from utils.comparisons import allclose
 
 import cupynumeric as num
-from cupynumeric._array.array import ndarray
 from cupynumeric.runtime import runtime
 
 EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
@@ -192,7 +192,7 @@ def _make_deferred_array(data: np.ndarray) -> Any:
     thunk = arr._thunk
     if runtime.is_eager_array(thunk):
         deferred_thunk = thunk.to_deferred_array(read_only=False)
-        return ndarray._from_thunk(deferred_thunk)
+        return type(arr)._from_thunk(deferred_thunk)
     return arr
 
 
@@ -236,6 +236,86 @@ def test_eager_binary_ufunc_out_with_deferred_thunk() -> None:
 
     lhs._thunk._add(rhs, out=out)
     assert np.array_equal(np.array(out), np.array([0, 2, 4]))
+
+
+def test_numpy_ufunc_reduce_falls_back_when_unimplemented() -> None:
+    arr = num.arange(1, 7, dtype=np.float64)
+    expected = np.true_divide.reduce(arr.__array__())
+
+    got = np.true_divide.reduce(arr)
+    assert np.allclose(got, expected)
+
+
+@dataclass(frozen=True)
+class _ThunkBox:
+    """
+    Minimal object exposing a `_thunk` attribute.
+
+    Used to trigger reverse-dunder branches in `cupynumeric/_array/array.py`
+    that check `hasattr(lhs, "_thunk")`.
+    """
+
+    _thunk: Any
+
+
+@pytest.mark.parametrize(
+    "op",
+    (
+        operator.floordiv,
+        operator.matmul,
+        operator.mod,
+        operator.mul,
+        operator.pow,
+        operator.sub,
+        operator.truediv,
+        operator.xor,
+    ),
+    ids=lambda op: op.__name__,
+)
+def test_reverse_dunders_use_lhs_thunk(op: Any) -> None:
+    if op is operator.matmul:
+        lhs_arr = (num.arange(6).reshape(2, 3) + 1).astype(np.float64)
+        rhs = (num.arange(12).reshape(3, 4) + 1).astype(np.float64)
+    elif op in (operator.floordiv, operator.mod):
+        lhs_arr = num.arange(1, 6, dtype=np.int64) + 10
+        rhs = num.arange(1, 6, dtype=np.int64) + 1
+    elif op is operator.pow:
+        lhs_arr = num.array([2, 3, 4], dtype=np.int64)
+        rhs = num.array([1, 2, 3], dtype=np.int64)
+    elif op is operator.xor:
+        lhs_arr = num.array([1, 2, 3, 4], dtype=np.int64)
+        rhs = num.array([4, 3, 2, 1], dtype=np.int64)
+    else:
+        lhs_arr = num.arange(1, 6, dtype=np.float64) + 10
+        rhs = num.arange(1, 6, dtype=np.float64) + 1
+
+    lhs = _ThunkBox(lhs_arr._thunk)
+
+    got = op(lhs, rhs)
+    expected = op(lhs_arr, rhs)
+    assert np.array_equal(got, expected)
+
+    lhs_np = lhs_arr.__array__()
+    rhs_np = rhs.__array__() if hasattr(rhs, "__array__") else np.asarray(rhs)
+    expected_np = op(lhs_np, rhs_np)
+    got_np = np.array(got)
+    if got_np.dtype.kind in {"f", "c"}:
+        assert np.allclose(got_np, expected_np)
+    else:
+        assert np.array_equal(got_np, expected_np)
+
+
+def test_reverse_dunder_rdiv_uses_lhs_thunk() -> None:
+    lhs_arr = num.arange(1, 6, dtype=np.float64) + 10
+    rhs = num.arange(1, 6, dtype=np.float64) + 1
+    lhs = _ThunkBox(lhs_arr._thunk)
+
+    got = rhs.__rdiv__(lhs)
+    expected = lhs_arr / rhs
+    assert np.array_equal(got, expected)
+
+    expected_np = lhs_arr.__array__() / rhs.__array__()
+    assert np.allclose(np.array(got), expected_np)
 
 
 trig_ops = [

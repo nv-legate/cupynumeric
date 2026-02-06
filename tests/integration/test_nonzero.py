@@ -123,6 +123,16 @@ def test_empty_axis(size):
         assert np.array_equal(out_np, out_num)
 
 
+@pytest.mark.parametrize("size", EMPTY_SIZES, ids=str)
+def test_empty_axis_keepdims(size: tuple[int, ...]) -> None:
+    arr_np = np.random.randint(-5, 5, size=size)
+    arr_num = num.array(arr_np)
+    # Covers COVERAGE Line array.py 3065: keepdims
+    out_np = np.count_nonzero(arr_np, axis=0, keepdims=True)
+    out_num = num.count_nonzero(arr_num, axis=0, keepdims=True)
+    assert np.array_equal(out_np, out_num)
+
+
 @pytest.mark.parametrize("size", NO_EMPTY_SIZE)
 @pytest.mark.parametrize("keepdims", [False, True])
 def test_axis_keepdims(size, keepdims):

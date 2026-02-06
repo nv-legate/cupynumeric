@@ -87,6 +87,17 @@ def test_bool_None(v: bool) -> None:
     assert np.array_equal(res, np.asarray(v))
 
 
+def test_clip_bounds_given_as_0d_arrays() -> None:
+    a_np = np.arange(5, dtype=np.int64)
+    a_num = num.array(a_np)
+    amin = np.array(1, dtype=np.int64)
+    amax = np.array(3, dtype=np.int64)
+
+    out_num = a_num.clip(min=amin, max=amax)
+    out_np = a_np.clip(min=amin, max=amax)
+    assert np.array_equal(out_num, out_np)
+
+
 @pytest.mark.xfail
 def test_amin_amax():
     array = np.arange(0, 10)

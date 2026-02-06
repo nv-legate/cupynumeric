@@ -500,6 +500,15 @@ class TestDiagonalErrors:
         with pytest.raises(ValueError):
             num.diagonal(array_num)
 
+    def test_0d_array_method_diag_helper_guard(self) -> None:
+        array_num = num.array(3)
+        array_np = np.array(3)
+        msg = r"_diag_helper is implemented for dim>=1"
+        with pytest.raises(ValueError):
+            array_np.diagonal()
+        with pytest.raises(ValueError, match=msg):
+            array_num.diagonal()
+
     def test_1d_array(self):
         shape = (3,)
         a = mk_seq_array(num, shape)
