@@ -85,7 +85,8 @@ if __name__ == "__main__":
         "-n",
         "--num",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="N",
         help="number of options to price in thousands",
     )

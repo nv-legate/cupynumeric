@@ -40,6 +40,17 @@ def test_array():
     assert x.dtype == y.dtype
 
 
+def test_ndarray_init_from_buffer() -> None:
+    dtype = np.int32
+    shape = (4,)
+    buf = bytearray(int(np.prod(shape)) * np.dtype(dtype).itemsize)
+    np_arr = np.ndarray(shape=shape, dtype=dtype, buffer=buf)
+    np_arr[:] = np.array([1, 2, 3, 4], dtype=dtype)
+
+    num_arr = num.ndarray(shape=shape, dtype=dtype, buffer=buf)
+    assert np.array_equal(num_arr, np_arr)
+
+
 def test_array_deepcopy() -> None:
     x = num.array([1, 2, 3])
     y = np.array([1, 2, 3])

@@ -68,7 +68,8 @@ if __name__ == "__main__":
         "-n",
         "--num",
         type=int,
-        default=10,
+        nargs="+",
+        default=[10],
         dest="n",
         help="number of rows/cols in the matrix",
     )

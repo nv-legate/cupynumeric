@@ -93,7 +93,8 @@ if __name__ == "__main__":
         "-n",
         "--num",
         type=int,
-        default=100,
+        nargs="+",
+        default=[100],
         dest="N",
         help="number of elements in one dimension",
     )

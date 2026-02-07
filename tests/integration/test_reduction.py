@@ -60,7 +60,7 @@ NO_EMPTY_SIZE = [
 ARR = ([], [[]], [[], []], np.inf, -10.3, 0, 200, 5 + 8j)
 
 DTYPE = ["l", "L", "f", "d"]
-BOOL_INT_DTYPE = ["h", "i", "H", "I", "?", "b", "B"]
+BOOL_INT_DTYPE = ["h", "i", "H", "I", "l", "L", "?", "b", "B"]
 COMPLEX_TYPE = ["F", "D"]
 NEGATIVE_DTYPE = ["e"]
 

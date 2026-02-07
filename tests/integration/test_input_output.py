@@ -41,6 +41,21 @@ def test_ndarray_tolist(shape):
     assert arr_np.tolist() == arr_num.tolist()
 
 
+def test_ndarray_tostring_returns_bytes() -> None:
+    arr = mk_seq_array(num, (3, 2, 4))
+    arr_np = arr.__array__()
+    out = arr.tostring(order="C")
+    assert isinstance(out, (bytes, bytearray))
+    assert out == arr.tobytes(order="C")
+    assert out == arr_np.tobytes(order="C")
+
+
+def test_ndarray_setstate_smoke() -> None:
+    arr = mk_seq_array(num, (3, 2))
+    _reconstruct, _args, state = arr.__array__().__reduce__()
+    arr.__setstate__(state)
+
+
 @pytest.mark.skipif(
     NumpyVersion(np.__version__) >= "2.0.0", reason="tostring is deprecated"
 )

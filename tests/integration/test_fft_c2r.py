@@ -18,6 +18,7 @@ import pytest
 from utils.comparisons import allclose as _allclose
 
 import cupynumeric as num
+from cupynumeric.config import FFTCode, FFTDirection
 
 
 def allclose(A: np.ndarray, B: np.ndarray) -> bool:
@@ -173,6 +174,23 @@ def test_irfft_single_precision_cast(monkeypatch: pytest.MonkeyPatch) -> None:
 
     result = num.fft.irfft(num.array(data))
     assert result.dtype == np.float32
+
+
+def test_irfft_default_n_infers_output_shape() -> None:
+    z = (
+        np.random.rand(2).astype(np.float32)
+        + 1j * np.random.rand(2).astype(np.float32)
+    ).astype(np.complex64)
+    z_num = num.array(z)
+
+    out_np = np.fft.irfft(z)
+
+    kind = FFTCode.complex_to_real_code(z_num.dtype)
+    out_num = z_num.fft(
+        s=None, axes=None, kind=kind, direction=FFTDirection.INVERSE, norm=None
+    )
+    out_num_np = np.array(out_num)
+    assert allclose(out_np, out_num_np)
 
 
 def check_4d_c2r(N, dtype=np.float64):

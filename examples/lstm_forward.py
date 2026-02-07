@@ -74,21 +74,39 @@ def run_lstm(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-B", "--batch", type=int, default=32, dest="batch", help="batch size"
+        "-B",
+        "--batch",
+        type=int,
+        nargs="+",
+        default=[32],
+        dest="batch",
+        help="batch size",
     )
     parser.add_argument(
-        "--hidden", type=int, default=10, dest="hidden", help="hidden size"
+        "--hidden",
+        type=int,
+        nargs="+",
+        default=[10],
+        dest="hidden",
+        help="hidden size",
     )
     parser.add_argument(
         "-s",
         "--sentence",
         type=int,
-        default=4,
+        nargs="+",
+        default=[4],
         dest="sentence",
         help="sentence length",
     )
     parser.add_argument(
-        "-w", "--word", type=int, default=10, dest="word", help="word size"
+        "-w",
+        "--word",
+        type=int,
+        nargs="+",
+        default=[10],
+        dest="word",
+        help="word size",
     )
     parser.add_argument(
         "-t",
