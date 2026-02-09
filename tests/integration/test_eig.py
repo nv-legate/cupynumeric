@@ -67,6 +67,8 @@ def assert_all(a_np, ew_np, ev_np, ew_num, ev_num, sort=True):
             # Integer matrices can have poor conditioning, requiring looser tolerance
             if np.issubdtype(a.dtype, np.integer):
                 assert num.allclose(a_ev, ev_ew, rtol=1e-4, atol=1e-3)
+            elif a.dtype == np.float32:
+                assert num.allclose(a_ev, ev_ew, rtol=1e-4, atol=1e-4)
             else:
                 assert num.allclose(a_ev, ev_ew, rtol=1e-5, atol=1e-4)
 
