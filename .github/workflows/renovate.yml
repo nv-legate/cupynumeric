@@ -69,7 +69,7 @@ jobs:
           repositories: ${{ github.event.repository.name }}
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@v44.2.6
+        uses: renovatebot/github-action@v46.0.2
         env:
           LOG_LEVEL: ${{ steps.config.outputs.log_level }}
           RENOVATE_DRY_RUN: ${{ steps.config.outputs.dry_run }}
