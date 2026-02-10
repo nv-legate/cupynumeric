@@ -37,16 +37,16 @@
             versioningTemplate: "conda",
         },
         {
-            // Track the default Legate branch and update git_tag to the latest commit.
+            // Track the latest nightly upload-success branch and update git_tag.
             customType: "regex",
             datasourceTemplate: "git-refs",
             depNameTemplate: "Legate",
-            description: "Update Legate git_tag from main",
+            description: "Update Legate git_tag from nightly-uploaded-main",
             managerFilePatterns: ["/cmake/versions\\.json$/"],
             matchStrings: [
                 '"git_tag"\\s*:\\s*"(?<currentDigest>[0-9a-f]{40})"',
             ],
-            currentValueTemplate: "main",
+            currentValueTemplate: "nightly-uploaded-main",
             packageNameTemplate: "https://github.com/nv-legate/legate.internal.git",
         },
     ],
@@ -135,7 +135,7 @@
             matchDatasources: ["git-refs"],
             matchManagers: ["custom.regex"],
             prBodyNotes: [
-                "This PR updates the pinned git SHA from the default branch.",
+                "This PR updates the pinned git SHA from nightly-uploaded-main.",
                 "Please review and run targeted tests as needed.",
             ],
         },
