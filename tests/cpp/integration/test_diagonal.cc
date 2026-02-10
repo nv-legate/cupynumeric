@@ -15,6 +15,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include "cupynumeric.h"
 #include "util.inl"
 
@@ -48,6 +49,47 @@ TEST(Diagonal, Singleton)
   auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
   auto a_output = cupynumeric::diagonal(a_input, 0, std::nullopt, std::nullopt, false);
+  check_array_eq<double, exp_dim>(a_output, exp.data(), exp.size());
+}
+
+TEST(Diagonal, SingletonPositiveOffset)
+{
+  constexpr size_t in_size                = 3;
+  constexpr size_t in_dim                 = 1;
+  constexpr size_t exp_size               = 16;
+  constexpr size_t exp_dim                = 2;
+  const std::array<double, in_size> input = {1.0, 2.0, 3.0};
+  const std::array<double, exp_size> exp  = {
+    0., 1., 0., 0., 0., 0., 2., 0., 0., 0., 0., 3., 0., 0., 0., 0.};
+  const std::vector<uint64_t> in_shape = {3};
+
+  auto a_input = cupynumeric::zeros(in_shape);
+
+  assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
+
+  const auto a_output = cupynumeric::diagonal(
+    a_input, /*offset=*/1, /*axis1=*/std::nullopt, /*axis2=*/std::nullopt, /*extract=*/false);
+
+  check_array_eq<double, exp_dim>(a_output, exp.data(), exp.size());
+}
+
+TEST(Diagonal, NegativeOffsetExtract2D)
+{
+  constexpr size_t in_size                = 9;
+  constexpr size_t in_dim                 = 2;
+  constexpr size_t exp_size               = 2;
+  constexpr size_t exp_dim                = 1;
+  const std::array<double, in_size> input = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+  const std::array<double, exp_size> exp  = {4.0, 8.0};
+  const std::vector<uint64_t> in_shape    = {3, 3};
+
+  auto a_input = cupynumeric::zeros(in_shape);
+
+  assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
+
+  const auto a_output =
+    cupynumeric::diagonal(a_input, /*offset=*/-1, /*axis1=*/0, /*axis2=*/1, /*extract=*/true);
+
   check_array_eq<double, exp_dim>(a_output, exp.data(), exp.size());
 }
 
@@ -119,6 +161,21 @@ TEST(Diagonal, Offset)
   std::vector<uint64_t> in_shape    = {3, 3, 1};
 
   diagonal_test<in_size, in_dim, exp_size, exp_dim>(input, exp, in_shape, 2);
+}
+
+TEST(Diagonal, NegativeOffset)
+{
+  constexpr size_t in_size                = 18;
+  constexpr size_t in_dim                 = 3;
+  constexpr size_t exp_size               = 4;
+  constexpr size_t exp_dim                = 2;
+  const std::array<double, in_size> input = {
+    0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
+  const std::array<double, exp_size> exp = {0.0, 0.0, 0.0, 0.0};
+  const std::vector<uint64_t> in_shape   = {3, 3, 2};
+
+  diagonal_test<in_size, in_dim, exp_size, exp_dim>(
+    input, exp, in_shape, /*offset=*/-1, /*axis1=*/0, /*axis2=*/1);
 }
 
 TEST(Diagonal, Axes)
@@ -213,15 +270,29 @@ void trace_test(std::array<double, IN_SIZE> input,
   check_array_eq<double, EXP_DIM>(a_output, exp.data(), exp.size());
 }
 
-TEST(Trace, Simple)
+TEST(Trace, Simple2D)
 {
-  const size_t in_size              = 8;
-  const size_t in_dim               = 3;
-  const size_t exp_size             = 4;
-  const size_t exp_dim              = 1;
-  std::array<double, in_size> input = {9, 7, 0.5, 1.3, 2, 3.6, 4, 5};
-  std::array<double, exp_size> exp  = {9, 7, 0.5, 1.3};
-  std::vector<uint64_t> in_shape    = {2, 1, 4};
+  constexpr size_t in_size                = 8;
+  constexpr size_t in_dim                 = 2;
+  constexpr size_t exp_size               = 1;
+  constexpr size_t exp_dim                = 1;
+  const std::array<double, in_size> input = {9, 7, 0.5, 1.3, 2, 3.6, 4, 5};
+  const std::array<double, exp_size> exp  = {12.6};
+  const std::vector<uint64_t> in_shape    = {2, 4};
+
+  trace_test<in_size, in_dim, exp_size, exp_dim>(input, exp, in_shape);
+}
+
+TEST(Trace, Simple3D)
+{
+  constexpr size_t in_size                = 8;
+  constexpr size_t in_dim                 = 3;
+  constexpr size_t exp_size               = 4;
+  constexpr size_t exp_dim                = 1;
+  const std::array<double, in_size> input = {9, 7, 0.5, 1.3, 2, 3.6, 4, 5};
+  const std::array<double, exp_size> exp  = {9, 7, 0.5, 1.3};
+  const std::vector<uint64_t> in_shape    = {2, 1, 4};
+
   trace_test<in_size, in_dim, exp_size, exp_dim>(input, exp, in_shape);
 }
 
@@ -298,6 +369,26 @@ TEST(Trace, OutType)
   check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
 }
 
+TEST(Trace, DifferentOutType)
+{
+  constexpr size_t in_size                = 8;
+  constexpr size_t in_dim                 = 3;
+  constexpr size_t exp_size               = 1;
+  constexpr size_t exp_dim                = 1;
+  const std::array<double, in_size> input = {9, 7, 0.5, 1.3, 2, 3.6, 4, 5};
+  const std::array<int32_t, exp_size> exp = {12};
+  const std::vector<uint64_t> in_shape    = {2, 4, 1};
+  const std::vector<uint64_t> out_shape   = {1};
+
+  auto a_input        = cupynumeric::zeros(in_shape);
+  const auto a_output = cupynumeric::zeros(out_shape, legate::float64());
+
+  assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
+  cupynumeric::trace(
+    a_input, /*offset=*/0, /*axis1=*/0, /*axis2=*/1, /*type=*/legate::int32(), /*out=*/a_output);
+  check_array_eq<int32_t, exp_dim>(a_output, exp.data(), exp.size());
+}
+
 TEST(Trace, InvalidArray)
 {
   const size_t in_size              = 8;
@@ -308,4 +399,29 @@ TEST(Trace, InvalidArray)
   auto a_input = cupynumeric::zeros(in_shape);
   assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
   EXPECT_THROW(cupynumeric::trace(a_input), std::invalid_argument);
+}
+
+TEST(Trace, InvalidOutputShape)
+{
+  constexpr size_t in_size                = 8;
+  constexpr size_t in_dim                 = 3;
+  constexpr size_t exp_size               = 1;
+  constexpr size_t exp_dim                = 1;
+  const std::array<double, in_size> input = {9, 7, 0.5, 1.3, 2, 3.6, 4, 5};
+  const std::vector<uint64_t> in_shape    = {2, 4, 1};
+  const std::vector<uint64_t> out_shape   = {2, 2};
+
+  auto a_input = cupynumeric::zeros(in_shape);
+
+  assign_values_to_array<double, in_dim>(a_input, input.data(), input.size());
+
+  auto a_output = cupynumeric::zeros(out_shape);
+
+  ASSERT_THAT(
+    [&] {
+      cupynumeric::trace(
+        a_input, /*offset=*/0, /*axis1=*/0, /*axis2=*/1, /*type=*/std::nullopt, /*out=*/a_output);
+    },
+    ::testing::ThrowsMessage<std::invalid_argument>(
+      ::testing::HasSubstr("output array has the wrong shape")));
 }

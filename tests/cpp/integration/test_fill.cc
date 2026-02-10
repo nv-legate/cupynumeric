@@ -88,4 +88,18 @@ TEST(Fill, test_full_ndim)
   }
 }
 
+TEST(Fill, test_transformed_array)
+{
+  auto arr = zeros({2, 3}, legate::int32());
+
+  auto transposed = arr.transpose();
+
+  transposed.fill(Scalar(int32_t(1)));
+
+  const std::vector<int32_t> expect{1, 1, 1, 1, 1, 1};
+  const std::vector<uint64_t> expect_shape{3, 2};
+
+  check_array(transposed, expect, expect_shape);
+}
+
 }  // namespace

@@ -15,11 +15,14 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <algorithm>
 #include <cstdint>
 #include "legate.h"
 #include "cupynumeric.h"
-#include "util.inl"
+#include "common_utils.h"
+
+namespace {
 
 TEST(ArangeType, ImplicitInt64)
 {
@@ -82,6 +85,16 @@ TEST(ArangeScalar, Float32)
   check_array_eq<float, 1>(arr, exp.data(), exp.size());
 }
 
+TEST(ArangeScalar, EmptyArray)
+{
+  constexpr float start          = 10.5;
+  constexpr float stop           = 10.5;
+  const std::array<float, 0> exp = {};
+  const auto arr                 = cupynumeric::arange(legate::Scalar(start), legate::Scalar(stop));
+
+  check_array_eq<float, 1>(arr, exp.data(), exp.size());
+}
+
 TEST(ArangeErrors, ScalarTypeMismatch)
 {
   float start  = 1.5;
@@ -89,3 +102,19 @@ TEST(ArangeErrors, ScalarTypeMismatch)
   EXPECT_THROW(cupynumeric::arange(legate::Scalar(start), legate::Scalar(stop)),
                std::invalid_argument);
 }
+
+TEST(ArangeErrorsFromNDArray, StartTypeMismatch)
+{
+  constexpr float start  = 1.5;
+  constexpr int32_t stop = 10;
+  constexpr int32_t step = 1;
+
+  auto arr = cupynumeric::mk_array<int32_t>({1, 2, 3});
+
+  ASSERT_THAT(
+    [&] { arr.arange(legate::Scalar{start}, legate::Scalar{stop}, legate::Scalar{step}); },
+    ::testing::ThrowsMessage<std::invalid_argument>(
+      ::testing::HasSubstr("start/stop/step should have the same type as the array")));
+}
+
+}  // namespace

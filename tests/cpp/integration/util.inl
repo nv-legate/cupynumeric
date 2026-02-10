@@ -99,7 +99,7 @@ std::string to_string(legate::AccessorRO<T, DIM> acc,
 
 template <typename T, int32_t DIM>
 void check_array_eq(legate::AccessorRO<T, DIM> acc,
-                    T* values_ptr,
+                    const T* values_ptr,
                     const std::vector<uint64_t>& shape,
                     legate::Rect<DIM> rect)
 {
@@ -142,7 +142,7 @@ struct print_fn {
 template <typename T, int32_t DIM>
 struct check_array_eq_fn {
   void operator()(legate::AccessorRO<T, DIM> acc,
-                  T* values_ptr,
+                  const T* values_ptr,
                   const std::vector<uint64_t>& shape,
                   legate::Rect<DIM> rect)
   {
@@ -152,7 +152,7 @@ struct check_array_eq_fn {
 
 template <typename T, int32_t DIM>
 struct assign_array_fn {
-  void operator()(legate::AccessorWO<T, DIM> acc, T* values_ptr, legate::Rect<DIM> rect)
+  void operator()(legate::AccessorWO<T, DIM> acc, const T* values_ptr, legate::Rect<DIM> rect)
   {
     auto index = 0;
     for (legate::PointInRectIterator<DIM> itr(rect, false); itr.valid(); ++itr) {
@@ -184,7 +184,7 @@ void print_array(cupynumeric::NDArray array)
 }
 
 template <typename T, int32_t DIM>
-void check_array_eq(cupynumeric::NDArray array, T* values_ptr, size_t length)
+void check_array_eq(cupynumeric::NDArray array, const T* values_ptr, size_t length)
 {
   assert(array.size() == length);
   if (length == 0) {
@@ -200,7 +200,7 @@ void check_array_eq(cupynumeric::NDArray array, T* values_ptr, size_t length)
 }
 
 template <typename T, int32_t DIM>
-void assign_values_to_array(cupynumeric::NDArray array, T* values_ptr, size_t length)
+void assign_values_to_array(cupynumeric::NDArray array, const T* values_ptr, size_t length)
 {
   assert(array.size() == length);
   if (length == 0) {

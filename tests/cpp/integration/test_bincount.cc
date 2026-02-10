@@ -19,9 +19,9 @@
 #include <sstream>
 
 #include <gtest/gtest.h>
+#include "common_utils.h"
 #include "legate.h"
 #include "cupynumeric.h"
-#include "util.inl"
 
 void bincount_test()
 {
@@ -104,3 +104,13 @@ void bincount_negative_test()
 TEST(Bincount, Normal) { bincount_test(); }
 
 TEST(Bincount, Negative) { bincount_negative_test(); }
+
+TEST(Bincount, EmptyOutput)
+{
+  const auto in = cupynumeric::mk_array<int32_t>({1, 2, 3}, {3});
+  auto out      = cupynumeric::mk_array<int32_t>({}, {0});
+
+  out.bincount(in);
+
+  cupynumeric::check_array<int32_t>(out, {}, {0});
+}
