@@ -105,6 +105,21 @@ def test_axis_2d(ndim, ord, keepdims, axis):
     assert allclose(np_res, num_res)
 
 
+def test_integer_array_with_overflow():
+    a_np = np.array(
+        [
+            [[0, 0, 0], [100, 0, 225], [144, 0, 132], [132, 0, 233]],
+            [[0, 144, 225], [100, 144, 132], [144, 144, 233], [132, 144, 16]],
+            [[0, 64, 132], [100, 64, 233], [144, 64, 16], [132, 64, 249]],
+        ],
+        dtype=np.uint8,
+    )
+    a_num = num.asarray(a_np)
+    norm_np = np.linalg.norm(a_np, axis=2)
+    norm_num = num.linalg.norm(a_num, axis=2)
+    assert allclose(norm_np, norm_num)
+
+
 class TestNormErrors:
     def test_axis_invalid_type(self):
         # In cuPyNumeric, raises error in normalize_axis_tuple

@@ -1153,6 +1153,8 @@ def norm(
     --------
     Multiple GPUs, Multiple CPUs
     """
+    if not np.issubdtype(x.dtype, np.inexact):
+        x = x.astype(float)
 
     # Immediately handle some default, simple, fast, and common cases.
     if axis is None:
