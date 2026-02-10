@@ -53,7 +53,7 @@
     extends: ["config:recommended", ":disableRateLimiting"],
     enabledManagers: ["custom.regex"],
     labels: ["Build"],
-    reviewers: ["team:nv-legate/qa-reviewers"],
+    reviewers: ["team:qa-reviewers", "team:devops-reviewers"],
     packageRules: [
         {
             description: "Use replace range strategy for custom regex updates",
