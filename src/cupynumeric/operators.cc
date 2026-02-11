@@ -29,6 +29,28 @@ static legate::Logger log_cupynumeric("cupynumeric");
 
 legate::Logger& cupynumeric_log() { return log_cupynumeric; }
 
+namespace {
+
+legate::Type reduction_accumulation_type(UnaryRedCode op_code, const legate::Type& input_type)
+{
+  if (op_code != UnaryRedCode::SUM && op_code != UnaryRedCode::PROD) {
+    return input_type;
+  }
+
+  switch (input_type.code()) {
+    case legate::Type::Code::BOOL:
+    case legate::Type::Code::INT8:
+    case legate::Type::Code::INT16:
+    case legate::Type::Code::INT32: return legate::int64();
+    case legate::Type::Code::UINT8:
+    case legate::Type::Code::UINT16:
+    case legate::Type::Code::UINT32: return legate::uint64();
+    default: return input_type;
+  }
+}
+
+}  // namespace
+
 NDArray array(std::vector<uint64_t> shape, const legate::Type& type)
 {
   return CuPyNumericRuntime::get_runtime()->create_array(std::move(shape), type);
@@ -47,7 +69,7 @@ NDArray unary_op(UnaryOpCode op_code,
 NDArray unary_reduction(UnaryRedCode op_code, NDArray input)
 {
   auto runtime = CuPyNumericRuntime::get_runtime();
-  auto out     = runtime->create_array({1}, input.type());
+  auto out     = runtime->create_array({1}, reduction_accumulation_type(op_code, input.type()));
   out.unary_reduction(static_cast<int32_t>(op_code), std::move(input));
   return out;
 }

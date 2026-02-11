@@ -41,9 +41,14 @@
     },
     {
         "name": "26.01",
-        "preferred": true,
         "url": "https://docs.nvidia.com/cupynumeric/26.01/",
         "version": "26.01"
+    },
+    {
+        "name": "26.03",
+        "preferred": true,
+        "url": "https://docs.nvidia.com/cupynumeric/26.03/",
+        "version": "26.03"
     },
     {
         "name": "dev",

@@ -25,7 +25,7 @@ TEST(Sum, EmptyArray)
   const auto a      = cupynumeric::mk_array<int32_t>({}, {0});
   const auto result = sum(a);
 
-  const std::vector<int32_t> expect{0};
+  const std::vector<int64_t> expect{0};
   const std::vector<uint64_t> shape{1};
 
   cupynumeric::check_array(result, expect, shape);
@@ -36,7 +36,7 @@ TEST(Sum, SingleElement)
   const auto a      = cupynumeric::mk_array<int32_t>({42});
   const auto result = sum(a);
 
-  const std::vector<int32_t> expect{42};
+  const std::vector<int64_t> expect{42};
   const std::vector<uint64_t> shape{1};
 
   cupynumeric::check_array(result, expect, shape);
@@ -47,7 +47,7 @@ TEST(Sum, 1DArray)
   const auto a      = cupynumeric::mk_array<int32_t>({1, 2, 3, 4});
   const auto result = sum(a);
 
-  const std::vector<int32_t> expect{10};
+  const std::vector<int64_t> expect{10};
   const std::vector<uint64_t> shape{1};
 
   cupynumeric::check_array(result, expect, shape);
