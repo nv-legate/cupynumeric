@@ -80,6 +80,60 @@ def test_histogramdd_weights(density):
         assert allclose(np_bin, num_bin, atol=eps)
 
 
+@pytest.mark.parametrize("density", (False, True))
+def test_histogramdd_weights_ndim(density: bool) -> None:
+    eps = 1.0e-8
+
+    coords_array = np.ndarray(
+        shape=(5, 3),
+        buffer=np.array(
+            [
+                2.0,
+                10.0,
+                3.1,
+                4.5,
+                6.2,
+                5.9,
+                7.15,
+                6.0,
+                8.3,
+                9.1,
+                2.7,
+                8.7,
+                7.2,
+                6.85,
+                3.5,
+            ]
+        ),
+        dtype=np.dtype(np.float64),
+    )
+
+    bin_x = np.array([1.9, 3.5, 7.0, 11.0])
+    bin_y = np.array([2.0, 3.1, 4.3, 6.1, 7.7])
+    bin_z = np.array([1.0, 3.0, 12.0])
+
+    weights_2d = np.array(
+        [55.0, 34.0, 25.7, 77.5, 89.2], dtype=np.dtype(np.float64)
+    ).reshape(5, 1)
+
+    np_out, np_bins_out = np.histogramdd(
+        coords_array,
+        bins=[bin_x, bin_y, bin_z],
+        weights=weights_2d.flatten(),
+        density=density,
+    )
+    num_out, num_bins_out = num.histogramdd(
+        coords_array,
+        bins=[bin_x, bin_y, bin_z],
+        weights=weights_2d,
+        density=density,
+    )
+
+    assert allclose(np_out, num_out, atol=eps)
+    for np_bin, num_bin in zip(np_bins_out, num_bins_out):
+        assert allclose(np_bin, num_bin, atol=eps)
+
+
 def test_histogramdd_no_weights():
     eps = 1.0e-8
 

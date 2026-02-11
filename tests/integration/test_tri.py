@@ -88,6 +88,13 @@ class TestTriErrors:
         with pytest.raises(TypeError):
             num.tri(N, k=None)
 
+    def test_invalid_type_error(self) -> None:
+        msg = "M parameter must be integer or None."
+        with pytest.raises(TypeError, match=msg):
+            num.tri(10, M="not_an_int")
+        with pytest.raises(TypeError):
+            np.tri(10, M="not_an_int")
+
     @pytest.mark.parametrize(
         "like_value", [np.array([1, 2, 3]), "not_none", 123, [], {}, True]
     )

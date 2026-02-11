@@ -127,6 +127,12 @@ def test_full_overflow_uint8() -> None:
 SHAPES_NEGATIVE = [-1, (-1, 2, 3), np.array([2, -3, 4])]
 
 
+def test_overflow_uint8_check() -> None:
+    expect_msg = r"out of bounds"
+    with pytest.raises(OverflowError, match=expect_msg):
+        num.full((2, 2), np.int64(300), dtype="uint8")
+
+
 class TestCreationErrors:
     bad_type_shape = (2, 3.0)
 
