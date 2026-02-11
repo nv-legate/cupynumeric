@@ -26,7 +26,6 @@ from legate.core.utils import OrderedSet
 from numpy.exceptions import AxisError
 
 from .. import _ufunc
-from .._utils import is_np2
 from .._utils.array import max_identity, min_identity, to_core_type
 from .._utils.coverage import (
     clone_class,
@@ -1970,8 +1969,13 @@ class ndarray:
             ind_size = ind.size
             ind_shape = ind.shape
             ind_thunk = ind._thunk
+
         if not np.issubdtype(ind_dtype, np.integer):
-            raise TypeError("indices array should be integers")
+            if not is_scalar:
+                raise TypeError("indices array should be integers")
+            ind = int(ind)  # type: ignore[arg-type]
+            ind_dtype = np.dtype(np.int_)
+            ind_thunk = ind
 
         lim = self.size if axis is None else self.shape[axis]
         if lim == 0 and ind_size != 0:
@@ -2972,49 +2976,6 @@ class ndarray:
         result = self[key]
         assert result.shape == ()
         return result._thunk.__numpy_array__()
-
-    if not is_np2:
-
-        def itemset(self, *args: Any) -> None:
-            """a.itemset(*args)
-
-            Insert scalar into an array (scalar is cast to array's dtype,
-            if possible)
-
-            There must be at least 1 argument, and define the last argument
-            as *item*.  Then, ``a.itemset(*args)`` is equivalent to but faster
-            than ``a[args] = item``.  The item should be a scalar value and
-            `args` must select a single item in the array `a`.
-
-            Parameters
-            ----------
-            \\*args :
-                If one argument: a scalar, only used in case `a` is of size 1.
-                If two arguments: the last argument is the value to be set
-                and must be a scalar, the first argument specifies a single
-                array element location. It is either an int or a tuple.
-
-            Notes
-            -----
-            Compared to indexing syntax, `itemset` provides some speed increase
-            for placing a scalar into a particular location in an `ndarray`,
-            if you must do this.  However, generally this is discouraged:
-            among other problems, it complicates the appearance of the code.
-            Also, when using `itemset` (and `item`) inside a loop, be sure
-            to assign the methods to a local variable to avoid the attribute
-            look-up at each loop iteration.
-
-            Availability
-            --------
-            Multiple GPUs, Multiple CPUs
-
-            """
-            if len(args) == 0:
-                raise KeyError("itemset() requires at least one argument")
-            value = args[-1]
-            args = args[:-1]
-            key = self._convert_singleton_key(args)
-            self[key] = value
 
     @add_boilerplate()
     def max(

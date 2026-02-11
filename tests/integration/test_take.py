@@ -228,6 +228,58 @@ class TestTakeErrors:
         self.A_num = mk_seq_array(num, (3, 4, 5))
 
     @pytest.mark.parametrize(
+        "indices",
+        (np.array(1.5, dtype=np.float64), np.array([1.5], dtype=np.float64)),
+        ids=("scalar_0d_array", "array_1d"),
+    )
+    def test_indices_not_integer_scalar(
+        self, indices: np.ndarray, set_take_default: None
+    ) -> None:
+        msg = r"indices array should be integers"
+        with pytest.raises(TypeError):
+            np.take(self.A_np, indices)
+        with pytest.raises(TypeError, match=msg):
+            num.take(self.A_num, indices)
+
+    def test_scalar_float_indices(self, set_take_default: None) -> None:
+        assert np.array_equal(
+            np.take(self.A_np, 1.9), num.take(self.A_num, 1.9)
+        )
+        assert np.array_equal(
+            np.take(self.A_np, -1.2), num.take(self.A_num, -1.2)
+        )
+
+    @pytest.mark.parametrize(
+        ("index", "exc_type", "match"),
+        (
+            (np.nan, ValueError, r"cannot convert float NaN to integer"),
+            (
+                np.inf,
+                OverflowError,
+                r"cannot convert float infinity to integer",
+            ),
+            (
+                -np.inf,
+                OverflowError,
+                r"cannot convert float infinity to integer",
+            ),
+            (1 + 2j, TypeError, r"int\(\) argument must be .* not 'complex'"),
+        ),
+        ids=("nan", "inf", "neg_inf", "complex"),
+    )
+    def test_scalar_float_indices_nan_inf_errors(
+        self,
+        index: object,
+        exc_type: type[Exception],
+        match: str,
+        set_take_default: None,
+    ) -> None:
+        with pytest.raises(exc_type, match=match):
+            np.take(self.A_np, index)
+        with pytest.raises(exc_type, match=match):
+            num.take(self.A_num, index)
+
+    @pytest.mark.parametrize(
         "indices", (-5, 4), ids=lambda indices: f"(indices={indices})"
     )
     def test_indices_invalid_scalar(self, indices, set_take_default):
