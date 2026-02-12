@@ -67,6 +67,13 @@
             registryUrls: ["https://api.anaconda.org/package/conda-forge"],
         },
         {
+            description: "Map underscored conda dep names to canonical package names",
+            matchDatasources: ["conda"],
+            matchManagers: ["custom.regex"],
+            matchDepNames: ["libcusolvermp_dev"],
+            overridePackageName: "libcusolvermp-dev",
+        },
+        {
             description: "Group conda upper bound updates",
             matchDatasources: ["conda"],
             matchManagers: ["custom.regex"],

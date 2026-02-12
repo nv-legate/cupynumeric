@@ -17,6 +17,38 @@ numpy_version:
   # https://github.com/numpy/numpy/pull/27249
   - ">=1.22,!=2.1.0,<2.4.0"
 
+cffi_version:
+  - ">=1.0,<2.1"
+
+opt_einsum_version:
+  - ">=3.3,<3.5"
+
+scipy_version:
+  - ">=1.0,<1.18"
+
+openblas_version:
+  # Versions after v0.3.23 conflict with Realm's OpenMP runtime
+  # see https://github.com/nv-legate/cupynumeric.internal/issues/342
+  - ">=0.3.0,<=0.3.23"
+
+cupy_version:
+  - ">=12.0,<13.7"
+
+cutensor_version:
+  # cutensor 2.3 is required for CUDA 13
+  - ">=2.0,<2.4"
+
+libcufile_version:
+  - ">=1.0,<1.17"
+
+libcusolvermp_dev_version:
+  - ">=0.7,<0.8"
+
+nccl_version:
+  # Exclude NCCL versions known to cause issues.
+  # Use explicit excludes instead of OR ranges to simplify Renovate parsing.
+  - ">=2.0,<2.30,!=2.27.0,!=2.27.1,!=2.27.2,!=2.27.3,!=2.27.4,!=2.27.5"
+
 c_stdlib:
   - sysroot
 
@@ -24,4 +56,4 @@ c_stdlib_version:
   - "2.28"
 
 cmake_version:
-  - ">=3.30.4"
+  - ">=3.30.4,<4.3"

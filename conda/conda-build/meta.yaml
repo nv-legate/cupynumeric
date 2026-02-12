@@ -153,36 +153,35 @@ requirements:
     - scikit-build
     # Versions after v0.3.23 conflict with Realm's OpenMP runtime
     # see https://github.com/nv-legate/cupynumeric.internal/issues/342
-    - openblas <=0.3.23 =*openmp*
+    - openblas {{ openblas_version }} =*openmp*
     - legate ={{ legate_version }}=*{{ legate_buildstr }}
     - libhwloc
 {% if gpu_enabled_bool %}
     - cuda-cccl
 {% if cuda_major<13 %}
-    # cutensor 2.3 drops support for Volta, so avoid that for our CUDA 12 builds
+    # cutensor 2.3 drops support for Volta, so keep CUDA 12 builds pinned here.
     - cutensor >=2.0,<2.3 =*_*
 {% else %}
-    # cutensor 2.3 is required for CUDA 13, so we have no choice but to drop
-    # support for Volta on our CUDA 13 packages
-    - cutensor >=2.0,<2.4 =*_*
+    # CUDA 13 requires cutensor 2.3+
+    - cutensor {{ cutensor_version }} =*_*
 {% endif %}
     - libcublas-dev
     - libcusolver-dev
     - libcufft-dev
     - libcurand-dev
-    - libcufile-dev
+    - libcufile-dev {{ libcufile_version }}
     - cuda-version ={{ cuda_version }}
-    - libcusolvermp-dev >=0.7
+    - libcusolvermp-dev {{ libcusolvermp_dev_version }}
 {% endif %}
 
   run:
-    - cffi
+    - cffi {{ cffi_version }}
     - numpy {{ numpy_version }}
-    - opt_einsum >=3.3
-    - scipy
+    - opt_einsum {{ opt_einsum_version }}
+    - scipy {{ scipy_version }}
     # Versions after v0.3.23 conflict with Realm's OpenMP runtime
     # see https://github.com/nv-legate/cupynumeric.internal/issues/342
-    - openblas <=0.3.23 =*openmp*
+    - openblas {{ openblas_version }} =*openmp*
 {% if gpu_enabled_bool %}
     - __cuda
     - {{ pin_compatible('cuda-version', min_pin='x', max_pin='x') }}
@@ -190,10 +189,10 @@ requirements:
     - {{ pin_compatible('libcublas',    min_pin='x', max_pin='x') }}
     - {{ pin_compatible('cuda-nvtx',    min_pin='x', max_pin='x') }}
     - {{ pin_compatible('libcusolver',  min_pin='x', max_pin='x') }}
-    - {{ pin_compatible('libcufile',    min_pin='x', max_pin='x') }}
+    - libcufile {{ libcufile_version }}
     - {{ pin_compatible('libcufft',    min_pin='x', max_pin='x') }}
-    - nccl >=2.0,<3
-    - cupy
+    - nccl {{ nccl_version }}
+    - cupy {{ cupy_version }}
     - libnvjitlink
 {% endif %}
 
