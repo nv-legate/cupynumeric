@@ -30,7 +30,7 @@ jobs:
   build-cupynumeric:
     if: ${{ github.repository_owner == 'nv-legate' }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.46
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.48
     with:
       build-has-tests: false
       client-repo: ${{ github.event.repository.name }}
@@ -53,7 +53,7 @@ jobs:
     name: Build cupynumeric docs (${{ inputs.platform }}, ${{ inputs.target-device }})
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.46
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.48
     with:
       build-has-tests: false
       build-mode: ${{ inputs.build-mode }}

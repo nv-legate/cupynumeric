@@ -58,7 +58,7 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.46
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.48
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
@@ -205,7 +205,7 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.46
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.48
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
@@ -234,7 +234,7 @@ jobs:
     if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == false }}
     name: Upload package to Anaconda Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.46
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.48
     with:
       build-has-tests: false
       build-mode: ""
