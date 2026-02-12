@@ -64,6 +64,7 @@ build_project() {
     . setup-utils;
 
     : "${LEGATE_CUDA_VERSION:?LEGATE_CUDA_VERSION must be set by the workflow matrix}"
+    : "${CHANNEL_NAME:?CHANNEL_NAME must be set by the workflow matrix}"
 
     init_build_env "$@";
 
