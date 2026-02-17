@@ -74,14 +74,15 @@ NDArray unary_reduction(UnaryRedCode op_code, NDArray input)
   return out;
 }
 
-NDArray binary_op(BinaryOpCode op_code, NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
+NDArray binary_op(BinaryOpCode op_code, NDArray rhs1, NDArray rhs2, std::optional<NDArray> out, 
+                    const std::vector<legate::Scalar>& extra_args = {})
 {
   auto runtime = CuPyNumericRuntime::get_runtime();
   if (!out.has_value()) {
     auto out_shape = broadcast_shapes({rhs1, rhs2});
     out            = runtime->create_array(out_shape, rhs1.type());
   }
-  out->binary_op(static_cast<int32_t>(op_code), std::move(rhs1), std::move(rhs2));
+  out->binary_op(static_cast<int32_t>(op_code), std::move(rhs1), std::move(rhs2), extra_args);
   return out.value();
 }
 

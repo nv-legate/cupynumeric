@@ -459,7 +459,8 @@ void NDArray::trilu(NDArray rhs, int32_t k, bool lower)
 
 void NDArray::dot(NDArray rhs1, NDArray rhs2) { dot_MM(rhs1.get_store(), rhs2.get_store()); }
 
-void NDArray::binary_op(int32_t op_code, NDArray rhs1, NDArray rhs2)
+void NDArray::binary_op(int32_t op_code, NDArray rhs1, NDArray rhs2, 
+                        const std::vector<legate::Scalar>& extra_args /*= {}*/)
 {
   if (rhs1.type() != rhs2.type()) {
     throw std::invalid_argument("Operands must have the same type");
@@ -481,6 +482,10 @@ void NDArray::binary_op(int32_t op_code, NDArray rhs1, NDArray rhs2)
   auto p_rhs1 = task.add_input(rhs1_store);
   auto p_rhs2 = task.add_input(rhs2_store);
   task.add_scalar_arg(legate::Scalar(op_code));
+
+  for (auto&& arg : extra_args) {
+    task.add_scalar_arg(arg);
+  }
 
   task.add_constraint(align(p_lhs, p_rhs1));
   task.add_constraint(align(p_rhs1, p_rhs2));
