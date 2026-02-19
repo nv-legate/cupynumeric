@@ -383,7 +383,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           return out_size;
         }
         case legate::mapping::StoreTarget::FBMEM: {
-          return out_size + in_count * sizeof(std::int64_t);
+          auto reduction_size = aligned_size(sizeof(std::int64_t), DEFAULT_ALIGNMENT);
+          return out_size + in_count * sizeof(std::int64_t) + reduction_size;
         }
         case legate::mapping::StoreTarget::ZCMEM: {
           return 0;
