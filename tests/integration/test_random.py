@@ -215,6 +215,14 @@ class TestRandomSeed:
         with pytest.raises(TypeError, match=msg_num):
             num.random.seed(10.5)
 
+    def test_seed_int_subclass_bad___int__(self) -> None:
+        class _BadInt(int):
+            def __int__(self):  # type: ignore[override]
+                raise TypeError("bad __int__")
+
+        with pytest.raises(TypeError, match="seed must be an integer or None"):
+            num.random.seed(_BadInt(10))
+
     def test_invalid_value_seed(self) -> None:
         msg = re.escape("Seed must be between 0 and 2**32 - 1")
         with pytest.raises(ValueError, match=msg):
@@ -233,6 +241,12 @@ def test_RandomState() -> None:
     rdm_np = np.random.RandomState(10)
     L2 = rdm_np.randn(3, 3)
     assert np.array_equal(L1, L2)
+
+
+def test_randomstate_fallback_converts_ndarray_args() -> None:
+    rdm_num = num.random.RandomState(0)
+    x = num.array([1, 2, 3, 4], dtype=np.int64)
+    rdm_num.shuffle(x)
 
 
 if __name__ == "__main__":
