@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import gc
 import json
 import math
 from functools import cache, reduce
@@ -338,6 +339,9 @@ def run_benchmark(f, samples, name, inputs, output_columns, **kwargs):
                 output_dict = dict(zip(output_columns, output_vals))
                 b.log(**{**input_dict, **output_dict})
                 times.append(output_vals[0])
+                # gc to encourage freeing resources between iterations
+                # for large problems
+                gc.collect()
             if samples > 1:
                 # Remove the largest and the smallest ones
                 if samples >= 3:
