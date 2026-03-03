@@ -114,6 +114,7 @@ def test_CuPyNumericOpCode() -> None:
         "FFT",
         "FILL",
         "FLIP",
+        "GATHER",
         "GEEV",
         "GEMM",
         "HISTOGRAM",

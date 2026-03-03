@@ -165,6 +165,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_FFT_Z2Z: int
     CUPYNUMERIC_FILL: int
     CUPYNUMERIC_FLIP: int
+    CUPYNUMERIC_GATHER: int
     CUPYNUMERIC_GEEV: int
     CUPYNUMERIC_GEMM: int
     CUPYNUMERIC_HISTOGRAM: int
@@ -392,6 +393,7 @@ class CuPyNumericOpCode(IntEnum):
     FFT = _cupynumeric.CUPYNUMERIC_FFT
     FILL = _cupynumeric.CUPYNUMERIC_FILL
     FLIP = _cupynumeric.CUPYNUMERIC_FLIP
+    GATHER = _cupynumeric.CUPYNUMERIC_GATHER
     GEEV = _cupynumeric.CUPYNUMERIC_GEEV
     GEMM = _cupynumeric.CUPYNUMERIC_GEMM
     HISTOGRAM = _cupynumeric.CUPYNUMERIC_HISTOGRAM

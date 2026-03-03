@@ -1217,6 +1217,87 @@ def test_advanced_indexing_int_mask_no_einsum():
     )
 
 
+@pytest.mark.parametrize("n", [5, 500])
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int64])
+class TestGeneralPathGather:
+    """Tests that exercise the general (ZIP + gather) path with various sizes."""
+
+    def test_two_1d_indices(self, n: int, dtype: np.dtype) -> None:
+        rng = np.random.default_rng(42)
+        data_np = np.arange(n * n, dtype=dtype).reshape(n, n)
+        rows_np = rng.integers(0, n, size=n)
+        cols_np = rng.integers(0, n, size=n)
+
+        data_num = num.array(data_np)
+        rows_num = num.array(rows_np)
+        cols_num = num.array(cols_np)
+
+        expected = data_np[rows_np, cols_np]
+        actual = data_num[rows_num, cols_num]
+        assert np.array_equal(expected, actual)
+
+    def test_broadcast_indices(self, n: int, dtype: np.dtype) -> None:
+        rng = np.random.default_rng(43)
+        m = max(n // 5, 2)
+        data_np = np.arange(n * n, dtype=dtype).reshape(n, n)
+        rows_np = rng.integers(0, n, size=(m, 1))
+        cols_np = rng.integers(0, n, size=(1, m))
+
+        data_num = num.array(data_np)
+        rows_num = num.array(rows_np)
+        cols_num = num.array(cols_np)
+
+        expected = data_np[rows_np, cols_np]
+        actual = data_num[rows_num, cols_num]
+        assert np.array_equal(expected, actual)
+
+    def test_mixed_slice_and_arrays(self, n: int, dtype: np.dtype) -> None:
+        rng = np.random.default_rng(44)
+        k = max(n // 10, 2)
+        data_np = np.arange(n * n * k, dtype=dtype).reshape(n, n, k)
+        idx0_np = rng.integers(0, n, size=k)
+        idx1_np = rng.integers(0, k, size=k)
+
+        data_num = num.array(data_np)
+        idx0_num = num.array(idx0_np)
+        idx1_num = num.array(idx1_np)
+
+        expected = data_np[idx0_np, :, idx1_np]
+        actual = data_num[idx0_num, :, idx1_num]
+        assert np.array_equal(expected, actual)
+
+    def test_noncontiguous_sparse_indices(
+        self, n: int, dtype: np.dtype
+    ) -> None:
+        rng = np.random.default_rng(45)
+        k = max(n // 10, 2)
+        data_np = np.arange(k * n * k, dtype=dtype).reshape(k, n, k)
+        idx0_np = rng.integers(0, k, size=k)
+        idx1_np = rng.integers(0, k, size=k)
+
+        data_num = num.array(data_np)
+        idx0_num = num.array(idx0_np)
+        idx1_num = num.array(idx1_np)
+
+        expected = data_np[idx0_np, :, idx1_np]
+        actual = data_num[idx0_num, :, idx1_num]
+        assert np.array_equal(expected, actual)
+
+    def test_negative_indices(self, n: int, dtype: np.dtype) -> None:
+        rng = np.random.default_rng(46)
+        data_np = np.arange(n * n, dtype=dtype).reshape(n, n)
+        rows_np = rng.integers(-n, n, size=n)
+        cols_np = rng.integers(-n, n, size=n)
+
+        data_num = num.array(data_np)
+        rows_num = num.array(rows_np)
+        cols_num = num.array(cols_np)
+
+        expected = data_np[rows_np, cols_np]
+        actual = data_num[rows_num, cols_num]
+        assert np.array_equal(expected, actual)
+
+
 def test_integer_indexing_out_of_bounds() -> None:
     arr = num.arange(12, dtype=np.float32).reshape(3, 4)
     idx = num.array([0, 999], dtype=np.int64)

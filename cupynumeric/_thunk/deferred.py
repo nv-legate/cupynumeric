@@ -1098,6 +1098,32 @@ class DeferredArray(NumPyThunk):
 
         return can_use_einsum_path, mask_axis, mask_array
 
+    def _issue_gather_task(
+        self,
+        result: DeferredArray,
+        source: DeferredArray,
+        index_array: DeferredArray,
+    ) -> None:
+        """
+        Task-based gather for single-GPU advanced indexing.
+        Semantics: result[p] = source[index_array[p]] for all p.
+        Replaces legate_runtime.issue_gather() with a kernel launch.
+        """
+        assert result.shape == index_array.shape, (
+            f"output shape {result.shape} != index shape {index_array.shape}"
+        )
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.GATHER
+        )
+
+        task.add_output(result.base)
+        task.add_input(source.base)
+        task.add_input(index_array.base)
+        task.add_broadcast(result.base)
+        task.add_broadcast(source.base)
+        task.add_broadcast(index_array.base)
+        task.execute()
+
     def _advanced_indexing_using_einsum(
         self, mask_axis: int, mask_array: Any
     ) -> tuple[bool, Any, Any, Any]:
@@ -1481,9 +1507,17 @@ class DeferredArray(NumPyThunk):
                         tuple(index_array.base.shape), self.base.type
                     )
 
-                legate_runtime.issue_gather(
-                    result.base, rhs.base, index_array.base
-                )
+                if (
+                    runtime.num_procs == 1
+                    and result.ndim > 0
+                    and rhs.ndim > 0
+                    and index_array.ndim > 0
+                ):
+                    self._issue_gather_task(result, rhs, index_array)
+                else:
+                    legate_runtime.issue_gather(
+                        result.base, rhs.base, index_array.base
+                    )
 
             else:
                 return index_array
