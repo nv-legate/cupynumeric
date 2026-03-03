@@ -15,11 +15,24 @@
 
 import numpy as np
 import pytest
+import sys
+import types
 from legate.core import StoreTarget, get_legate_runtime, types as ty
 
 import cupynumeric as num
 
 runtime = get_legate_runtime()
+
+
+def test_local_task_array_forced_gpu_path_imports_cupy(monkeypatch) -> None:
+    sentinel = object()
+    fake_cupy = types.SimpleNamespace(asarray=lambda store: sentinel)
+    monkeypatch.setitem(sys.modules, "cupy", fake_cupy)
+
+    class _FakeStore:
+        target = StoreTarget.FBMEM
+
+    assert num.local_task_array(_FakeStore()) is sentinel
 
 
 def test_local_task_array_with_array() -> None:
