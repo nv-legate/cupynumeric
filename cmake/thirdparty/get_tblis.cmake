@@ -89,6 +89,13 @@ function(find_or_configure_tblis)
         set(_CXX "${CMAKE_CXX_COMPILER_LAUNCHER} ${_CXX}")
       endif()
 
+      # Set enabled configs on x86_64, otherwise leave as default.
+      set(_tblis_configs "")
+      if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(_tblis_configs
+          "--enable-config=haswell,skx1,skx2,bulldozer,piledriver,excavator,zen,reference")
+      endif()
+
       set(ENV{CC} "${_CC}")
       set(ENV{CXX} "${_CXX}")
       message(VERBOSE "cupynumeric: ENV{CC}=\"$ENV{CC}\"")
@@ -108,6 +115,7 @@ function(find_or_configure_tblis)
         COMMAND ./configure
           ${tblis_thread_model}
           ${tblis_verbosity}
+          ${_tblis_configs}
           --disable-option-checking
           --with-label-type=int32_t
           --with-length-type=int64_t
@@ -167,14 +175,14 @@ function(find_or_configure_tblis)
 endfunction()
 
 if(NOT DEFINED cupynumeric_TBLIS_BRANCH)
-  set(cupynumeric_TBLIS_BRANCH arm-build)
+  set(cupynumeric_TBLIS_BRANCH build-fixes)
 endif()
 
 if(NOT DEFINED cupynumeric_TBLIS_REPOSITORY)
   set(cupynumeric_TBLIS_REPOSITORY https://github.com/nv-legate/tblis.git)
 endif()
 
-find_or_configure_tblis(VERSION          1.2.0
+find_or_configure_tblis(VERSION          1.3.0
                         REPOSITORY       ${cupynumeric_TBLIS_REPOSITORY}
                         BRANCH           ${cupynumeric_TBLIS_BRANCH}
                         EXCLUDE_FROM_ALL ${cupynumeric_EXCLUDE_TBLIS_FROM_ALL}
