@@ -93,7 +93,7 @@ def run_sort(
 if __name__ == "__main__":
 
     def tuple_of_ints(arg):
-        return tuple(map(int, arg.split(",")))
+        return tuple(map(int, arg.strip("()").split(",")))
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
