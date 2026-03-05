@@ -43,13 +43,16 @@ function(find_or_configure_tblis)
         EXCLUDE_FROM_ALL  ${PKG_EXCLUDE_FROM_ALL}
   )
 
+  set(_tblis_include_dir "${tblis_BINARY_DIR}/include")
+  set(_tblis_tci_lib "${tblis_BINARY_DIR}/lib/libtci${lib_suffix}")
+  set(_tblis_lib "${tblis_BINARY_DIR}/lib/libtblis${lib_suffix}")
 
   set(should_build_tblis OFF)
   if(tblis_ADDED AND
-    (NOT EXISTS "${tblis_BINARY_DIR}/include") OR
-    (NOT EXISTS "${tblis_BINARY_DIR}/lib/libtci${lib_suffix}") OR
-    (NOT EXISTS "${tblis_BINARY_DIR}/lib/libtblis${lib_suffix}"))
-    set(should_build_tblis ${tblis_ADDED})
+     (NOT EXISTS "${_tblis_include_dir}" OR
+      NOT EXISTS "${_tblis_tci_lib}" OR
+      NOT EXISTS "${_tblis_lib}"))
+    set(should_build_tblis ON)
   endif()
 
   message(VERBOSE "tblis_ADDED: ${tblis_ADDED}")
@@ -60,14 +63,14 @@ function(find_or_configure_tblis)
   if(should_build_tblis)
 
     set(should_configure_tblis ON)
-    if (EXISTS "${tblis_SOURCE_DIR}/Makefile")
+    if(EXISTS "${tblis_SOURCE_DIR}/Makefile")
       set(should_configure_tblis OFF)
     endif()
 
     message(VERBOSE "should_configure_tblis: ${should_configure_tblis}")
 
     # Configure tblis
-    if (should_configure_tblis)
+    if(should_configure_tblis)
       set(tblis_thread_model "--disable-thread-model")
       if(PKG_USE_OPENMP)
         set(tblis_thread_model "--enable-thread-model=openmp")
@@ -102,13 +105,9 @@ function(find_or_configure_tblis)
       message(VERBOSE "cupynumeric: ENV{CXX}=\"$ENV{CXX}\"")
 
       set(tblis_verbosity "--enable-silent-rules")
-      if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25")
-        cmake_language(GET_MESSAGE_LOG_LEVEL log_level)
-        if(${log_level} STREQUAL "VERBOSE" OR
-           ${log_level} STREQUAL "DEBUG" OR
-           ${log_level} STREQUAL "TRACE")
-             set(tblis_verbosity "--disable-silent-rules")
-        endif()
+      cmake_language(GET_MESSAGE_LOG_LEVEL log_level)
+      if("${log_level}" MATCHES "^(VERBOSE|DEBUG|TRACE)$")
+        set(tblis_verbosity "--disable-silent-rules")
       endif()
 
       execute_process(
@@ -136,8 +135,8 @@ function(find_or_configure_tblis)
     # Build tblis into ${tblis_BINARY_DIR}
     add_custom_command(
       OUTPUT
-        "${tblis_BINARY_DIR}/lib/libtci${lib_suffix}"
-        "${tblis_BINARY_DIR}/lib/libtblis${lib_suffix}"
+        "${_tblis_tci_lib}"
+        "${_tblis_lib}"
       COMMENT           "Building tblis"
       COMMAND           make -j${CMAKE_BUILD_PARALLEL_LEVEL} install
       DEPENDS           "${tblis_SOURCE_DIR}/Makefile"
@@ -147,25 +146,24 @@ function(find_or_configure_tblis)
     )
 
     # Makes `target_include_directories()` below work
-    file(MAKE_DIRECTORY "${tblis_BINARY_DIR}/include")
+    file(MAKE_DIRECTORY "${_tblis_include_dir}")
   endif()
 
-  if (tblis_ADDED)
+  if(tblis_ADDED)
     # We need to make the tblis target here since we
     # did not find an external package.
     add_custom_target(tblis_build ALL
-      DEPENDS "${tblis_BINARY_DIR}/lib/libtci${lib_suffix}"
-              "${tblis_BINARY_DIR}/lib/libtblis${lib_suffix}")
+      DEPENDS "${_tblis_tci_lib}" "${_tblis_lib}")
 
     add_dependencies(tblis tblis_build)
 
     add_library(tblis::tblis ALIAS tblis)
-    target_include_directories(tblis INTERFACE "${tblis_BINARY_DIR}/include")
+    target_include_directories(tblis INTERFACE "${_tblis_include_dir}")
     set_target_properties(tblis
       PROPERTIES BUILD_RPATH                         "\$ORIGIN"
                  INSTALL_RPATH                       "\$ORIGIN"
                  IMPORTED_SONAME                     tblis
-                 IMPORTED_LOCATION                   "${tblis_BINARY_DIR}/lib/libtblis${lib_suffix}"
+                 IMPORTED_LOCATION                   "${_tblis_lib}"
                  INSTALL_REMOVE_ENVIRONMENT_RPATH    ON
                  INTERFACE_POSITION_INDEPENDENT_CODE ON)
   endif()
