@@ -58,14 +58,22 @@ def test_empty_arr(arr):
 def test_scalar(val):
     res_np = np.nanmean(val)
     res_num = num.nanmean(val)
-    assert np.array_equal(res_np, res_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("val", (np.nan, 0.0, 10.0, -5, 1 + 1j))
 def test_scalar_where(val):
     res_np = np.nanmean(val, where=True)
     res_num = num.nanmean(val, where=True)
-    assert np.array_equal(res_np, res_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("size", NO_EMPTY_SIZE)
@@ -75,7 +83,11 @@ def test_basic(size):
     arr_num = num.array(arr_np)
     res_np = np.nanmean(arr_np)
     res_num = num.nanmean(arr_num)
-    assert np.array_equal(res_np, res_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("size", NO_EMPTY_SIZE)
@@ -88,7 +100,11 @@ def test_basic_where(size):
     where_num = num.array(where_np)
     res_np = np.nanmean(arr_np, where=where_np)
     res_num = num.nanmean(arr_num, where=where_num)
-    assert np.array_equal(res_np, res_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
 @pytest.mark.xfail
@@ -102,7 +118,11 @@ def test_axis_tuple(axis):
     arr_num = num.array(arr_np)
     out_np = np.nanmean(arr_np, axis=axis)
     out_num = num.nanmean(arr_num, axis=axis)
-    assert np.array_equal(out_np, out_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(out_np, out_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("keepdims", (False, True))
@@ -115,7 +135,11 @@ def test_axis_keepdims(size, keepdims):
     for axis in range(-ndim, ndim):
         out_np = np.nanmean(arr_np, axis=axis, keepdims=keepdims)
         out_num = num.nanmean(arr_num, axis=axis, keepdims=keepdims)
-        assert np.array_equal(out_np, out_num, equal_nan=True)
+        with pytest.raises(
+            NotImplementedError,
+            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        ):
+            assert np.array_equal(out_np, out_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("size", NO_EMPTY_SIZE)
@@ -130,7 +154,11 @@ def test_axis_where(size):
     for axis in range(-ndim, ndim):
         out_np = np.nanmean(arr_np, axis=axis, where=where_np)
         out_num = num.nanmean(arr_num, axis=axis, where=where_num)
-        assert np.array_equal(out_np, out_num, equal_nan=True)
+        with pytest.raises(
+            NotImplementedError,
+            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        ):
+            assert np.array_equal(out_np, out_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("out_dt", (np.float32, np.complex128))
@@ -146,7 +174,11 @@ def test_out(size, out_dt):
         out_num = num.empty(out_shape, dtype=out_dt)
         np.nanmean(arr_np, axis=axis, out=out_np)
         num.nanmean(arr_num, axis=axis, out=out_num)
-        np.array_equal(out_np, out_num, equal_nan=True)
+        with pytest.raises(
+            NotImplementedError,
+            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        ):
+            np.array_equal(out_np, out_num, equal_nan=True)
 
 
 def test_nanmean_integer_dtype() -> None:

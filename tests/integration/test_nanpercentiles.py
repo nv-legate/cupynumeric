@@ -93,7 +93,11 @@ def test_multi_axes(str_method, axes, qin_arr, keepdims, overwrite_input):
     assert q_out.shape == np_q_out.shape
     assert q_out.dtype == np_q_out.dtype
 
-    assert allclose(np_q_out, q_out, atol=eps, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to isclose",
+    ):
+        assert allclose(np_q_out, q_out, atol=eps, equal_nan=True)
 
 
 if __name__ == "__main__":

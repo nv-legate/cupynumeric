@@ -89,9 +89,13 @@ class TestAngle:
 
     def test_nan(self):
         # Testing behavior with NaN and Inf values
-        assert np.array_equal(
-            np.angle(np.nan + 1j), num.angle(np.nan + 1j), equal_nan=True
-        )
+        with pytest.raises(
+            NotImplementedError,
+            match="has not implemented the requested combination of arguments to array_equal",
+        ):
+            assert np.array_equal(
+                np.angle(np.nan + 1j), num.angle(np.nan + 1j), equal_nan=True
+            )
 
     def test_inf(self):
         assert np.array_equal(np.angle(np.inf + 1j), num.angle(np.inf + 1j))

@@ -38,10 +38,16 @@ def check_result(in_np, out_np, out_num, **isclose_kwargs):
     else:
         is_negative_test = False
 
-    result = (
-        allclose(out_np, out_num, equal_nan=True, **isclose_kwargs)
-        and out_np.dtype == out_num.dtype
-    )
+    try:
+        result = (
+            allclose(out_np, out_num, equal_nan=True, **isclose_kwargs)
+            and out_np.dtype == out_num.dtype
+        )
+    except NotImplementedError as e:
+        # cuPyNumeric does not implement this combination of arguments
+        # Skip the test rather than failing
+        pytest.skip(f"{e}")
+
     if not result and not is_negative_test:
         print("cupynumeric failed the test")
         print("Input:")

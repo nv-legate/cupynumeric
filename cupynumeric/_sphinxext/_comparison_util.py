@@ -113,9 +113,13 @@ def filter_type_names(obj: Any, *, skip: Iterable[str] = ()) -> Iterator[str]:
 
 
 def get_item(name: str, np_obj: Any, lg_obj: Any) -> ItemDetail:
-    lg_attr = getattr(lg_obj, name)
+    lg_attr = getattr(lg_obj, name, None)
 
-    if implemented := is_implemented(lg_attr):
+    # If attribute doesn't exist in cuPyNumeric, mark as not implemented
+    if lg_attr is None:
+        implemented = False
+        single = multi = ""
+    elif implemented := is_implemented(lg_attr):
         single = _support_symbol(is_single(lg_attr))
         multi = _support_symbol(is_multi(lg_attr))
     else:
@@ -148,11 +152,26 @@ def generate_section(config: SectionConfig) -> SectionDetail:
     names: Iterable[str]
 
     if config.names:
+        # Explicit list of names provided
         names = set(config.names)
+    elif config.types:
+        # Filter NumPy namespace by type to include unimplemented functions
+        all_names = (n for n in dir(np_obj) if not n.startswith("_"))
+        names = {
+            n
+            for n in all_names
+            if isinstance(getattr(np_obj, n, None), config.types)
+        }
+        names = names - SKIP
     else:
-        wrapped_names = filter_wrapped_names(lg_obj, skip=SKIP)
-        type_names = filter_type_names(lg_obj, skip=SKIP)
-        names = set(wrapped_names) | set(type_names)
+        # Auto-discover from NumPy namespace (not cuPyNumeric) to include unimplemented
+        # Get all callables from NumPy (includes functions, classes, methods)
+        all_names = (
+            n for n in dir(np_obj) if not n.startswith("_") and n not in SKIP
+        )
+        # Include anything callable (functions, classes, etc.)
+        # Note: classes are callable, so this includes types
+        names = {n for n in all_names if callable(getattr(np_obj, n, None))}
 
     # we can omit anything that isn't in np namespace to begin with
     names = {n for n in names if n in dir(np_obj)}

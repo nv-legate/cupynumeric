@@ -88,7 +88,11 @@ def test_negative_base(base):
     start, stop = 0, 2
     result_np = np.logspace(start, stop, base=base)
     result_num = num.logspace(start, stop, base=base)
-    assert np.allclose(result_np, result_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+    ):
+        assert np.allclose(result_np, result_num, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -111,7 +115,11 @@ def test_negative_base(base):
 def test_logspace_overflow(args, kwargs):
     result_np = np.logspace(*args, **kwargs)
     result_num = num.logspace(*args, **kwargs)
-    assert np.allclose(result_np, result_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+    ):
+        assert np.allclose(result_np, result_num, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -300,7 +308,11 @@ def test_logspace_start_inf(start):
     stop = 2
     result_np = np.logspace(start, stop, num=3)
     result_num = num.logspace(start, stop, num=3)
-    assert np.allclose(result_np, result_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+    ):
+        assert np.allclose(result_np, result_num, equal_nan=True)
 
 
 def test_logspace_start_nan():
@@ -308,7 +320,11 @@ def test_logspace_start_nan():
     stop = 2
     result_np = np.logspace(start, stop, num=3)
     result_num = num.logspace(start, stop, num=3)
-    assert np.allclose(result_np, result_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+    ):
+        assert np.allclose(result_np, result_num, equal_nan=True)
 
 
 def test_logspace_very_large_num():

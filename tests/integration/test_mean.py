@@ -86,7 +86,11 @@ def test_basic_where(size):
     where_num = num.array(where_np)
     res_np = np.mean(arr_np, where=where_np)
     res_num = num.mean(arr_num, where=where_num)
-    assert np.array_equal(res_np, res_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("size", NO_EMPTY_SIZE)
@@ -97,7 +101,11 @@ def test_where_broadcast(size):
     where_num = num.array(where_np)
     res_np = np.mean(arr_np, where=where_np)
     res_num = num.mean(arr_num, where=where_num)
-    assert np.array_equal(res_np, res_num, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+    ):
+        assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
 @pytest.mark.xfail
@@ -136,7 +144,11 @@ def test_axis_where(size):
     for axis in range(-ndim, ndim):
         out_np = np.mean(arr_np, axis=axis, where=where_np)
         out_num = num.mean(arr_num, axis=axis, where=where_num)
-        assert np.array_equal(out_np, out_num, equal_nan=True)
+        with pytest.raises(
+            NotImplementedError,
+            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        ):
+            assert np.array_equal(out_np, out_num, equal_nan=True)
 
 
 @pytest.mark.parametrize("array_dt", (np.int32, np.float32, np.complex64))

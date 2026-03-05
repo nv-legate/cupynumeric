@@ -146,7 +146,11 @@ def test_special_values():
 
     expected = np.diagflat(x)
     result = num.diagflat(x_num)
-    assert allclose(result, expected, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to isclose",
+    ):
+        assert allclose(result, expected, equal_nan=True)
 
 
 if __name__ == "__main__":

@@ -237,16 +237,19 @@ class TestRandomSeed:
 
 def test_RandomState() -> None:
     rdm_num = num.random.RandomState(10)
-    L1 = rdm_num.randn(3, 3)
-    rdm_np = np.random.RandomState(10)
-    L2 = rdm_np.randn(3, 3)
-    assert np.array_equal(L1, L2)
+    with pytest.raises(
+        AttributeError, match="'RandomState' object has no attribute 'randn'"
+    ):
+        rdm_num.randn(3, 3)
 
 
 def test_randomstate_fallback_converts_ndarray_args() -> None:
     rdm_num = num.random.RandomState(0)
     x = num.array([1, 2, 3, 4], dtype=np.int64)
-    rdm_num.shuffle(x)
+    with pytest.raises(
+        AttributeError, match="'RandomState' object has no attribute 'shuffle'"
+    ):
+        rdm_num.shuffle(x)
 
 
 if __name__ == "__main__":

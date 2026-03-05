@@ -25,51 +25,6 @@ import cupynumeric._utils.coverage as m  # module under test
 from cupynumeric.settings import settings
 
 
-def test_FALLBACK_WARNING() -> None:
-    assert m.FALLBACK_WARNING.format(what="foo") == (
-        "cuPyNumeric has not implemented foo "
-        + "and is falling back to canonical NumPy. "
-        + "You may notice significantly decreased performance "
-        + "for this function call."
-    )
-
-
-def test_issue_fallback_warning() -> None:
-    msg = m.FALLBACK_WARNING.format(what="foo")
-    with pytest.warns(RuntimeWarning, match=msg):
-        m.issue_fallback_warning(what="foo")
-
-
-def test_issue_fallback_warning_with_stacktrace_enabled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # Mock settings to return True for fallback_stacktrace
-    monkeypatch.setattr(
-        "cupynumeric.settings.settings.fallback_stacktrace", lambda: True
-    )
-
-    msg = m.FALLBACK_WARNING.format(what="test_function")
-    with pytest.warns(RuntimeWarning, match=msg):
-        m.issue_fallback_warning(what="test_function")
-
-
-def test_issue_fallback_warning_with_no_frame(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # Mock settings and frame
-    monkeypatch.setattr(
-        "cupynumeric.settings.settings.fallback_stacktrace", lambda: True
-    )
-    monkeypatch.setattr(
-        "cupynumeric._utils.coverage.find_last_user_stacklevel_and_frame",
-        lambda: (2, None),  # Return None for frame
-    )
-
-    msg = m.FALLBACK_WARNING.format(what="test_function")
-    with pytest.warns(RuntimeWarning, match=msg):
-        m.issue_fallback_warning(what="test_function")
-
-
 def test_MOD_INTERNAL() -> None:
     assert m.MOD_INTERNAL == {"__dir__", "__getattr__"}
 
@@ -165,10 +120,6 @@ class Test_helpers:
     def test_is_implemented_true(self) -> None:
         wrapped = m.implemented(_test_func, "foo", "_test_func")
         assert m.is_implemented(wrapped)
-
-    def test_is_implemented_false(self) -> None:
-        wrapped = m.unimplemented(_test_func, "foo", "_test_func")
-        assert not m.is_implemented(wrapped)
 
 
 class Test_implemented:
@@ -323,125 +274,6 @@ class Test_implemented:
         mock_record_api_call.assert_not_called()
 
 
-class Test_unimplemented:
-    @patch("cupynumeric.runtime.record_api_call")
-    def test_reporting_True_func(
-        self, mock_record_api_call: MagicMock
-    ) -> None:
-        settings.report_coverage = True
-        wrapped = m.unimplemented(_test_func, "foo", "_test_func")
-
-        assert wrapped.__name__ == _test_func.__name__
-        assert wrapped.__qualname__ == _test_func.__qualname__
-        assert wrapped.__doc__ != _test_func.__doc__
-        assert "not implemented" in wrapped.__doc__
-        assert wrapped.__wrapped__ is _test_func
-
-        assert wrapped(10, 20) == 30
-
-        mock_record_api_call.assert_called_once()
-        assert mock_record_api_call.call_args[0] == ()
-        assert mock_record_api_call.call_args[1]["name"] == "foo._test_func"
-        assert not mock_record_api_call.call_args[1]["implemented"]
-        filename, lineno = mock_record_api_call.call_args[1]["location"].split(
-            ":"
-        )
-        assert int(lineno)
-
-    @patch("cupynumeric._utils.coverage._profiling_enabled")
-    @patch("legate.core.get_legate_runtime")
-    def test_profiling_enabled_unimplemented(
-        self,
-        mock_get_legate_runtime: MagicMock,
-        mock_profiling_enabled: MagicMock,
-    ) -> None:
-        # Mock profiling to return True
-        mock_profiling_enabled.return_value = True
-
-        mock_runtime = MagicMock()
-        mock_get_legate_runtime.return_value = mock_runtime
-
-        try:
-            settings.report_coverage = False
-            wrapped = m.unimplemented(_test_func, "foo", "_test_func")
-
-            with pytest.warns(RuntimeWarning):
-                result = wrapped(10, 20)
-            assert result == 30
-        finally:
-            settings.report_coverage.unset_value()
-
-    @patch("cupynumeric.runtime.record_api_call")
-    def test_reporting_False_func(
-        self, mock_record_api_call: MagicMock
-    ) -> None:
-        settings.report_coverage = False
-        wrapped = m.unimplemented(_test_func, "foo", "_test_func")
-
-        assert wrapped.__name__ == _test_func.__name__
-        assert wrapped.__qualname__ == _test_func.__qualname__
-        assert wrapped.__doc__ != _test_func.__doc__
-        assert "not implemented" in wrapped.__doc__
-        assert wrapped.__wrapped__ is _test_func
-
-        with pytest.warns(RuntimeWarning) as record:
-            assert wrapped(10, 20) == 30
-
-        assert len(record) == 1
-        assert (
-            record[0]
-            .message.args[0]
-            .startswith(m.FALLBACK_WARNING.format(what="foo._test_func"))
-        )
-
-        mock_record_api_call.assert_not_called()
-
-    @patch("cupynumeric.runtime.record_api_call")
-    def test_reporting_True_ufunc(
-        self, mock_record_api_call: MagicMock
-    ) -> None:
-        settings.report_coverage = True
-        wrapped = m.unimplemented(_test_ufunc, "foo", "_test_ufunc")
-
-        assert wrapped.__doc__ != _test_ufunc.__doc__
-        assert "not implemented" in wrapped.__doc__
-        assert wrapped.__wrapped__ is _test_ufunc
-
-        assert wrapped(10, 20) == 30
-
-        mock_record_api_call.assert_called_once()
-        assert mock_record_api_call.call_args[0] == ()
-        assert mock_record_api_call.call_args[1]["name"] == "foo._test_ufunc"
-        assert not mock_record_api_call.call_args[1]["implemented"]
-        filename, lineno = mock_record_api_call.call_args[1]["location"].split(
-            ":"
-        )
-        assert int(lineno)
-
-    @patch("cupynumeric.runtime.record_api_call")
-    def test_reporting_False_ufunc(
-        self, mock_record_api_call: MagicMock
-    ) -> None:
-        settings.report_coverage = False
-        wrapped = m.unimplemented(_test_ufunc, "foo", "_test_ufunc")
-
-        assert wrapped.__doc__ != _test_ufunc.__doc__
-        assert "not implemented" in wrapped.__doc__
-        assert wrapped.__wrapped__ is _test_ufunc
-
-        with pytest.warns(RuntimeWarning) as record:
-            assert wrapped(10, 20) == 30
-
-        assert len(record) == 1
-        assert (
-            record[0]
-            .message.args[0]
-            .startswith(m.FALLBACK_WARNING.format(what="foo._test_ufunc"))
-        )
-
-        mock_record_api_call.assert_not_called()
-
-
 _OriginMod = ModuleType("origin")
 exec(
     """
@@ -492,21 +324,28 @@ class Test_clone_module:
 
         assert "np" not in _Dest.__dict__
 
+        # Non-function attributes are still copied
         assert _Dest.attr1 == 10
         assert _Dest.attr2 == 30
 
-        assert _Dest.function1.__wrapped__ is _OriginMod.function1
-        assert not _Dest.function1._cupynumeric_metadata.implemented
+        # Unimplemented functions are NO LONGER copied (no fallback)
+        # function1 is not in _Dest, should raise AttributeError
+        with pytest.raises(
+            AttributeError, match="has no attribute 'function1'"
+        ):
+            _ = _Dest.function1
 
+        # Implemented functions are wrapped with metadata
         assert _Dest.function2.__wrapped__
         assert _Dest.function2._cupynumeric_metadata.implemented
 
-        assert not hasattr(_Dest.extra, "_cupynumeric")
+        # Extra functions not in origin remain unwrapped
+        assert not hasattr(_Dest.extra, "_cupynumeric_metadata")
 
         settings.report_coverage.unset_value()
 
     def test_report_coverage_False(self) -> None:
-        settings.report_coverage = True
+        settings.report_coverage = False
 
         _Dest = ModuleType("dest")
         exec(_DestCode, _Dest.__dict__)
@@ -518,16 +357,23 @@ class Test_clone_module:
 
         assert "np" not in _Dest.__dict__
 
+        # Non-function attributes are still copied
         assert _Dest.attr1 == 10
         assert _Dest.attr2 == 30
 
-        assert _Dest.function1.__wrapped__ is _OriginMod.function1
-        assert not _Dest.function1._cupynumeric_metadata.implemented
+        # Unimplemented functions are NO LONGER copied (no fallback)
+        # function1 is not in _Dest, should raise AttributeError
+        with pytest.raises(
+            AttributeError, match="has no attribute 'function1'"
+        ):
+            _ = _Dest.function1
 
+        # Implemented functions are wrapped with metadata
         assert _Dest.function2.__wrapped__
         assert _Dest.function2._cupynumeric_metadata.implemented
 
-        assert not hasattr(_Dest.extra, "_cupynumeric")
+        # Extra functions not in origin remain unwrapped
+        assert not hasattr(_Dest.extra, "_cupynumeric_metadata")
 
         settings.report_coverage.unset_value()
 
@@ -573,16 +419,21 @@ class Test_clone_class:
         for name in OMIT_NAMES:
             assert name not in _Test_ndarray.__dict__
 
+        # Non-method attributes are still copied
         assert _Test_ndarray.attr1 == 10
         assert _Test_ndarray.attr2 == 30
 
-        assert _Test_ndarray.foo.__wrapped__ is _Orig_ndarray.foo
-        assert not _Test_ndarray.foo._cupynumeric_metadata.implemented
+        # Unimplemented methods are NO LONGER copied (no fallback)
+        # foo is not in _Test_ndarray, should raise AttributeError
+        with pytest.raises(AttributeError, match="has no attribute 'foo'"):
+            _ = _Test_ndarray.foo
 
+        # Implemented methods are wrapped with metadata
         assert _Test_ndarray.bar.__wrapped__
         assert _Test_ndarray.bar._cupynumeric_metadata.implemented
 
-        assert not hasattr(_Test_ndarray.extra, "_cupynumeric")
+        # Extra methods not in origin remain unwrapped
+        assert not hasattr(_Test_ndarray.extra, "_cupynumeric_metadata")
 
         settings.report_coverage.unset_value()
 
@@ -592,23 +443,34 @@ class Test_clone_class:
         for name in OMIT_NAMES:
             assert name not in _Test_ndarray.__dict__
 
+        # Non-method attributes are still copied
         assert _Test_ndarray.attr1 == 10
         assert _Test_ndarray.attr2 == 30
 
-        assert _Test_ndarray.foo.__wrapped__ is _Orig_ndarray.foo
-        assert not _Test_ndarray.foo._cupynumeric_metadata.implemented
+        # Unimplemented methods are NO LONGER copied (no fallback)
+        # foo is not in _Test_ndarray, should raise AttributeError
+        with pytest.raises(AttributeError, match="has no attribute 'foo'"):
+            _ = _Test_ndarray.foo
 
+        # Implemented methods are wrapped with metadata
         assert _Test_ndarray.bar.__wrapped__
         assert _Test_ndarray.bar._cupynumeric_metadata.implemented
 
-        assert not hasattr(_Test_ndarray.extra, "_cupynumeric")
+        # Extra methods not in origin remain unwrapped
+        assert not hasattr(_Test_ndarray.extra, "_cupynumeric_metadata")
 
         settings.report_coverage.unset_value()
 
-    def test_fallback(self):
+    def test_no_fallback(self):
+        """Test that fallback to NumPy has been removed."""
         a = _Test_ndarray()
         b = _Test_ndarray()
-        assert a.foo(b) == "original foo"
+
+        # Unimplemented methods should raise AttributeError (no fallback)
+        with pytest.raises(AttributeError, match="has no attribute 'foo'"):
+            a.foo(b)
+
+        # Implemented methods still work
         assert a.bar(b) == "new bar"
         assert a.extra(b) == "new extra"
 
@@ -620,30 +482,32 @@ def test_ufunc_methods_binary() -> None:
     assert np.add.reduce.__wrapped__
     assert np.add.reduce._cupynumeric_metadata.implemented
 
-    # the rest are not
-    assert np.add.reduceat.__wrapped__
-    assert not np.add.reduceat._cupynumeric_metadata.implemented
-    assert np.add.outer.__wrapped__
-    assert not np.add.outer._cupynumeric_metadata.implemented
-    assert np.add.at.__wrapped__
-    assert not np.add.at._cupynumeric_metadata.implemented
-    assert np.add.accumulate.__wrapped__
-    assert not np.add.accumulate._cupynumeric_metadata.implemented
+    # Unimplemented ufunc methods are NO LONGER available (no fallback)
+    with pytest.raises(AttributeError):
+        _ = np.add.reduceat
+    with pytest.raises(AttributeError):
+        _ = np.add.outer
+    with pytest.raises(AttributeError):
+        _ = np.add.at
+    with pytest.raises(AttributeError):
+        _ = np.add.accumulate
 
 
 def test_ufunc_methods_unary() -> None:
     import cupynumeric as np
 
-    assert np.negative.reduce.__wrapped__
-    assert not np.negative.reduce._cupynumeric_metadata.implemented
-    assert np.negative.reduceat.__wrapped__
-    assert not np.negative.reduceat._cupynumeric_metadata.implemented
-    assert np.negative.outer.__wrapped__
-    assert not np.negative.outer._cupynumeric_metadata.implemented
-    assert np.negative.at.__wrapped__
-    assert not np.negative.at._cupynumeric_metadata.implemented
-    assert np.negative.accumulate.__wrapped__
-    assert not np.negative.accumulate._cupynumeric_metadata.implemented
+    # All ufunc methods for unary ufuncs are unimplemented
+    # After removing fallback, they should not exist (raise AttributeError)
+    with pytest.raises(AttributeError):
+        _ = np.negative.reduce
+    with pytest.raises(AttributeError):
+        _ = np.negative.reduceat
+    with pytest.raises(AttributeError):
+        _ = np.negative.outer
+    with pytest.raises(AttributeError):
+        _ = np.negative.at
+    with pytest.raises(AttributeError):
+        _ = np.negative.accumulate
 
 
 def test_implemented_decorator_actual() -> None:

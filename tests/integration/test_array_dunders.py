@@ -46,11 +46,11 @@ def test_array_function_implemented():
 
 
 def test_array_function_unimplemented():
-    res_np = np.linalg.tensorsolve(arr_np, vec_np)
-    res_num = np.linalg.tensorsolve(arr_num, vec_num)
-
-    assert np.array_equal(res_np, res_num)
-    assert isinstance(res_num, np.ndarray)  # unimplemented
+    with pytest.raises(
+        AttributeError,
+        match="module 'cupynumeric.linalg' has no attribute 'tensorsolve'",
+    ):
+        np.linalg.tensorsolve(arr_num, vec_num)
 
 
 def test_array_function_defer():
@@ -86,38 +86,35 @@ def test_array_ufunc_reduce():
 
 
 def test_array_ufunc_accumulate():
-    res_np = np.add.accumulate(vec_np)
-    res_num = np.add.accumulate(vec_num)
-
-    assert np.array_equal(res_np, res_num)
-    assert isinstance(res_num, np.ndarray)  # unimplemented
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented add.accumulate",
+    ):
+        np.add.accumulate(vec_num)
 
 
 def test_array_ufunc_reduceat():
-    res_np = np.add.reduceat(vec_np, indices)
-    res_num = np.add.reduceat(vec_num, indices)
-
-    assert np.array_equal(res_np, res_num)
-    assert isinstance(res_num, np.ndarray)  # unimplemented
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented add.reduceat",
+    ):
+        np.add.reduceat(vec_num, indices)
 
 
 def test_array_ufunc_outer():
-    res_np = np.add.outer(vec_np, vec_np)
-    res_num = np.add.outer(vec_num, vec_num)
-
-    assert np.array_equal(res_np, res_num)
-    assert isinstance(res_num, np.ndarray)  # unimplemented
+    with pytest.raises(
+        NotImplementedError, match="cuPyNumeric has not implemented add.outer"
+    ):
+        np.add.outer(vec_num, vec_num)
 
 
 def test_array_ufunc_at():
-    res_np = np.full((4,), 42)
     res_num = num.full((4,), 42)
 
-    np.add.at(res_np, indices, vec_np)
-    np.add.at(res_num, indices, vec_num)
-
-    assert np.array_equal(res_np, res_num)
-    assert isinstance(res_num, num.ndarray)
+    with pytest.raises(
+        NotImplementedError, match="cuPyNumeric has not implemented add.at"
+    ):
+        np.add.at(res_num, indices, vec_num)
 
 
 def test_array_ufunc_defer():

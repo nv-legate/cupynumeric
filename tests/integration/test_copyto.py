@@ -293,7 +293,11 @@ def test_nan_inf_with_where():
 
     np.copyto(dst, src, where=where)
     num.copyto(num_dst, num_src, where=num_where)
-    assert np.allclose(dst, num_dst, equal_nan=True)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+    ):
+        np.allclose(dst, num_dst, equal_nan=True)
 
 
 def test_no_casting_valid():

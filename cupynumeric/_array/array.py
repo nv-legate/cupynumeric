@@ -27,13 +27,8 @@ from numpy.exceptions import AxisError
 
 from .. import _ufunc
 from .._utils.array import max_identity, min_identity, to_core_type
-from .._utils.coverage import (
-    clone_class,
-    is_implemented,
-    issue_fallback_warning,
-)
+from .._utils.coverage import clone_class, is_implemented
 from .._utils.linalg import dot_modes
-from .._utils.structure import deep_apply
 from ..config import (
     FFTDirection,
     FFTNormalization,
@@ -323,8 +318,8 @@ class ndarray:
             if not issubclass(type(self), t) and t is not np.ndarray:
                 return NotImplemented
 
-        # We are wrapping all NumPy modules, so we can expect to find every
-        # NumPy API call in cuPyNumeric, even if just an "unimplemented" stub.
+        # We are wrapping all NumPy modules, so we can expect to find the implemented
+        # NumPy API call in cuPyNumeric.
         module = reduce(getattr, func.__module__.split(".")[1:], cn)
         cn_func = getattr(module, func.__name__)
 
@@ -346,11 +341,11 @@ class ndarray:
                 # but not this specific combination of arguments.
                 what = f"the requested combination of arguments to {what}"
 
-        # We cannot handle this call, so we will fall back to NumPy.
-        issue_fallback_warning(what=what)
-        args = deep_apply(args, maybe_convert_to_np_ndarray)
-        kwargs = deep_apply(kwargs, maybe_convert_to_np_ndarray)
-        return func(*args, **kwargs)
+        # We cannot handle this call - raise an error instead of falling back
+        raise NotImplementedError(
+            f"cuPyNumeric has not implemented {what}. "
+            f"This function is not available."
+        )
 
     def __array_ufunc__(
         self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any
@@ -393,11 +388,11 @@ class ndarray:
                 except NotImplementedError:
                     what = f"the requested combination of arguments to {what}"
 
-        # We cannot handle this ufunc call, so we will fall back to NumPy.
-        issue_fallback_warning(what=what)
-        inputs = deep_apply(inputs, maybe_convert_to_np_ndarray)
-        kwargs = deep_apply(kwargs, maybe_convert_to_np_ndarray)
-        return getattr(ufunc, method)(*inputs, **kwargs)
+        # We cannot handle this ufunc call - raise an error instead of falling back
+        raise NotImplementedError(
+            f"cuPyNumeric has not implemented {what}. "
+            f"This ufunc method is not available."
+        )
 
     @property
     def T(self) -> ndarray:

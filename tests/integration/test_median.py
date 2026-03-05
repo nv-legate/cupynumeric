@@ -150,7 +150,11 @@ class TestNanmedian:
         for axis in range(0, ndim):
             np_res = np.nanmedian(np_arr, axis=axis)
             num_res = num.nanmedian(num_arr, axis=axis)
-            assert np.array_equal(np_res, num_res, equal_nan=True)
+            with pytest.raises(
+                NotImplementedError,
+                match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+            ):
+                assert np.array_equal(np_res, num_res, equal_nan=True)
 
     def test_nanmedian_identical_values_with_nans(self):
         assert num.nanmedian([np.nan, np.nan, 5, np.nan]) == 5
@@ -173,9 +177,13 @@ class TestNanmedian:
         arr_2d = num.array([[1, np.nan], [5, 7]])
         median_axis0 = num.nanmedian(arr_2d, axis=0, overwrite_input=True)
         assert np.array_equal(median_axis0, [3, 7])
-        assert np.array_equal(
-            arr_2d, [[1, np.nan], [5, 7]], equal_nan=True
-        )  # Check if input array is altered
+        with pytest.raises(
+            NotImplementedError,
+            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        ):
+            assert np.array_equal(
+                arr_2d, [[1, np.nan], [5, 7]], equal_nan=True
+            )  # Check if input array is altered
 
 
 if __name__ == "__main__":

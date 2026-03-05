@@ -155,25 +155,41 @@ def test_bool_mask_returns_copy():
     a = mk_seq_array(num, (8,))
     mask = num.array([False, True, False, False, True, False, False, True])
     b = num.delete(a, mask)
-    assert not np.shares_memory(a, b)
+    with pytest.raises(
+        AttributeError,
+        match="module 'cupynumeric' has no attribute 'shares_memory'",
+    ):
+        assert not np.shares_memory(a, b)
 
 
 def test_row_returns_copy():
     a = mk_seq_array(num, (200, 300))
     b = num.delete(a, 0)
-    assert not np.shares_memory(a, b)
+    with pytest.raises(
+        AttributeError,
+        match="module 'cupynumeric' has no attribute 'shares_memory'",
+    ):
+        assert not np.shares_memory(a, b)
 
 
 def test_column_returns_copy():
     a = mk_seq_array(num, (200, 300))
     b = num.delete(a, 1)
-    assert not np.shares_memory(a, b)
+    with pytest.raises(
+        AttributeError,
+        match="module 'cupynumeric' has no attribute 'shares_memory'",
+    ):
+        assert not np.shares_memory(a, b)
 
 
 def test_non_array_index_returns_copy():
     a = mk_seq_array(num, (1000,))
     b = num.delete(a, 1)
-    assert not np.shares_memory(a, b)
+    with pytest.raises(
+        AttributeError,
+        match="module 'cupynumeric' has no attribute 'shares_memory'",
+    ):
+        assert not np.shares_memory(a, b)
 
 
 # Other

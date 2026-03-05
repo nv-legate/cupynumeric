@@ -240,10 +240,12 @@ def test_eager_binary_ufunc_out_with_deferred_thunk() -> None:
 
 def test_numpy_ufunc_reduce_falls_back_when_unimplemented() -> None:
     arr = num.arange(1, 7, dtype=np.float64)
-    expected = np.true_divide.reduce(arr.__array__())
 
-    got = np.true_divide.reduce(arr)
-    assert np.allclose(got, expected)
+    with pytest.raises(
+        NotImplementedError,
+        match="cuPyNumeric has not implemented the requested combination of arguments to divide.reduce",
+    ):
+        np.true_divide.reduce(arr)
 
 
 @dataclass(frozen=True)

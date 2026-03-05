@@ -14,7 +14,6 @@
 #
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from enum import Enum
 import numpy
@@ -39,20 +38,9 @@ from legate.core.utils import OrderedSet
 
 from ..runtime import runtime
 from ..settings import settings
-from .stack import (
-    find_last_user_line_numbers,
-    find_last_user_stacklevel_and_frame,
-)
-from .structure import deep_apply
+from .stack import find_last_user_line_numbers
 
 __all__ = ("GPUSupport", "clone_module", "clone_class")
-
-FALLBACK_WARNING = (
-    "cuPyNumeric has not implemented {what} "
-    "and is falling back to canonical NumPy. "
-    "You may notice significantly decreased performance "
-    "for this function call."
-)
 
 MOD_INTERNAL = {"__dir__", "__getattr__"}
 
@@ -93,26 +81,6 @@ def ProfileRange(name: str, location: str) -> Iterator[None]:
 @cache
 def _profiling_enabled() -> bool:
     return get_legate_runtime().config().profile  # type: ignore
-
-
-def issue_fallback_warning(what: str) -> None:
-    stacklevel, frame = find_last_user_stacklevel_and_frame()
-    msg = FALLBACK_WARNING.format(what=what)
-    if settings.fallback_stacktrace():
-        if frame:
-            import traceback
-
-            stacklist = traceback.extract_stack(frame)
-            stack = "".join(traceback.format_list(stacklist))
-            msg += f"\n\n{stack}"
-        else:
-            msg += " (could not extract stacktrace)"
-    else:
-        msg += (
-            "\n\nSet CUPYNUMERIC_FALLBACK_STACKTRACE=1 and re-run to include "
-            "a full stack trace with this warning."
-        )
-    warnings.warn(msg, stacklevel=stacklevel, category=RuntimeWarning)
 
 
 def filter_namespace(
@@ -242,73 +210,6 @@ _UNIMPLEMENTED_COPIED_ATTRS = tuple(
 )
 
 
-def unimplemented(
-    func: AnyCallable,
-    prefix: str,
-    name: str,
-    fallback: Callable[[Any], Any] | None = None,
-) -> CuWrapped:
-    name = f"{prefix}.{name}"
-    reporting = settings.report_coverage()
-    profiling = _profiling_enabled()
-    full_bt = reporting and settings.report_dump_callstack()
-
-    # Previously we were depending on NumPy functions to automatically convert
-    # all array-like arguments to `numpy.ndarray` through `__array__()` (taking
-    # some care to skip the `__array_function__` dispatch logic, to avoid
-    # infinite loops). However, it appears that this behavior is inconsistent
-    # in NumPy, so we will instead convert any `cupynumeric.ndarray`s manually
-    # before calling into NumPy.
-
-    wrapper: CuWrapped
-
-    @wraps(func, assigned=_UNIMPLEMENTED_COPIED_ATTRS)
-    @_fixup_co_name(func, "unimplemented")
-    def _wrapper(*args: Any, **kwargs: Any) -> Any:
-        if reporting or profiling:
-            location = find_last_user_line_numbers(top_only=(not full_bt))
-
-        def run_func(args: Any, kwargs: Any) -> Any:
-            if reporting:
-                runtime.record_api_call(
-                    name=name, location=location, implemented=False
-                )
-            else:
-                issue_fallback_warning(what=name)
-            if fallback:
-                args = deep_apply(args, fallback)
-                kwargs = deep_apply(kwargs, fallback)
-                result = func(*args, **kwargs)
-                if isinstance(result, numpy.ndarray):
-                    from .._array.util import convert_to_cupynumeric_ndarray
-
-                    return convert_to_cupynumeric_ndarray(result)
-                return result
-            else:
-                return func(*args, **kwargs)
-
-        if not profiling:
-            return run_func(args, kwargs)
-
-        with ProfileRange(name, location):
-            result = run_func(args, kwargs)
-            upr_result.set(result)
-            return result
-
-    wrapper = cast(CuWrapped, _wrapper)
-
-    wrapper.__doc__ = f"""
-    cuPyNumeric has not implemented this function, and will fall back to NumPy.
-
-    See Also
-    --------
-    {name}
-    """
-    wrapper._cupynumeric_metadata = CuWrapperMetadata(implemented=False)
-
-    return wrapper
-
-
 def clone_module(
     origin_module: ModuleType,
     new_globals: dict[str, Any],
@@ -365,43 +266,25 @@ def clone_module(
         ):
             wrapped = implemented(cast(AnyCallable, value), mod_name, attr)
             new_globals[attr] = wrapped
+
             if isinstance(value, lgufunc):
+                # Only wrap implemented ufunc methods
                 for method in UFUNC_METHODS:
-                    wrapped_method = (
-                        implemented(
+                    if hasattr(value, method):
+                        wrapped_method = implemented(
                             getattr(value, method),
                             f"{mod_name}.{attr}",
                             method,
                         )
-                        if hasattr(value, method)
-                        else unimplemented(
-                            getattr(getattr(origin_module, attr), method),
-                            f"{mod_name}.{attr}",
-                            method,
-                            fallback=fallback,
-                        )
-                    )
-                    setattr(wrapped, method, wrapped_method)
+                        setattr(wrapped, method, wrapped_method)
 
-    from numpy import ufunc as npufunc
-
+    # Only copy non-function items (dtype types, constants, etc.)
+    # Don't wrap unimplemented functions - they will raise AttributeError
     for attr, value in missing.items():
-        if should_wrap(value) or (
+        if not should_wrap(value) and not (
             include_builtin_function_type
             and isinstance(value, BuiltinFunctionType)
         ):
-            wrapped = unimplemented(value, mod_name, attr, fallback=fallback)
-            new_globals[attr] = wrapped
-            if isinstance(value, npufunc):
-                for method in UFUNC_METHODS:
-                    wrapped_method = unimplemented(
-                        getattr(value, method),
-                        f"{mod_name}.{attr}",
-                        method,
-                        fallback=fallback,
-                    )
-                    setattr(wrapped, method, wrapped_method)
-        else:
             new_globals[attr] = value
 
 
@@ -454,13 +337,10 @@ def clone_class(
                 wrapped = implemented(value, class_name, attr)
                 setattr(cls, attr, wrapped)
 
+        # Only copy non-method items (constants, properties, etc.)
+        # Don't wrap unimplemented methods - they will raise AttributeError
         for attr, value in missing.items():
-            if should_wrap(value):
-                wrapped = unimplemented(
-                    value, class_name, attr, fallback=fallback
-                )
-                setattr(cls, attr, wrapped)
-            else:
+            if not should_wrap(value):
                 setattr(cls, attr, value)
 
         return cls
