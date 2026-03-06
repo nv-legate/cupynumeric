@@ -24,6 +24,7 @@ Available Suites:
     all               - Run all available benchmarks
     advanced_indexing - Optimized indexing paths (putmask, einsum, take_task)
     general_indexing  - General indexing (ADVANCED_INDEXING task + Copy)
+    general_random    - General random generation
 
 Examples:
     # Run with cupynumeric (default)
@@ -67,6 +68,8 @@ from fast_advanced_indexing_bench import (
 )
 from general_indexing_bench import run_benchmarks as run_general_indexing
 
+from general_random_bench import run_benchmarks as run_general_random
+
 
 # =============================================================================
 # MAIN
@@ -85,7 +88,12 @@ def main():
         "--suite",
         type=str,
         default="all",
-        choices=["all", "advanced_indexing", "general_indexing"],
+        choices=[
+            "all",
+            "advanced_indexing",
+            "general_indexing",
+            "general_random",
+        ],
         help="Benchmark suite to run (default: all)",
     )
     parser.add_argument(
@@ -134,6 +142,7 @@ def main():
     suites = {
         "advanced_indexing": run_advanced_indexing,
         "general_indexing": run_general_indexing,
+        "general_random": run_general_random,
     }
 
     # Helper function to run a single suite
