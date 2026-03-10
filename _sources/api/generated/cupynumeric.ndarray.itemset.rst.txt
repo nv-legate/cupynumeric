@@ -1,6 +1,0 @@
-﻿cupynumeric.ndarray.itemset
-===========================
-
-.. currentmodule:: cupynumeric
-
-.. autoattribute:: ndarray.itemset
