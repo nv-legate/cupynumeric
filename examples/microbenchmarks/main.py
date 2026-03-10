@@ -23,6 +23,7 @@ Usage:
 Available Suites:
     all               - Run all available benchmarks
     advanced_indexing - Optimized indexing paths (putmask, einsum, take_task)
+    gemm_gemv         - GEMM/GEMV microbenchmarks
     general_indexing  - General indexing (ADVANCED_INDEXING task + Copy)
     general_random    - General random generation
 
@@ -66,6 +67,7 @@ from microbenchmark_utilities import MicrobenchmarkSuite
 from fast_advanced_indexing_bench import (
     run_benchmarks as run_advanced_indexing,
 )
+from gemm_gemv_bench import run_benchmarks as run_gemm_gemv
 from general_indexing_bench import run_benchmarks as run_general_indexing
 
 from general_random_bench import run_benchmarks as run_general_random
@@ -91,6 +93,7 @@ def main():
         choices=[
             "all",
             "advanced_indexing",
+            "gemm_gemv",
             "general_indexing",
             "general_random",
         ],
@@ -119,6 +122,25 @@ def main():
         action="store_true",
         help="Print unified summary table at the end (parses all generated CSV files)",
     )
+    parser.add_argument(
+        "--gemm-gemv-variant",
+        type=str,
+        default="all",
+        choices=["skinny_gemm", "square_gemm", "gemv", "all"],
+        help="GEMM/GEMV variant to run (default: all)",
+    )
+    parser.add_argument(
+        "--gemm-gemv-precision",
+        type=str,
+        default="32",
+        choices=["32", "64", "all"],
+        help="GEMM/GEMV precision in bits (default: 32)",
+    )
+    parser.add_argument(
+        "--gemm-gemv-check",
+        action="store_true",
+        help="Validate GEMM/GEMV results after each timed sample",
+    )
 
     # Parse using standard infrastructure (adds --benchmark, --package, etc.)
     args, np, timer = parse_args(parser)
@@ -136,11 +158,16 @@ def main():
         print(
             f"  Benchmark samples: {args.benchmark} (structured logging enabled)"
         )
+    if args.suite in ("all", "gemm_gemv"):
+        print(f"  GEMM/GEMV variant: {args.gemm_gemv_variant}")
+        print(f"  GEMM/GEMV precision: {args.gemm_gemv_precision}")
+        print(f"  GEMM/GEMV check: {args.gemm_gemv_check}")
     print("=" * 80)
 
     # Available benchmark suites
     suites = {
         "advanced_indexing": run_advanced_indexing,
+        "gemm_gemv": run_gemm_gemv,
         "general_indexing": run_general_indexing,
         "general_random": run_general_random,
     }
@@ -151,7 +178,16 @@ def main():
         suite = MicrobenchmarkSuite(
             suite_name=suite_name, args=args, np_module=np, timer=timer
         )
-        suites[suite_name](suite, args.size)
+        if suite_name == "gemm_gemv":
+            suites[suite_name](
+                suite,
+                args.size,
+                variant=args.gemm_gemv_variant,
+                precision=args.gemm_gemv_precision,
+                perform_check=args.gemm_gemv_check,
+            )
+        else:
+            suites[suite_name](suite, args.size)
         return suite
 
     # Run selected suite(s)
@@ -340,10 +376,13 @@ def parse_csv_files_from_directory(suite_coordinators, output_dir):
                         else 0
                     )
 
-                    # Extract suite name and benchmark name
-                    parts = bench_name.split("_", 1)
-                    suite_name = parts[0] if len(parts) > 0 else ""
-                    benchmark_name = parts[1] if len(parts) > 1 else bench_name
+                    # Use the known suite name instead of splitting on "_".
+                    suite_name = suite.suite_name
+                    prefix = f"{suite_name}_"
+                    if bench_name.startswith(prefix):
+                        benchmark_name = bench_name[len(prefix) :]
+                    else:
+                        benchmark_name = bench_name
 
                     all_data.append(
                         {
