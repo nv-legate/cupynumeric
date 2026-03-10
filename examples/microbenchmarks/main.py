@@ -26,6 +26,7 @@ Available Suites:
     gemm_gemv         - GEMM/GEMV microbenchmarks
     general_indexing  - General indexing (ADVANCED_INDEXING task + Copy)
     general_random    - General random generation
+    general_nanred    - General nansum(), nanmean()
 
 Examples:
     # Run with cupynumeric (default)
@@ -72,6 +73,8 @@ from general_indexing_bench import run_benchmarks as run_general_indexing
 
 from general_random_bench import run_benchmarks as run_general_random
 
+from general_nanred_bench import run_benchmarks as run_general_nanred
+
 
 # =============================================================================
 # MAIN
@@ -96,6 +99,7 @@ def main():
             "gemm_gemv",
             "general_indexing",
             "general_random",
+            "general_nanred",
         ],
         help="Benchmark suite to run (default: all)",
     )
@@ -170,6 +174,7 @@ def main():
         "gemm_gemv": run_gemm_gemv,
         "general_indexing": run_general_indexing,
         "general_random": run_general_random,
+        "general_nanred": run_general_nanred,
     }
 
     # Helper function to run a single suite
