@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import legate.core.types as ty
 import numpy as np
@@ -93,7 +93,7 @@ def max_identity(
     if ty.kind == "i" or ty.kind == "u":
         return np.iinfo(ty).min
     elif ty.kind == "f":
-        return np.finfo(ty).min
+        return cast(np.floating[Any], np.finfo(ty).min)
     elif ty.kind == "c":
         return np.finfo(np.float64).min + np.finfo(np.float64).min * 1j
     elif ty.kind == "b":
@@ -108,7 +108,7 @@ def min_identity(
     if ty.kind == "i" or ty.kind == "u":
         return np.iinfo(ty).max
     elif ty.kind == "f":
-        return np.finfo(ty).max
+        return cast(np.floating[Any], np.finfo(ty).max)
     elif ty.kind == "c":
         return np.finfo(np.float64).max + np.finfo(np.float64).max * 1j
     elif ty.kind == "b":

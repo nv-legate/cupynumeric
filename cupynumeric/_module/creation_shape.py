@@ -165,12 +165,11 @@ def eye(
     --------
     Multiple GPUs, Multiple CPUs
     """
-    if dtype is not None:
-        dtype = np.dtype(dtype)
+    resolved_dtype = np.float64 if dtype is None else np.dtype(dtype)
     if M is None:
         M = N
     k = operator.index(k)
-    result = ndarray((N, M), dtype)
+    result = ndarray((N, M), resolved_dtype)
     result._thunk.eye(k)
     return result
 

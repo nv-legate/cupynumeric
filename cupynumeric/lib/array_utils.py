@@ -31,7 +31,7 @@ def normalize_axis_tuple(
     ndim: int,
     argname: str | None = None,
     allow_duplicate: bool | None = None,
-) -> tuple[int, int]:
+) -> tuple[int, ...]:
     return _nat(axis, ndim, argname, allow_duplicate)
 
 

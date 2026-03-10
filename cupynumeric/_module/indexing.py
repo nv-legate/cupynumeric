@@ -24,7 +24,7 @@ from .._array.util import (
     check_writeable,
     convert_to_cupynumeric_ndarray,
 )
-from .._module.array_dimension import broadcast_arrays
+from .._module.array_dimension import broadcast_arrays, broadcast_to
 from .._utils.array import calculate_volume
 from .._utils.coverage import is_implemented
 from ..lib.array_utils import normalize_axis_index
@@ -813,10 +813,17 @@ def put_along_axis(
         if a.ndim > 1:
             # TODO call a=a.flat when flat is implemented
             raise ValueError("a.ndim>1 case is not supported when axis=None")
-        if (indices.size == 0) or (values.size == 0):
+        if indices.size == 0:
             return
         if values.shape != indices.shape:
-            values = values._wrap(indices.size)
+            try:
+                values = broadcast_to(values, indices.shape)
+            except ValueError as exc:
+                raise ValueError(
+                    "shape mismatch: value array of shape "
+                    f"{values.shape} could not be broadcast to indexing "
+                    f"result of shape {indices.shape}"
+                ) from exc
     else:
         computed_axis = normalize_axis_index(axis, a.ndim)
 

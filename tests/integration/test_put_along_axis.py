@@ -228,7 +228,13 @@ class TestPutAlongAxisErrors:
         values = mk_seq_array(np, shape)
         values_num = mk_seq_array(num, shape)
 
-        np.put_along_axis(np_arr, indices, values, None)
+        try:
+            np.put_along_axis(np_arr, indices, values, None)
+        except Exception as exc:
+            with pytest.raises(type(exc)):
+                num.put_along_axis(num_arr, indices_num, values_num, None)
+            return
+
         num.put_along_axis(num_arr, indices_num, values_num, None)
         assert np.array_equal(np_arr, num_arr)
 

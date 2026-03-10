@@ -1681,7 +1681,7 @@ class DeferredArray(NumPyThunk):
             )
             src = result.base
             for dim in np.flatnonzero(new_trivial_dims):
-                src = src.promote(dim, 1)
+                src = src.promote(int(dim), 1)
             return DeferredArray(src)
 
         assert not (np.any(src_trivial_dims) or np.any(new_trivial_dims))

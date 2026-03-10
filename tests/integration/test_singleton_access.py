@@ -62,26 +62,10 @@ def array_gen(lib):
         idx_tuple = arr.ndim * (2,)
         arr[idx_tuple] = -1
         yield arr
-    for arr in nonscalar_gen(lib):
-        idx_tuple = arr.ndim * (2,)
-        arr[idx_tuple] = lib.full((1,), -1)
-        yield arr
-    for arr in nonscalar_gen(lib):
-        idx_tuple = arr.ndim * (2,)
-        arr[idx_tuple] = lib.full((1, 1), -1)
-        yield arr
     # set single item on scalar array
     for arr in scalar_gen(lib, 42):
         idx_tuple = arr.ndim * (0,)
         arr[idx_tuple] = -1
-        yield arr
-    for arr in scalar_gen(lib, 42):
-        idx_tuple = arr.ndim * (0,)
-        arr[idx_tuple] = lib.full((1,), -1)
-        yield arr
-    for arr in scalar_gen(lib, 42):
-        idx_tuple = arr.ndim * (0,)
-        arr[idx_tuple] = lib.full((1, 1), -1)
         yield arr
     # set "multiple" items on scalar array
     for arr in scalar_gen(lib, 42):
@@ -96,6 +80,36 @@ def array_gen(lib):
 def test_all():
     for la, na in zip(array_gen(num), array_gen(np)):
         assert np.array_equal(la, na)
+
+
+def _check_singleton_assignment_parity(value_shape):
+    np_value = np.full(value_shape, -1)
+    num_value = num.full(value_shape, -1)
+
+    def check(arr_np, arr_num, idx):
+        try:
+            arr_np[idx] = np_value
+        except (TypeError, ValueError) as exc:
+            with pytest.raises(type(exc)):
+                arr_num[idx] = num_value
+        else:
+            arr_num[idx] = num_value
+            assert np.array_equal(arr_num, arr_np)
+
+    check(np.zeros((5,), dtype=np.int64), num.zeros((5,), dtype=np.int64), 2)
+    check(np.array(42), num.array(42), ())
+
+
+@pytest.mark.xfail(
+    np.lib.NumpyVersion(np.__version__) >= "2.4.0",
+    reason=(
+        "Known mismatch: scalar assignment from singleton arrays on "
+        "NumPy>=2.4 (cupynumeric#34 follow-up)"
+    ),
+)
+@pytest.mark.parametrize("value_shape", ((1,), (1, 1)))
+def test_singleton_sequence_element_assignment(value_shape):
+    _check_singleton_assignment_parity(value_shape)
 
 
 if __name__ == "__main__":

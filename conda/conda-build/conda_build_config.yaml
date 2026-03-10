@@ -15,7 +15,7 @@ python:
 numpy_version:
   # Not 2.1.0 which segfaults on asarray() sometimes, see
   # https://github.com/numpy/numpy/pull/27249
-  - ">=1.22,!=2.1.0,<2.4.0"
+  - ">=1.24,!=2.1.0,<2.5.0"
 
 cffi_version:
   - ">=1.0,<2.1"
@@ -36,7 +36,7 @@ cupy_version:
 
 cutensor_version:
   # cutensor 2.3 is required for CUDA 13
-  - ">=2.0,<2.4"
+  - ">=2.0,<2.6"
 
 libcufile_version:
   - ">=1.0,<1.17"

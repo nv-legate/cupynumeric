@@ -678,7 +678,7 @@ def _pad_cpp(
     )
 
     if mode == "constant" and constant_value.size == 1:
-        fill_scalar = convert_to_cupynumeric_ndarray(constant_value)
+        fill_scalar = constant_value._thunk.__numpy_array__().item()
         output = full(out_shape, fill_scalar, dtype=array.dtype)
         output[center_slice] = array
         return output

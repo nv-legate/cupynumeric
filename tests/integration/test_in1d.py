@@ -20,6 +20,13 @@ from utils.comparisons import allclose
 from utils.generators import mk_seq_array
 
 
+def _np_in1d(*args, **kwargs):
+    in1d = getattr(np, "in1d", None)
+    if in1d is not None:
+        return in1d(*args, **kwargs)
+    return np.isin(*args, **kwargs).ravel()
+
+
 @pytest.mark.parametrize(
     "a_shape, b_shape",
     [
@@ -38,7 +45,7 @@ def test_basic(a_shape, b_shape):
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -51,7 +58,7 @@ def test_empty_arrays(ar1, ar2):
     ar2_num = num.array(ar2)
 
     result = num.in1d(ar1_num, ar2_num)
-    expected = np.in1d(ar1, ar2)
+    expected = _np_in1d(ar1, ar2)
     assert allclose(result, expected)
 
 
@@ -62,7 +69,7 @@ def test_assume_unique(assume_unique):
     a_num = num.array(a)
     b_num = num.array(b)
     result = num.in1d(a_num, b_num, assume_unique=assume_unique)
-    expected = np.in1d(a, b, assume_unique=assume_unique)
+    expected = _np_in1d(a, b, assume_unique=assume_unique)
     assert allclose(result, expected)
 
 
@@ -73,7 +80,7 @@ def test_invert(invert):
     a_num = num.array(a)
     b_num = num.array(b)
     result = num.in1d(a_num, b_num, invert=invert)
-    expected = np.in1d(a, b, invert=invert)
+    expected = _np_in1d(a, b, invert=invert)
     assert allclose(result, expected)
 
 
@@ -94,7 +101,7 @@ def test_in1d_float_complex(a_dtype, b_dtype):
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -107,7 +114,7 @@ def test_nan_values():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -121,7 +128,7 @@ def test_inf_values():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -132,7 +139,7 @@ def test_large_arrays():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -164,7 +171,7 @@ def test_in1d_invert(invert, shape1, shape2):
     a_num = num.array(a)
     b_num = num.array(b)
     result = num.in1d(a_num, b_num, invert=invert)
-    expected = np.in1d(a, b, invert=invert)
+    expected = _np_in1d(a, b, invert=invert)
     assert allclose(result, expected)
 
 
@@ -196,7 +203,7 @@ def test_in1d_kind(kind, shape1, shape2):
     a_num = num.array(a)
     b_num = num.array(b)
 
-    expected = np.in1d(a, b, kind=kind)
+    expected = _np_in1d(a, b, kind=kind)
     result = num.in1d(a_num, b_num, kind=kind)
     assert allclose(result, expected)
 
@@ -208,7 +215,7 @@ def test_in1d_scalar_input():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -219,7 +226,7 @@ def test_in1d_scalar_ar2():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -232,7 +239,7 @@ def test_one_duplicate():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -247,7 +254,7 @@ def test_both_duplicates():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -262,7 +269,7 @@ def test_float_duplicates():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -276,7 +283,7 @@ def test_nan_duplicates():
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -290,7 +297,7 @@ def test_in1d_table_out_of_range(invert):
     ar1_num = num.array(ar1)
     ar2_num = num.array(ar2)
 
-    expected = np.in1d(ar1, ar2, kind="table", invert=invert)
+    expected = _np_in1d(ar1, ar2, kind="table", invert=invert)
     result = num.in1d(ar1_num, ar2_num, kind="table", invert=invert)
     assert allclose(result, expected)
 
@@ -303,7 +310,7 @@ def test_noncontiguous():
     a_slice = a[100:200, 100:200]
     a_num_slice = a_num[100:200, 100:200]
     result = num.in1d(a_num_slice, a_num)
-    expected = np.in1d(a_slice, a)
+    expected = _np_in1d(a_slice, a)
     assert allclose(result, expected)
 
 
@@ -315,7 +322,7 @@ def test_noncontiguous():
 #     a_num_slice = a_num[::2, ::3]
 
 #     result = num.in1d(a_num_slice, a_num)
-#     expected = np.in1d(a_slice, a)
+#     expected = _np_in1d(a_slice, a)
 #     assert allclose(result, expected)
 
 
@@ -341,7 +348,7 @@ def test_large_arrays_few_distinct_values(a_factory, b):
     b_num = num.array(b)
 
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
 
@@ -376,17 +383,17 @@ def test_large_complex_numbers():
 
     # Test basic in1d
     result = num.in1d(a_num, b_num)
-    expected = np.in1d(a, b)
+    expected = _np_in1d(a, b)
     assert allclose(result, expected)
 
     # Test with invert=True
     result_inv = num.in1d(a_num, b_num, invert=True)
-    expected_inv = np.in1d(a, b, invert=True)
+    expected_inv = _np_in1d(a, b, invert=True)
     assert allclose(result_inv, expected_inv)
 
     # Test with assume_unique=True
     result_unique = num.in1d(a_num, b_num, assume_unique=True)
-    expected_unique = np.in1d(a, b, assume_unique=True)
+    expected_unique = _np_in1d(a, b, assume_unique=True)
     assert allclose(result_unique, expected_unique)
 
 
@@ -396,9 +403,8 @@ def test_in1d_invalid_kind() -> None:
     ar1_num = num.array(ar1)
     ar2_num = num.array(ar2)
 
-    msg_np = r"Invalid kind"
-    with pytest.raises(ValueError, match=msg_np):
-        np.in1d(ar1, ar2, kind="invalid")
+    with pytest.raises(ValueError):
+        _np_in1d(ar1, ar2, kind="invalid")
 
     msg_num = r"kind must be None, 'sort', or 'table'"
     with pytest.raises(ValueError, match=msg_num):
@@ -411,10 +417,10 @@ def test_in1d_table_non_integer_dtype() -> None:
     ar1_num = num.array(ar1)
     ar2_num = num.array(ar2)
 
-    msg = r"The 'table' method is only supported for boolean or integer arrays"
-    with pytest.raises(ValueError, match=msg):
-        np.in1d(ar1, ar2, kind="table")
+    with pytest.raises(ValueError):
+        _np_in1d(ar1, ar2, kind="table")
 
+    msg = r"The 'table' method is only supported for boolean or integer arrays"
     with pytest.raises(ValueError, match=msg):
         num.in1d(ar1_num, ar2_num, kind="table")
 
@@ -426,9 +432,10 @@ def test_in1d_table_range_overflow() -> None:
     ar1_num = num.array([1, 2, 3], dtype=np.int8)
     ar2_num = num.array([-128, 127], dtype=np.int8)
 
+    with pytest.raises(RuntimeError):
+        _np_in1d(ar1, ar2, kind="table")
+
     msg = r"You have specified kind='table'.*exceed.*maximum integer"
-    with pytest.raises(RuntimeError, match=msg):
-        np.in1d(ar1, ar2, kind="table")
     with pytest.raises(RuntimeError, match=msg):
         num.in1d(ar1_num, ar2_num, kind="table")
 

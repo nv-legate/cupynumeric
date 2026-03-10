@@ -75,7 +75,7 @@ def tri(
     N: int,
     M: int | None = None,
     k: int = 0,
-    dtype: npt.DTypeLike = float,
+    dtype: npt.DTypeLike | None = float,
     *,
     like: ndarray | None = None,
 ) -> ndarray:

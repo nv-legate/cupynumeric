@@ -183,7 +183,9 @@ def perform_unary_reduction(
     elif op in _REDUCTION_UFUNC:
         # use `ufunc.resolve_dtypes()` to determine what dtype numpy would use
         ufunc = _REDUCTION_UFUNC[op]
-        op_dtypes: tuple[npt.DTypeLike, npt.DTypeLike, npt.DTypeLike]
+        op_dtypes: tuple[
+            npt.DTypeLike | None, npt.DTypeLike | None, npt.DTypeLike | None
+        ]
         if out is not None:
             op_dtypes = (out.dtype, src.dtype, None)
         else:

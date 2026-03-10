@@ -65,7 +65,8 @@ class MaskedArray:
         shrink: bool = True,
         order: str | None = None,
     ) -> None:
-        self._internal_ma = _np.ma.MaskedArray(  # type: ignore
+        masked_array_ctor = cast(Any, _np.ma.MaskedArray)
+        self._internal_ma = masked_array_ctor(
             data=maybe_convert_to_np_ndarray(data),
             mask=maybe_convert_to_np_ndarray(mask),
             dtype=dtype,

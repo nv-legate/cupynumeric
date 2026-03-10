@@ -951,7 +951,7 @@ class EagerArray(NumPyThunk):
         if self.deferred is not None:
             self.deferred.arange(start, stop, step)
         else:
-            self.array = np.arange(start, stop, step, self.dtype)
+            self.array = np.arange(start, stop, step, dtype=self.dtype)
 
     def tile(self, rhs: Any, reps: int | Sequence[int]) -> None:
         self.check_eager_args(rhs)
@@ -2346,12 +2346,12 @@ class EagerArray(NumPyThunk):
             return result
         else:
             result = EagerArray(
-                np.in1d(
+                np.isin(
                     self.array,
                     ar2.array,
                     assume_unique=assume_unique,
                     invert=invert,
                     kind=kind,
-                )
+                ).ravel()
             )
             return result

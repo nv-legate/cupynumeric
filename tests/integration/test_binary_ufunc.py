@@ -562,9 +562,12 @@ def test_array_complex() -> None:
     result = complex(a)
     assert result == 3 + 4j
 
+    b_np = np.array([2.5 + 0.5j])
     b = num.array([2.5 + 0.5j])
-    result_b = complex(b)
-    assert result_b == 2.5 + 0.5j
+    with pytest.raises(TypeError):
+        complex(b_np)
+    with pytest.raises(TypeError):
+        complex(b)
 
     c = num.array(7)
     result_c = complex(c)
