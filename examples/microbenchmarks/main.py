@@ -27,6 +27,7 @@ Available Suites:
     general_indexing  - General indexing (ADVANCED_INDEXING task + Copy)
     general_random    - General random generation
     general_nanred    - General nansum(), nanmean()
+    scalar_red        - Scalar reductions: sum, prod, min, max, argmin, argmax
 
 Examples:
     # Run with cupynumeric (default)
@@ -75,6 +76,7 @@ from general_random_bench import run_benchmarks as run_general_random
 
 from general_nanred_bench import run_benchmarks as run_general_nanred
 
+from general_scalared_bench import run_benchmarks as run_general_scalared
 
 # =============================================================================
 # MAIN
@@ -100,6 +102,7 @@ def main():
             "general_indexing",
             "general_random",
             "general_nanred",
+            "scalar_red",
         ],
         help="Benchmark suite to run (default: all)",
     )
@@ -175,6 +178,7 @@ def main():
         "general_indexing": run_general_indexing,
         "general_random": run_general_random,
         "general_nanred": run_general_nanred,
+        "scalar_red": run_general_scalared,
     }
 
     # Helper function to run a single suite
