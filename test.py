@@ -44,6 +44,7 @@ class CPNProject(Project):
                     "1",
                     "--warmup",
                     "0",
+                    "--ufunc-check",
                     "--gemm-gemv-check",
                     "--stream-check",
                 ],

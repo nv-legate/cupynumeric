@@ -29,6 +29,7 @@ Available Suites:
     general_nanred    - General nansum(), nanmean()
     scalar_red        - Scalar reductions: sum, prod, min, max, argmin, argmax
     stream            - STREAM-style bandwidth microbenchmarks
+    ufunc             - Representative ufunc microbenchmarks
 
 Examples:
     # Run with cupynumeric (default)
@@ -75,6 +76,7 @@ from general_indexing_bench import run_benchmarks as run_general_indexing
 
 from general_random_bench import run_benchmarks as run_general_random
 from stream_bench import run_benchmarks as run_stream
+from ufunc_bench import run_benchmarks as run_ufunc
 
 from general_nanred_bench import run_benchmarks as run_general_nanred
 
@@ -106,6 +108,7 @@ def main():
             "general_nanred",
             "scalar_red",
             "stream",
+            "ufunc",
         ],
         help="Benchmark suite to run (default: all)",
     )
@@ -180,6 +183,11 @@ def main():
         action="store_true",
         help="Validate STREAM results after each timed sample",
     )
+    parser.add_argument(
+        "--ufunc-check",
+        action="store_true",
+        help="Validate ufunc benchmark results after each timed sample",
+    )
 
     # Parse using standard infrastructure (adds --benchmark, --package, etc.)
     args, np, timer = parse_args(parser)
@@ -197,6 +205,8 @@ def main():
         print(
             f"  Benchmark samples: {args.benchmark} (structured logging enabled)"
         )
+    if args.suite in ("all", "ufunc"):
+        print(f"  Ufunc check: {args.ufunc_check}")
     if args.suite in ("all", "gemm_gemv"):
         print(f"  GEMM/GEMV variant: {args.gemm_gemv_variant}")
         print(f"  GEMM/GEMV precision: {args.gemm_gemv_precision}")
@@ -217,6 +227,7 @@ def main():
         "general_nanred": run_general_nanred,
         "scalar_red": run_general_scalared,
         "stream": run_stream,
+        "ufunc": run_ufunc,
     }
 
     # Helper function to run a single suite
@@ -241,6 +252,10 @@ def main():
                 precision=args.stream_precision,
                 contiguous=args.stream_contiguous,
                 perform_check=args.stream_check,
+            )
+        elif suite_name == "ufunc":
+            suites[suite_name](
+                suite, args.size, perform_check=args.ufunc_check
             )
         else:
             suites[suite_name](suite, args.size)
