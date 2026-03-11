@@ -45,6 +45,7 @@ class CPNProject(Project):
                     "--warmup",
                     "0",
                     "--gemm-gemv-check",
+                    "--stream-check",
                 ],
             ),
             CustomTest("tests/integration/test_argsort.py"),

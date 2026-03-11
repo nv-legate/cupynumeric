@@ -28,6 +28,7 @@ Available Suites:
     general_random    - General random generation
     general_nanred    - General nansum(), nanmean()
     scalar_red        - Scalar reductions: sum, prod, min, max, argmin, argmax
+    stream            - STREAM-style bandwidth microbenchmarks
 
 Examples:
     # Run with cupynumeric (default)
@@ -73,6 +74,7 @@ from gemm_gemv_bench import run_benchmarks as run_gemm_gemv
 from general_indexing_bench import run_benchmarks as run_general_indexing
 
 from general_random_bench import run_benchmarks as run_general_random
+from stream_bench import run_benchmarks as run_stream
 
 from general_nanred_bench import run_benchmarks as run_general_nanred
 
@@ -103,6 +105,7 @@ def main():
             "general_random",
             "general_nanred",
             "scalar_red",
+            "stream",
         ],
         help="Benchmark suite to run (default: all)",
     )
@@ -148,6 +151,35 @@ def main():
         action="store_true",
         help="Validate GEMM/GEMV results after each timed sample",
     )
+    parser.add_argument(
+        "--stream-operation",
+        type=str,
+        default="all",
+        choices=["copy", "mul", "scale", "add", "all"],
+        help="STREAM operation to run (default: all)",
+    )
+    parser.add_argument(
+        "--stream-precision",
+        type=str,
+        default="32",
+        choices=["32", "64", "all"],
+        help="STREAM precision in bits (default: 32)",
+    )
+    parser.add_argument(
+        "--stream-contiguous",
+        type=str,
+        default="all",
+        choices=["true", "false", "all"],
+        help=(
+            "STREAM layout to run; 'false' uses transpose-based "
+            "non-contiguous views (default: all)"
+        ),
+    )
+    parser.add_argument(
+        "--stream-check",
+        action="store_true",
+        help="Validate STREAM results after each timed sample",
+    )
 
     # Parse using standard infrastructure (adds --benchmark, --package, etc.)
     args, np, timer = parse_args(parser)
@@ -169,6 +201,11 @@ def main():
         print(f"  GEMM/GEMV variant: {args.gemm_gemv_variant}")
         print(f"  GEMM/GEMV precision: {args.gemm_gemv_precision}")
         print(f"  GEMM/GEMV check: {args.gemm_gemv_check}")
+    if args.suite in ("all", "stream"):
+        print(f"  Stream operation: {args.stream_operation}")
+        print(f"  Stream precision: {args.stream_precision}")
+        print(f"  Stream contiguous: {args.stream_contiguous}")
+        print(f"  Stream check: {args.stream_check}")
     print("=" * 80)
 
     # Available benchmark suites
@@ -179,6 +216,7 @@ def main():
         "general_random": run_general_random,
         "general_nanred": run_general_nanred,
         "scalar_red": run_general_scalared,
+        "stream": run_stream,
     }
 
     # Helper function to run a single suite
@@ -194,6 +232,15 @@ def main():
                 variant=args.gemm_gemv_variant,
                 precision=args.gemm_gemv_precision,
                 perform_check=args.gemm_gemv_check,
+            )
+        elif suite_name == "stream":
+            suites[suite_name](
+                suite,
+                args.size,
+                operation=args.stream_operation,
+                precision=args.stream_precision,
+                contiguous=args.stream_contiguous,
+                perform_check=args.stream_check,
             )
         else:
             suites[suite_name](suite, args.size)
@@ -365,7 +412,6 @@ def parse_csv_files_from_directory(suite_coordinators, output_dir):
 
                     if not rows:
                         continue
-
                     # Extract timing data
                     times = [
                         float(row.get("time (milliseconds)", 0))
