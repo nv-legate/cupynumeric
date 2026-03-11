@@ -16,7 +16,20 @@
 import pytest
 from mock import MagicMock
 from pytest_mock import MockerFixture
-from unit.util import powerset
+
+try:
+    from unit.util import powerset
+except ModuleNotFoundError:
+    # When executed directly (e.g., `coverage run path/to/test.py`), the
+    # `tests/` directory may not be on `sys.path`, so `unit.*` helpers aren't
+    # importable. Add it and retry.
+    import sys
+    from pathlib import Path
+
+    _tests_dir = Path(__file__).resolve().parents[3]
+    sys.path.insert(0, str(_tests_dir))
+    from unit.util import powerset
+
 from cupynumeric._array.util import tuple_pop
 
 import cupynumeric._array.util as m  # module under test
