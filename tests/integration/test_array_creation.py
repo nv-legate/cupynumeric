@@ -13,12 +13,17 @@
 # limitations under the License.
 #
 import copy
+import os
 from itertools import product
 
 import numpy as np
 import pytest
 
 import cupynumeric as num
+from cupynumeric.runtime import Runtime, runtime
+from cupynumeric.settings import settings
+
+EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 def test_array():
@@ -334,6 +339,170 @@ def test_array_astype_str_promote_raises() -> None:
     arr = num.array([1, 2, 3])
     with pytest.raises(TypeError, match="cuPyNumeric does not support dtype="):
         arr.astype("str")
+
+
+class TestRuntimeInitAndCoverageReporting:
+    def test_init_preload_cudalibs(self) -> None:
+        saved_preload = settings.preload_cudalibs()
+        settings.preload_cudalibs = True  # type: ignore[assignment]
+        try:
+            if runtime.num_gpus == 0:
+                pytest.skip("requires GPU runtime for _load_cudalibs path")
+            _ = Runtime()
+        finally:
+            settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
+
+    def test_report_coverage_total_zero(self) -> None:
+        saved_report = settings.report_coverage()
+        saved_preload = settings.preload_cudalibs()
+        settings.preload_cudalibs = False  # type: ignore[assignment]
+        settings.report_coverage = True  # type: ignore[assignment]
+        try:
+            r = Runtime()
+            r.api_calls = []
+            r.destroy()
+        finally:
+            settings.report_coverage = saved_report  # type: ignore[assignment]
+            settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
+
+    def test_report_coverage_dump_csv(self, tmp_path) -> None:
+        path = tmp_path / "coverage.csv"
+        saved_report = settings.report_coverage()
+        saved_dump = settings.report_dump_csv()
+        saved_preload = settings.preload_cudalibs()
+        settings.preload_cudalibs = False  # type: ignore[assignment]
+        settings.report_coverage = True  # type: ignore[assignment]
+        settings.report_dump_csv = str(path)  # type: ignore[assignment]
+
+        try:
+            r = Runtime()
+            r.api_calls = [("f", "loc", True)]
+            r.destroy()
+        finally:
+            settings.report_coverage = saved_report  # type: ignore[assignment]
+            settings.report_dump_csv = saved_dump  # type: ignore[assignment]
+            settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
+
+        text = path.read_text()
+        assert "function_name,location,implemented" in text
+
+
+def test_repeat_warn_not_warn() -> None:
+    saved_warn = settings.warn()
+    settings.warn = False  # type: ignore[assignment]
+    try:
+        a = num.array([10, 20, 30], dtype=np.int64)
+        repeats = num.array([1.0, 2.0, 1.0], dtype=np.float64)
+        out = num.repeat(a, repeats)
+        assert np.array_equal(np.asarray(out), np.array([10, 20, 20, 30]))
+    finally:
+        settings.warn = saved_warn  # type: ignore[assignment]
+
+
+class TestRuntimeGetNumpyThunk:
+    def test_get_numpy_thunk_legate_interface_multi_field(self) -> None:
+        class FakeLegateObj:
+            @property
+            def __legate_data_interface__(self):  # type: ignore[no-untyped-def]
+                return {"version": 1, "data": {"f0": object(), "f1": object()}}
+
+        with pytest.raises(
+            ValueError, match=r"Legate data must be array-like"
+        ):
+            num.array(FakeLegateObj(), copy=False)
+
+
+class TestRuntimeParentChildMapping:
+    def test_kept_added_dim(self) -> None:
+        buf = bytearray(3 * np.dtype(np.int64).itemsize)
+        parent = np.ndarray(
+            shape=(2, 3), dtype=np.int64, buffer=buf, strides=(0, 8)
+        )
+        child = parent[:, :]
+
+        saved_force_thunk = settings.force_thunk
+        settings.force_thunk = lambda: "eager"  # type: ignore[assignment]
+        try:
+            arr = num.array(child, copy=False)
+        finally:
+            settings.force_thunk = saved_force_thunk  # type: ignore[assignment]
+        assert np.array_equal(np.asarray(arr), child)
+
+    def test_removed_added_dim(self) -> None:
+        buf = bytearray(3 * np.dtype(np.int64).itemsize)
+        np.ndarray(shape=(3,), dtype=np.int64, buffer=buf)[:] = [10, 20, 30]
+        parent = np.ndarray(
+            shape=(2, 3), dtype=np.int64, buffer=buf, strides=(0, 8)
+        )
+        child = parent[0]
+
+        saved_force_thunk = settings.force_thunk
+        settings.force_thunk = lambda: "eager"  # type: ignore[assignment]
+        try:
+            arr = num.array(child, copy=False)
+        finally:
+            settings.force_thunk = saved_force_thunk  # type: ignore[assignment]
+        assert np.array_equal(np.asarray(arr), np.asarray(parent[:, :1]))
+
+    def test_added_dim_in_child(self) -> None:
+        base = np.arange(3, dtype=np.int64)
+        child = base[np.newaxis, :]
+        arr = num.array(child, copy=False)
+        assert np.array_equal(np.asarray(arr), child)
+
+    def test_transpose_stride_smaller(self) -> None:
+        buf = bytearray(6 * np.dtype(np.int64).itemsize)
+        parent = np.ndarray(
+            shape=(2, 3), dtype=np.int64, buffer=buf, strides=(24, 8)
+        )
+        child = np.ndarray(
+            shape=(3, 2), dtype=np.int64, buffer=parent, strides=(8, 24)
+        )
+        msg = r"attach to array views that are not affine transforms"
+        with pytest.raises(NotImplementedError, match=msg):
+            num.array(child, copy=False)
+
+
+class TestRuntimeFindOrCreateArrayThunk:
+    @pytest.mark.skipif(
+        EAGER_TEST,
+        reason="contiguity check is deferred-only; eager attach may bypass it",
+    )
+    def test_noncontiguous_share_raises(self) -> None:
+        buf = bytearray(64)
+        arr = np.ndarray(
+            shape=(3, 2), dtype=np.float32, buffer=buf, strides=(16, 4)
+        )
+        assert arr.base is buf
+        assert not arr.flags["C_CONTIGUOUS"]
+        assert not arr.flags["F_CONTIGUOUS"]
+        with pytest.raises(
+            ValueError,
+            match=r"Only F_CONTIGUOUS and C_CONTIGUOUS arrays are supported",
+        ):
+            num.array(arr, copy=False)
+
+
+class TestRuntimeShapeAndConversions:
+    def test_is_eager_shape_volume_print(self) -> None:
+        saved_force_thunk = settings.force_thunk
+        settings.force_thunk = lambda: None  # type: ignore[assignment]
+        try:
+            a = num.empty((2, 2), dtype=np.int64)
+            assert a.shape == (2, 2)
+        finally:
+            settings.force_thunk = saved_force_thunk  # type: ignore[assignment]
+
+    def test_are_all_eager_inputs_none(self) -> None:
+        assert Runtime.are_all_eager_inputs(None) is True
+
+    def test_to_eager_array_invalid_type(self) -> None:
+        with pytest.raises(RuntimeError, match=r"invalid array type"):
+            runtime.to_eager_array(None)  # type: ignore[arg-type]
+
+    def test_to_deferred_array_invalid_type(self) -> None:
+        with pytest.raises(RuntimeError, match=r"invalid array type"):
+            runtime.to_deferred_array(None, read_only=False)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":
