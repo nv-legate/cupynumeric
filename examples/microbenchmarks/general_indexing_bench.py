@@ -44,6 +44,8 @@ Usage:
     python main.py --suite general_indexing --package numpy
 """
 
+import random
+
 from microbenchmark_utilities import create_benchmark_function
 
 
@@ -163,7 +165,7 @@ def bench_2d_scalar_list_assignment(np, timer, n, num_cols, runs, warmup):
     """2D assignment with scalar row + list of columns (like result[idx, list(positions)] = True)."""
     a = np.random.random((n, n))
     idx = n // 2
-    positions = list(np.random.choice(n, num_cols, replace=False))
+    positions = random.sample(range(n), num_cols)
 
     def operation():
         a[idx, positions] = 999.0

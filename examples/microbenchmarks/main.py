@@ -18,7 +18,8 @@ CuPyNumeric Microbenchmark Suite
 Unified entry point for all microbenchmarks.
 
 Usage:
-    python main.py [--suite SUITE] [--size SIZE] [--runs RUNS] [options]
+    python main.py [--suite SUITE] [--size SIZE] [--runs RUNS]
+                   [--fail-fast] [options]
 
 Available Suites:
     all               - Run all available benchmarks
@@ -56,6 +57,7 @@ Standard Benchmark Options (from examples/benchmark.py):
 
 import argparse
 import sys
+import traceback
 from pathlib import Path
 
 # Add parent directory to path to import benchmark.py
@@ -136,6 +138,11 @@ def main():
         help="Print unified summary table at the end (parses all generated CSV files)",
     )
     parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Exit immediately after the first suite failure",
+    )
+    parser.add_argument(
         "--gemm-gemv-variant",
         type=str,
         default="all",
@@ -201,6 +208,8 @@ def main():
     print(f"  Size: {args.size:,} elements")
     print(f"  Runs: {args.runs}")
     print(f"  Warmup: {args.warmup}")
+    if args.fail_fast:
+        print("  Fail fast: enabled")
     if args.benchmark > 0:
         print(
             f"  Benchmark samples: {args.benchmark} (structured logging enabled)"
@@ -263,16 +272,18 @@ def main():
 
     # Run selected suite(s)
     suite_coordinators = []
+    failures = []
 
     if args.suite == "all":
         for suite_name in suites.keys():
             try:
                 suite_coordinators.append(run_suite(suite_name))
-            except Exception as e:
-                print(f"\nError in {suite_name} suite: {e}")
-                import traceback
-
+            except Exception as exc:
+                print(f"\nError in {suite_name} suite: {exc}")
                 traceback.print_exc()
+                failures.append(suite_name)
+                if args.fail_fast:
+                    return 1
     else:
         if args.suite in suites:
             suite_coordinators.append(run_suite(args.suite))
@@ -297,6 +308,15 @@ def main():
         print(f"Total suites run: {len(suite_coordinators)}")
         print(f"Total benchmarks: {total_benchmarks}")
         print("=" * 80)
+
+    if failures:
+        print("\n" + "=" * 80)
+        print("FAILED SUITES")
+        print("=" * 80)
+        for suite_name in failures:
+            print(f"- {suite_name}")
+        print("=" * 80)
+        return 1
 
     return 0
 
