@@ -157,6 +157,42 @@ def test_invalid_varargs():
         cn.gradient(x, 0.5, 1.0, 2.0)  # Too many varargs provided
 
 
+def test_distances_scalar_or_1d() -> None:
+    f = cn.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    spacing_2d = np.array([[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(
+        ValueError, match="distances must be either scalars or 1d"
+    ):
+        cn.gradient(f, np.array([1.0, 2.0]), spacing_2d)
+
+
+def test_distances_length_must_match_dimension() -> None:
+    f = cn.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
+    with pytest.raises(ValueError, match="when 1d, distances must match"):
+        cn.gradient(
+            f, np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0, 3.0])
+        )
+
+
+def test_gradient_integer_spacing_converted_to_float64() -> None:
+    f_np = np.array([[1.0, 2.0, 4.0], [3.0, 5.0, 6.0]], dtype=float)
+    f_cn = cn.array(f_np)
+    x_np = np.array([0, 1], dtype=np.int32)
+    y_np = np.array([0, 1, 2], dtype=np.int32)
+    res_np = np.gradient(f_np, x_np, y_np)
+    res_cn = cn.gradient(f_cn, x_np, y_np)
+    assert np.allclose(res_np, res_cn)
+
+
+def test_gradient_nonuniform_spacing_edge_order_2() -> None:
+    f_np = np.array([1.0, 2.0, 4.0, 7.0, 11.0])
+    f_cn = cn.array(f_np)
+    x_np = np.array([0.0, 1.0, 3.0, 6.0, 10.0])
+    res_np = np.gradient(f_np, x_np, edge_order=2)
+    res_cn = cn.gradient(f_cn, x_np, edge_order=2)
+    assert np.allclose(res_np, res_cn)
+
+
 if __name__ == "__main__":
     import sys
 
