@@ -14,38 +14,38 @@
 #
 
 import argparse
-
 import numpy
-from benchmark import parse_args, run_benchmark
+
+from _benchmark import (
+    benchmark_info,
+    get_numpy,
+    format_dtype,
+    parse_with_harness,
+)
 
 
-def check_equal_numpy(input, output, package):
-    if package == "cupy":
-        out2 = numpy.linalg.cholesky(input.get())
-    else:
-        out2 = numpy.linalg.cholesky(input.__array__())
-
+def check_equal_numpy(np, input, output):
     print("Checking result...")
+    out2 = numpy.linalg.cholesky(get_numpy(np, input))
     if numpy.allclose(output, out2):
         print("PASS!")
     else:
         print("FAIL!")
         print("numpy     : " + str(out2))
-        print(f"{package} : " + str(output))
+        print(f"{np.__name__} : " + str(output))
         assert False
 
 
-def cholesky(
-    n, dtype, *, perform_check=False, print_timing=False, package=None
-):
-    input = num.eye(n, dtype=dtype)
+@benchmark_info(name="Cholesky", formats={"dtype": format_dtype})
+def cholesky(np, n, dtype, *, timer, perform_check=False, print_timing=False):
+    input = np.eye(n, dtype=dtype)
 
     timer.start()
-    out1 = num.linalg.cholesky(input)
+    out1 = np.linalg.cholesky(input)
     total = timer.stop()
 
     if perform_check:
-        check_equal_numpy(input, out1, package)
+        check_equal_numpy(np, input, out1)
 
     if print_timing:
         print(f"Elapsed Time: {total} ms")
@@ -87,15 +87,14 @@ if __name__ == "__main__":
         action="store_true",
         help="compare result to numpy",
     )
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         cholesky,
-        args.benchmark,
-        "Cholesky",
-        [("problem size", args.n), ("precision", args.dtype)],
-        ["time (milliseconds)"],
+        harness.np,
+        args.n,
+        args.dtype,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
-        package=args.package,
     )

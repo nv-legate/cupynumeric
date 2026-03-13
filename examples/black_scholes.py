@@ -17,10 +17,10 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, format_dtype, parse_with_harness
 
 
-def generate_random(N, min, max, D):
+def generate_random(np, N, min, max, D):
     diff = D(max) - D(min)
     rands = np.random.random(N).astype(D)
     rands = rands * diff
@@ -28,16 +28,16 @@ def generate_random(N, min, max, D):
     return rands
 
 
-def initialize(N, D):
-    S = generate_random(N, 5, 30, D)
-    X = generate_random(N, 1, 100, D)
-    T = generate_random(N, 0.25, 10, D)
+def initialize(np, N, D):
+    S = generate_random(np, N, 5, 30, D)
+    X = generate_random(np, N, 1, 100, D)
+    T = generate_random(np, N, 0.25, 10, D)
     R = 0.02
     V = 0.3
     return S, X, T, R, V
 
 
-def cnd(d):
+def cnd(np, d):
     A1 = 0.31938153
     A2 = -0.356563782
     A3 = 1.781477937
@@ -56,24 +56,25 @@ def cnd(d):
     return np.where(d > 0, 1.0 - cnd, cnd)
 
 
-def black_scholes(S, X, T, R, V):
+def black_scholes(np, S, X, T, R, V):
     sqrt_t = np.sqrt(T)
     d1 = np.log(S / X) + (R + 0.5 * V * V) * T / (V * sqrt_t)
     d2 = d1 - V * sqrt_t
-    cnd_d1 = cnd(d1)
-    cnd_d2 = cnd(d2)
+    cnd_d1 = cnd(np, d1)
+    cnd_d2 = cnd(np, d2)
     exp_rt = np.exp(-R * T)
     call_result = S * cnd_d1 - X * exp_rt * cnd_d2
     put_result = X * exp_rt * (1.0 - cnd_d2) - S * (1.0 - cnd_d1)
     return call_result, put_result
 
 
-def run_black_scholes(N, D):
+@benchmark_info(name="Black Scholes", formats={"D": format_dtype})
+def run_black_scholes(np, N, D, *, timer):
     print("Running black scholes on %dK options..." % N)
     N *= 1000
     timer.start()
-    S, X, T, R, V = initialize(N, D)
-    _, _ = black_scholes(S, X, T, R, V)
+    S, X, T, R, V = initialize(np, N, D)
+    _, _ = black_scholes(np, S, X, T, R, V)
     total = timer.stop()
     print("Elapsed Time: " + str(total) + " ms")
     return total
@@ -98,7 +99,8 @@ if __name__ == "__main__":
         help="precision of the computation in bits",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
+    np = harness.np
 
     dtype = None
 
@@ -111,10 +113,6 @@ if __name__ == "__main__":
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
 
-    run_benchmark(
-        run_black_scholes,
-        args.benchmark,
-        "Black Scholes",
-        [("problem size", args.N), ("precision", dtype)],
-        ["time (milliseconds)"],
+    harness.run_timed(
+        run_black_scholes, np, args.N, dtype, timer=harness.timer
     )

@@ -17,27 +17,26 @@
 
 import argparse
 
-import numpy as np
-from benchmark import parse_args, run_benchmark
+import numpy
+from _benchmark import benchmark_info, get_numpy, parse_with_harness
 
 
-def check_sorted(a, a_sorted, package, axis=-1):
-    if package == "cupy":
-        a_np = a.get()
-    else:
-        a_np = a.__array__()
-    a_np_sorted = np.sort(a_np, axis)
+def check_sorted(np, a, a_sorted, axis=-1):
+    a_numpy = get_numpy(a)
+    a_numpy_sorted = numpy.sort(a_numpy, axis)
     print("Checking result...")
-    if num.allclose(a_np_sorted, a_sorted):
+    if np.allclose(a_numpy_sorted, a_sorted):
         print("PASS!")
     else:
         print("FAIL!")
-        print("NUMPY    : " + str(a_np_sorted))
-        print(package + ": " + str(a_sorted))
+        print("NUMPY    : " + str(a_numpy_sorted))
+        print(np.__name__ + ": " + str(a_sorted))
         assert False
 
 
+@benchmark_info(name="Sort")
 def run_sort(
+    np,
     shape,
     axis,
     argsort,
@@ -45,29 +44,29 @@ def run_sort(
     lower,
     upper,
     *,
+    timer,
     perform_check=False,
     print_timing=False,
-    package=None,
 ):
-    num.random.seed(42)
+    np.random.seed(42)
     newtype = np.dtype(datatype).type
 
     N = 1
     for e in shape:
         N *= e
     shape = tuple(shape)
-    if np.issubdtype(newtype, np.integer):
+    if numpy.issubdtype(newtype, np.integer):
         if lower is None:
             lower = np.iinfo(newtype).min
         if upper is None:
             upper = np.iinfo(newtype).max
-        a = num.random.randint(low=lower, high=upper, size=N).astype(newtype)
+        a = np.random.randint(low=lower, high=upper, size=N).astype(newtype)
         a = a.reshape(shape)
-    elif np.issubdtype(newtype, np.floating):
-        a = num.random.random(shape).astype(newtype)
-    elif np.issubdtype(newtype, np.complexfloating):
-        a = num.array(
-            num.random.random(shape) + num.random.random(shape) * 1j
+    elif numpy.issubdtype(newtype, np.floating):
+        a = np.random.random(shape).astype(newtype)
+    elif numpy.issubdtype(newtype, np.complexfloating):
+        a = np.array(
+            np.random.random(shape) + np.random.random(shape) * 1j
         ).astype(newtype)
     else:
         print("UNKNOWN type " + str(newtype))
@@ -75,13 +74,13 @@ def run_sort(
 
     timer.start()
     if argsort:
-        a_sorted = num.argsort(a, axis)
+        a_sorted = np.argsort(a, axis)
     else:
-        a_sorted = num.sort(a, axis)
+        a_sorted = np.sort(a, axis)
     total = timer.stop()
 
     if perform_check and not argsort:
-        check_sorted(a, a_sorted, package, axis)
+        check_sorted(a, a_sorted, axis)
     else:
         # do we need to synchronize?
         assert True
@@ -154,22 +153,18 @@ if __name__ == "__main__":
         "-g", "--arg", dest="argsort", action="store_true", help="use argsort"
     )
 
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_sort,
-        args.benchmark,
-        "Sort",
-        [
-            ("shape", args.shape),
-            ("axis", args.axis),
-            ("argsort", args.argsort),
-            ("datatype", args.datatype),
-            ("lower", args.lower),
-            ("upper", args.upper),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.shape,
+        args.axis,
+        args.argsort,
+        args.datatype,
+        args.lower,
+        args.upper,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
-        package=args.package,
     )

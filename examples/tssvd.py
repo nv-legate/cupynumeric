@@ -17,48 +17,42 @@
 
 import argparse
 
-import numpy as np
-from benchmark import parse_args, run_benchmark
-
-import cupynumeric as num
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def check_result(a, u, s, vh):
+def check_result(np, a, u, s, vh):
     print("Checking result...")
 
     # (u * s) @ vh
-    a2 = num.matmul(u * s, vh)
-    print("PASS!" if num.allclose(a, a2) else "FAIL!")
+    a2 = np.matmul(u * s, vh)
+    print("PASS!" if np.allclose(a, a2) else "FAIL!")
 
 
 # make random real full column rank mxn, m>n matrix:
 #
-def make_random_matrix(
-    m: int, n: int, scale: float = 10.0, dtype_=np.dtype("float64")
-) -> np.ndarray:
-    num.random.seed(6174)
+def make_random_matrix(np, m, n):
+    np.random.seed(6174)
 
-    mat = scale * num.random.rand(m, n)
-
-    mat = mat.astype(dtype_)
+    mat = np.random.rand(m, n)
 
     # strictly diagonally dominant:
     #
     for i in range(n):
-        mat[i, i] = 1.0 + num.sum(num.abs(mat[i, :]))
+        mat[i, i] = 1.0 + np.sum(np.abs(mat[i, :]))
 
     return mat
 
 
-def run_tssvd(m, n, *, perform_check=False, print_timing=False):
-    A = make_random_matrix(m, n)
+@benchmark_info(name="TSSVD")
+def run_tssvd(np, m, n, *, timer, perform_check=False, print_timing=False):
+    A = make_random_matrix(np, m, n)
 
     timer.start()
-    u, s, vh = num.linalg.tssvd(A)
+    u, s, vh = np.linalg.tssvd(A)
     total = timer.stop()
 
     if perform_check:
-        check_result(A, u, s, vh)
+        check_result(np, A, u, s, vh)
 
     if print_timing:
         print(f"TSSVD elapsed Time: {total:.3f} ms")
@@ -100,16 +94,14 @@ if __name__ == "__main__":
         help="compare result to numpy",
     )
 
-    global num
+    args, harness = parse_with_harness(parser)
 
-    args, num, timer = parse_args(parser)
-
-    run_benchmark(
+    harness.run_timed(
         run_tssvd,
-        args.benchmark,
-        "TSSVD",
-        [("rows", args.m), ("columns", args.n)],
-        ["time (milliseconds)"],
+        harness.np,
+        args.m,
+        args.n,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
     )

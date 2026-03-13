@@ -17,10 +17,10 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def initialize(N):
+def initialize(np, N):
     print("Initializing stencil grid...")
     grid = np.zeros((N + 2, N + 2))
     grid[:, 0] = -273.15
@@ -30,8 +30,16 @@ def initialize(N):
     return grid
 
 
-def run_stencil(N, I, warmup, *, print_timing=False):  # noqa: E741
-    grid = initialize(N)
+@benchmark_info(
+    name="Stencil",
+    input_names={
+        "N": "problem size",
+        "I": "iterations",
+        "warmup": "warmup iterations",
+    },
+)
+def run_stencil(np, N, I, warmup, *, timer, print_timing=False):  # noqa: E741
+    grid = initialize(np, N)
 
     print("Running Jacobi stencil...")
     center = grid[1:-1, 1:-1]
@@ -89,17 +97,14 @@ if __name__ == "__main__":
         help="perform timing",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_stencil,
-        args.benchmark,
-        "Stencil",
-        [
-            ("problem size", args.N),
-            ("iterations", args.I),
-            ("warmup iterations", args.warmup),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.N,
+        args.I,
+        args.warmup,
+        timer=harness.timer,
         print_timing=args.timing,
     )

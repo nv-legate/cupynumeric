@@ -2970,7 +2970,7 @@ class ndarray:
         key = self._convert_singleton_key(args)
         result = self[key]
         assert result.shape == ()
-        return result._thunk.__numpy_array__()
+        return result._thunk.__numpy_array__().item()
 
     @add_boilerplate()
     def max(

@@ -18,10 +18,13 @@
 import argparse
 import itertools
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def take_pairs(M: int, N: int, *, print_timing: bool = True) -> None:
+@benchmark_info(name="take pairs")
+def take_pairs(
+    np, M: int, N: int, *, timer, print_timing: bool = True
+) -> float:
     timer.start()
     data_array = np.arange(M * N, dtype=np.int32).reshape((M, N))
     indices = np.array(list(a for a in itertools.combinations(range(N), 2)))
@@ -31,6 +34,7 @@ def take_pairs(M: int, N: int, *, print_timing: bool = True) -> None:
     total = timer.stop()
     if print_timing:
         print(f"Elapsed Time: {total} ms")
+    return total
 
 
 if __name__ == "__main__":
@@ -61,13 +65,13 @@ if __name__ == "__main__":
         help="perform timing",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         take_pairs,
-        args.benchmark,
-        "take pairs",
-        [("rows", args.M), ("columns", args.N)],
-        ["time (milliseconds)"],
+        harness.np,
+        args.M,
+        args.N,
+        timer=harness.timer,
         print_timing=args.timing,
     )

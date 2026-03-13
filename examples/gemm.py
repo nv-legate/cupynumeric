@@ -17,12 +17,17 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import (
+    benchmark_info,
+    format_dtype,
+    parse_with_harness,
+    get_benchmark_info,
+)
 
 
-def initialize(M, N, K, ft):
-    A = np.random.uniform(size=(N, N), dtype=ft)
-    B = np.random.uniform(size=(N, N), dtype=ft)
+def initialize(np, M, N, K, ft):
+    A = np.random.uniform(size=(N, N)).astype(ft)
+    B = np.random.uniform(size=(N, N)).astype(ft)
     C = np.zeros((N, N), dtype=ft)
     return A, B, C
 
@@ -31,18 +36,19 @@ def total_flops(M, N, K):
     return M * N * (2 * K - 1)
 
 
-def total_space(M, N, K, ft):
+def total_space(np, M, N, K, ft):
     return (M * N + M * K + K * N) * np.dtype(ft).itemsize
 
 
-def run_gemm(N, I, warmup, ft):  # noqa: E741
+@benchmark_info(formats={"ft": format_dtype})
+def run_gemm(np, N, I, warmup, ft, *, timer):  # noqa: E741
     print("Problem Size:     M=" + str(N) + " N=" + str(N) + " K=" + str(N))
     print("Total Iterations: " + str(I))
     flops = total_flops(N, N, N)
     print("Total Flops:      " + str(flops / 1e9) + " GFLOPS/iter")
-    space = total_space(N, N, N, ft)
+    space = total_space(np, N, N, N, ft)
     print("Total Size:       " + str(space / 1e6) + " MB")
-    A, B, C = initialize(N, N, N, ft)
+    A, B, C = initialize(np, N, N, N, ft)
 
     timer.start()
     # Run for as many iterations as was requested
@@ -100,7 +106,8 @@ if __name__ == "__main__":
         "(16,32,64)",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
+    np = harness.np
 
     name = None
     dtype = None
@@ -110,20 +117,19 @@ if __name__ == "__main__":
     elif args.P == 32:
         name = "SGEMM"
         dtype = np.float32
-    elif args.P == 32:
+    elif args.P == 64:
         name = "DGEMM"
         dtype = np.float64
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
-    run_benchmark(
+    info = get_benchmark_info(run_gemm).replace(name=name)
+    harness.run_timed_with_info(
+        info,
         run_gemm,
-        args.benchmark,
-        name,
-        [
-            ("problem size", args.N),
-            ("iterations", args.I),
-            ("warmup iterations", args.warmup),
-            ("precision", dtype),
-        ],
-        ["time (milliseconds)"],
+        np,
+        args.N,
+        args.I,
+        args.warmup,
+        dtype,
+        timer=harness.timer,
     )

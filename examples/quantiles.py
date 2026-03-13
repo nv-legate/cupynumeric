@@ -17,32 +17,30 @@
 
 import argparse
 
-import numpy as np
-from benchmark import parse_args, run_benchmark
+import numpy
+from _benchmark import benchmark_info, get_numpy, parse_with_harness
 
 
-def check_quantiles(package, a, q, axis, str_m, q_out):
+def check_quantiles(np, a, q, axis, str_m, q_out):
     eps = 1.0e-8
-    if package == "cupy":
-        arr = a.get()
-        qs_arr = q.get()
-    else:
-        arr = a.__array__()
-        qs_arr = q.__array__()
+    arr = get_numpy(np, a)
+    qs_arr = get_numpy(np, q)
 
-    np_q_out = np.quantile(arr, qs_arr, axis=axis, method=str_m)
+    np_q_out = numpy.quantile(arr, qs_arr, axis=axis, method=str_m)
 
     print("Checking result...")
-    if num.allclose(np_q_out, q_out, atol=eps):
+    if np.allclose(np_q_out, q_out, atol=eps):
         print("PASS!")
     else:
         print("FAIL!")
         print("NUMPY    : " + str(np_q_out))
-        print(package + ": " + str(q_out))
+        print(np.__name__ + ": " + str(q_out))
         assert False
 
 
+@benchmark_info(name="Quantiles")
 def run_quantiles(
+    np,
     shape,
     axis,
     datatype,
@@ -50,38 +48,38 @@ def run_quantiles(
     upper,
     str_method,
     *,
+    timer,
     perform_check=False,
     print_timing=False,
-    package=None,
 ):
-    num.random.seed(1729)
-    newtype = np.dtype(datatype).type
+    np.random.seed(1729)
+    newtype = numpy.dtype(datatype).type
 
     N = 1
     for e in shape:
         N *= e
     shape = tuple(shape)
-    if np.issubdtype(newtype, np.integer):
+    if numpy.issubdtype(newtype, numpy.integer):
         if lower is None:
             lower = 0
         if upper is None:
-            upper = np.iinfo(newtype).max
-        a = num.random.randint(low=lower, high=upper, size=N).astype(newtype)
+            upper = numpy.iinfo(newtype).max
+        a = np.random.randint(low=lower, high=upper, size=N).astype(newtype)
         a = a.reshape(shape)
-    elif np.issubdtype(newtype, np.floating):
-        a = num.random.random(shape).astype(newtype)
+    elif numpy.issubdtype(newtype, numpy.floating):
+        a = np.random.random(shape).astype(newtype)
     else:
         print("UNKNOWN type " + str(newtype))
         assert False
 
-    q = np.array([0.0, 0.37, 0.42, 0.5, 0.67, 0.83, 0.99, 1.0])
+    q = numpy.array([0.0, 0.37, 0.42, 0.5, 0.67, 0.83, 0.99, 1.0])
 
     timer.start()
-    q_out = num.quantile(a, q, axis=axis, method=str_method)
+    q_out = np.quantile(a, q, axis=axis, method=str_method)
     total = timer.stop()
 
     if perform_check:
-        check_quantiles(package, a, q, axis, str_method, q_out)
+        check_quantiles(np, a, q, axis, str_method, q_out)
     else:
         # do we need to synchronize?
         assert True
@@ -159,22 +157,18 @@ if __name__ == "__main__":
         help="quantile interpolation method",
     )
 
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_quantiles,
-        args.benchmark,
-        "Quantiles",
-        [
-            ("shape", args.shape),
-            ("axis", args.axis),
-            ("precision", args.datatype),
-            ("lower", args.lower),
-            ("upper", args.upper),
-            ("method", args.method),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.shape,
+        args.axis,
+        args.datatype,
+        args.lower,
+        args.upper,
+        args.method,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
-        package=args.package,
     )

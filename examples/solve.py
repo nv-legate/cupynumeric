@@ -18,14 +18,14 @@
 import argparse
 
 import numpy
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def check_result(a, b, x):
+def check_result(np, a, b, x):
     print("Checking result...")
 
-    res = b - num.matmul(a, x)
-    max_res = num.linalg.norm(res, numpy.inf)
+    res = b - np.matmul(a, x)
+    max_res = np.linalg.norm(res, numpy.inf)
     if max_res < 1e-04:
         print(f"PASS! max-res = {max_res}")
     else:
@@ -33,12 +33,15 @@ def check_result(a, b, x):
         assert False
 
 
-def solve(n, nrhs, dtype, *, perform_check=False, print_timing=False):
-    a = num.random.rand(n, n).astype(dtype=dtype)
-    b = num.random.rand(n, nrhs).astype(dtype=dtype)
+@benchmark_info(name="Solve")
+def solve(
+    np, n, nrhs, dtype, *, timer, perform_check=False, print_timing=False
+):
+    a = np.random.rand(n, n).astype(dtype=dtype)
+    b = np.random.rand(n, nrhs).astype(dtype=dtype)
 
     timer.start()
-    x = num.linalg.solve(a, b)
+    x = np.linalg.solve(a, b)
     total = timer.stop()
 
     if perform_check:
@@ -100,18 +103,15 @@ if __name__ == "__main__":
         action="store_true",
         help="compare result to numpy",
     )
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         solve,
-        args.benchmark,
-        "Solve",
-        [
-            ("problem size", args.n),
-            ("righthand sides", args.nrhs),
-            ("datatype", args.dtype),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.n,
+        args.nrhs,
+        args.dtype,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
     )

@@ -26,7 +26,12 @@ Operations tested:
 on float32, float64
 """
 
-from microbenchmark_utilities import create_benchmark_function
+from _benchmark import (
+    MicrobenchmarkSuite,
+    benchmark_info,
+    timed_loop,
+    format_dtype,
+)
 
 
 # =============================================================================
@@ -34,7 +39,8 @@ from microbenchmark_utilities import create_benchmark_function
 # =============================================================================
 
 
-def bench_scalar_red(np, timer, size, runs, warmup, dtype, func):
+@benchmark_info(formats={"dtype": format_dtype, "func": lambda f: f.__name__})
+def scalar_red(np, func, dtype, size, runs, warmup, *, timer):
     """[np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]"""
 
     def operation():
@@ -42,7 +48,7 @@ def bench_scalar_red(np, timer, size, runs, warmup, dtype, func):
 
         return func(in_arr)
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
 # =============================================================================
@@ -57,15 +63,16 @@ def run_benchmarks(suite, size):
     runs = suite.runs
     warmup = suite.warmup
 
-    run_types = [np.float32, np.float64]
+    dtypes = [np.float32, np.float64]
     red_types = [np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]
 
-    for dt, func in [(d, f) for d in run_types for f in red_types]:
-        # scalar reductions
-        suite.run_single_benchmark(
-            name="scalar_red",
-            bench_func=lambda: bench_scalar_red(
-                np, timer, size, runs, warmup, dt, func
-            ),
-            size_params={"size": size},
-        )
+    suite.run_timed(
+        scalar_red, np, red_types, dtypes, size, runs, warmup, timer=timer
+    )
+
+
+class ScalarRedSuite(MicrobenchmarkSuite):
+    name = "scalared"
+
+    def run_suite(self, size):
+        run_benchmarks(self, size)

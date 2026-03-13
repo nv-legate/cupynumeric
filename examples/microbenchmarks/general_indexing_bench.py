@@ -46,7 +46,7 @@ Usage:
 
 import random
 
-from microbenchmark_utilities import create_benchmark_function
+from _benchmark import MicrobenchmarkSuite, timed_loop
 
 
 # =============================================================================
@@ -54,7 +54,7 @@ from microbenchmark_utilities import create_benchmark_function
 # =============================================================================
 
 
-def bench_boolean_mask_get(np, timer, size, runs, warmup):
+def boolean_get(np, size, runs, warmup, *, timer):
     """Boolean mask get operation."""
     a = np.random.random(size)
     mask = a > 0.5
@@ -62,10 +62,10 @@ def bench_boolean_mask_get(np, timer, size, runs, warmup):
     def operation():
         return a[mask]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_boolean_mask_array_assignment(np, timer, size, runs, warmup):
+def boolean_set_array(np, size, runs, warmup, *, timer):
     """Array assignment to boolean mask."""
     a = np.random.random(size)
     mask = a > 0.5
@@ -75,10 +75,10 @@ def bench_boolean_mask_array_assignment(np, timer, size, runs, warmup):
     def operation():
         a[mask] = values
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_multidim_boolean(np, timer, n, runs, warmup):
+def boolean_2d(np, n, runs, warmup, *, timer):
     """Multi-dimensional boolean indexing."""
     a = np.random.random((n, n))
     mask = a > 0.5
@@ -86,10 +86,10 @@ def bench_multidim_boolean(np, timer, n, runs, warmup):
     def operation():
         return a[mask]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_mixed_indexing(np, timer, n, num_indices, runs, warmup):
+def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
     """Mixed indexing: integer array + slices."""
     a = np.random.random((n, n, n))
     indices = np.random.randint(0, n, num_indices)
@@ -97,10 +97,10 @@ def bench_mixed_indexing(np, timer, n, num_indices, runs, warmup):
     def operation():
         return a[indices, :, : n // 2]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_non_contiguous_indexing(np, timer, n, num_indices, runs, warmup):
+def non_contiguous_indexing(np, n, num_indices, runs, warmup, *, timer):
     """Non-contiguous indexing: indices on multiple non-adjacent dimensions."""
     a = np.random.random((n, n, n))
     idx_row = np.random.randint(0, n, num_indices)
@@ -109,10 +109,10 @@ def bench_non_contiguous_indexing(np, timer, n, num_indices, runs, warmup):
     def operation():
         return a[idx_row, :, idx_col]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_boolean_with_slice(np, timer, n, runs, warmup):
+def boolean_with_slice(np, n, runs, warmup, *, timer):
     """Boolean mask on first dimension with slice on remaining dimensions."""
     a = np.random.random((n, n))
     mask = a[:, 0] > 0.5
@@ -120,12 +120,10 @@ def bench_boolean_with_slice(np, timer, n, runs, warmup):
     def operation():
         return a[mask, :]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_1d_integer_array_indexing_get(
-    np, timer, size, num_indices, runs, warmup
-):
+def array_get_1d(np, size, num_indices, runs, warmup, *, timer):
     """1D array GET with integer array (like config_ints[safe_indices])."""
     a = np.random.random(size)
     indices = np.random.randint(0, size, num_indices)
@@ -133,12 +131,10 @@ def bench_1d_integer_array_indexing_get(
     def operation():
         return a[indices]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_1d_integer_array_indexing_set(
-    np, timer, size, num_indices, runs, warmup
-):
+def array_set_1d(np, size, num_indices, runs, warmup, *, timer):
     """1D array SET with integer array (like Hv[batch_indices] = values)."""
     a = np.random.random(size)
     indices = np.random.randint(0, size, num_indices)
@@ -147,10 +143,10 @@ def bench_1d_integer_array_indexing_set(
     def operation():
         a[indices] = values
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_2d_row_selection(np, timer, n, num_rows, runs, warmup):
+def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
     """2D row selection with integer array (like alph_configs[alph_idx])."""
     a = np.random.random((n, n))
     row_indices = np.random.randint(0, n, num_rows)
@@ -158,10 +154,10 @@ def bench_2d_row_selection(np, timer, n, num_rows, runs, warmup):
     def operation():
         return a[row_indices]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_2d_scalar_list_assignment(np, timer, n, num_cols, runs, warmup):
+def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
     """2D assignment with scalar row + list of columns (like result[idx, list(positions)] = True)."""
     a = np.random.random((n, n))
     idx = n // 2
@@ -170,10 +166,10 @@ def bench_2d_scalar_list_assignment(np, timer, n, num_cols, runs, warmup):
     def operation():
         a[idx, positions] = 999.0
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_take_one_from_each_row(np, timer, m, n, runs, warmup):
+def take_one_per_row(np, m, n, runs, warmup, *, timer):
     """
     Take one element from each row (Legate-Boost pattern).
     Pattern: A[np.arange(M), index] where index[i] selects column for row i
@@ -187,7 +183,7 @@ def bench_take_one_from_each_row(np, timer, m, n, runs, warmup):
     def operation():
         return a[row_indices, col_indices]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
 # =============================================================================
@@ -210,99 +206,60 @@ def run_benchmarks(suite, size):
     num_indices = min(1000, n_3d // 5)
 
     # 1. Boolean mask GET
-    suite.run_single_benchmark(
-        name="boolean_get",
-        bench_func=lambda: bench_boolean_mask_get(
-            np, timer, size, runs, warmup
-        ),
-        size_params={"size": size},
-    )
+    suite.run_timed(boolean_get, np, size, runs, warmup, timer=timer)
 
     # 2. Boolean mask SET (array)
-    suite.run_single_benchmark(
-        name="boolean_set_array",
-        bench_func=lambda: bench_boolean_mask_array_assignment(
-            np, timer, size, runs, warmup
-        ),
-        size_params={"size": size},
-    )
+    suite.run_timed(boolean_set_array, np, size, runs, warmup, timer=timer)
 
     # 3. 2D Boolean indexing
-    suite.run_single_benchmark(
-        name="boolean_2d",
-        bench_func=lambda: bench_multidim_boolean(np, timer, n, runs, warmup),
-        size_params={"n": n},
-    )
+    suite.run_timed(boolean_2d, np, n, runs, warmup, timer=timer)
 
     # 4. Mixed indexing
-    suite.run_single_benchmark(
-        name="mixed_indexing",
-        bench_func=lambda: bench_mixed_indexing(
-            np, timer, n_3d, num_indices, runs, warmup
-        ),
-        size_params={"n_3d": n_3d, "num_indices": num_indices},
+    suite.run_timed(
+        mixed_indexing, np, n_3d, num_indices, runs, warmup, timer=timer
     )
 
     # 5. Non-contiguous indexing (indices on non-adjacent dimensions)
-    suite.run_single_benchmark(
-        name="non_contiguous_indexing",
-        bench_func=lambda: bench_non_contiguous_indexing(
-            np, timer, n_3d, num_indices, runs, warmup
-        ),
-        size_params={"n_3d": n_3d, "num_indices": num_indices},
+    suite.run_timed(
+        non_contiguous_indexing,
+        np,
+        n_3d,
+        num_indices,
+        runs,
+        warmup,
+        timer=timer,
     )
 
     # 6. Boolean mask with slice
-    suite.run_single_benchmark(
-        name="boolean_with_slice",
-        bench_func=lambda: bench_boolean_with_slice(
-            np, timer, n, runs, warmup
-        ),
-        size_params={"n": n},
-    )
+    suite.run_timed(boolean_with_slice, np, n, runs, warmup, timer=timer)
 
     # 7. Take one from each row (Legate-Boost: A[arange(M), index])
     # Note: This also covers fancy_2d and take_pairs patterns (same code path)
-    suite.run_single_benchmark(
-        name="take_one_per_row",
-        bench_func=lambda: bench_take_one_from_each_row(
-            np, timer, n, n, runs, warmup
-        ),
-        size_params={"m": n, "n": n},
-    )
+    suite.run_timed(take_one_per_row, np, n, n, runs, warmup, timer=timer)
 
     # 8. 1D integer array GET (Hamiltonian: config_ints[safe_indices])
-    suite.run_single_benchmark(
-        name="1d_array_get",
-        bench_func=lambda: bench_1d_integer_array_indexing_get(
-            np, timer, size, num_row_idx, runs, warmup
-        ),
-        size_params={"size": size, "num_indices": num_row_idx},
+    suite.run_timed(
+        array_get_1d, np, size, num_row_idx, runs, warmup, timer=timer
     )
 
     # 9. 1D integer array SET (Hamiltonian: Hv[batch_indices] = values)
-    suite.run_single_benchmark(
-        name="1d_array_set",
-        bench_func=lambda: bench_1d_integer_array_indexing_set(
-            np, timer, size, num_row_idx, runs, warmup
-        ),
-        size_params={"size": size, "num_indices": num_row_idx},
+    suite.run_timed(
+        array_set_1d, np, size, num_row_idx, runs, warmup, timer=timer
     )
 
     # 10. 2D row selection (Hamiltonian: alph_configs[alph_idx])
-    suite.run_single_benchmark(
-        name="2d_row_select",
-        bench_func=lambda: bench_2d_row_selection(
-            np, timer, n, num_row_idx, runs, warmup
-        ),
-        size_params={"n": n, "num_rows": num_row_idx},
+    suite.run_timed(
+        row_select_2d, np, n, num_row_idx, runs, warmup, timer=timer
     )
 
     # 11. 2D scalar + list assignment (Hamiltonian: result[idx, list(positions)])
-    suite.run_single_benchmark(
-        name="2d_scalar_list_set",
-        bench_func=lambda: bench_2d_scalar_list_assignment(
-            np, timer, n, num_col_idx, runs, warmup
-        ),
-        size_params={"n": n, "num_cols": num_col_idx},
+    suite.run_timed(
+        scalar_list_set_2d, np, n, num_col_idx, runs, warmup, timer=timer
     )
+
+
+class GeneralIndexingSuite(MicrobenchmarkSuite):
+    name = "general_indexing"
+
+    def run_suite(self, size):
+        run_benchmarks(self, size)

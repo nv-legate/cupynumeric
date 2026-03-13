@@ -18,10 +18,10 @@
 import argparse
 import math
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def generate_random(N):
+def generate_random(np, N):
     print("Generating %dx%d system..." % (N, N))
     # Generate a random matrix
     A = np.random.rand(N, N)
@@ -32,13 +32,23 @@ def generate_random(N):
     return A, b
 
 
-def check(A, x, b):
+def check(np, A, x, b):
     print("Checking result...")
     return np.allclose(A.dot(x), b)
 
 
-def run_jacobi(N, iters, warmup, perform_check, print_timing, verbose):
-    A, b = generate_random(N)
+@benchmark_info(
+    name="Jacobi",
+    input_names={
+        "N": "problem size",
+        "iters": "iterations",
+        "warmup": "warmup iterations",
+    },
+)
+def run_jacobi(
+    np, N, iters, warmup, *, timer, perform_check, print_timing, verbose
+):
+    A, b = generate_random(np, N)
 
     print("Solving system...")
     x = np.zeros(A.shape[1])
@@ -53,7 +63,7 @@ def run_jacobi(N, iters, warmup, perform_check, print_timing, verbose):
     total = timer.stop()
 
     if perform_check:
-        assert check(A, x, b)
+        assert check(np, A, x, b)
     else:
         assert not math.isnan(np.sum(x)), (
             f"{np.count_nonzero(np.isnan(x))} NaNs, "
@@ -113,19 +123,16 @@ if __name__ == "__main__":
         help="print verbose output",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_jacobi,
-        args.benchmark,
-        "Jacobi",
-        [
-            ("problem size", args.N),
-            ("iterations", args.iters),
-            ("warmup iterations", args.warmup),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.N,
+        args.iters,
+        args.warmup,
         perform_check=args.check,
         print_timing=args.timing,
         verbose=args.verbose,
+        timer=harness.timer,
     )

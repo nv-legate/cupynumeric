@@ -20,33 +20,40 @@ Operations tested:
 2. uniform with four bigenerator types, for float32, float64
 """
 
-from microbenchmark_utilities import create_benchmark_function
-
+from _benchmark import (
+    MicrobenchmarkSuite,
+    timed_loop,
+    benchmark_info,
+    format_dtype,
+)
 
 # =============================================================================
 # GENERAL RANDOM GENERATION BENCHMARKS: Uniform distribution only
 # =============================================================================
 
 
-def bench_randint(np, timer, size, runs, warmup):
+def randint(np, size, runs, warmup, *, timer):
     """random.randint(low, high, size)."""
 
     def operation():
         return np.random.randint(1, 1000, size=size)
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_bitgenerator(
+@benchmark_info(
+    formats={"dtype": format_dtype, "bitgenerator_type": lambda x: x.__name__}
+)
+def bitgenerator(
     np,
-    timer,
     size,
     runs,
     warmup,
     bitgenerator_type,
     dtype,
     *,
-    uniform_takes_dtype=True,
+    timer,
+    uniform_takes_dtype,
 ):
     """bitgenerator operation."""
 
@@ -61,7 +68,7 @@ def bench_bitgenerator(
         else:
             return gen.uniform(low, high, size=size)
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
 # =============================================================================
@@ -76,52 +83,52 @@ def run_benchmarks(suite, size):
     runs = suite.runs
     warmup = suite.warmup
 
-    # randint
-    suite.run_single_benchmark(
-        name="randint",
-        bench_func=lambda: bench_randint(np, timer, size, runs, warmup),
-        size_params={"size": size},
+    dtypes = [np.float32, np.float64]
+    uniform_takes_dtype = True
+    bitgen_types = []
+
+    match np.__name__:
+        case "cupynumeric":
+            bitgen_types = [
+                np.random.XORWOW,
+                np.random.MRG32k3a,
+                np.random.PHILOX4_32_10,
+            ]
+        case "cupy":
+            bitgen_types = [
+                np.random.XORWOW,
+                np.random.MRG32k3a,
+                np.random.Philox4x3210,
+            ]
+        case "numpy":
+            bitgen_types = [
+                np.random.MT19937,
+                np.random.PCG64,
+                np.random.PCG64DXSM,
+                np.random.Philox,
+                np.random.SFC64,
+            ]
+            dtypes = [np.float64]
+            uniform_takes_dtype = False
+        case _:
+            assert False, f"Unexpected package: {np.__name__}"
+
+    suite.run_timed(randint, np, size, runs, warmup, timer=timer)
+    suite.run_timed(
+        bitgenerator,
+        np,
+        size,
+        runs,
+        warmup,
+        bitgen_types,
+        dtypes,
+        timer=timer,
+        uniform_takes_dtype=uniform_takes_dtype,
     )
 
-    run_types = [np.float32, np.float64]
-    uniform_takes_dtype = True
-    if np.__name__ == "cupynumeric":
-        Bitgenerator_Types = [
-            np.random.XORWOW,
-            np.random.MRG32k3a,
-            np.random.PHILOX4_32_10,
-        ]
-    elif np.__name__ == "cupy":
-        Bitgenerator_Types = [
-            np.random.XORWOW,
-            np.random.MRG32k3a,
-            np.random.Philox4x3210,
-        ]
-    elif np.__name__ == "numpy":
-        Bitgenerator_Types = [
-            np.random.MT19937,
-            np.random.PCG64,
-            np.random.PCG64DXSM,
-            np.random.Philox,
-            np.random.SFC64,
-        ]
-        run_types = [np.float64]
-        uniform_takes_dtype = False
-    else:
-        assert False, f"Unexpected package: {np.__name__}"
 
-    for bitg, dt in [(b, t) for b in Bitgenerator_Types for t in run_types]:
-        suite.run_single_benchmark(
-            name="bitgen",
-            bench_func=lambda: bench_bitgenerator(
-                np,
-                timer,
-                size,
-                runs,
-                warmup,
-                bitg,
-                dt,
-                uniform_takes_dtype=uniform_takes_dtype,
-            ),
-            size_params={"size": size, "generator": bitg, "dtype": dt},
-        )
+class RandomSuite(MicrobenchmarkSuite):
+    name = "random"
+
+    def run_suite(self, size):
+        run_benchmarks(self, size)

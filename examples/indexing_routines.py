@@ -19,10 +19,10 @@ import argparse
 import gc
 import math
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import parse_with_harness
 
 
-def compute_diagonal(steps, N, timing, warmup):
+def compute_diagonal(np, timer, steps, N, timing, warmup):
     A1 = np.ones((N,), dtype=int)
     print("measuring diagonal")
     for step in range(steps + warmup):
@@ -45,7 +45,7 @@ def compute_diagonal(steps, N, timing, warmup):
     return total
 
 
-def compute_choose(steps, N, timing, warmup):
+def compute_choose(np, timer, steps, N, timing, warmup):
     print("measuring choose")
     A = tuple(np.full((N,), k) for k in range(10))
     C1 = np.arange(N, dtype=int) % 10
@@ -68,7 +68,7 @@ def compute_choose(steps, N, timing, warmup):
     return total
 
 
-def compute_repeat(steps, N, timing, warmup):
+def compute_repeat(np, timer, steps, N, timing, warmup):
     A2 = np.ones((N, N), dtype=int)
     R = np.repeat(int(1), N)
     print("measuring repeat")
@@ -91,7 +91,7 @@ def compute_repeat(steps, N, timing, warmup):
     return total
 
 
-def compute_advanced_indexing_1d(steps, N, timing, warmup):
+def compute_advanced_indexing_1d(np, timer, steps, N, timing, warmup):
     A1 = np.ones((N,), dtype=int)
     B = np.arange(N, dtype=int)
     print("measuring advanced_indexing 1D")
@@ -117,7 +117,7 @@ def compute_advanced_indexing_1d(steps, N, timing, warmup):
     return total
 
 
-def compute_advanced_indexing_2d(steps, N, timing, warmup):
+def compute_advanced_indexing_2d(np, timer, steps, N, timing, warmup):
     A2 = np.ones((N, N), dtype=int)
     B = np.arange(N, dtype=int)
     print("measuring advanced_indexing 2D")
@@ -145,7 +145,7 @@ def compute_advanced_indexing_2d(steps, N, timing, warmup):
     return total
 
 
-def compute_advanced_indexing_3d(steps, N, timing, warmup):
+def compute_advanced_indexing_3d(np, timer, steps, N, timing, warmup):
     A3 = np.ones((N, int(N / 100), 100), dtype=int)
     B = np.arange(N, dtype=int)
     print("measuring advanced_indexing_3d")
@@ -172,24 +172,30 @@ def compute_advanced_indexing_3d(steps, N, timing, warmup):
 
 
 def run_indexing_routines(
-    N, steps, warmup, routine, *, print_timing=False, verbose=False
+    np, N, steps, warmup, routine, *, timer, print_timing=False, verbose=False
 ):
     # simple operation to warm up the library
     assert not math.isnan(np.sum(np.zeros((N, N)).dot(np.zeros((N,)))))
     gc.collect()
     time = 0
     if routine == "diagonal" or routine == "all":
-        time += compute_diagonal(steps, N, print_timing, warmup)
+        time += compute_diagonal(np, timer, steps, N, print_timing, warmup)
     if routine == "choose" or routine == "all":
-        time += compute_choose(steps, N, print_timing, warmup)
+        time += compute_choose(np, timer, steps, N, print_timing, warmup)
     if routine == "repeat" or routine == "all":
-        time += compute_repeat(steps, N, print_timing, warmup)
+        time += compute_repeat(np, timer, steps, N, print_timing, warmup)
     if routine == "ai1" or routine == "all":
-        time += compute_advanced_indexing_1d(steps, N, print_timing, warmup)
+        time += compute_advanced_indexing_1d(
+            np, timer, steps, N, print_timing, warmup
+        )
     if routine == "ai2" or routine == "all":
-        time += compute_advanced_indexing_2d(steps, N, print_timing, warmup)
+        time += compute_advanced_indexing_2d(
+            np, timer, steps, N, print_timing, warmup
+        )
     if routine == "ai3" or routine == "all":
-        time += compute_advanced_indexing_3d(steps, N, print_timing, warmup)
+        time += compute_advanced_indexing_3d(
+            np, timer, steps, N, print_timing, warmup
+        )
     if print_timing:
         print("Total Elapsed Time: " + str(time) + " ms")
     return time
@@ -245,19 +251,16 @@ if __name__ == "__main__":
         help="name of the index routine to test",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_indexing_routines,
-        args.benchmark,
-        "Indexing Routines",
-        [
-            ("problem size", args.N),
-            ("iterations", args.I),
-            ("warmup iterations", args.warmup),
-            ("routine", args.routine),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.N,
+        args.I,
+        args.warmup,
+        args.routine,
         print_timing=args.timing,
         verbose=args.verbose,
+        timer=harness.timer,
     )

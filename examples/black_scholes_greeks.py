@@ -18,7 +18,7 @@
 import argparse
 from enum import IntEnum
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 vol_start = 0.1
 vol_step = 0.01
@@ -44,7 +44,7 @@ class Greeks(IntEnum):
     THETA = 6
 
 
-def initialize(n_vol_steps, n_t_steps, n_money_steps, D):
+def initialize(np, n_vol_steps, n_t_steps, n_money_steps, D):
     steps = (n_t_steps, n_vol_steps, n_money_steps)
 
     CALL = np.zeros((N_GREEKS,) + steps, dtype=D)
@@ -70,7 +70,7 @@ def initialize(n_vol_steps, n_t_steps, n_money_steps, D):
 # of a random variable having values less than or equal to X
 # from Deisenroth, Marc Peter; Faisal, A. Aldo; Ong, Cheng Soon (2020).
 # Mathematics for Machine Learning
-def normCDF(d):
+def normCDF(np, d):
     A1 = 0.31938153
     A2 = -0.356563782
     A3 = 1.781477937
@@ -90,20 +90,20 @@ def normCDF(d):
 
 # In order to compute this efficiently, an expansion approximation
 # from John C. Hull (1997) “Options, Futures, and Other Derivatives”) is used.
-def normPDF(d):
+def normPDF(np, d):
     return RSQRT2PI * np.exp(-0.5 * d * d)
 
 
 # Black Scholes Model estimates the theoretical value of derivatives
 # based on other investment instruments, taking into account the
 # impact of time and other risk factors.
-def black_scholes(out, S, K, R, T, V, CP, greek):
+def black_scholes(np, out, S, K, R, T, V, CP, greek):
     stdev = V * np.sqrt(T)
     df = np.exp(-R * T)
     d1 = (np.log(S / K) + (R + 0.5 * V * V) * T) / stdev
     d2 = d1 - stdev
-    nd1 = normCDF(CP * d1)
-    nd2 = normCDF(CP * d2)
+    nd1 = normCDF(np, CP * d1)
+    nd2 = normCDF(np, CP * d2)
 
     # the Greeks are the quantities representing the sensitivity of the
     # price of derivatives such as options to a change in underlying
@@ -116,27 +116,28 @@ def black_scholes(out, S, K, R, T, V, CP, greek):
     elif greek == Greeks.DELTA:
         out[...] = CP * nd1
     elif greek == Greeks.VEGA:
-        out[...] = S * np.sqrt(T) * normPDF(d1)
+        out[...] = S * np.sqrt(T) * normPDF(np, d1)
     elif greek == Greeks.GAMMA:
-        out[...] = normPDF(d1) / (S * V * np.sqrt(T))
+        out[...] = normPDF(np, d1) / (S * V * np.sqrt(T))
     elif greek == Greeks.VANNA:
-        out[...] = -d2 * normPDF(d1) / V
+        out[...] = -d2 * normPDF(np, d1) / V
     elif greek == Greeks.VOLGA:
-        out[...] = S * np.sqrt(T) * d1 * d2 * normPDF(d1) / V
+        out[...] = S * np.sqrt(T) * d1 * d2 * normPDF(np, d1) / V
     elif greek == Greeks.THETA:
         out[...] = -(
-            0.5 * S * V / np.sqrt(T) * normPDF(d1) + CP * R * df * K * nd2
+            0.5 * S * V / np.sqrt(T) * normPDF(np, d1) + CP * R * df * K * nd2
         )
     else:
         raise RuntimeError("Wrong greek name is passed")
 
 
+@benchmark_info(name="Black Scholes")
 def run_black_scholes_benchmark(
-    n_vol_steps, n_t_steps, n_money_steps, iters, warmup
+    np, n_vol_steps, n_t_steps, n_money_steps, iters, warmup, *, timer
 ):
     print("Start black_scholes")
     CALL, PUT, S, K, T, R, V = initialize(
-        n_vol_steps, n_t_steps, n_money_steps, np.float32
+        np, n_vol_steps, n_t_steps, n_money_steps, np.float32
     )
 
     timer.start()
@@ -144,8 +145,8 @@ def run_black_scholes_benchmark(
         if i == 0:
             timer.start()
         for g in Greeks:
-            black_scholes(CALL[g.value], S, K, R, T, V, 1, g)
-            black_scholes(PUT[g.value], S, K, R, T, V, -1, g)
+            black_scholes(np, CALL[g.value], S, K, R, T, V, 1, g)
+            black_scholes(np, PUT[g.value], S, K, R, T, V, -1, g)
 
     total = timer.stop()
     print(f"Elapsed Time: {total} ms")
@@ -199,18 +200,15 @@ if __name__ == "__main__":
         help="warm-up iterations",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_black_scholes_benchmark,
-        args.benchmark,
-        "Black Scholes",
-        [
-            ("volatily steps", args.n_vol_steps),
-            ("time steps", args.n_time_steps),
-            ("money steps", args.n_money_steps),
-            ("iterations", args.iters),
-            ("warmup iterations", args.warmup),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.n_vol_steps,
+        args.n_time_steps,
+        args.n_money_steps,
+        args.iters,
+        args.warmup,
+        timer=harness.timer,
     )

@@ -17,32 +17,33 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def check_result(a, q, r):
+def check_result(np, a, q, r):
     print("Checking result...")
 
-    if num.allclose(a, num.matmul(q, r)):
+    if np.allclose(a, np.matmul(q, r)):
         print("PASS!")
     else:
         print("FAIL!")
 
-        qtq = num.matmul(q.T, q)
-        qtq_err = num.eye(q.shape[1]) - qtq
-        q_max = num.max(qtq_err)
+        qtq = np.matmul(q.T, q)
+        qtq_err = np.eye(q.shape[1]) - qtq
+        q_max = np.max(qtq_err)
         print(f"cunumeric I-qTq max: {q_max}")
 
 
-def qr(m, n, dtype, *, perform_check=False, print_timing=False):
-    a = num.random.rand(m, n).astype(dtype=dtype)
+@benchmark_info(name="QR")
+def qr(np, m, n, dtype, *, timer, perform_check=False, print_timing=False):
+    a = np.random.rand(m, n).astype(dtype=dtype)
 
     timer.start()
-    q, r = num.linalg.qr(a)
+    q, r = np.linalg.qr(a)
     total = timer.stop()
 
     if perform_check:
-        check_result(a, q, r)
+        check_result(np, a, q, r)
 
     if print_timing:
         print(f"Elapsed Time: {total} ms")
@@ -91,14 +92,15 @@ if __name__ == "__main__":
         action="store_true",
         help="compare result to numpy",
     )
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         qr,
-        args.benchmark,
-        "QR",
-        [("rows", args.m), ("columns", args.n), ("precision", args.dtype)],
-        ["time (milliseconds)"],
+        harness.np,
+        args.m,
+        args.n,
+        args.dtype,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
     )

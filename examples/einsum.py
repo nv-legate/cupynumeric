@@ -15,12 +15,27 @@
 #
 
 import argparse
+import numpy
 import re
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def run_einsum(expr, N, iters, warmup, dtype, cupy_compatibility):
+@benchmark_info(
+    name="Einsum",
+    input_names={
+        "expr": "expression",
+        "N": "problem size",
+        "iters": "iterations",
+        "warmup": "warmup iterations",
+        "dtype": "precision",
+        "cupy_compatibility": "cupy compatibility",
+    },
+    formats={"precision": lambda d: numpy.dtype(d).name},
+)
+def run_einsum(
+    np, expr, N, iters, warmup, dtype, cupy_compatibility, *, timer
+):
     # Parse contraction expression
     m = re.match(r"([a-zA-Z]*),([a-zA-Z]*)->([a-zA-Z]*)", expr)
     assert m is not None
@@ -161,9 +176,10 @@ if __name__ == "__main__":
              else, use einsum(expr, A, B, out=C)""",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
+    np = harness.np
 
-    cupy_compatibility = args.cupy_compatibility or args.package == "cupy"
+    cupy_compatibility = args.cupy_compatibility or harness.package == "cupy"
     if cupy_compatibility:
         print("Use C = np.einsum(expr, A, B) for cupy compatibility")
 
@@ -174,17 +190,14 @@ if __name__ == "__main__":
         "c64": np.complex64,
         "c128": np.complex128,
     }
-    run_benchmark(
+    harness.run_timed(
         run_einsum,
-        args.benchmark,
-        "Einsum",
-        [
-            ("expression", args.expr),
-            ("problem size", args.N),
-            ("iterations", args.iters),
-            ("warmup iterations", args.warmup),
-            ("precision", dtypes[args.dtype]),
-            ("cupy compatibility", cupy_compatibility),
-        ],
-        ["time (milliseconds)"],
+        np,
+        args.expr,
+        args.N,
+        args.iters,
+        args.warmup,
+        dtypes[args.dtype],
+        cupy_compatibility,
+        timer=harness.timer,
     )

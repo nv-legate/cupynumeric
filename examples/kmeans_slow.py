@@ -19,10 +19,15 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import (
+    benchmark_info,
+    format_dtype,
+    get_benchmark_info,
+    parse_with_harness,
+)
 
 
-def initialize(N, D, C, T):
+def initialize(np, N, D, C, T):
     # Uncomment this if we want execution to be deterministic
     # np.random.seed(0)
     data = np.random.random((N, D)).astype(T)
@@ -31,7 +36,7 @@ def initialize(N, D, C, T):
     return data, centroids
 
 
-def calculate_distances(data, centroids, data_dots):
+def calculate_distances(np, data, centroids, data_dots):
     centroid_dots = np.square(np.linalg.norm(centroids, ord=2, axis=1))
     pairwise_distances = (
         data_dots[:, np.newaxis] + centroid_dots[np.newaxis, :]
@@ -43,12 +48,12 @@ def calculate_distances(data, centroids, data_dots):
     return pairwise_distances
 
 
-def relabel(pairwise_distances):
+def relabel(np, pairwise_distances):
     return np.argmin(pairwise_distances, axis=1)
 
 
 def find_centroids(
-    centroids, data, labels, pairwise_distances, zero_point, C, D
+    np, centroids, data, labels, pairwise_distances, zero_point, C, D
 ):
     # Get the number of points associated with each centroid
     counts = np.bincount(labels, minlength=C)
@@ -72,14 +77,15 @@ def find_centroids(
     return distance_sum
 
 
-def run_kmeans(C, D, T, I, N, S, *, benchmarking=False):  # noqa: E741
+@benchmark_info(formats={"T": format_dtype})
+def run_kmeans(np, C, D, T, I, N, S, *, timer, benchmarking=False):  # noqa: E741
     print("Running kmeans...")
     print("Number of data points: " + str(N))
     print("Number of dimensions: " + str(D))
     print("Number of centroids: " + str(C))
     print("Max iterations: " + str(I))
     timer.start()
-    data, centroids = initialize(N, D, C, T)
+    data, centroids = initialize(np, N, D, C, T)
 
     data_dots = np.square(np.linalg.norm(data, ord=2, axis=1))
     zero_point = np.zeros((1, data.shape[1]), dtype=data.dtype)
@@ -90,12 +96,21 @@ def run_kmeans(C, D, T, I, N, S, *, benchmarking=False):  # noqa: E741
     # We run for max iterations or until we converge
     # We only test convergence every S iterations
     while iteration < I:
-        pairwise_distances = calculate_distances(data, centroids, data_dots)
+        pairwise_distances = calculate_distances(
+            np, data, centroids, data_dots
+        )
 
-        new_labels = relabel(pairwise_distances)
+        new_labels = relabel(np, pairwise_distances)
 
         distance_sum = find_centroids(
-            centroids, data, new_labels, pairwise_distances, zero_point, C, D
+            np,
+            centroids,
+            data,
+            new_labels,
+            pairwise_distances,
+            zero_point,
+            C,
+            D,
         )
 
         if iteration > 0 and iteration % S == 0:
@@ -178,7 +193,8 @@ if __name__ == "__main__":
         help="number of iterations between sampling the log likelihood",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
+    np = harness.np
 
     name = None
     dtype = None
@@ -196,18 +212,17 @@ if __name__ == "__main__":
         raise TypeError("Precision must be one of 16, 32, or 64")
 
     N = [n * 1000 for n in args.N]
-    run_benchmark(
+    info = get_benchmark_info(run_kmeans).replace(name=name)
+    harness.run_timed_with_info(
+        info,
         run_kmeans,
-        args.benchmark,
-        name,
-        [
-            ("centroids", args.C),
-            ("dimensions", args.D),
-            ("precision", dtype),
-            ("iterations", args.I),
-            ("elements", N),
-            ("sample interval", args.S),
-        ],
-        ["time (milliseconds)"],
-        benchmarking=args.benchmark > 0,
+        np,
+        args.C,
+        args.D,
+        dtype,
+        args.I,
+        N,
+        args.S,
+        benchmarking=(harness.repeat > 0),
+        timer=harness.timer,
     )

@@ -17,10 +17,15 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import (
+    benchmark_info,
+    format_dtype,
+    get_benchmark_info,
+    parse_with_harness,
+)
 
 
-def initialize(N, F, T):
+def initialize(np, N, F, T):
     # We'll generate some random inputs here
     # since we don't need it to converge
     x = np.random.randn(N, F).astype(T)
@@ -28,14 +33,15 @@ def initialize(N, F, T):
     return x, y
 
 
-def run_linear_regression(N, F, T, I, warmup, S, B):  # noqa: E741
+@benchmark_info(formats={"T": format_dtype})
+def run_linear_regression(np, N, F, T, I, warmup, S, B, *, timer):  # noqa: E741
     print("Running linear regression...")
     print("Number of data points: " + str(N) + "K")
     print("Number of features: " + str(F))
     print("Number of iterations: " + str(I))
 
     learning_rate = 1e-5
-    features, target = initialize(N * 1000, F, T)
+    features, target = initialize(np, N * 1000, F, T)
     if B:
         intercept = np.ones((features.shape[0], 1), dtype=T)
         features = np.hstack((intercept, features))
@@ -121,7 +127,8 @@ if __name__ == "__main__":
         help="number of iterations between sampling the log likelihood",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
+    np = harness.np
 
     name = None
     dtype = None
@@ -137,18 +144,17 @@ if __name__ == "__main__":
     else:
         raise TypeError("Precision must be one of 16, 32, or 64")
 
-    run_benchmark(
+    info = get_benchmark_info(run_linear_regression).replace(name=name)
+    harness.run_timed_with_info(
+        info,
         run_linear_regression,
-        args.benchmark,
-        name,
-        [
-            ("problem size", args.N),
-            ("features", args.F),
-            ("precision", dtype),
-            ("iterations", args.I),
-            ("warmup iterations", args.warmup),
-            ("sample interval", args.S),
-            ("include intercept", args.B),
-        ],
-        ["time (milliseconds)"],
+        np,
+        args.N,
+        args.F,
+        dtype,
+        args.I,
+        args.warmup,
+        args.S,
+        args.B,
+        timer=harness.timer,
     )

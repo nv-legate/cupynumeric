@@ -17,12 +17,12 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
 # This is technically dead code right now, but we'll keep it around in
 # case we want to generate a symmetrix positive definite matrix later
-def generate_random(N):
+def generate_random(np, N):
     print("Generating %dx%d symmetric positive definite system..." % (N, N))
     # Generate a random matrix
     A = np.random.rand(N, N)
@@ -34,7 +34,7 @@ def generate_random(N):
     return A, b
 
 
-def generate_2D(N, corners):
+def generate_2D(np, N, corners):
     if corners:
         print(
             "Generating %dx%d 2-D adjacency system with corners..."
@@ -67,7 +67,7 @@ def generate_2D(N, corners):
     return A, b
 
 
-def check(A, x, b):
+def check(np, A, x, b):
     print("Checking result...")
     if np.allclose(A.dot(x), b):
         print("PASS!")
@@ -75,20 +75,42 @@ def check(A, x, b):
         print("FAIL!")
 
 
+INPUT_NAMES = {
+    "N": "problem size",
+    "conv_iters": "convergence check interval",
+    "warmup": "warmup iterations",
+}
+
+OUTPUT_NAMES = (
+    "time (milliseconds)",
+    "iterations",
+    "initial residual norm",
+    "final residual norm",
+)
+
+
+@benchmark_info(
+    name="CG",
+    input_names=INPUT_NAMES,
+    output_names=OUTPUT_NAMES,
+    returns_time=0,  # N.B. time is output 0, not the same as `False`
+)
 def run_cg(
+    np,
     N,
     corners,
     conv_iters,
     warmup,
     *,
+    timer,
     max_iters=None,
     conv_threshold=1.0e-10,
     perform_check=False,
     print_timing=False,
     verbose=False,
 ):
-    # A, b = generate_random(N)
-    A, b = generate_2D(N, corners)
+    # A, b = generate_random(np, N)
+    A, b = generate_2D(np, N, corners)
 
     print("Solving system...")
     x = np.zeros(A.shape[1])
@@ -141,14 +163,14 @@ def run_cg(
         num_iters = converged + 1
         print("Converged in %d iterations" % (num_iters))
     if perform_check:
-        check(A, x, b)
+        check(np, A, x, b)
 
     if print_timing:
         print(f"Elapsed Time: {total} ms")
     return (total, num_iters, r_start, r_end)
 
 
-def precondition(A, N, corners):
+def precondition(np, A, N, corners):
     if corners:
         d = 8 * (N**2)
     else:
@@ -157,12 +179,20 @@ def precondition(A, N, corners):
     return M
 
 
+@benchmark_info(
+    name="PreCG",
+    input_names=INPUT_NAMES,
+    output_names=OUTPUT_NAMES,
+    returns_time=0,
+)
 def run_preconditioned_cg(
+    np,
     N,
     corners,
     conv_iters,
     warmup,
     *,
+    timer,
     max_iters=None,
     conv_threshold=1.0e-10,
     perform_check=False,
@@ -170,9 +200,10 @@ def run_preconditioned_cg(
     verbose=False,
 ):
     print("Solving system with preconditioner...")
-    # A, b = generate_random(N)
-    A, b = generate_2D(N, corners)
-    M = precondition(A, N, corners)
+
+    # A, b = generate_random(np, N)
+    A, b = generate_2D(np, N, corners)
+    M = precondition(np, A, N, corners)
 
     x = np.zeros(A.shape[1])
     r = b - A.dot(x)
@@ -224,7 +255,7 @@ def run_preconditioned_cg(
         num_iters = converged + 1
         print("Converged in %d iterations" % (num_iters))
     if perform_check:
-        check(A, x, b)
+        check(np, A, x, b)
 
     if print_timing:
         print(f"Elapsed Time: {total} ms")
@@ -307,27 +338,19 @@ if __name__ == "__main__":
         help="convergence check threshold",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_preconditioned_cg if args.precondition else run_cg,
-        args.benchmark,
-        "PreCG" if args.precondition else "CG",
-        [
-            ("problem size", args.N),
-            ("corners", args.corners),
-            ("convergence check interval", args.conv_iters),
-            ("warmup iterations", args.warmup),
-        ],
-        [
-            "time (milliseconds)",
-            "iterations",
-            "initial residual norm",
-            "final residual norm",
-        ],
+        harness.np,
+        args.N,
+        args.corners,
+        args.conv_iters,
+        args.warmup,
         max_iters=args.max_iters,
         conv_threshold=args.conv_threshold,
         perform_check=args.check,
         print_timing=args.timing,
         verbose=args.verbose,
+        timer=harness.timer,
     )

@@ -39,7 +39,7 @@ Usage:
     python main.py --suite advanced_indexing --package numpy
 """
 
-from microbenchmark_utilities import create_benchmark_function
+from _benchmark import timed_loop, MicrobenchmarkSuite
 
 
 # =============================================================================
@@ -47,7 +47,7 @@ from microbenchmark_utilities import create_benchmark_function
 # =============================================================================
 
 
-def bench_putmask_path(np, timer, size, runs, warmup):
+def putmask_scalar(np, size, runs, warmup, *, timer):
     """
     Test putmask optimization for scalar assignment to boolean mask.
     Path: a[bool_mask] = scalar
@@ -59,10 +59,10 @@ def bench_putmask_path(np, timer, size, runs, warmup):
     def operation():
         a[mask] = 999.0
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_einsum_path_2d(np, timer, n, num_indices, runs, warmup):
+def einsum_2d(np, n, num_indices, runs, warmup, *, timer):
     """
     Test einsum optimization for integer array indexing (2D case).
     Path: a[integer_indices, :]
@@ -74,10 +74,10 @@ def bench_einsum_path_2d(np, timer, n, num_indices, runs, warmup):
     def operation():
         return a[indices, :]
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_take_task_1d(np, timer, size, num_indices, runs, warmup):
+def take_1d(np, size, num_indices, runs, warmup, *, timer):
     """
     Test TAKE task optimization (1D case).
     Path: np.take(a, indices, axis=0)
@@ -89,10 +89,10 @@ def bench_take_task_1d(np, timer, size, num_indices, runs, warmup):
     def operation():
         return np.take(a, indices, axis=0)
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_take_task_2d(np, timer, n, num_indices, runs, warmup):
+def take_2d(np, n, num_indices, runs, warmup, *, timer):
     """
     Test TAKE task optimization (2D case).
     Path: np.take(a, indices, axis=0)
@@ -104,10 +104,10 @@ def bench_take_task_2d(np, timer, n, num_indices, runs, warmup):
     def operation():
         return np.take(a, indices, axis=0)
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
-def bench_take_along_axis(np, timer, n, num_indices, runs, warmup):
+def take_along_axis(np, n, num_indices, runs, warmup, *, timer):
     """
     Test take_along_axis optimization.
     Path: np.take_along_axis(a, indices, axis=0)
@@ -119,7 +119,7 @@ def bench_take_along_axis(np, timer, n, num_indices, runs, warmup):
     def operation():
         return np.take_along_axis(a, indices, axis=0)
 
-    return create_benchmark_function(np, timer, operation, runs, warmup)()
+    return timed_loop(operation, timer, runs, warmup)
 
 
 # =============================================================================
@@ -138,45 +138,19 @@ def run_benchmarks(suite, size):
     n = int(size**0.5)  # For 2D arrays
     num_indices = min(1000, n // 10)  # Number of indices to select
 
-    # 1. Putmask optimization
-    suite.run_single_benchmark(
-        name="putmask_scalar",
-        bench_func=lambda: bench_putmask_path(np, timer, size, runs, warmup),
-        size_params={"size": size},
-    )
+    suite.run_timed(putmask_scalar, np, size, runs, warmup, timer=timer)
 
-    # 2. Einsum optimization
-    suite.run_single_benchmark(
-        name="einsum_2d",
-        bench_func=lambda: bench_einsum_path_2d(
-            np, timer, n, num_indices, runs, warmup
-        ),
-        size_params={"n": n, "num_indices": num_indices},
-    )
+    args = (np, size, num_indices, runs, warmup)
+    kwargs = {"timer": timer}
 
-    # 3. Take task optimization - 1D
-    suite.run_single_benchmark(
-        name="take_1d",
-        bench_func=lambda: bench_take_task_1d(
-            np, timer, size, num_indices, runs, warmup
-        ),
-        size_params={"size": size, "num_indices": num_indices},
-    )
+    funcs = [einsum_2d, take_1d, take_2d, take_along_axis]
 
-    # 4. Take task optimization - 2D
-    suite.run_single_benchmark(
-        name="take_2d",
-        bench_func=lambda: bench_take_task_2d(
-            np, timer, n, num_indices, runs, warmup
-        ),
-        size_params={"n": n, "num_indices": num_indices},
-    )
+    for f in funcs:
+        suite.run_timed(f, *args, **kwargs)
 
-    # 5. Take along axis
-    suite.run_single_benchmark(
-        name="take_along_axis",
-        bench_func=lambda: bench_take_along_axis(
-            np, timer, n, num_indices, runs, warmup
-        ),
-        size_params={"n": n, "num_indices": num_indices},
-    )
+
+class FastAdvancedIndexingSuite(MicrobenchmarkSuite):
+    name = "advanced_indexing"
+
+    def run_suite(self, size):
+        run_benchmarks(self, size)

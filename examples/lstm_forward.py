@@ -17,11 +17,19 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 
+@benchmark_info(name="LSTM Forward")
 def run_lstm(
-    batch_size, hidden_size, sentence_length, word_size, *, print_timing=False
+    np,
+    batch_size,
+    hidden_size,
+    sentence_length,
+    word_size,
+    *,
+    timer,
+    print_timing=False,
 ):
     timer.start()
 
@@ -116,18 +124,15 @@ if __name__ == "__main__":
         help="perform timing",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_lstm,
-        args.benchmark,
-        "LSTM Forward",
-        [
-            ("batch size", args.batch),
-            ("hidden size", args.hidden),
-            ("sentence length", args.sentence),
-            ("word size", args.word),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.batch,
+        args.hidden,
+        args.sentence,
+        args.word,
+        timer=harness.timer,
         print_timing=args.timing,
     )

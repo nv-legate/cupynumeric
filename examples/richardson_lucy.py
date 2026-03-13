@@ -15,15 +15,24 @@
 
 import argparse
 
-from benchmark import parse_args, run_benchmark
+from _benchmark import benchmark_info, parse_with_harness
 
 float_type = "float32"
 
 # A simplified implementation of Richardson-Lucy deconvolution
 
 
+@benchmark_info(name="Richardson Lucy")
 def run_richardson_lucy(
-    shape, filter_shape, num_iter, warmup, conv_method, *, print_timing=False
+    np,
+    shape,
+    filter_shape,
+    num_iter,
+    warmup,
+    conv_method,
+    *,
+    timer,
+    print_timing=False,
 ):
     image = np.random.rand(*shape).astype(float_type)
     psf = np.random.rand(*filter_shape).astype(float_type)
@@ -100,19 +109,16 @@ if __name__ == "__main__":
         help="convolution method (auto by default)",
     )
 
-    args, np, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_richardson_lucy,
-        args.benchmark,
-        "Richardson Lucy",
-        [
-            ("shape", args.shape),
-            ("filter shape", args.filter_shape),
-            ("iterations", args.I),
-            ("warmup iterations", args.warmup),
-            ("convolution method", args.conv_method),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.shape,
+        args.filter_shape,
+        args.I,
+        args.warmup,
+        args.conv_method,
+        timer=harness.timer,
         print_timing=args.timing,
     )

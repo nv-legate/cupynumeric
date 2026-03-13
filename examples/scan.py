@@ -17,47 +17,47 @@
 
 import argparse
 
-import numpy as np
-from benchmark import parse_args, run_benchmark
+import numpy as numpy
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def initialize(shape, dt, axis):
+def initialize(np, shape, dt, axis):
     if dt == "int":
-        A = num.random.randint(1000, size=shape, dtype=np.int32)
+        A = np.random.randint(1000, size=shape, dtype=np.int32)
         if axis is None:
-            B = num.zeros(shape=A.size, dtype=np.int32)
+            B = np.zeros(shape=A.size, dtype=np.int32)
         else:
-            B = num.zeros(shape=shape, dtype=np.int32)
+            B = np.zeros(shape=shape, dtype=np.int32)
     elif dt == "float":
-        A = num.random.random(shape).astype(np.float32)
+        A = np.random.random(shape).astype(np.float32)
         # insert NAN at second element
         A[(1,) * len(shape)] = np.nan
 
         if axis is None:
-            B = num.zeros(shape=A.size, dtype=np.float32)
+            B = np.zeros(shape=A.size, dtype=np.float32)
         else:
-            B = num.zeros(shape=shape, dtype=np.float32)
+            B = np.zeros(shape=shape, dtype=np.float32)
     else:
         A = (
-            num.random.random(shape).astype(np.float32)
-            + num.random.random(shape).astype(np.float32) * 1j
+            np.random.random(shape).astype(np.float32)
+            + np.random.random(shape).astype(np.float32) * 1j
         )
         A[(1,) * len(shape)] = np.nan
 
         if axis is None:
-            B = num.zeros(shape=A.size, dtype=np.complex64)
+            B = np.zeros(shape=A.size, dtype=np.complex64)
         else:
-            B = num.zeros(shape=shape, dtype=np.complex64)
+            B = np.zeros(shape=shape, dtype=np.complex64)
 
     return A, B
 
 
 def check_scan(OP, A, B, ax):
-    C = np.zeros(shape=B.shape, dtype=B.dtype)
-    getattr(np, OP)(A, out=C, axis=ax)
+    C = numpy.zeros(shape=B.shape, dtype=B.dtype)
+    getattr(numpy, OP)(A, out=C, axis=ax)
 
     print("Checking result...")
-    if np.allclose(B, C, equal_nan=True):
+    if numpy.allclose(B, C, equal_nan=True):
         print("PASS!")
     else:
         print("FAIL!")
@@ -67,23 +67,25 @@ def check_scan(OP, A, B, ax):
         assert False
 
 
-def run_scan(OP, shape, dt, ax, *, perform_check=False):
+@benchmark_info(name="Scan")
+def run_scan(np, OP, shape, dt, ax, *, timer, perform_check=False):
     print(f"Problem Size:    shape={shape}")
 
     print(f"Problem Type:    OP={OP}")
     print(f"Axis:            axis={ax}")
     print(f"Data type:       dtype={dt}32")
-    A, B = initialize(shape=shape, dt=dt, axis=ax)
+    A, B = initialize(np, shape=shape, dt=dt, axis=ax)
     timer.start()
 
     # op handling
-    getattr(num, OP)(A, out=B, axis=ax)
+    getattr(np, OP)(A, out=B, axis=ax)
 
     total = timer.stop()
     print(f"Elapsed Time:  {total}ms")
     # error checking
     if perform_check:
         check_scan(OP, A, B, ax)
+    return total
 
 
 if __name__ == "__main__":
@@ -129,18 +131,15 @@ if __name__ == "__main__":
         help="check the result of the solve",
     )
 
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         run_scan,
-        args.benchmark,
-        "Scan",
-        [
-            ("operation", args.OP),
-            ("shape", args.shape),
-            ("datatype", args.dt),
-            ("axis", args.axis),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.OP,
+        args.shape,
+        args.dt,
+        args.axis,
+        timer=harness.timer,
         perform_check=args.check,
     )

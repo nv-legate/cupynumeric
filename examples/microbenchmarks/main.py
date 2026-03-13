@@ -13,24 +13,7 @@
 # limitations under the License.
 #
 """
-CuPyNumeric Microbenchmark Suite
-
 Unified entry point for all microbenchmarks.
-
-Usage:
-    python main.py [--suite SUITE] [--size SIZE] [--runs RUNS]
-                   [--fail-fast] [options]
-
-Available Suites:
-    all               - Run all available benchmarks
-    advanced_indexing - Optimized indexing paths (putmask, einsum, take_task)
-    gemm_gemv         - GEMM/GEMV microbenchmarks
-    general_indexing  - General indexing (ADVANCED_INDEXING task + Copy)
-    general_random    - General random generation
-    general_nanred    - General nansum(), nanmean()
-    scalar_red        - Scalar reductions: sum, prod, min, max, argmin, argmax
-    stream            - STREAM-style bandwidth microbenchmarks
-    ufunc             - Representative ufunc microbenchmarks
 
 Examples:
     # Run with cupynumeric (default)
@@ -47,42 +30,48 @@ Examples:
 
     # Multi-GPU
     legate --gpus 4 main.py --suite all --benchmark 10
-
-Standard Benchmark Options (from examples/benchmark.py):
-    -b/--benchmark N    : Run N benchmark samples and create structured log
-    --package           : Backend to use (legate|numpy|cupy)
-    --log-conda-list    : Include conda environment in metadata
-    --log-metadata-extra: Add custom metadata (key=value pairs)
 """
 
 import argparse
 import sys
 import traceback
+
 from pathlib import Path
+from dataclasses import replace
 
 # Add parent directory to path to import benchmark.py
 # (Relative imports don't work for scripts run directly)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from benchmark import parse_args
-
-# Import shared utilities
-from microbenchmark_utilities import MicrobenchmarkSuite
+from _benchmark import (
+    MicrobenchmarkHarness,
+    MicrobenchmarkSuite,
+    SummarizeFlush,
+)
 
 # Import benchmark suites
-from fast_advanced_indexing_bench import (
-    run_benchmarks as run_advanced_indexing,
-)
-from gemm_gemv_bench import run_benchmarks as run_gemm_gemv
-from general_indexing_bench import run_benchmarks as run_general_indexing
+#
+# from general_scalared_bench import run_benchmarks as run_general_scalared
 
-from general_random_bench import run_benchmarks as run_general_random
-from stream_bench import run_benchmarks as run_stream
-from ufunc_bench import run_benchmarks as run_ufunc
+from fast_advanced_indexing_bench import FastAdvancedIndexingSuite
+from general_indexing_bench import GeneralIndexingSuite
+from general_random_bench import RandomSuite
+from gemm_gemv_bench import GemmSuite
+from stream_bench import StreamSuite
+from ufunc_bench import UfuncSuite
+from general_nanred_bench import NanRedSuite
+from general_scalared_bench import ScalarRedSuite
 
-from general_nanred_bench import run_benchmarks as run_general_nanred
-
-from general_scalared_bench import run_benchmarks as run_general_scalared
+SUITE_CLASSES: list[MicrobenchmarkSuite] = [
+    FastAdvancedIndexingSuite,
+    GeneralIndexingSuite,
+    RandomSuite,
+    GemmSuite,
+    StreamSuite,
+    UfuncSuite,
+    NanRedSuite,
+    ScalarRedSuite,
+]
 
 # =============================================================================
 # MAIN
@@ -96,22 +85,14 @@ def main():
         epilog=__doc__,
     )
 
-    # Suite-specific arguments
+    suite_names = [suite.name for suite in SUITE_CLASSES]
+
+    # main options
     parser.add_argument(
         "--suite",
         type=str,
         default="all",
-        choices=[
-            "all",
-            "advanced_indexing",
-            "gemm_gemv",
-            "general_indexing",
-            "general_random",
-            "general_nanred",
-            "scalar_red",
-            "stream",
-            "ufunc",
-        ],
+        choices=["all", *suite_names],
         help="Benchmark suite to run (default: all)",
     )
     parser.add_argument(
@@ -121,163 +102,63 @@ def main():
         help="Base problem size in elements (default: 10M)",
     )
     parser.add_argument(
-        "--runs",
-        type=int,
-        default=5,
-        help="Number of timing runs per benchmark (default: 5)",
-    )
-    parser.add_argument(
-        "--warmup",
-        type=int,
-        default=2,
-        help="Number of warmup runs (default: 2)",
-    )
-    parser.add_argument(
-        "--summarize",
-        action="store_true",
-        help="Print unified summary table at the end (parses all generated CSV files)",
-    )
-    parser.add_argument(
         "--fail-fast",
         action="store_true",
         help="Exit immediately after the first suite failure",
     )
-    parser.add_argument(
-        "--gemm-gemv-variant",
-        type=str,
-        default="all",
-        choices=["skinny_gemm", "square_gemm", "gemv", "all"],
-        help="GEMM/GEMV variant to run (default: all)",
-    )
-    parser.add_argument(
-        "--gemm-gemv-precision",
-        type=str,
-        default="32",
-        choices=["32", "64", "all"],
-        help="GEMM/GEMV precision in bits (default: 32)",
-    )
-    parser.add_argument(
-        "--gemm-gemv-check",
-        action="store_true",
-        help="Validate GEMM/GEMV results after each timed sample",
-    )
-    parser.add_argument(
-        "--stream-operation",
-        type=str,
-        default="all",
-        choices=["copy", "mul", "scale", "add", "all"],
-        help="STREAM operation to run (default: all)",
-    )
-    parser.add_argument(
-        "--stream-precision",
-        type=str,
-        default="32",
-        choices=["32", "64", "all"],
-        help="STREAM precision in bits (default: 32)",
-    )
-    parser.add_argument(
-        "--stream-contiguous",
-        type=str,
-        default="all",
-        choices=["true", "false", "all"],
-        help=(
-            "STREAM layout to run; 'false' uses transpose-based "
-            "non-contiguous views (default: all)"
-        ),
-    )
-    parser.add_argument(
-        "--stream-check",
-        action="store_true",
-        help="Validate STREAM results after each timed sample",
-    )
-    parser.add_argument(
-        "--ufunc-check",
-        action="store_true",
-        help="Validate ufunc benchmark results after each timed sample",
-    )
 
-    # Parse using standard infrastructure (adds --benchmark, --package, etc.)
-    args, np, timer = parse_args(parser)
+    MicrobenchmarkHarness.add_parser_group(parser)
 
-    print("=" * 80)
-    print("CuPyNumeric Microbenchmark Suite")
-    print("=" * 80)
-    print("Configuration:")
-    print(f"  Backend: {args.package}")
-    print(f"  Suite: {args.suite}")
-    print(f"  Size: {args.size:,} elements")
-    print(f"  Runs: {args.runs}")
-    print(f"  Warmup: {args.warmup}")
+    for suite_class in SUITE_CLASSES:
+        suite_class.add_suite_parser_group(parser)
+
+    args = parser.parse_known_args()[0]
+
+    # general configuration that affects all suites
+    config = MicrobenchmarkHarness.config(args)
+
+    # handle joint summary of all suites
+    summarize = config.harness_config.summarize
+    orig_flush = config.harness_config.summarize_flush
+    if config.harness_config.summarize is not None:
+        # Flush the summary at the end of all the suite
+        new_harness_config = replace(
+            config.harness_config, summarize_flush=SummarizeFlush.NEVER
+        )
+        config = replace(config, harness_config=new_harness_config)
+        assert summarize == config.harness_config.summarize
+    harness_config = config.harness_config
+
+    suites: dict[str, MicrobenchmarkSuite] = {}
+    for suite_class in SUITE_CLASSES:
+        suite = suite_class(config, args)
+        suites[suite.name] = suite
+
+    config_msg = [
+        f"Backend: {harness_config.package}",
+        f"Suite: {args.suite}",
+        f"Size: {args.size:,} elements",
+        f"Runs: {config.runs}",
+        f"Warmup: {config.warmup}",
+    ]
     if args.fail_fast:
-        print("  Fail fast: enabled")
-    if args.benchmark > 0:
-        print(
-            f"  Benchmark samples: {args.benchmark} (structured logging enabled)"
+        config_msg.append("Fail fast: enabled")
+    if harness_config.repeat > 0:
+        config_msg.append(
+            f"Benchmark samples: {harness_config.repeat} (structured logging enabled)"
         )
-    if args.suite in ("all", "ufunc"):
-        print(f"  Ufunc check: {args.ufunc_check}")
-    if args.suite in ("all", "gemm_gemv"):
-        print(f"  GEMM/GEMV variant: {args.gemm_gemv_variant}")
-        print(f"  GEMM/GEMV precision: {args.gemm_gemv_precision}")
-        print(f"  GEMM/GEMV check: {args.gemm_gemv_check}")
-    if args.suite in ("all", "stream"):
-        print(f"  Stream operation: {args.stream_operation}")
-        print(f"  Stream precision: {args.stream_precision}")
-        print(f"  Stream contiguous: {args.stream_contiguous}")
-        print(f"  Stream check: {args.stream_check}")
-    print("=" * 80)
-
-    # Available benchmark suites
-    suites = {
-        "advanced_indexing": run_advanced_indexing,
-        "gemm_gemv": run_gemm_gemv,
-        "general_indexing": run_general_indexing,
-        "general_random": run_general_random,
-        "general_nanred": run_general_nanred,
-        "scalar_red": run_general_scalared,
-        "stream": run_stream,
-        "ufunc": run_ufunc,
-    }
-
-    # Helper function to run a single suite
-    def run_suite(suite_name):
-        """Create and run a benchmark suite."""
-        suite = MicrobenchmarkSuite(
-            suite_name=suite_name, args=args, np_module=np, timer=timer
-        )
-        if suite_name == "gemm_gemv":
-            suites[suite_name](
-                suite,
-                args.size,
-                variant=args.gemm_gemv_variant,
-                precision=args.gemm_gemv_precision,
-                perform_check=args.gemm_gemv_check,
-            )
-        elif suite_name == "stream":
-            suites[suite_name](
-                suite,
-                args.size,
-                operation=args.stream_operation,
-                precision=args.stream_precision,
-                contiguous=args.stream_contiguous,
-                perform_check=args.stream_check,
-            )
-        elif suite_name == "ufunc":
-            suites[suite_name](
-                suite, args.size, perform_check=args.ufunc_check
-            )
-        else:
-            suites[suite_name](suite, args.size)
-        return suite
+    config.print_panel(config_msg, "CuPyNumeric Microbenchmark Suite")
 
     # Run selected suite(s)
-    suite_coordinators = []
+    completed = []
     failures = []
 
     if args.suite == "all":
-        for suite_name in suites.keys():
+        for suite_name, suite in suites.items():
             try:
-                suite_coordinators.append(run_suite(suite_name))
+                with suite as s:
+                    s.run_suite(args.size)
+                completed.append(suite)
             except Exception as exc:
                 print(f"\nError in {suite_name} suite: {exc}")
                 traceback.print_exc()
@@ -286,210 +167,32 @@ def main():
                     return 1
     else:
         if args.suite in suites:
-            suite_coordinators.append(run_suite(args.suite))
+            with suites[args.suite] as s:
+                s.run_suite(args.size)
+            completed.append(suite)
         else:
             print(f"Unknown suite: {args.suite}")
             return 1
 
-    # Print suite-level summaries
-    for suite in suite_coordinators:
-        suite.print_suite_summary()
+    if summarize and orig_flush != SummarizeFlush.NEVER:
+        summarize.flush(title="Microbenchmarks")
 
-    # Print unified summary table if requested (parses generated CSV files)
-    if args.summarize and args.benchmark > 0 and suite_coordinators:
-        print_unified_summary_table(suite_coordinators)
-
-    # Print overall summary if multiple suites
-    if len(suite_coordinators) > 1:
-        print("\n" + "=" * 80)
-        print("OVERALL SUMMARY")
-        print("=" * 80)
-        total_benchmarks = sum(s.benchmark_count for s in suite_coordinators)
-        print(f"Total suites run: {len(suite_coordinators)}")
-        print(f"Total benchmarks: {total_benchmarks}")
-        print("=" * 80)
+    if len(completed) > 1:
+        total_benchmarks = sum(s.benchmark_count for s in completed)
+        final_msg = [
+            f"Total suites run: {len(completed)}",
+            f"Total benchmarks: {total_benchmarks}",
+        ]
+        config.print_panel(final_msg, "OVERAL SUMMARY")
 
     if failures:
-        print("\n" + "=" * 80)
-        print("FAILED SUITES")
-        print("=" * 80)
+        failure_msg = []
         for suite_name in failures:
-            print(f"- {suite_name}")
-        print("=" * 80)
+            failure_msg.append(f"- {suite_name}")
+        config.print_panel(failure_msg, "FAILED SUITES")
         return 1
 
     return 0
-
-
-def print_unified_summary_table(suite_coordinators):
-    """
-    Parse generated CSV files and print a unified summary table.
-
-    This reads all the separate CSV files created by run_benchmark() and
-    consolidates them into a single summary table.
-    """
-    import os
-
-    # Get output directory from environment variable
-    output_dir = os.environ.get("LEGATE_BENCHMARK_OUT", None)
-
-    if output_dir and output_dir != "stdout":
-        # CSV files are in a directory - parse them
-        all_data = parse_csv_files_from_directory(
-            suite_coordinators, output_dir
-        )
-    else:
-        # CSV data was printed to stdout - we can't parse it retroactively
-        # User should redirect output to file and use visualize_benchmarks.py
-        print("\n" + "=" * 80)
-        print("UNIFIED SUMMARY TABLE")
-        print("=" * 80)
-        print(
-            "Note: To generate a unified summary table, use directory output mode:"
-        )
-        print(
-            "  LEGATE_BENCHMARK_OUT=./results python main.py --benchmark 5 --summarize"
-        )
-        print("")
-        print(
-            "This will create separate CSV files (one per benchmark) and print"
-        )
-        print("a unified summary table at the end.")
-        print("=" * 80)
-        return
-
-    if not all_data:
-        print("\nNo CSV data found to summarize.")
-        return
-
-    # Print unified table
-    try:
-        from rich.console import Console
-        from rich.table import Table
-
-        console = Console()
-        table = Table(title="\n🔬 All Benchmarks - Unified Summary")
-
-        table.add_column("Suite", style="blue")
-        table.add_column("Benchmark", style="magenta")
-        table.add_column("Samples", justify="right", style="cyan")
-        table.add_column("Avg (ms)", justify="right", style="yellow")
-        table.add_column("Min (ms)", justify="right", style="green")
-        table.add_column("Max (ms)", justify="right", style="red")
-
-        for row in all_data:
-            table.add_row(
-                row["suite"],
-                row["benchmark"],
-                str(row["samples"]),
-                f"{row['avg']:.3f}",
-                f"{row['min']:.3f}",
-                f"{row['max']:.3f}",
-            )
-
-        console.print(table)
-
-    except ImportError:
-        # Fallback to simple text table
-        print("\n" + "=" * 90)
-        print("ALL BENCHMARKS - UNIFIED SUMMARY")
-        print("=" * 90)
-        print(
-            f"{'Suite':<20} {'Benchmark':<30} {'Samples':>7} {'Avg (ms)':>10} {'Min (ms)':>10} {'Max (ms)':>10}"
-        )
-        print("-" * 90)
-
-        for row in all_data:
-            print(
-                f"{row['suite']:<20} "
-                f"{row['benchmark']:<30} "
-                f"{row['samples']:>7} "
-                f"{row['avg']:>10.3f} "
-                f"{row['min']:>10.3f} "
-                f"{row['max']:>10.3f}"
-            )
-
-        print("=" * 90)
-
-
-def parse_csv_files_from_directory(suite_coordinators, output_dir):
-    """Parse all CSV files generated by benchmarks in the output directory."""
-    import csv
-    from glob import glob
-
-    all_data = []
-
-    for suite in suite_coordinators:
-        for bench_name in suite.get_benchmark_names():
-            # Find CSV files matching this benchmark name
-            pattern = f"{output_dir}/{bench_name}_*.csv"
-            csv_files = glob(pattern)
-
-            if not csv_files:
-                continue
-
-            # Parse the CSV file (use first match if multiple)
-            csv_file = csv_files[0]
-            try:
-                with open(csv_file, "r") as f:
-                    # Skip metadata header lines (start with #)
-                    lines = []
-                    for line in f:
-                        if not line.startswith("#"):
-                            lines.append(line)
-
-                    if len(lines) < 2:  # Need header + at least one data row
-                        continue
-
-                    # Parse CSV
-                    reader = csv.DictReader(lines)
-                    rows = list(reader)
-
-                    if not rows:
-                        continue
-                    # Extract timing data
-                    times = [
-                        float(row.get("time (milliseconds)", 0))
-                        for row in rows
-                    ]
-
-                    # Compute statistics (with outlier removal like run_benchmark does)
-                    filtered_times = times.copy()
-                    if len(times) >= 3:
-                        filtered_times.remove(max(filtered_times))
-                    if len(times) >= 2:
-                        filtered_times.remove(min(filtered_times))
-
-                    avg = (
-                        sum(filtered_times) / len(filtered_times)
-                        if filtered_times
-                        else 0
-                    )
-
-                    # Use the known suite name instead of splitting on "_".
-                    suite_name = suite.suite_name
-                    prefix = f"{suite_name}_"
-                    if bench_name.startswith(prefix):
-                        benchmark_name = bench_name[len(prefix) :]
-                    else:
-                        benchmark_name = bench_name
-
-                    all_data.append(
-                        {
-                            "suite": suite_name,
-                            "benchmark": benchmark_name,
-                            "samples": len(times),
-                            "avg": avg,
-                            "min": min(times),
-                            "max": max(times),
-                        }
-                    )
-
-            except (IOError, ValueError, KeyError) as e:
-                print(f"Warning: Could not parse {csv_file}: {e}")
-                continue
-
-    return all_data
 
 
 if __name__ == "__main__":

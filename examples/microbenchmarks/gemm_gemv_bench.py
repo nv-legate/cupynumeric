@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import math
 
+from _benchmark import MicrobenchmarkSuite
+
 SKINNY_OUTER_DIM = 8
 
 
@@ -128,7 +130,7 @@ def _check_case(variant, size, precision, result):
 
 
 def run_gemm_gemv_case(
-    np, timer, variant, size, runs, warmup, precision, *, perform_check=False
+    np, variant, size, runs, warmup, precision, timer, perform_check
 ):
     dtype = np.float32 if precision == 32 else np.float64
     _, operands = _initialize_case(np, variant, size, dtype)
@@ -169,36 +171,92 @@ def _precision_name(precision):
     return f"float{precision}"
 
 
-def run_benchmarks(
-    suite, size, *, variant="all", precision="32", perform_check=False
-):
+def skinny_gemm(np, size, runs, warmup, precision, *, timer, perform_check):
+    return run_gemm_gemv_case(
+        np, "skinny_gemm", size, runs, warmup, precision, timer, perform_check
+    )
+
+
+def square_gemm(np, size, runs, warmup, precision, *, timer, perform_check):
+    return run_gemm_gemv_case(
+        np, "square_gemm", size, runs, warmup, precision, timer, perform_check
+    )
+
+
+def gemv(np, size, runs, warmup, precision, *, timer, perform_check):
+    return run_gemm_gemv_case(
+        np, "gemv", size, runs, warmup, precision, timer, perform_check
+    )
+
+
+def run_benchmarks(suite, size, variant, precision, perform_check):
     """Run GEMM/GEMV benchmarks inside the suite framework."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
 
-    for case_variant in _get_variants(variant):
-        for case_precision in _get_precisions(precision):
-            dimensions = _get_case_dimensions(case_variant, size)
-            suite.run_single_benchmark(
-                name=f"{case_variant}_{_precision_name(case_precision)}",
-                bench_func=lambda v=case_variant, p=case_precision: (
-                    run_gemm_gemv_case(
-                        np,
-                        timer,
-                        v,
-                        size,
-                        runs,
-                        warmup,
-                        p,
-                        perform_check=perform_check,
-                    )
-                ),
-                size_params={
-                    "size": size,
-                    "variant": case_variant,
-                    "precision": case_precision,
-                    **dimensions,
-                },
+    variants = _get_variants(variant)
+    precisions = _get_precisions(precision)
+    funcs = [skinny_gemm, square_gemm, gemv]
+    for func in funcs:
+        if func.__name__ in variants:
+            suite.run_timed(
+                func,
+                np,
+                size,
+                runs,
+                warmup,
+                precisions,
+                timer=timer,
+                perform_check=perform_check,
             )
+
+
+class GemmSuite(MicrobenchmarkSuite):
+    name = "gemm_gemv"
+
+    def add_suite_parser_group(parser):
+        group = parser.add_argument_group("GEMM/GEMV Suite")
+        group.add_argument(
+            "--gemm-gemv-variant",
+            type=str,
+            default="all",
+            choices=["skinny_gemm", "square_gemm", "gemv", "all"],
+            help="GEMM/GEMV variant to run (default: all)",
+        )
+        group.add_argument(
+            "--gemm-gemv-precision",
+            type=str,
+            default="32",
+            choices=["32", "64", "all"],
+            help="GEMM/GEMV precision in bits (default: 32)",
+        )
+        group.add_argument(
+            "--gemm-gemv-check",
+            action="store_true",
+            help="Validate GEMM/GEMV results after each timed sample",
+        )
+
+    def __init__(self, config, args):
+        super().__init__(config, args)
+        self.gemm_gemv_variant = args.gemm_gemv_variant
+        self.gemm_gemv_precision = args.gemm_gemv_precision
+        self.gemm_gemv_check = args.gemm_gemv_check
+
+    def print_config(self):
+        msg = [
+            f"variant: {self.gemm_gemv_variant}",
+            f"precision: {self.gemm_gemv_precision}",
+            f"check: {self.gemm_gemv_check}",
+        ]
+        self.print_panel(msg, title="GEMM/GEMMV Suite")
+
+    def run_suite(self, size):
+        run_benchmarks(
+            self,
+            size,
+            self.gemm_gemv_variant,
+            self.gemm_gemv_precision,
+            self.gemm_gemv_check,
+        )

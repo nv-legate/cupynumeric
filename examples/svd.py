@@ -17,11 +17,11 @@
 
 import argparse
 
-import numpy as np
-from benchmark import parse_args, run_benchmark
+import numpy
+from _benchmark import benchmark_info, parse_with_harness
 
 
-def check_result(a, u, s, vh):
+def check_result(np, a, u, s, vh):
     print("Checking result...")
 
     # (u * s) @ vh
@@ -31,32 +31,41 @@ def check_result(a, u, s, vh):
 
     u = u[:, :k] if k < m else u
     vh = vh[:k, :] if k < m else vh
-    a2 = num.matmul(u * s, vh)
-    print("PASS!" if num.allclose(a, a2) else "FAIL!")
+    a2 = np.matmul(u * s, vh)
+    print("PASS!" if np.allclose(a, a2) else "FAIL!")
 
 
+@benchmark_info(name="SVD")
 def svd(
-    m, n, full_matrices, dtype, *, perform_check=False, print_timing=False
+    np,
+    m,
+    n,
+    full_matrices,
+    dtype,
+    *,
+    timer,
+    perform_check=False,
+    print_timing=False,
 ):
-    if np.issubdtype(dtype, np.integer):
-        a = num.random.randint(0, 1000, size=m * n).astype(dtype)
+    if numpy.issubdtype(dtype, numpy.integer):
+        a = np.random.randint(0, 1000, size=m * n).astype(dtype)
         a = a.reshape((m, n))
-    elif np.issubdtype(dtype, np.floating):
-        a = num.random.random((m, n)).astype(dtype)
-    elif np.issubdtype(dtype, np.complexfloating):
-        a = num.array(
-            num.random.random((m, n)) + num.random.random((m, n)) * 1j
+    elif numpy.issubdtype(dtype, numpy.floating):
+        a = np.random.random((m, n)).astype(dtype)
+    elif numpy.issubdtype(dtype, numpy.complexfloating):
+        a = np.array(
+            np.random.random((m, n)) + np.random.random((m, n)) * 1j
         ).astype(dtype)
     else:
         print("unsupported type " + str(dtype))
         assert False
 
     timer.start()
-    u, s, vh = num.linalg.svd(a, full_matrices)
+    u, s, vh = np.linalg.svd(a, full_matrices)
     total = timer.stop()
 
     if perform_check:
-        check_result(a, u, s, vh)
+        check_result(np, a, u, s, vh)
 
     if print_timing:
         print(f"Elapsed Time: {total} ms")
@@ -118,19 +127,16 @@ if __name__ == "__main__":
         action="store_true",
         help="compare result to numpy",
     )
-    args, num, timer = parse_args(parser)
+    args, harness = parse_with_harness(parser)
 
-    run_benchmark(
+    harness.run_timed(
         svd,
-        args.benchmark,
-        "SVD",
-        [
-            ("rows", args.m),
-            ("columns", args.n),
-            ("full matrices", args.full_matrices),
-            ("datatype", args.dtype),
-        ],
-        ["time (milliseconds)"],
+        harness.np,
+        args.m,
+        args.n,
+        args.full_matrices,
+        args.dtype,
+        timer=harness.timer,
         perform_check=args.check,
         print_timing=args.timing,
     )

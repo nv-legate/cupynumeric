@@ -15,6 +15,8 @@
 
 from __future__ import annotations
 
+from _benchmark import MicrobenchmarkSuite
+
 """
 STREAM microbenchmark suite.
 
@@ -26,6 +28,7 @@ Operations tested:
 The classical STREAM triad is intentionally omitted because cuPyNumeric does
 not currently lower `a[...] = b + scalar * c` as one fused backend kernel.
 """
+
 
 SCALAR = 3.0
 
@@ -82,17 +85,17 @@ def check_stream(operation, size, precision, contiguous, result):
         raise AssertionError("stream result mismatch")
 
 
-def run_stream_case(
+def stream(
     np,
-    timer,
+    operation,
+    contiguous,
+    precision,
     size,
     runs,
     warmup,
-    operation,
-    precision,
-    contiguous,
     *,
-    perform_check=False,
+    timer,
+    perform_check,
 ):
     dtype = np.float32 if precision == 32 else np.float64
     a, b, c = initialize(np, size, dtype, contiguous)
@@ -147,13 +150,7 @@ def _precision_name(precision):
 
 
 def run_benchmarks(
-    suite,
-    size,
-    *,
-    operation="all",
-    precision="32",
-    contiguous="all",
-    perform_check=False,
+    suite, size, operation, precision, contiguous, perform_check
 ):
     """Run STREAM benchmarks inside the suite framework."""
     np = suite.np
@@ -161,33 +158,82 @@ def run_benchmarks(
     runs = suite.runs
     warmup = suite.warmup
 
-    for stream_operation in _get_operations(operation):
-        for stream_precision in _get_precisions(precision):
-            for stream_contiguous in _get_contiguous_modes(contiguous):
-                benchmark_name = (
-                    f"{stream_operation}_"
-                    f"{_precision_name(stream_precision)}_"
-                    f"{_layout_name(stream_contiguous)}"
-                )
-                suite.run_single_benchmark(
-                    benchmark_name,
-                    lambda op=stream_operation,
-                    prec=stream_precision,
-                    cont=stream_contiguous: run_stream_case(
-                        np,
-                        timer,
-                        size,
-                        runs,
-                        warmup,
-                        op,
-                        prec,
-                        cont,
-                        perform_check=perform_check,
-                    ),
-                    size_params={
-                        "size": size,
-                        "operation": stream_operation,
-                        "precision": stream_precision,
-                        "contiguous": stream_contiguous,
-                    },
-                )
+    precisions = _get_precisions(precision)
+    contigs = _get_contiguous_modes(contiguous)
+    ops = _get_operations(operation)
+
+    suite.run_timed(
+        stream,
+        np,
+        ops,
+        contigs,
+        precisions,
+        size,
+        runs,
+        warmup,
+        timer=timer,
+        perform_check=perform_check,
+    )
+
+
+class StreamSuite(MicrobenchmarkSuite):
+    name = "stream"
+
+    @staticmethod
+    def add_suite_parser_group(parser):
+        group = parser.add_argument_group("STREAM Suite")
+        group.add_argument(
+            "--stream-operation",
+            type=str,
+            default="all",
+            choices=["copy", "mul", "scale", "add", "all"],
+            help="STREAM operation to run (default: all)",
+        )
+        group.add_argument(
+            "--stream-precision",
+            type=str,
+            default="32",
+            choices=["32", "64", "all"],
+            help="STREAM precision in bits (default: 32)",
+        )
+        group.add_argument(
+            "--stream-contiguous",
+            type=str,
+            default="all",
+            choices=["true", "false", "all"],
+            help=(
+                "STREAM layout to run; 'false' uses transpose-based "
+                "non-contiguous views (default: all)"
+            ),
+        )
+        group.add_argument(
+            "--stream-check",
+            action="store_true",
+            help="Validate STREAM results after each timed sample",
+        )
+
+    def __init__(self, config, args):
+        super().__init__(config, args)
+        self.stream_operation = args.stream_operation
+        self.stream_precision = args.stream_precision
+        self.stream_contiguous = args.stream_contiguous
+        self.stream_check = args.stream_check
+
+    def print_config(self):
+        msg = [
+            f"operation: {self.stream_operation}",
+            f"precision: {self.stream_precision}",
+            f"contiguous: {self.stream_contiguous}",
+            f"check: {self.stream_check}",
+        ]
+        self.print_panel(msg, "STREAM Suite")
+
+    def run_suite(self, size):
+        run_benchmarks(
+            self,
+            size,
+            self.stream_operation,
+            self.stream_precision,
+            self.stream_contiguous,
+            self.stream_check,
+        )
