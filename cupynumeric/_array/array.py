@@ -40,6 +40,8 @@ from ..config import (
 )
 from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..runtime import runtime
+from ..settings import settings
+from .doctor import doctor
 from .flags import flagsobj
 from .thunk import perform_scan, perform_unary_op, perform_unary_reduction
 from .util import (
@@ -1146,6 +1148,8 @@ class ndarray:
 
     def __iter__(self) -> Any:
         """a.__iter__(/)"""
+        if settings.doctor():
+            doctor.diagnose("__iter__", (self,), {})
         return self.__array__().__iter__()
 
     def __isub__(self, rhs: Any) -> ndarray:

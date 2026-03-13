@@ -15,18 +15,56 @@
 from __future__ import annotations
 
 import atexit
+import builtins
+import inspect
 import io
+import sys
 import traceback
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from types import FrameType
 from typing import Any, Final, Type
 
 import numpy as np
 
 from .._utils.stack import find_last_user_frame
 from ..settings import settings
+
+
+# Selected built-ins without a dedicated DUNDER (unlike len -> __len__).
+# Using these on cuPyNumeric arrays is inefficient; use np.min(arr) / arr.min() etc.
+# see entire list of functions: https://docs.python.org/3/library/functions.html
+_DISCOURAGED_BUILTINS: Final[frozenset[str]] = frozenset(
+    {
+        "all",
+        "any",
+        "bool",
+        "float",
+        "int",
+        "max",
+        "min",
+        "pow",
+        "round",
+        "sorted",
+        "sum",
+    }
+)
+
+_BUILTIN_ALTERNATIVES: Final[dict[str, str]] = {
+    "all": "np.all(arr) or arr.all()",
+    "any": "np.any(arr) or arr.any()",
+    "bool": "arr.astype(bool)",
+    "float": "arr.astype(float)",
+    "int": "arr.astype(int)",
+    "max": "np.max(arr) or arr.max()",
+    "min": "np.min(arr) or arr.min()",
+    "pow": "np.power(arr, n) or arr ** n",
+    "round": "np.round(arr) or arr.round()",
+    "sorted": "np.sort(arr)",
+    "sum": "np.sum(arr) or arr.sum()",
+}
 
 
 def lookup_source(filename: str, lineno: int) -> str | None:
@@ -82,6 +120,39 @@ def is_scalar_key(key: Any, ndim: int) -> bool:
         return True
 
     return False
+
+
+def is_slice_assignment_key(key: Any, ndim: int) -> bool:
+    """
+    Whether the key looks like "assign to a slice in one dimension while
+    indexing by scalar(s) in others", e.g. ``x[i, :] = 2``, ``x[:, j] = 2``,
+    or ``x[i, ...] = 2`` for a multi-dimensional array.
+
+    Such a pattern repeated in a loop is inefficient and can be vectorized.
+
+    Args:
+        key (Any):
+            the key passed to __setitem__
+        ndim (int):
+            the number of dimensions of the array
+
+    Returns:
+        True if the key is a tuple containing at least one slice or Ellipsis
+        and at least one scalar index, otherwise False. When Ellipsis is
+        present the key may be shorter than ndim (e.g. (i, Ellipsis) for 4D).
+    """
+    if not isinstance(key, tuple) or len(key) < 2:
+        return False
+    has_slice_or_ellipsis = any(
+        isinstance(k, slice) or k is Ellipsis for k in key
+    )
+    has_scalar = any(np.isscalar(k) for k in key)
+    if not (has_slice_or_ellipsis and has_scalar):
+        return False
+    # Without Ellipsis, key length must match ndim (e.g. (i, :, j, :))
+    if Ellipsis not in key and len(key) != ndim:
+        return False
+    return True
 
 
 @dataclass(frozen=True)
@@ -275,6 +346,39 @@ class RepeatedItemOps(Checkup):
         return None
 
 
+class RepeatedSliceAccessCheck(Checkup):
+    """
+    Attempt to detect and warn about repeated slice access (set/get) in a loop
+    that could be vectorized (e.g. ``for i in range(n): x[i, :] = 2``).
+    """
+
+    SLICE_ASSIGN_THRESHOLD: int = 10
+
+    description = (
+        "repeated slice access on the same line (e.g. x[i,:] = ... in a "
+        "loop); consider vectorizing instead"
+    )
+    reference = "https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-array-based-operations-avoid-loops-with-indexing"  # noqa
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._counts: dict[tuple[str, int], int] = defaultdict(int)
+
+    def run(self, func: str, args: Any, _kwargs: Any) -> Diagnostic | None:
+        if func not in ("__setitem__", "__getitem__"):
+            return None
+        ndim: int = args[0].ndim
+        if not is_slice_assignment_key(args[1], ndim):
+            return None
+        if (locator := self.locate()) is None:
+            return None
+        key = (locator.filename, locator.lineno)
+        self._counts[key] += 1
+        if self._counts[key] > self.SLICE_ASSIGN_THRESHOLD:
+            return self.report(locator)
+        return None
+
+
 class ArrayGatherCheck(Checkup):
     """
     Attempt to detect and warn about inefficient full-array gathers.
@@ -321,9 +425,196 @@ class ArrayGatherCheck(Checkup):
         return None
 
 
+class NumbaJitCheck(Checkup):
+    """
+    Attempt to detect and warn when cuPyNumeric APIs are invoked from a
+    call path that involves Numba JIT (e.g. @numba.jit, @numba.njit,
+    numba.cuda.jit, or code run by Numba's dispatcher).
+
+    Mixing Numba JIT with cuPyNumeric can cause unexpected behavior or
+    performance issues: JIT-compiled code may force synchronization or
+    interact poorly with deferred execution.
+    """
+
+    description = (
+        "cuPyNumeric API was called from a call path that involves Numba JIT; "
+        "mixing Numba JIT with cuPyNumeric may cause sync points or poor performance"
+    )
+    reference = (
+        "https://docs.nvidia.com/cupynumeric/latest/user/practices.html"
+    )
+
+    def _call_stack_contains_numba(
+        self, below_frame: FrameType | None
+    ) -> bool:
+        """
+        Return True if any frame in the call stack above ``below_frame``
+        (i.e. below_frame.f_back and onward) is from the Numba package.
+        """
+        if below_frame is None:
+            return False
+        frame = below_frame.f_back
+        while frame is not None:
+            if "numba" in (frame.f_code.co_filename or ""):
+                return True
+            frame = frame.f_back
+        return False
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        """
+        Check whether the current invocation's call stack includes Numba.
+
+        Returns:
+            a ``Diagnostic`` if Numba was detected in the call stack and
+            a user frame could be located, otherwise None.
+        """
+        if (locator := self.locate()) is None:
+            return None
+
+        current = inspect.currentframe()
+        if current is None:
+            return None
+
+        if self._call_stack_contains_numba(current):
+            return self.report(locator)
+
+        return None
+
+
+class BuiltinReductionCheck(Checkup):
+    """
+    Detect use of Python built-ins that do not dispatch via a dunder
+    (e.g. min, max) on cuPyNumeric arrays.
+    """
+
+    description = "Python built-in used with cuPyNumeric array"
+    reference = (
+        "https://docs.nvidia.com/cupynumeric/latest/user/practices.html"
+    )
+
+    def _builtin_names_in_frame(self, frame: FrameType | None) -> set[str]:
+        """
+        Return the set of discouraged built-in names (min, max, etc.) that
+        appear as values in the frame's locals or globals (e.g. ``func`` in
+        ``for func in (max, min, ...): m = func(x)``).
+        """
+        if frame is None:
+            return set()
+        found: set[str] = set()
+        vals = (*frame.f_locals.values(), *frame.f_globals.values())
+        for name in _DISCOURAGED_BUILTINS:
+            target = getattr(builtins, name)
+            if any(v is target for v in vals):
+                found.add(name)
+        return found
+
+    def _call_stack_builtin_name(
+        self, below_frame: FrameType | None
+    ) -> str | None:
+        """
+        Return the name of the first discouraged built-in (min, max, etc.)
+        found in the call stack above ``below_frame``, or None.
+
+        Used to detect e.g. min(arr) / sum(arr) so we can suggest np.min(arr) etc.
+        C built-ins (min, max, etc.) do not appear as Python frames, so we also
+        use _builtin_names_in_frame() when we're in __iter__ / __numpy_array__.
+        """
+        if below_frame is None:
+            return None
+        frame = below_frame.f_back
+        while frame is not None:
+            if frame.f_globals.get("__name__") == "builtins":
+                name = frame.f_code.co_name
+                if name in _DISCOURAGED_BUILTINS:
+                    return name
+            frame = frame.f_back
+        return None
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        if (locator := self.locate()) is None:
+            return None
+        current = inspect.currentframe()
+        if current is None:
+            return None
+
+        builtin_name: str | None = self._call_stack_builtin_name(current)
+        builtin_names: set[str] = set()
+        if builtin_name is not None:
+            builtin_names.add(builtin_name)
+        elif func in ("__numpy_array__", "__iter__"):
+            user_frame = find_last_user_frame()
+            builtin_names = self._builtin_names_in_frame(user_frame)
+
+        if not builtin_names:
+            return None
+
+        # One diagnostic per (location, set of builtins) so we report all at once.
+        names_key = ",".join(sorted(builtin_names))
+        synthetic = CheckupLocator(
+            filename=locator.filename,
+            lineno=locator.lineno,
+            traceback=locator.traceback + f"\n[builtins:{names_key}]",
+        )
+        if synthetic in self._locators:
+            return None
+        self._locators.add(synthetic)
+        sorted_names = sorted(builtin_names)
+        label = "built-in" if len(sorted_names) == 1 else "built-ins"
+        suggestions = ", ".join(
+            f"{n} -> {_BUILTIN_ALTERNATIVES.get(n, f'np.{n}(arr)')}"
+            for n in sorted_names
+        )
+        desc = (
+            f"Python {label} {', '.join(sorted_names)} used with "
+            f"cuPyNumeric array; prefer: {suggestions}"
+        )
+        return Diagnostic(
+            filename=locator.filename,
+            lineno=locator.lineno,
+            traceback=locator.traceback,
+            source=lookup_source(locator.filename, locator.lineno),
+            description=desc,
+            reference=self.reference,
+        )
+
+
+class Mpi4pyCheck(Checkup):
+    """
+    Detect when mpi4py has been imported in the same process as cuPyNumeric.
+    """
+
+    description = (
+        "mpi4py is imported in this application; using mpi4py with "
+        "cuPyNumeric is not permitted because Legate manages its own "
+        "communication layer"
+    )
+    reference = None
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._reported = False
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        if self._reported:
+            return None
+
+        if "mpi4py" not in sys.modules and "mpi4py.MPI" not in sys.modules:
+            return None
+
+        if (locator := self.locate()) is None:
+            return None
+
+        self._reported = True
+        return self.report(locator)
+
+
 ALL_CHECKS: Final[tuple[Type[Checkup], ...]] = (
     RepeatedItemOps,
+    RepeatedSliceAccessCheck,
     ArrayGatherCheck,
+    NumbaJitCheck,
+    BuiltinReductionCheck,
+    Mpi4pyCheck,
 )
 
 
