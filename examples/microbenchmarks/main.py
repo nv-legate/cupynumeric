@@ -57,6 +57,8 @@ from fast_advanced_indexing_bench import FastAdvancedIndexingSuite
 from general_indexing_bench import GeneralIndexingSuite
 from general_random_bench import RandomSuite
 from gemm_gemv_bench import GemmSuite
+from solve_bench import SolveSuite
+from sort_bench import SortSuite
 from stream_bench import StreamSuite
 from ufunc_bench import UfuncSuite
 from general_nanred_bench import NanRedSuite
@@ -68,6 +70,8 @@ SUITE_CLASSES: list[MicrobenchmarkSuite] = [
     GeneralIndexingSuite,
     RandomSuite,
     GemmSuite,
+    SolveSuite,
+    SortSuite,
     StreamSuite,
     UfuncSuite,
     NanRedSuite,
