@@ -61,6 +61,7 @@ from stream_bench import StreamSuite
 from ufunc_bench import UfuncSuite
 from general_nanred_bench import NanRedSuite
 from general_scalared_bench import ScalarRedSuite
+from general_astype_bench import AsTypeSuite
 
 SUITE_CLASSES: list[MicrobenchmarkSuite] = [
     FastAdvancedIndexingSuite,
@@ -71,6 +72,7 @@ SUITE_CLASSES: list[MicrobenchmarkSuite] = [
     UfuncSuite,
     NanRedSuite,
     ScalarRedSuite,
+    AsTypeSuite,
 ]
 
 # =============================================================================
