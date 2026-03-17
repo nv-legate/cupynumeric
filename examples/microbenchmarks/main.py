@@ -14,7 +14,6 @@
 #
 """
 Unified entry point for all microbenchmarks.
-
 Examples:
     # Run with cupynumeric (default)
     python main.py --suite advanced_indexing
@@ -54,6 +53,7 @@ from _benchmark import (
 # from general_scalared_bench import run_benchmarks as run_general_scalared
 
 from axis_sum_bench import AxisSumSuite
+from batched_fft_bench import BatchedFFTSuite
 from fast_advanced_indexing_bench import FastAdvancedIndexingSuite
 from general_indexing_bench import GeneralIndexingSuite
 from general_astype_bench import AsTypeSuite
@@ -68,6 +68,7 @@ from sync_bench import SyncSuite
 from ufunc_bench import UfuncSuite
 
 SUITE_CLASSES: list[type[MicrobenchmarkSuite]] = [
+    BatchedFFTSuite,
     FastAdvancedIndexingSuite,
     AxisSumSuite,
     GeneralIndexingSuite,
