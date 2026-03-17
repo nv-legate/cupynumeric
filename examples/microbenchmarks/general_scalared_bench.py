@@ -32,11 +32,16 @@ from _benchmark import (
     timed_loop,
     format_dtype,
 )
+from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 
 
 # =============================================================================
 # GENERAL SCALAR REDUCTION BENCHMARKS: sum, prod, min, max, argmin, argmax
 # =============================================================================
+
+
+# Model the random float64 source plus a same-size reduction input buffer.
+_SCALARRED_BYTES_PER_ELEMENT = 16
 
 
 @benchmark_info(formats={"dtype": format_dtype, "func": lambda f: f.__name__})
@@ -56,12 +61,17 @@ def scalar_red(np, func, dtype, size, runs, warmup, *, timer):
 # =============================================================================
 
 
-def run_benchmarks(suite, size):
+def run_benchmarks(suite, size_request):
     """Run general scalar benchmarks."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_linear_suite_size(
+        size_request, bytes_per_element=_SCALARRED_BYTES_PER_ELEMENT
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     dtypes = [np.float32, np.float64]
     red_types = [np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]
@@ -74,5 +84,5 @@ def run_benchmarks(suite, size):
 class ScalarRedSuite(MicrobenchmarkSuite):
     name = "scalared"
 
-    def run_suite(self, size):
-        run_benchmarks(self, size)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request)

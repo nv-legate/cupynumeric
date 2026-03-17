@@ -15,7 +15,10 @@
 
 from __future__ import annotations
 
+import math
+
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import SizeRequest, resolve_suite_size
 
 """
 STREAM microbenchmark suite.
@@ -33,9 +36,43 @@ not currently lower `a[...] = b + scalar * c` as one fused backend kernel.
 SCALAR = 3.0
 
 
+def _resolve_size_from_memory_target(
+    precision: str, contiguous: str, target_bytes: int
+) -> int:
+    itemsize = max(_get_precisions(precision)) // 8
+    elements = max(1, target_bytes // (3 * itemsize))
+    if False not in _get_contiguous_modes(contiguous):
+        return elements
+
+    side = max(2, math.isqrt(elements))
+    return side * side
+
+
+def _estimate_working_set_bytes(precision: str, size: int) -> int:
+    return 3 * size * (max(_get_precisions(precision)) // 8)
+
+
+def _describe_size(size: int, precision: str, contiguous: str) -> list[str]:
+    layouts = [
+        "contiguous" if mode else "noncontiguous"
+        for mode in _get_contiguous_modes(contiguous)
+    ]
+    lines = [
+        f"layouts: {', '.join(layouts)}",
+        (
+            "precisions: "
+            f"{', '.join(f'float{p}' for p in _get_precisions(precision))}"
+        ),
+    ]
+    if False in _get_contiguous_modes(contiguous):
+        rows, cols = get_noncontiguous_shape(size)
+        lines.append(f"noncontiguous_shape: {rows} x {cols}")
+    return lines
+
+
 def get_noncontiguous_shape(size):
     """Find a 2D factorization for transpose-based non-contiguous views."""
-    rows = int(size**0.5)
+    rows = math.isqrt(size)
     while rows > 1 and size % rows != 0:
         rows -= 1
     if rows == 1:
@@ -117,17 +154,6 @@ def stream(
     return total
 
 
-def _normalize_operation(operation):
-    return "mul" if operation == "scale" else operation
-
-
-def _get_operations(operation):
-    operation = _normalize_operation(operation)
-    if operation == "all":
-        return ["copy", "mul", "add"]
-    return [operation]
-
-
 def _get_precisions(precision):
     if precision == "all":
         return [32, 64]
@@ -140,26 +166,35 @@ def _get_contiguous_modes(contiguous):
     return [contiguous == "true"]
 
 
-def _layout_name(contiguous):
-    return "contiguous" if contiguous else "noncontiguous"
-
-
-def _precision_name(precision):
-    return f"float{precision}"
-
-
 def run_benchmarks(
-    suite, size, operation, precision, contiguous, perform_check
+    suite, size_request, operation, precision, contiguous, perform_check
 ):
     """Run STREAM benchmarks inside the suite framework."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_suite_size(
+        size_request,
+        resolve_from_target=lambda target_bytes: (
+            _resolve_size_from_memory_target(
+                precision, contiguous, target_bytes
+            )
+        ),
+        estimate_working_set_bytes=lambda resolved_size: (
+            _estimate_working_set_bytes(precision, resolved_size)
+        ),
+        describe_size=lambda resolved_size: _describe_size(
+            resolved_size, precision, contiguous
+        ),
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     precisions = _get_precisions(precision)
     contigs = _get_contiguous_modes(contiguous)
-    ops = _get_operations(operation)
+    operation = "mul" if operation == "scale" else operation
+    ops = ["copy", "mul", "add"] if operation == "all" else [operation]
 
     suite.run_timed(
         stream,
@@ -226,10 +261,10 @@ class StreamSuite(MicrobenchmarkSuite):
         ]
         self.print_panel(msg, "STREAM Suite")
 
-    def run_suite(self, size):
+    def run_suite(self, size_request: SizeRequest):
         run_benchmarks(
             self,
-            size,
+            size_request,
             self.stream_operation,
             self.stream_precision,
             self.stream_contiguous,

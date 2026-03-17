@@ -31,9 +31,38 @@ The shared ``--size`` flag is interpreted per variant:
 
 from __future__ import annotations
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-
 import math
+
+from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import (
+    SizeRequest,
+    resolve_size_by_binary_search,
+    resolve_suite_size,
+)
+
+
+def _get_variants(variant):
+    if variant == "all":
+        return [
+            "sort-1D",
+            "argsort-1D",
+            "sort-2D-flat",
+            "argsort-2D-flat",
+            "sort-2D-skinny",
+            "argsort-2D-skinny",
+        ]
+    return [variant]
+
+
+def _get_precisions(precision):
+    if precision == "all":
+        return [32, 64]
+    return [int(precision)]
+
+
+def _initial_bytes_per_size(precision: str) -> int:
+    # Seed the search with a cheap upper-bound guess before the full estimate.
+    return 8 + (max(_get_precisions(precision)) // 8)
 
 
 def _get_case_dimension(variant, size):
@@ -55,6 +84,43 @@ def _get_case_dimension(variant, size):
         }
     else:
         raise ValueError(f"Invalid variant: {variant}")
+
+
+def _estimate_case_working_set_bytes(variant, precision_bits, size):
+    elements = math.prod(_get_case_dimension(variant, size)["size"])
+    return elements * (8 + (precision_bits // 8))
+
+
+def _estimate_working_set_bytes(variant, precision, size):
+    return max(
+        _estimate_case_working_set_bytes(case, bits, size)
+        for case in _get_variants(variant)
+        for bits in _get_precisions(precision)
+    )
+
+
+def _resolve_size_from_memory_target(variant, precision, target_bytes):
+    return resolve_size_by_binary_search(
+        target_bytes,
+        estimate_working_set_bytes=lambda size: _estimate_working_set_bytes(
+            variant, precision, size
+        ),
+        initial_guess=target_bytes // _initial_bytes_per_size(precision),
+    )
+
+
+def _describe_size(size, variant, precision):
+    lines = [
+        f"variants: {', '.join(_get_variants(variant))}",
+        (
+            "precisions: "
+            f"{', '.join(f'float{bits}' for bits in _get_precisions(precision))}"
+        ),
+    ]
+    for case in _get_variants(variant):
+        shape = _get_case_dimension(case, size)["size"]
+        lines.append(f"{case}: {' x '.join(str(dim) for dim in shape)}")
+    return lines
 
 
 def _initialize_case(array_module, variant, size, dtype):
@@ -86,31 +152,26 @@ def sort(np, variant, size, runs, warmup, precision, *, timer):
     return timed_loop(operation, timer, runs, warmup)
 
 
-def _get_variants(variant):
-    if variant == "all":
-        return [
-            "sort-1D",
-            "argsort-1D",
-            "sort-2D-flat",
-            "argsort-2D-flat",
-            "sort-2D-skinny",
-            "argsort-2D-skinny",
-        ]
-    return [variant]
-
-
-def _get_precisions(precision):
-    if precision == "all":
-        return [32, 64]
-    return [int(precision)]
-
-
-def run_benchmarks(suite, size, *, variant="all", precision="32"):
+def run_benchmarks(suite, size_request, *, variant="all", precision="32"):
     """Run SORT benchmarks inside the suite framework."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_suite_size(
+        size_request,
+        resolve_from_target=lambda target_bytes: (
+            _resolve_size_from_memory_target(variant, precision, target_bytes)
+        ),
+        estimate_working_set_bytes=lambda resolved_size: (
+            _estimate_working_set_bytes(variant, precision, resolved_size)
+        ),
+        describe_size=lambda resolved_size: _describe_size(
+            resolved_size, variant, precision
+        ),
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     variants = _get_variants(variant)
     precisions = _get_precisions(precision)
@@ -122,6 +183,7 @@ def run_benchmarks(suite, size, *, variant="all", precision="32"):
 class SortSuite(MicrobenchmarkSuite):
     name = "sort"
 
+    @staticmethod
     def add_suite_parser_group(parser):
         group = parser.add_argument_group("SORT Suite")
         group.add_argument(
@@ -144,7 +206,7 @@ class SortSuite(MicrobenchmarkSuite):
             type=str,
             default="32",
             choices=["32", "64", "all"],
-            help="SOLVE precision in bits (default: 32)",
+            help="SORT precision in bits (default: 32)",
         )
 
     def __init__(self, config, args):
@@ -159,10 +221,10 @@ class SortSuite(MicrobenchmarkSuite):
         ]
         self.print_panel(msg, title="SORT Suite")
 
-    def run_suite(self, size):
+    def run_suite(self, size_request: SizeRequest):
         run_benchmarks(
             self,
-            size,
+            size_request,
             variant=self.sort_variant,
             precision=self.sort_precision,
         )

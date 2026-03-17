@@ -26,10 +26,15 @@ from _benchmark import (
     benchmark_info,
     format_dtype,
 )
+from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 
 # =============================================================================
 # GENERAL RANDOM GENERATION BENCHMARKS: Uniform distribution only
 # =============================================================================
+
+
+# One int64/float64 output array dominates the worst-case working set.
+_RANDOM_BYTES_PER_ELEMENT = 8
 
 
 def randint(np, size, runs, warmup, *, timer):
@@ -76,12 +81,17 @@ def bitgenerator(
 # =============================================================================
 
 
-def run_benchmarks(suite, size):
+def run_benchmarks(suite, size_request):
     """Run general random generators benchmarks."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_linear_suite_size(
+        size_request, bytes_per_element=_RANDOM_BYTES_PER_ELEMENT
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     dtypes = [np.float32, np.float64]
     uniform_takes_dtype = True
@@ -130,5 +140,5 @@ def run_benchmarks(suite, size):
 class RandomSuite(MicrobenchmarkSuite):
     name = "random"
 
-    def run_suite(self, size):
-        run_benchmarks(self, size)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request)

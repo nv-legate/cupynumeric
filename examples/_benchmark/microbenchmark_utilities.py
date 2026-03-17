@@ -38,6 +38,7 @@ from typing import Any, Callable
 
 from .harness import ArrayPackage, BenchmarkHarness, BenchmarkHarnessConfig
 from .info import BenchmarkInfo, get_benchmark_info
+from .sizing import SizeRequest, SizeResolution
 from .use_rich import use_rich, HAVE_RICH
 
 
@@ -190,14 +191,12 @@ class MicrobenchmarkSuite(BenchmarkHarness):
             msg = [f"Total benchmarks run: {self.benchmark_count}"]
             self.print_panel(msg, f"SUITE COMPLETE: {self.name}")
 
-    def run_suite(self, size: int) -> None:
-        """Run all of the benchmark tests in the suite.
+    def print_size_resolution(self, resolution: SizeResolution) -> None:
+        self.print_panel(
+            resolution.panel_lines(), title="Memory Size Heuristic"
+        )
 
-        Parameters
-        ----------
-        size: int
-            size parameter for the tests.
-        """
+    def run_suite(self, size_request: SizeRequest) -> None:
         pass
 
     def __enter__(self) -> MicrobenchmarkSuite:

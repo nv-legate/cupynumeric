@@ -35,6 +35,10 @@ import math
 import numpy as host_np
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
+
+# Cover two float32 inputs plus float32/int32 outputs in the heaviest cases.
+_UFUNC_BYTES_PER_ELEMENT = 16
 
 
 def _float_input(array_module, size: int, *, start: float = 1.0):
@@ -182,12 +186,21 @@ def multiout_frexp(np, size, runs, warmup, *, timer, perform_check):
     return total
 
 
-def run_benchmarks(suite, size, perform_check):
+def run_benchmarks(suite, size_request, perform_check):
     """Run representative ufunc benchmarks."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_linear_suite_size(
+        size_request,
+        bytes_per_element=_UFUNC_BYTES_PER_ELEMENT,
+        describe_size=lambda resolved_size: _describe_size(
+            resolved_size, perform_check
+        ),
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     args = (np, size, runs, warmup)
     kwargs = {"timer": timer, "perform_check": perform_check}
@@ -210,6 +223,16 @@ def run_benchmarks(suite, size, perform_check):
     )
 
 
+def _describe_size(size: int, perform_check: bool) -> list[str]:
+    rows, cols = _broadcast_shape(size)
+    lines = [f"broadcast_shape: {rows} x {cols}"]
+    if perform_check:
+        lines.append(
+            "note: host-side validation buffers are outside this heuristic"
+        )
+    return lines
+
+
 class UfuncSuite(MicrobenchmarkSuite):
     name = "ufunc"
 
@@ -230,5 +253,5 @@ class UfuncSuite(MicrobenchmarkSuite):
         msg = [f"check: {self.ufunc_check}"]
         self.print_panel(msg, "Ufunc Suite")
 
-    def run_suite(self, size):
-        run_benchmarks(self, size, self.ufunc_check)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request, self.ufunc_check)

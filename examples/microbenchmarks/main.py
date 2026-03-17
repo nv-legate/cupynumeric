@@ -27,6 +27,9 @@ Examples:
     # Large problem size
     python main.py --suite advanced_indexing --size 100000000
 
+    # Heuristic size selection from a memory target
+    python main.py --suite all --memory-size 75GiB
+
     # Multi-GPU
     legate --gpus 4 main.py --suite all --benchmark 10
 """
@@ -37,6 +40,7 @@ import traceback
 
 from dataclasses import replace
 from pathlib import Path
+from typing import Sequence
 
 # Add parent directory to path to import benchmark.py
 # (Relative imports don't work for scripts run directly)
@@ -47,6 +51,7 @@ from _benchmark import (
     MicrobenchmarkSuite,
     SummarizeFlush,
 )
+from _benchmark.sizing import SizeRequest, add_size_request_parser_group
 
 # Import benchmark suites
 #
@@ -96,7 +101,7 @@ class Formatter(
     pass
 
 
-def main():
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="CuPyNumeric Microbenchmark Suite",
         formatter_class=Formatter,
@@ -113,12 +118,7 @@ def main():
         choices=["all", *suite_names],
         help="Benchmark suite to run",
     )
-    parser.add_argument(
-        "--size",
-        type=int,
-        default=10_000_000,
-        help="Base problem size in elements",
-    )
+    add_size_request_parser_group(parser)
     parser.add_argument(
         "--fail-fast",
         action="store_true",
@@ -130,7 +130,13 @@ def main():
     for suite_class in SUITE_CLASSES:
         suite_class.add_suite_parser_group(parser)
 
-    args = parser.parse_known_args()[0]
+    return parser
+
+
+def main(argv: Sequence[str] | None = None):
+    parser = build_parser()
+    args = parser.parse_known_args(argv)[0]
+    size_request = SizeRequest.from_namespace(args)
 
     # general configuration that affects all suites
     config = MicrobenchmarkConfig.from_args(args)
@@ -150,10 +156,10 @@ def main():
     config_msg = [
         f"Backend: {config.package}",
         f"Suite: {args.suite}",
-        f"Size: {args.size:,} elements",
         f"Runs: {config.runs}",
         f"Warmup: {config.warmup}",
     ]
+    config_msg.extend(size_request.config_lines())
     if args.fail_fast:
         config_msg.append("Fail fast: enabled")
     if config.repeat > 0:
@@ -170,7 +176,7 @@ def main():
         for suite_name, suite in suites.items():
             try:
                 with suite as s:
-                    s.run_suite(args.size)
+                    s.run_suite(size_request)
                 completed.append(suite)
             except Exception as exc:
                 print(f"\nError in {suite_name} suite: {exc}")
@@ -180,9 +186,8 @@ def main():
                     return 1
     else:
         if args.suite in suites:
-            suite = suites[args.suite]
-            with suite as s:
-                s.run_suite(args.size)
+            with suites[args.suite] as s:
+                s.run_suite(size_request)
                 completed.append(s)
         else:
             print(f"Unknown suite: {args.suite}")
@@ -197,7 +202,7 @@ def main():
             f"Total suites run: {len(completed)}",
             f"Total benchmarks: {total_benchmarks}",
         ]
-        config.print_panel(final_msg, "OVERAL SUMMARY")
+        config.print_panel(final_msg, "OVERALL SUMMARY")
 
     if failures:
         failure_msg = []

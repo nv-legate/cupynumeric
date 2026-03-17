@@ -30,6 +30,7 @@ from __future__ import annotations
 import math
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import SizeRequest, resolve_suite_size
 
 SKINNY_OUTER_DIM = 8
 
@@ -46,12 +47,14 @@ def _make_matrix(array_module, rows, cols, dtype, start):
     values = array_module.arange(
         start, start + rows * cols, dtype=dtype
     ).reshape((rows, cols))
-    return values / max(rows * cols, 1)
+    values /= max(rows * cols, 1)
+    return values
 
 
 def _make_vector(array_module, size, dtype, start):
     values = array_module.arange(start, start + size, dtype=dtype)
-    return values / max(size, 1)
+    values /= max(size, 1)
+    return values
 
 
 def _get_case_dimensions(variant, size):
@@ -66,6 +69,80 @@ def _get_case_dimensions(variant, size):
         return {"m": n, "n": n, "k": n}
 
     return {"m": n, "n": n}
+
+
+def _estimate_case_working_set_bytes(variant, precision, size):
+    dimensions = _get_case_dimensions(variant, size)
+    itemsize = precision // 8
+
+    if variant == "skinny_gemm":
+        m = dimensions["m"]
+        n = dimensions["n"]
+        k = dimensions["k"]
+        return itemsize * (m * k + k * n + m * n)
+
+    n = dimensions["n"]
+    if variant == "square_gemm":
+        return itemsize * 3 * n * n
+
+    return itemsize * (n * n + 2 * n)
+
+
+def _resolve_case_size_from_memory_target(variant, precision, target_bytes):
+    itemsize = precision // 8
+    available_elements = target_bytes // itemsize
+
+    if variant == "skinny_gemm":
+        k = max(1, (available_elements - 64) // 16)
+        return max(SKINNY_OUTER_DIM, SKINNY_OUTER_DIM * k)
+
+    if variant == "square_gemm":
+        n = max(1, math.isqrt(available_elements // 3))
+        return n * n
+
+    n = max(1, math.isqrt(available_elements + 1) - 1)
+    return n * n
+
+
+def _resolve_size_from_memory_target(variant, precision, target_bytes):
+    variants = _get_variants(variant)
+    precisions = _get_precisions(precision)
+    return min(
+        _resolve_case_size_from_memory_target(case, bits, target_bytes)
+        for case in variants
+        for bits in precisions
+    )
+
+
+def _estimate_working_set_bytes(variant, precision, size):
+    variants = _get_variants(variant)
+    precisions = _get_precisions(precision)
+    return max(
+        _estimate_case_working_set_bytes(case, bits, size)
+        for case in variants
+        for bits in precisions
+    )
+
+
+def _describe_size(variant, precision, size):
+    variants = _get_variants(variant)
+    precisions = _get_precisions(precision)
+    lines = [
+        f"variants: {', '.join(variants)}",
+        f"precisions: {', '.join(f'float{bits}' for bits in precisions)}",
+    ]
+    for case in variants:
+        dimensions = _get_case_dimensions(case, size)
+        if case in {"skinny_gemm", "square_gemm"}:
+            lines.append(
+                f"{case}: "
+                f"m={dimensions['m']}, "
+                f"n={dimensions['n']}, "
+                f"k={dimensions['k']}"
+            )
+        else:
+            lines.append(f"gemv: m={dimensions['m']}, n={dimensions['n']}")
+    return lines
 
 
 def _initialize_case(array_module, variant, size, dtype):
@@ -166,10 +243,6 @@ def _get_precisions(precision):
     return [int(precision)]
 
 
-def _precision_name(precision):
-    return f"float{precision}"
-
-
 def skinny_gemm(np, size, runs, warmup, precision, *, timer, perform_check):
     return run_gemm_gemv_case(
         np, "skinny_gemm", size, runs, warmup, precision, timer, perform_check
@@ -188,12 +261,26 @@ def gemv(np, size, runs, warmup, precision, *, timer, perform_check):
     )
 
 
-def run_benchmarks(suite, size, variant, precision, perform_check):
+def run_benchmarks(suite, size_request, variant, precision, perform_check):
     """Run GEMM/GEMV benchmarks inside the suite framework."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_suite_size(
+        size_request,
+        resolve_from_target=lambda target_bytes: (
+            _resolve_size_from_memory_target(variant, precision, target_bytes)
+        ),
+        estimate_working_set_bytes=lambda resolved_size: (
+            _estimate_working_set_bytes(variant, precision, resolved_size)
+        ),
+        describe_size=lambda resolved_size: _describe_size(
+            variant, precision, resolved_size
+        ),
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     variants = _get_variants(variant)
     precisions = _get_precisions(precision)
@@ -251,10 +338,10 @@ class GemmSuite(MicrobenchmarkSuite):
         ]
         self.print_panel(msg, title="GEMM/GEMMV Suite")
 
-    def run_suite(self, size):
+    def run_suite(self, size_request: SizeRequest):
         run_benchmarks(
             self,
-            size,
+            size_request,
             self.gemm_gemv_variant,
             self.gemm_gemv_precision,
             self.gemm_gemv_check,

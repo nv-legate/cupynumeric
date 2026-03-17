@@ -27,11 +27,16 @@ from _benchmark import (
     timed_loop,
     format_dtype,
 )
+from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 
 
 # =============================================================================
 # GENERAL ASTYPE BENCHMARKS: astype
 # =============================================================================
+
+
+# Worst-case setup keeps the int64 source array and float64 cast result live.
+_ASTYPE_BYTES_PER_ELEMENT = 16
 
 
 @benchmark_info(formats={"dtype": format_dtype})
@@ -52,12 +57,17 @@ def astype(np, dtype, size, runs, warmup, *, timer):
 # =============================================================================
 
 
-def run_benchmarks(suite, size):
+def run_benchmarks(suite, size_request):
     """Run general astype benchmarks."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_linear_suite_size(
+        size_request, bytes_per_element=_ASTYPE_BYTES_PER_ELEMENT
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     dtypes = [np.float32, np.float64]
 
@@ -67,5 +77,5 @@ def run_benchmarks(suite, size):
 class AsTypeSuite(MicrobenchmarkSuite):
     name = "astype"
 
-    def run_suite(self, size):
-        run_benchmarks(self, size)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request)

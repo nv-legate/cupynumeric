@@ -32,6 +32,11 @@ from _benchmark import (
     get_benchmark_info,
     timed_loop,
 )
+from _benchmark.sizing import (
+    SizeRequest,
+    resolve_size_by_binary_search,
+    resolve_suite_size,
+)
 
 BATCH_SIZE = 8
 _CASES = (
@@ -61,6 +66,38 @@ def _make_input(array_module, shape: tuple[int, ...], dtype_name: str):
     )
 
 
+def _estimate_case_working_set_bytes(
+    dims: int, dtype_name: str, size: int
+) -> int:
+    shape = _case_shape(size, dims)
+    elements = math.prod(shape)
+    itemsize = 16 if dtype_name == "complex128" else 8
+    return 2 * elements * itemsize
+
+
+def _estimate_working_set_bytes(size: int) -> int:
+    return max(
+        _estimate_case_working_set_bytes(dims, dtype_name, size)
+        for _, dims, dtype_name in _CASES
+    )
+
+
+def _describe_size(size: int) -> list[str]:
+    lines = []
+    for case_name, dims, dtype_name in _CASES:
+        shape = " x ".join(str(extent) for extent in _case_shape(size, dims))
+        lines.append(f"{case_name}: shape={shape}, dtype={dtype_name}")
+    return lines
+
+
+def _resolve_size_from_memory_target(target_bytes: int) -> int:
+    return resolve_size_by_binary_search(
+        target_bytes,
+        estimate_working_set_bytes=_estimate_working_set_bytes,
+        initial_guess=max(1, target_bytes // (2 * 16)),
+    )
+
+
 @benchmark_info(
     input_names={"dims": "fft_dims", "dtype_name": "dtype"},
     formats={"dtype": str},
@@ -76,12 +113,20 @@ def batched_fft(np, dims, dtype_name, batch, extent, runs, warmup, *, timer):
     return timed_loop(operation, timer, runs, warmup)
 
 
-def run_benchmarks(suite, size):
+def run_benchmarks(suite, size_request: SizeRequest):
     """Run representative batched FFT benchmarks."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_suite_size(
+        size_request,
+        resolve_from_target=_resolve_size_from_memory_target,
+        estimate_working_set_bytes=_estimate_working_set_bytes,
+        describe_size=_describe_size,
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     base_info = get_benchmark_info(batched_fft)
 
@@ -105,5 +150,5 @@ def run_benchmarks(suite, size):
 class BatchedFFTSuite(MicrobenchmarkSuite):
     name = "batched_fft"
 
-    def run_suite(self, size):
-        run_benchmarks(self, size)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request)

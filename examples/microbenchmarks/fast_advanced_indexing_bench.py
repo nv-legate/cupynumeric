@@ -33,18 +33,32 @@ see general_indexing_bench.py
 
 Usage:
     Run via main.py:
-    python main.py --suite advanced_indexing [--size SIZE] [--runs RUNS]
+    python main.py --suite advanced_indexing [--size SIZE | --memory-size 64MiB]
 
     # Compare with numpy backend:
     python main.py --suite advanced_indexing --package numpy
 """
 
-from _benchmark import timed_loop, MicrobenchmarkSuite
+from __future__ import annotations
+
+import math
+
+from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
 
 
 # =============================================================================
 # OPTIMIZED PATH BENCHMARKS
 # =============================================================================
+
+
+# Model one float64 data array plus boolean/int index structures.
+_ADVANCED_INDEXING_BYTES_PER_ELEMENT = 10
+
+
+def _describe_size(size: int) -> list[str]:
+    n = max(1, math.isqrt(size))
+    return [f"resolved_1d_elements: {size:,}", f"resolved_2d_shape: {n} x {n}"]
 
 
 def putmask_scalar(np, size, runs, warmup, *, timer):
@@ -127,30 +141,32 @@ def take_along_axis(np, n, num_indices, runs, warmup, *, timer):
 # =============================================================================
 
 
-def run_benchmarks(suite, size):
+def run_benchmarks(suite, size_request):
     """Run optimized advanced indexing benchmarks (NO ADVANCED_INDEXING task)."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_linear_suite_size(
+        size_request,
+        bytes_per_element=_ADVANCED_INDEXING_BYTES_PER_ELEMENT,
+        describe_size=_describe_size,
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     # Derived sizes
-    n = int(size**0.5)  # For 2D arrays
-    num_indices = min(1000, n // 10)  # Number of indices to select
+    n = max(1, math.isqrt(size))  # For 2D arrays
+    num_indices = clamp(n // 10, 1, 1000)
 
     suite.run_timed(putmask_scalar, np, size, runs, warmup, timer=timer)
-
-    args = (np, size, num_indices, runs, warmup)
-    kwargs = {"timer": timer}
-
-    funcs = [einsum_2d, take_1d, take_2d, take_along_axis]
-
-    for f in funcs:
-        suite.run_timed(f, *args, **kwargs)
+    suite.run_timed(take_1d, np, size, num_indices, runs, warmup, timer=timer)
+    for func in [einsum_2d, take_2d, take_along_axis]:
+        suite.run_timed(func, np, n, num_indices, runs, warmup, timer=timer)
 
 
 class FastAdvancedIndexingSuite(MicrobenchmarkSuite):
     name = "advanced_indexing"
 
-    def run_suite(self, size):
-        run_benchmarks(self, size)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request)

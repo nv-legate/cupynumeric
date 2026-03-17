@@ -39,6 +39,11 @@ from _benchmark import (
     get_benchmark_info,
     timed_loop,
 )
+from _benchmark.sizing import (
+    SizeRequest,
+    resolve_size_by_binary_search,
+    resolve_suite_size,
+)
 
 # Reductions accumulate rounding error across many terms, so tolerate more
 # drift than the elementwise ufunc checks in peer suites.
@@ -90,6 +95,8 @@ _CASES = {
     },
 }
 
+_INITIAL_BYTES_PER_SIZE = host_np.dtype("float64").itemsize
+
 
 def _to_host(array: Any) -> host_np.ndarray:
     return array.get() if hasattr(array, "get") else host_np.asarray(array)
@@ -128,6 +135,83 @@ def _base_shape(case: dict[str, Any], size: int) -> tuple[int, ...]:
 def _input_shape(case: dict[str, Any], size: int) -> tuple[int, ...]:
     shape = _base_shape(case, size)
     return tuple(reversed(shape)) if case["transpose"] else shape
+
+
+def _get_cases(case: str) -> list[str]:
+    if case == "all":
+        return [*_CASES]
+    return [case]
+
+
+def _case_axes(case_name: str) -> tuple[int, ...]:
+    axis = _CASES[case_name]["axis"]
+    return (axis,) if isinstance(axis, int) else axis
+
+
+def _normalized_axes(
+    axis: int | tuple[int, ...], ndim: int
+) -> tuple[int, ...]:
+    axes = (axis,) if isinstance(axis, int) else axis
+    return tuple(axis_idx % ndim for axis_idx in axes)
+
+
+def _output_shape(case_name: str, size: int) -> tuple[int, ...]:
+    shape = _input_shape(_CASES[case_name], size)
+    axes = _normalized_axes(_case_axes(case_name), len(shape))
+    return tuple(
+        extent for axis_idx, extent in enumerate(shape) if axis_idx not in axes
+    )
+
+
+def _output_dtype_name(dtype_name: str) -> str:
+    return "int64" if dtype_name == "int32" else dtype_name
+
+
+def _estimate_case_working_set_bytes(case_name: str, size: int) -> int:
+    case = _CASES[case_name]
+    input_shape = _input_shape(case, size)
+    output_shape = _output_shape(case_name, size)
+    input_bytes = (
+        math.prod(input_shape) * host_np.dtype(case["dtype"]).itemsize
+    )
+    output_bytes = (
+        math.prod(output_shape)
+        * host_np.dtype(_output_dtype_name(case["dtype"])).itemsize
+    )
+    return input_bytes + output_bytes
+
+
+def _estimate_working_set_bytes(case: str, size: int) -> int:
+    return max(
+        _estimate_case_working_set_bytes(case_name, size)
+        for case_name in _get_cases(case)
+    )
+
+
+def _resolve_size_from_memory_target(case: str, target_bytes: int) -> int:
+    return resolve_size_by_binary_search(
+        target_bytes,
+        estimate_working_set_bytes=lambda size: _estimate_working_set_bytes(
+            case, size
+        ),
+        initial_guess=target_bytes // _INITIAL_BYTES_PER_SIZE,
+    )
+
+
+def _format_shape(shape: tuple[int, ...]) -> str:
+    return "scalar" if not shape else " x ".join(str(dim) for dim in shape)
+
+
+def _describe_size(size: int, case: str) -> list[str]:
+    lines = [f"cases: {', '.join(_get_cases(case))}"]
+    for case_name in _get_cases(case):
+        input_shape = _input_shape(_CASES[case_name], size)
+        output_shape = _output_shape(case_name, size)
+        lines.append(
+            f"{case_name}: input={_format_shape(input_shape)}, "
+            f"output={_format_shape(output_shape)}"
+        )
+    return lines
 
 
 def _check_result(name: str, dtype_name: str, actual, expected) -> None:
@@ -187,7 +271,7 @@ def axis_sum(
     if transpose:
         src = src.T
 
-    axes = (axis,) if isinstance(axis, int) else axis
+    axes = _normalized_axes(axis, src.ndim)
     out_shape = tuple(
         extent
         for axis_idx, extent in enumerate(src.shape)
@@ -217,15 +301,29 @@ def _case_args(case_name: str, size: int) -> tuple[Any, ...]:
     )
 
 
-def run_benchmarks(suite, size, *, case="all", perform_check=False):
+def run_benchmarks(suite, size_request, *, case="all", perform_check=False):
     """Run representative axis-wise sum benchmarks."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
     info = get_benchmark_info(axis_sum)
+    size, resolution = resolve_suite_size(
+        size_request,
+        resolve_from_target=lambda target_bytes: (
+            _resolve_size_from_memory_target(case, target_bytes)
+        ),
+        estimate_working_set_bytes=lambda resolved_size: (
+            _estimate_working_set_bytes(case, resolved_size)
+        ),
+        describe_size=lambda resolved_size: _describe_size(
+            resolved_size, case
+        ),
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
-    for case_name in _CASES if case == "all" else [case]:
+    for case_name in _get_cases(case):
         alloc_shape = _base_shape(_CASES[case_name], size)
         suite.run_timed_with_info(
             info.replace(name=case_name),
@@ -269,10 +367,10 @@ class AxisSumSuite(MicrobenchmarkSuite):
         msg = [f"case: {self.axis_sum_case}", f"check: {self.axis_sum_check}"]
         self.print_panel(msg, "Axis-wise Sum Suite")
 
-    def run_suite(self, size):
+    def run_suite(self, size_request: SizeRequest):
         run_benchmarks(
             self,
-            size,
+            size_request,
             case=self.axis_sum_case,
             perform_check=self.axis_sum_check,
         )

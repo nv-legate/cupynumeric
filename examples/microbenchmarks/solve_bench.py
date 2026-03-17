@@ -33,6 +33,37 @@ from __future__ import annotations
 import math
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import (
+    SizeRequest,
+    resolve_size_by_binary_search,
+    resolve_suite_size,
+)
+
+
+def _get_variants(variant):
+    if variant == "all":
+        return [
+            "solve-1-rhs",
+            "solve-n-rhs",
+            "batched-solve-1-rhs",
+            "batched-solve-n-rhs",
+        ]
+    return [variant]
+
+
+def _get_precisions(precision):
+    if precision == "all":
+        return [32, 64]
+    return [int(precision)]
+
+
+def _dtype_bytes(precision_bits: int) -> int:
+    return precision_bits // 8
+
+
+def _initial_bytes_per_size(precision: str) -> int:
+    # Seed the search with a cheap upper-bound guess before the full estimate.
+    return 8 + (max(_get_precisions(precision)) // 8)
 
 
 def _get_case_dimensions(variant, size):
@@ -61,6 +92,57 @@ def _get_case_dimensions(variant, size):
     return dimensions
 
 
+def _estimate_case_working_set_bytes(variant, precision_bits, size):
+    dimensions = _get_case_dimensions(variant, size)
+    matrix_elements = math.prod(dimensions["matrix_size"])
+    rhs_elements = math.prod(dimensions["rhs_size"])
+    dtype_bytes = _dtype_bytes(precision_bits)
+
+    # Peak memory occurs either while one float64 random fill overlaps with its
+    # cast result during setup, or when the solve result overlaps with the
+    # initialized inputs during the timed operation.
+    matrix_init_peak = matrix_elements * (8 + dtype_bytes)
+    rhs_init_peak = matrix_elements * dtype_bytes + rhs_elements * (
+        8 + dtype_bytes
+    )
+    solve_peak = (matrix_elements + 2 * rhs_elements) * dtype_bytes
+    return max(matrix_init_peak, rhs_init_peak, solve_peak)
+
+
+def _estimate_working_set_bytes(variant, precision, size):
+    return max(
+        _estimate_case_working_set_bytes(case, bits, size)
+        for case in _get_variants(variant)
+        for bits in _get_precisions(precision)
+    )
+
+
+def _resolve_size_from_memory_target(variant, precision, target_bytes):
+    return resolve_size_by_binary_search(
+        target_bytes,
+        estimate_working_set_bytes=lambda size: _estimate_working_set_bytes(
+            variant, precision, size
+        ),
+        initial_guess=target_bytes // _initial_bytes_per_size(precision),
+    )
+
+
+def _describe_size(size, variant, precision):
+    lines = [
+        f"variants: {', '.join(_get_variants(variant))}",
+        (
+            "precisions: "
+            f"{', '.join(f'float{bits}' for bits in _get_precisions(precision))}"
+        ),
+    ]
+    for case in _get_variants(variant):
+        dimensions = _get_case_dimensions(case, size)
+        matrix_size = " x ".join(str(dim) for dim in dimensions["matrix_size"])
+        rhs_size = " x ".join(str(dim) for dim in dimensions["rhs_size"])
+        lines.append(f"{case}: matrix={matrix_size}, rhs={rhs_size}")
+    return lines
+
+
 def _initialize_case(array_module, variant, size, dtype):
     dimensions = _get_case_dimensions(variant, size)
 
@@ -83,29 +165,27 @@ def solve(np, variant, size, runs, warmup, precision, *, timer):
     return timed_loop(operation, timer, runs, warmup)
 
 
-def _get_variants(variant):
-    if variant == "all":
-        return [
-            "solve-1-rhs",
-            "solve-n-rhs",
-            "batched-solve-1-rhs",
-            "batched-solve-n-rhs",
-        ]
-    return [variant]
-
-
-def _get_precisions(precision):
-    if precision == "all":
-        return [32, 64]
-    return [int(precision)]
-
-
-def run_benchmarks(suite, size, *, variant="all", precision="64"):
+def run_benchmarks(suite, size_request, *, variant="all", precision="64"):
     """Run SOLVE benchmarks inside the suite framework."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_suite_size(
+        size_request,
+        resolve_from_target=lambda target_bytes: (
+            _resolve_size_from_memory_target(variant, precision, target_bytes)
+        ),
+        estimate_working_set_bytes=lambda resolved_size: (
+            _estimate_working_set_bytes(variant, precision, resolved_size)
+        ),
+        describe_size=lambda resolved_size: _describe_size(
+            resolved_size, variant, precision
+        ),
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
+
     precisions = _get_precisions(precision)
     variants = _get_variants(variant)
     suite.run_timed(
@@ -116,6 +196,7 @@ def run_benchmarks(suite, size, *, variant="all", precision="64"):
 class SolveSuite(MicrobenchmarkSuite):
     name = "solve"
 
+    @staticmethod
     def add_suite_parser_group(parser):
         group = parser.add_argument_group("SOLVE Suite")
         group.add_argument(
@@ -151,10 +232,10 @@ class SolveSuite(MicrobenchmarkSuite):
         ]
         self.print_panel(msg, title="SOLVE Suite")
 
-    def run_suite(self, size):
+    def run_suite(self, size_request: SizeRequest):
         run_benchmarks(
             self,
-            size,
+            size_request,
             variant=self.solve_variant,
             precision=self.solve_precision,
         )

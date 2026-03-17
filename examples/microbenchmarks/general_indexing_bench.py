@@ -38,20 +38,35 @@ see fast_advanced_indexing_bench.py
 
 Usage:
     Run via main.py:
-    python main.py --suite general_indexing [--size SIZE] [--runs RUNS]
+    python main.py --suite general_indexing [--size SIZE | --memory-size 64MiB]
 
     # Compare with numpy backend:
     python main.py --suite general_indexing --package numpy
 """
 
+import math
 import random
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
 
 
 # =============================================================================
 # GENERAL ADVANCED INDEXING BENCHMARKS (Uses Copy Operations)
 # =============================================================================
+
+
+# Model float64 data plus int64/boolean index structures across the suite.
+_GENERAL_INDEXING_BYTES_PER_ELEMENT = 17
+
+
+def _describe_size(size: int) -> list[str]:
+    n = math.isqrt(size)
+    n_3d = int(size ** (1 / 3))
+    return [
+        f"resolved_2d_shape: {n} x {n}",
+        f"resolved_3d_shape: {n_3d} x {n_3d} x {n_3d}",
+    ]
 
 
 def boolean_get(np, size, runs, warmup, *, timer):
@@ -191,19 +206,26 @@ def take_one_per_row(np, m, n, runs, warmup, *, timer):
 # =============================================================================
 
 
-def run_benchmarks(suite, size):
+def run_benchmarks(suite, size_request):
     """Run general advanced indexing benchmarks (uses Copy operations)."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
+    size, resolution = resolve_linear_suite_size(
+        size_request,
+        bytes_per_element=_GENERAL_INDEXING_BYTES_PER_ELEMENT,
+        describe_size=_describe_size,
+    )
+    if resolution is not None:
+        suite.print_size_resolution(resolution)
 
     # Derived sizes
-    n = int(size**0.5)  # For 2D arrays
+    n = math.isqrt(size)  # For 2D arrays
     n_3d = int(size ** (1 / 3))  # For 3D arrays
-    num_row_idx = min(1000, n // 10)
-    num_col_idx = min(1000, n // 10)
-    num_indices = min(1000, n_3d // 5)
+    num_row_idx = clamp(n // 10, 1, 1000)
+    num_col_idx = clamp(n // 10, 1, 1000)
+    num_indices = clamp(n_3d // 5, 1, 1000)
 
     # 1. Boolean mask GET
     suite.run_timed(boolean_get, np, size, runs, warmup, timer=timer)
@@ -261,5 +283,5 @@ def run_benchmarks(suite, size):
 class GeneralIndexingSuite(MicrobenchmarkSuite):
     name = "general_indexing"
 
-    def run_suite(self, size):
-        run_benchmarks(self, size)
+    def run_suite(self, size_request: SizeRequest):
+        run_benchmarks(self, size_request)

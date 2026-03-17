@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.sizing import SizeRequest
 
 """
 Sync microbenchmark suite.
@@ -32,7 +33,8 @@ def sync(np, mode, runs, warmup, *, timer):
 class SyncSuite(MicrobenchmarkSuite):
     name = "sync"
 
-    def run_suite(self, _):
+    def run_suite(self, size_request: SizeRequest) -> None:
+        del size_request
         self.run_timed(
             sync,
             self.np,
