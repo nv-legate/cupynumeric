@@ -36,8 +36,8 @@ import argparse
 import sys
 import traceback
 
-from pathlib import Path
 from dataclasses import replace
+from pathlib import Path
 
 # Add parent directory to path to import benchmark.py
 # (Relative imports don't work for scripts run directly)
@@ -53,20 +53,22 @@ from _benchmark import (
 #
 # from general_scalared_bench import run_benchmarks as run_general_scalared
 
+from axis_sum_bench import AxisSumSuite
 from fast_advanced_indexing_bench import FastAdvancedIndexingSuite
 from general_indexing_bench import GeneralIndexingSuite
+from general_astype_bench import AsTypeSuite
+from general_nanred_bench import NanRedSuite
 from general_random_bench import RandomSuite
+from general_scalared_bench import ScalarRedSuite
 from gemm_gemv_bench import GemmSuite
 from solve_bench import SolveSuite
 from sort_bench import SortSuite
 from stream_bench import StreamSuite
 from ufunc_bench import UfuncSuite
-from general_nanred_bench import NanRedSuite
-from general_scalared_bench import ScalarRedSuite
-from general_astype_bench import AsTypeSuite
 
-SUITE_CLASSES: list[MicrobenchmarkSuite] = [
+SUITE_CLASSES: list[type[MicrobenchmarkSuite]] = [
     FastAdvancedIndexingSuite,
+    AxisSumSuite,
     GeneralIndexingSuite,
     RandomSuite,
     GemmSuite,
@@ -175,7 +177,7 @@ def main():
         if args.suite in suites:
             with suites[args.suite] as s:
                 s.run_suite(args.size)
-            completed.append(suite)
+                completed.append(s)
         else:
             print(f"Unknown suite: {args.suite}")
             return 1
