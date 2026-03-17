@@ -178,6 +178,26 @@ Here is an example:
 
 Refer to the `documentation for other logical operations <https://numpy.org/doc/stable/reference/routines.logic.html#logical-operations>`_.
 
+Use NumPy's functions, AVOID using Python's Built-in functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Python's built-in functions like ``int``, ``len``, ``float`` etc. can
+introduce blocking in the code and significantly affect application
+performance. Instead use NumPy's functions. Here is an example:
+
+.. code-block:: python
+
+    import cupynumeric as np
+
+    # not recommended
+    size = len(x)
+    x_float = float(x)
+
+    # Recommended: Use equivalent methods from NumPy
+    size = x.size
+    x_float = x.astype(np.float64)
+
+
 Use mathematical functions, AVOID element-wise loops
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

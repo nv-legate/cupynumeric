@@ -8,6 +8,7 @@ User guide
   practices
   howtos/index
   advanced
+  profiling_debugging
   differences
   tutorial
   task
