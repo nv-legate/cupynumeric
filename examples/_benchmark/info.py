@@ -19,6 +19,7 @@ import inspect
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from types import ModuleType
 from typing import Any, TypeVar
 
 
@@ -43,6 +44,23 @@ _INFO: str = "__cpn_benchmark_harness_info"
 
 
 _TIME: str = "time (milliseconds)"
+
+
+def _format_package(np: ModuleType) -> str:
+    if np.__name__ == "cupynumeric":
+        from cupynumeric.settings import settings as cupynumeric_settings
+        from legate.core import get_machine
+
+        force_thunk = cupynumeric_settings.force_thunk()
+        target = get_machine().preferred_target.name
+        if force_thunk == "eager":
+            return "cupynumeric.eager"
+        elif force_thunk == "deferred":
+            return f"cupynumeric.{target}_deferred"
+        else:
+            return f"cupynumeric.{target}"
+    else:
+        return np.__name__
 
 
 def _create_benchmark_info(
@@ -73,7 +91,7 @@ def _create_benchmark_info(
     this_formats = {}
     if "np" in sig.parameters:
         this_input_names = {"np": "array package"}
-        this_formats = {"array package": lambda np: np.__name__}
+        this_formats = {"array package": _format_package}
     this_input_names.update(input_names)
     this_formats.update(formats)
     for param_name in this_input_names:
@@ -119,17 +137,22 @@ def benchmark_info(
     input_names: dict[str, str] = {}
         Give optional column names for inputs to use instead of parameter
         names. (See note about special handling for ``np`` above.)
-    output_names: dict[str, str] = {}
-        Give names for colums generated from output values.
+    output_names: str | tuple[str, ...] | None = None
+        Give names for colums generated from output values.  For most
+        benchmark functions that return a time in milliseconds, nothing needs
+        to be done.  If the function returns a different value,
+        pass a name for that value that will be used for its column in a
+        data table.  If the function returns a tuple of outputs, give a
+        tuple of column names.
     formats: dict[str, Collable[..., str]] = {}
         Optional mapping from a column name to a format
         function that will be applied before the data row is added.
-    returns_time: bool | int = False
+    returns_time: bool | int = True
         Whether the function returns a time that can be used by
         :py:meth:`BenchmarkHarness.run_timed`.  If ``False``,
-        it does not; if ``True``, the function returns the time as its only
-        argument.  If an integer ``k`` is given, the function returns a tuple
-        and the time is the ``k``th return argument
+        it does not; if ``True``, the function returns the time in milliseconds
+        as its only argument.  If an integer ``k`` is given, the function
+        returns a tuple and the time is the ``k``th return argument
     """
 
     this_returns_time: int

@@ -162,9 +162,9 @@ class Summarize:
             if table:
                 table.add_column("benchmark")
                 table.add_column("# samples")
-                table.add_column("min")
-                table.add_column("max")
-                table.add_column("mean ± std. dev.")
+                table.add_column("min (ms)")
+                table.add_column("max (ms)")
+                table.add_column("mean ± std. dev. (ms)")
             else:
                 header_string = f"{'benchmark':<{max_width}} | # samples | min       | max       | mean ± std. dev.\n"
                 line_width = max(80, len(header_string))
@@ -183,9 +183,9 @@ class Summarize:
                     table.add_row(
                         render(s.id_string),
                         render(s.num_samples),
-                        render(f"{s.minimum:5g} ms"),
-                        render(f"{s.maximum:5g} ms"),
-                        render(f"{s.mean:5g} ± {s.standard_deviation:3g} ms"),
+                        render(f"{s.minimum:5g}"),
+                        render(f"{s.maximum:5g}"),
+                        render(f"{s.mean:5g} ± {s.standard_deviation:3g}"),
                     )
                 else:
                     self.stream.write(

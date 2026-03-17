@@ -44,7 +44,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from _benchmark import (
-    MicrobenchmarkHarness,
+    MicrobenchmarkConfig,
     MicrobenchmarkSuite,
     SummarizeFlush,
 )
@@ -64,6 +64,7 @@ from gemm_gemv_bench import GemmSuite
 from solve_bench import SolveSuite
 from sort_bench import SortSuite
 from stream_bench import StreamSuite
+from sync_bench import SyncSuite
 from ufunc_bench import UfuncSuite
 
 SUITE_CLASSES: list[type[MicrobenchmarkSuite]] = [
@@ -78,6 +79,7 @@ SUITE_CLASSES: list[type[MicrobenchmarkSuite]] = [
     UfuncSuite,
     NanRedSuite,
     ScalarRedSuite,
+    SyncSuite,
     AsTypeSuite,
 ]
 
@@ -86,10 +88,17 @@ SUITE_CLASSES: list[type[MicrobenchmarkSuite]] = [
 # =============================================================================
 
 
+class Formatter(
+    argparse.ArgumentDefaultsHelpFormatter,
+    argparse.RawDescriptionHelpFormatter,
+):
+    pass
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="CuPyNumeric Microbenchmark Suite",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=Formatter,
         epilog=__doc__,
     )
 
@@ -101,13 +110,13 @@ def main():
         type=str,
         default="all",
         choices=["all", *suite_names],
-        help="Benchmark suite to run (default: all)",
+        help="Benchmark suite to run",
     )
     parser.add_argument(
         "--size",
         type=int,
         default=10_000_000,
-        help="Base problem size in elements (default: 10M)",
+        help="Base problem size in elements",
     )
     parser.add_argument(
         "--fail-fast",
@@ -115,7 +124,7 @@ def main():
         help="Exit immediately after the first suite failure",
     )
 
-    MicrobenchmarkHarness.add_parser_group(parser)
+    MicrobenchmarkConfig.add_parser_group(parser, "microbenchmark harness")
 
     for suite_class in SUITE_CLASSES:
         suite_class.add_suite_parser_group(parser)
@@ -123,19 +132,14 @@ def main():
     args = parser.parse_known_args()[0]
 
     # general configuration that affects all suites
-    config = MicrobenchmarkHarness.config(args)
+    config = MicrobenchmarkConfig.from_args(args)
 
     # handle joint summary of all suites
-    summarize = config.harness_config.summarize
-    orig_flush = config.harness_config.summarize_flush
-    if config.harness_config.summarize is not None:
+    summarize = config.summarize
+    orig_flush = config.summarize_flush
+    if config.summarize is not None:
         # Flush the summary at the end of all the suite
-        new_harness_config = replace(
-            config.harness_config, summarize_flush=SummarizeFlush.NEVER
-        )
-        config = replace(config, harness_config=new_harness_config)
-        assert summarize == config.harness_config.summarize
-    harness_config = config.harness_config
+        config = replace(config, summarize_flush=SummarizeFlush.NEVER)
 
     suites: dict[str, MicrobenchmarkSuite] = {}
     for suite_class in SUITE_CLASSES:
@@ -143,7 +147,7 @@ def main():
         suites[suite.name] = suite
 
     config_msg = [
-        f"Backend: {harness_config.package}",
+        f"Backend: {config.package}",
         f"Suite: {args.suite}",
         f"Size: {args.size:,} elements",
         f"Runs: {config.runs}",
@@ -151,9 +155,9 @@ def main():
     ]
     if args.fail_fast:
         config_msg.append("Fail fast: enabled")
-    if harness_config.repeat > 0:
+    if config.repeat > 0:
         config_msg.append(
-            f"Benchmark samples: {harness_config.repeat} (structured logging enabled)"
+            f"Benchmark samples: {config.repeat} (structured logging enabled)"
         )
     config.print_panel(config_msg, "CuPyNumeric Microbenchmark Suite")
 
@@ -175,7 +179,8 @@ def main():
                     return 1
     else:
         if args.suite in suites:
-            with suites[args.suite] as s:
+            suite = suites[args.suite]
+            with suite as s:
                 s.run_suite(args.size)
                 completed.append(s)
         else:

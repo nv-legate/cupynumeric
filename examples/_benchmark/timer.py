@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from typing import Callable, Protocol, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Protocol, Literal
 
 if TYPE_CHECKING:
     from typing import Any
@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 __all__ = ["Timer", "CuPyTimer", "CuPyNumericTimer", "NumPyTimer"]
 
 NO_START_ERR_MSG: str = "Timer.stop() called without preceding Timer.start()"
+
+SyncMode = Literal["none", "fence", "block"]
 
 
 class Timer(Protocol):
@@ -33,6 +35,21 @@ class Timer(Protocol):
         """
         Blocks execution until everything before it has completed. Returns the
         duration since the last call to start(), in milliseconds.
+        """
+        ...
+
+    def sync(self, sync_mode: SyncMode) -> None:
+        """
+        Perform a type of synchronization.
+
+        Parameters
+        ----------
+        sync_mode: 'none', 'fence', 'block'
+            - 'none': a no-op
+            - 'fence': all queued tasks prior to the call to ``sync()`` complete
+              before any subsequent tasks are scheduled
+            - 'block': same as fence, but ``sync()`` does not return until all
+              prior tasks have completed.
         """
         ...
 
@@ -55,6 +72,14 @@ class CuPyNumericTimer(Timer):
 
         end_future = time("us")
         return float((end_future - self._start_time) / 1000.0)
+
+    def sync(self, sync_mode: SyncMode) -> None:
+        if sync_mode != "none":
+            from legate.core import get_legate_runtime
+
+            get_legate_runtime().issue_execution_fence(
+                block=(sync_mode == "block")
+            )
 
 
 class CuPyTimer(Timer):
@@ -81,6 +106,16 @@ class CuPyTimer(Timer):
         out: float = cuda.get_elapsed_time(self._start_event, end_event)
         return out
 
+    def sync(self, sync_mode: SyncMode) -> None:
+        # all cupy kernels launch on the same stream, so there is no need to
+        # enforce any ordering for the 'fence' case
+        if sync_mode == "block":
+            from cupy import cuda  # type: ignore[import-untyped]
+
+            sync_event = cuda.Event()
+            sync_event.record()
+            sync_event.synchronize()
+
 
 class NumPyTimer(Timer):
     _start_time: float | None
@@ -100,6 +135,9 @@ class NumPyTimer(Timer):
 
         end_time = perf_counter_ns() / 1000.0
         return (end_time - self._start_time) / 1000.0
+
+    def sync(self, _: SyncMode) -> None:
+        pass
 
 
 def get_timer(np: ModuleType) -> Timer:
@@ -121,11 +159,33 @@ def get_timer(np: ModuleType) -> Timer:
 
 
 def timed_loop(
-    f: Callable[..., Any], timer: Timer, runs: int, warmup: int = 0
+    f: Callable[..., Any],
+    timer: Timer,
+    runs: int,
+    warmup: int = 0,
+    *,
+    sync_mode: SyncMode = "fence",
 ) -> float:
     """Calls ``f()`` in a loop and reports the time for ``runs`` iterations.
 
     ``f()`` is called ``warmup`` times before the timer starts.
+
+    Parameters
+    ----------
+    timer: Timer
+    runs: int
+        The number of calls to ``f()`` between ``timer.start()`` and ``timer.stop()``
+    warmup: int
+        The number of calls to ``f()`` before ``timer.start()``
+    sync_mode: 'none', 'fence', or 'block'
+        Synchronization between calls to ``f()``.  Make sure you know what
+        you're doing if you change this.
+
+    Returns
+    -------
+    float
+        The measure time to call ``f()`` ``runs`` times in a row.  The total
+        time is returned, not the average.
     """
     if runs < 0:
         raise RuntimeError(f"Negative runs {runs} not allowed.")
@@ -133,8 +193,11 @@ def timed_loop(
         raise RuntimeError(f"Negative warmup {warmup} not allowed.")
     if runs == 0:
         return 0.0
-    for i in range(runs + warmup):
+    total_iters = runs + warmup
+    for i in range(total_iters):
         if i == warmup:
             timer.start()
         f()
+        if i + 1 < total_iters:
+            timer.sync(sync_mode)
     return timer.stop()

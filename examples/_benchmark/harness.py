@@ -21,7 +21,7 @@ import json
 
 from argparse import ArgumentParser, Namespace
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import Enum, StrEnum, auto
 from functools import cache
 from itertools import product
@@ -79,48 +79,16 @@ class BenchmarkHarnessConfig:
     summarize: Summarize | None
     summarize_flush: SummarizeFlush
 
-
-FAILED_TO_DETECT: str = "(failed to detect)"
-
-
-@cache
-def _conda_list() -> dict[str, Any] | str:
-    try:
-        if out := check_output(["conda", "list", "--json"]):
-            info = json.loads(out.decode("utf-8"))
-            names = [pkg["name"] for pkg in info]
-            versions = [pkg["version"] for pkg in info]
-            channels = [pkg["channel"] for pkg in info]
-            builds = [pkg["build_string"] for pkg in info]
-            version_len = max([len(v) for v in versions])
-            build_len = max([len(b) for b in builds])
-            entries = [
-                f"{v:{version_len}}  {b:{build_len}}  {c}"
-                for v, b, c in zip(versions, builds, channels, strict=True)
-            ]
-            return dict(zip(names, entries, strict=True))
-
-    except (CalledProcessError, IndexError, KeyError):
-        return FAILED_TO_DETECT
-    except FileNotFoundError:
-        return "(conda missing)"
-    else:
-        return FAILED_TO_DETECT
-
-
-class BenchmarkHarness:
-    """Harness for running performance benchmarks."""
-
-    name: str = "benchmark harness"
-
     @classmethod
-    def add_parser_group(cls, parser: ArgumentParser) -> Any:
-        """Add an argument group for the benchmark harness to a parser.
+    def add_parser_group(cls, parser: ArgumentParser, name: str) -> Any:
+        """Add arguments to a parser to configure a benchmark harness.
 
         Parameter
         ---------
         parser: ArgumentParser
             parser to modify
+        name: str
+            name for the parser group
 
         Returns
         -------
@@ -147,6 +115,17 @@ class BenchmarkHarness:
 
         --log-metadata-extra [key1=value1 [key2=value2 ...]]
             Additional data to added to the benchmark log's metadata
+
+        --short: bool
+            Show the short version of benchmark metadata
+
+        --summarize: bool
+            Gather summary statistics of times from
+            :py:meth:`BenchmarkHarness.run_timed`.
+
+        --summarize-flush: 'run', 'exit', or 'never' (default: 'run')
+            When to display summary statistics: after each run, when
+            exiting a context manager, or never.
         """
 
         def metadata_tuple(arg: str) -> tuple[str, str]:
@@ -155,7 +134,7 @@ class BenchmarkHarness:
                 raise RuntimeError(f"expected 'key=value' pair, got {arg}")
             return result
 
-        group = parser.add_argument_group(cls.name)
+        group = parser.add_argument_group(name)
         group.add_argument(
             "-b",
             "--benchmark",
@@ -163,7 +142,7 @@ class BenchmarkHarness:
             metavar="N",
             type=int,
             default=0,
-            help="number of times to benchmark to repeat benchmarks (default 0 - "
+            help="number of times to benchmark to repeat benchmarks (0 means "
             "execute without benchmarking)",
         )
         group.add_argument(
@@ -221,16 +200,9 @@ class BenchmarkHarness:
         )
         return group
 
-    @staticmethod
-    def config_from_namespace(args: Namespace) -> BenchmarkHarnessConfig:
-        """Create a configuration object from parsed arguments.
-
-        Parameters
-        ----------
-        args: argparse.Namespace
-            Namespace from an ArgumentParser that has been passed to
-            :py:meth:`add_parser_group`.
-        """
+    @classmethod
+    def from_args(cls, args: Namespace) -> BenchmarkHarnessConfig:
+        """Construct a configuration from a Namespace."""
         vargs = vars(args)
         summarize: Summarize | None = None
         if vargs["__cpn_summarize"]:
@@ -245,6 +217,46 @@ class BenchmarkHarness:
             summarize=summarize,
             summarize_flush=vargs["__cpn_summarize_flush"],
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Like dataclasses.asdict(), but not a deep copy"""
+        return dict(
+            [(field.name, getattr(self, field.name)) for field in fields(self)]
+        )
+
+
+FAILED_TO_DETECT: str = "(failed to detect)"
+
+
+@cache
+def _conda_list() -> dict[str, Any] | str:
+    try:
+        if out := check_output(["conda", "list", "--json"]):
+            info = json.loads(out.decode("utf-8"))
+            names = [pkg["name"] for pkg in info]
+            versions = [pkg["version"] for pkg in info]
+            channels = [pkg["channel"] for pkg in info]
+            builds = [pkg["build_string"] for pkg in info]
+            version_len = max([len(v) for v in versions])
+            build_len = max([len(b) for b in builds])
+            entries = [
+                f"{v:{version_len}}  {b:{build_len}}  {c}"
+                for v, b, c in zip(versions, builds, channels, strict=True)
+            ]
+            return dict(zip(names, entries, strict=True))
+
+    except (CalledProcessError, IndexError, KeyError):
+        return FAILED_TO_DETECT
+    except FileNotFoundError:
+        return "(conda missing)"
+    else:
+        return FAILED_TO_DETECT
+
+
+class BenchmarkHarness:
+    """Harness for running performance benchmarks."""
+
+    name: str = "benchmark harness"
 
     _config: BenchmarkHarnessConfig
 
@@ -282,7 +294,7 @@ class BenchmarkHarness:
                 raise RuntimeError(
                     f"argument has unrecognized type {type(arg)}"
                 )
-            self._config = BenchmarkHarness.config_from_namespace(arg)
+            self._config = BenchmarkHarnessConfig.from_args(arg)
         metadata: dict[str, Any] = {}
         if not self.short_metadata:
             metadata.update(
@@ -291,7 +303,7 @@ class BenchmarkHarness:
                 )
             )
         if self._config.log_conda_list:
-            metadata = {"Conda list": _conda_list()}
+            metadata.update({"Conda list": _conda_list()})
         metadata.update(self._config.log_metadata_extra)
         self.metadata = metadata
         match self._config.package:
@@ -303,6 +315,12 @@ class BenchmarkHarness:
                 import cupy  # type: ignore[import-untyped]
 
                 self.np = cupy
+                if self._config.cupy_allocator == CupyAllocator.OFF:
+                    self.np.cuda.set_allocator(None)
+                elif self._config.cupy_allocator == CupyAllocator.MANAGED:
+                    self.np.cuda.set_allocator(
+                        self.np.MemoryPool(self.np.cuda.malloc_managed).malloc
+                    )
             case ArrayPackage.LEGATE:
                 import cupynumeric
 
@@ -513,7 +531,7 @@ def parse_with_harness(
     """Convenience function for the common pattern of adding
     BenchmarkHarness arugments to a parser, parsing, and getting
     both the parsed arguments and the harness."""
-    BenchmarkHarness.add_parser_group(parser)
+    BenchmarkHarnessConfig.add_parser_group(parser, BenchmarkHarness.name)
     args = parser.parse_known_args()[0]
     harness = BenchmarkHarness(args)
     return (args, harness)

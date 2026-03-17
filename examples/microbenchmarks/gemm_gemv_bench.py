@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import math
 
-from _benchmark import MicrobenchmarkSuite
+from _benchmark import MicrobenchmarkSuite, timed_loop
 
 SKINNY_OUTER_DIM = 8
 
@@ -140,14 +140,13 @@ def run_gemm_gemv_case(
     else:
         a, b, c = operands
 
-    for idx in range(runs + warmup):
-        if idx == warmup:
-            timer.start()
+    def operation():
         if variant == "gemv":
             np.matmul(a, x, out=y)
         else:
             np.matmul(a, b, out=c)
-    total = timer.stop()
+
+    total = timed_loop(operation, timer, runs, warmup)
 
     if perform_check:
         _check_case(variant, size, precision, y if variant == "gemv" else c)
@@ -223,14 +222,14 @@ class GemmSuite(MicrobenchmarkSuite):
             type=str,
             default="all",
             choices=["skinny_gemm", "square_gemm", "gemv", "all"],
-            help="GEMM/GEMV variant to run (default: all)",
+            help="GEMM/GEMV variant to run",
         )
         group.add_argument(
             "--gemm-gemv-precision",
             type=str,
             default="32",
             choices=["32", "64", "all"],
-            help="GEMM/GEMV precision in bits (default: 32)",
+            help="GEMM/GEMV precision in bits",
         )
         group.add_argument(
             "--gemm-gemv-check",

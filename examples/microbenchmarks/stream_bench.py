@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from _benchmark import MicrobenchmarkSuite
+from _benchmark import MicrobenchmarkSuite, timed_loop
 
 """
 STREAM microbenchmark suite.
@@ -100,16 +100,15 @@ def stream(
     dtype = np.float32 if precision == 32 else np.float64
     a, b, c = initialize(np, size, dtype, contiguous)
 
-    for idx in range(runs + warmup):
-        if idx == warmup:
-            timer.start()
+    def op():
         if operation == "copy":
             c[...] = a
         elif operation == "mul":
             np.multiply(c, SCALAR, out=b)
         else:
             np.add(a, b, out=c)
-    total = timer.stop()
+
+    total = timed_loop(op, timer, runs, warmup)
 
     if perform_check:
         result = b if operation == "mul" else c
@@ -187,14 +186,14 @@ class StreamSuite(MicrobenchmarkSuite):
             type=str,
             default="all",
             choices=["copy", "mul", "scale", "add", "all"],
-            help="STREAM operation to run (default: all)",
+            help="STREAM operation to run",
         )
         group.add_argument(
             "--stream-precision",
             type=str,
             default="32",
             choices=["32", "64", "all"],
-            help="STREAM precision in bits (default: 32)",
+            help="STREAM precision in bits",
         )
         group.add_argument(
             "--stream-contiguous",
@@ -202,8 +201,7 @@ class StreamSuite(MicrobenchmarkSuite):
             default="all",
             choices=["true", "false", "all"],
             help=(
-                "STREAM layout to run; 'false' uses transpose-based "
-                "non-contiguous views (default: all)"
+                "STREAM layout to run; 'false' uses transpose-based non-contiguous views"
             ),
         )
         group.add_argument(
