@@ -772,6 +772,13 @@ class ndarray:
     # def __array_wrap__(self, *args, **kwargs):
     #    return self.__array__().__array_wrap__(*args, **kwargs)
 
+    def _check_is_convertible_to_scalar(self) -> None:
+        """Raise TypeError if array is not 0-dimensional (for int/float/complex)."""
+        if self.ndim != 0:
+            raise TypeError(
+                "only 0-dimensional arrays can be converted to Python scalars"
+            )
+
     def __bool__(self) -> bool:
         """a.__bool__(/)
 
@@ -782,6 +789,7 @@ class ndarray:
 
     def __complex__(self) -> complex:
         """a.__complex__(/)"""
+        self._check_is_convertible_to_scalar()
         return complex(self.__array__())
 
     def __contains__(self, item: Any) -> ndarray:
@@ -885,6 +893,7 @@ class ndarray:
         Return ``float(self)``.
 
         """
+        self._check_is_convertible_to_scalar()
         return float(self.__array__())
 
     def __floordiv__(self, rhs: Any) -> ndarray:
@@ -1086,6 +1095,7 @@ class ndarray:
         Return ``int(self)``.
 
         """
+        self._check_is_convertible_to_scalar()
         return int(self.__array__())
 
     def __invert__(self) -> ndarray:

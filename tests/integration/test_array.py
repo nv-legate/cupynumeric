@@ -120,6 +120,39 @@ class TestArrayErrors:
             num.array(obj, dtype=dtype)
 
 
+class TestArrayToScalarConversion:
+    @pytest.mark.parametrize(
+        "scalar_val, converter, expected",
+        [
+            (3, int, 3),
+            (2.5, float, 2.5),
+            (3 + 4j, complex, 3 + 4j),
+            (7, complex, 7 + 0j),
+        ],
+        ids=("int", "float", "complex_from_complex", "complex_from_int"),
+    )
+    def test_array_converts_to_scalar(self, scalar_val, converter, expected):
+        """0-dimensional array converts to Python scalar like NumPy."""
+        a_np = np.array(scalar_val)
+        a_num = num.array(scalar_val)
+        assert converter(a_np) == expected
+        assert converter(a_num) == expected
+
+    @pytest.mark.parametrize(
+        "converter, value",
+        [(int, [2]), (float, [2.5]), (complex, [2.5 + 0.5j])],
+        ids=("int", "float", "complex"),
+    )
+    def test_array_converts_to_scalar_negative(self, converter, value):
+        """Non-0-dimensional array raises TypeError when converting to scalar."""
+        b_np = np.array(value)
+        b_num = num.array(value)
+        with pytest.raises(TypeError):
+            converter(b_np)
+        with pytest.raises(TypeError):
+            converter(b_num)
+
+
 class TestAsArrayBugFixes:
     @pytest.mark.parametrize(
         "obj", SCALARS + ARRAYS, ids=lambda obj: f"(object={obj})"
