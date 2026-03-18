@@ -218,8 +218,8 @@ def histogram(
             lower_b = 0.0
             higher_b = 1.0
         else:
-            lower_b = float(min(x))
-            higher_b = float(max(x))
+            lower_b = float(x.min())
+            higher_b = float(x.max())
 
         step = (higher_b - lower_b) / num_intervals
 

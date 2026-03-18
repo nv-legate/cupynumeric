@@ -23,6 +23,7 @@
 #include "cupynumeric/stat/histogram_impl.h"
 
 #include "cupynumeric/utilities/thrust_util.h"
+#include <cupynumeric/utilities/thrust_allocator.h>
 
 #include <tuple>
 
@@ -63,12 +64,20 @@ struct HistogramImplBody<VariantKind::GPU, CODE> {
                   const AccessorRD<SumReduction<WeightType>, true, 1>& result,
                   const Rect<1>& result_rect) const
   {
-    auto stream          = context.get_task_stream();
-    cudaStream_t stream_ = static_cast<cudaStream_t>(stream);
-    auto exe_pol         = DEFAULT_POLICY.on(stream);
+    auto alloc   = ThrustAllocator(Memory::Kind::GPU_FB_MEM);
+    auto stream  = context.get_task_stream();
+    auto exe_pol = DEFAULT_POLICY(alloc).on(stream);
 
-    detail::histogram_wrapper(
-      exe_pol, src, src_rect, bins, bins_rect, weights, weights_rect, result, result_rect, stream_);
+    detail::histogram_wrapper(exe_pol,
+                              src,
+                              src_rect,
+                              bins,
+                              bins_rect,
+                              weights,
+                              weights_rect,
+                              result,
+                              result_rect,
+                              static_cast<cudaStream_t>(stream));
   }
 };
 
