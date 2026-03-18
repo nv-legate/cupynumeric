@@ -1100,9 +1100,9 @@ class DeferredArray(NumPyThunk):
 
     def _issue_gather_task(
         self,
-        result: DeferredArray,
-        source: DeferredArray,
-        index_array: DeferredArray,
+        result: LogicalStore,
+        source: LogicalStore,
+        index_array: LogicalStore,
     ) -> None:
         """
         Task-based gather for single-GPU advanced indexing.
@@ -1116,13 +1116,90 @@ class DeferredArray(NumPyThunk):
             self.library, CuPyNumericOpCode.GATHER
         )
 
-        task.add_output(result.base)
-        task.add_input(source.base)
-        task.add_input(index_array.base)
-        task.add_broadcast(result.base)
-        task.add_broadcast(source.base)
-        task.add_broadcast(index_array.base)
+        task.add_output(result)
+        task.add_input(source)
+        task.add_input(index_array)
+        task.add_broadcast(result)
+        task.add_broadcast(source)
+        task.add_broadcast(index_array)
         task.execute()
+
+    def _perform_gather(
+        self,
+        result: LogicalStore,
+        source: LogicalStore,
+        index_array: LogicalStore,
+    ) -> None:
+        """
+        Performs a gather operation from source into result stores.
+        The implementation will switch between a single-processor gather task
+        and a multi-processor scatter operation depending on processor count.
+        """
+        if (
+            runtime.num_procs == 1
+            and result.ndim > 0
+            and source.ndim > 0
+            and index_array.ndim > 0
+        ):
+            # use faster, single-GPU gather task if possible
+            self._issue_gather_task(result, source, index_array)
+        else:
+            legate_runtime.issue_gather(result, source, index_array)
+
+    def _issue_scatter_task(
+        self,
+        result: LogicalStore,
+        index_array: LogicalStore,
+        source: LogicalStore,
+    ) -> None:
+        """
+        Task-based scatter for single-GPU advanced indexing.
+        Semantics: result[index_array[p]] = source[p] for all p.
+        Replaces legate_runtime.issue_scatter() with a kernel launch.
+        """
+        assert source.shape == index_array.shape, (
+            f"source shape {source.shape} != index shape {index_array.shape}"
+        )
+        assert runtime.num_procs == 1, (
+            "CuPyNumeric scatter task only supported on single-GPU, "
+            "use legate_runtime.issue_scatter() instead"
+        )
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.SCATTER
+        )
+
+        task.add_output(result)
+        task.add_input(source)
+        task.add_input(index_array)
+        # add as input to ensure entirely of result is not overwrittea
+        task.add_input(result)
+        task.add_broadcast(result)
+        task.add_broadcast(source)
+        task.add_broadcast(index_array)
+        task.execute()
+
+    def _perform_scatter(
+        self,
+        result: LogicalStore,
+        source: LogicalStore,
+        index_array: LogicalStore,
+    ) -> None:
+        """
+        Performs a scatter operation from source into result stores.
+        The implementation will switch between a single-processor scatter task
+        and a multi-processor scatter operation depending on processor count.
+        """
+        if (
+            runtime.num_procs == 1
+            and result.ndim > 0
+            and source.ndim > 0
+            and index_array.ndim > 0
+        ):
+            # use faster, single-GPU scatter task if possible
+            self._issue_scatter_task(result, index_array, source)
+        else:
+            legate_runtime.issue_scatter(result, index_array, source)
 
     def _advanced_indexing_using_einsum(
         self, mask_axis: int, mask_array: Any
@@ -1507,18 +1584,7 @@ class DeferredArray(NumPyThunk):
                         tuple(index_array.base.shape), self.base.type
                     )
 
-                if (
-                    runtime.num_procs == 1
-                    and result.ndim > 0
-                    and rhs.ndim > 0
-                    and index_array.ndim > 0
-                ):
-                    self._issue_gather_task(result, rhs, index_array)
-                else:
-                    legate_runtime.issue_gather(
-                        result.base, rhs.base, index_array.base
-                    )
-
+                self._perform_gather(result.base, rhs.base, index_array.base)
             else:
                 return index_array
 
@@ -1581,9 +1647,7 @@ class DeferredArray(NumPyThunk):
                 lhs = lhs._copy_store(lhs.base)
 
             if index_array.size != 0:
-                legate_runtime.issue_scatter(
-                    lhs.base, index_array.base, value_store
-                )
+                self._perform_scatter(lhs.base, value_store, index_array.base)
 
             # TODO this copy will be removed when affine copies are
             # supported in Legion/Realm
@@ -2833,7 +2897,7 @@ class DeferredArray(NumPyThunk):
         if indirect.base.has_scalar_storage:
             indirect = indirect._convert_future_to_regionfield()
 
-        legate_runtime.issue_scatter(self_tmp.base, indirect.base, values.base)
+        self._perform_scatter(self_tmp.base, values.base, indirect.base)
 
         if self_tmp is not self:
             self.copy(self_tmp, deep=True)
@@ -4997,7 +5061,7 @@ class DeferredArray(NumPyThunk):
         task.add_scalar_arg(False, ty.bool_)  # check bounds
         task.execute()
 
-        legate_runtime.issue_gather(self.base, src.base, indirect.base)
+        self._perform_gather(self.base, src.base, indirect.base)
 
     # Perform a histogram operation on the array
     @auto_convert("src", "bins", "weights")

@@ -481,7 +481,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
                ? sizeof(std::int32_t) * task.scalar(0).values<std::int32_t>().size()
                : 0;
     }
-    case CUPYNUMERIC_GATHER: {
+    case CUPYNUMERIC_GATHER: [[fallthrough]];
+    case CUPYNUMERIC_SCATTER: {
       return 0;
     }
     case CUPYNUMERIC_HISTOGRAM: {

@@ -140,6 +140,7 @@ def test_CuPyNumericOpCode() -> None:
         "SCALAR_UNARY_RED",
         "SCAN_GLOBAL",
         "SCAN_LOCAL",
+        "SCATTER",
         "SOLVE",
         "SORT",
         "SEARCHSORTED",
