@@ -49,22 +49,22 @@ def run_sort(
     print_timing=False,
 ):
     np.random.seed(42)
-    newtype = np.dtype(datatype).type
+    newtype = numpy.dtype(datatype).type
 
     N = 1
     for e in shape:
         N *= e
     shape = tuple(shape)
-    if numpy.issubdtype(newtype, np.integer):
+    if numpy.issubdtype(newtype, numpy.integer):
         if lower is None:
             lower = np.iinfo(newtype).min
         if upper is None:
             upper = np.iinfo(newtype).max
         a = np.random.randint(low=lower, high=upper, size=N).astype(newtype)
         a = a.reshape(shape)
-    elif numpy.issubdtype(newtype, np.floating):
+    elif numpy.issubdtype(newtype, numpy.floating):
         a = np.random.random(shape).astype(newtype)
-    elif numpy.issubdtype(newtype, np.complexfloating):
+    elif numpy.issubdtype(newtype, numpy.complexfloating):
         a = np.array(
             np.random.random(shape) + np.random.random(shape) * 1j
         ).astype(newtype)
