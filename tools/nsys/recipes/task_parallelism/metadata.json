@@ -1,0 +1,6 @@
+{
+    "description": "Measures the degree of task-level parallelism in an nsys report by looking at overlapped kernel executions. Reports average/peak concurrency and a histogram.",
+    "display_name": "Task Parallelism",
+    "module_name": "task_parallelism",
+    "type": "stats"
+}
