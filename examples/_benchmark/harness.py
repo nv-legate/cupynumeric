@@ -319,7 +319,9 @@ class BenchmarkHarness:
                     self.np.cuda.set_allocator(None)
                 elif self._config.cupy_allocator == CupyAllocator.MANAGED:
                     self.np.cuda.set_allocator(
-                        self.np.MemoryPool(self.np.cuda.malloc_managed).malloc
+                        self.np.cuda.MemoryPool(
+                            self.np.cuda.malloc_managed
+                        ).malloc
                     )
             case ArrayPackage.LEGATE:
                 import cupynumeric
