@@ -365,7 +365,11 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           // Add extra buffer for intermediate calculations (offsets array and reduction buffer)
           auto input_size = aligned_size(input_volume * sizeof(std::int64_t), DEFAULT_ALIGNMENT);
           auto reduction_size = aligned_size(sizeof(std::int64_t), DEFAULT_ALIGNMENT);
-          return max_out_size + input_size + reduction_size;
+
+          // Consider min buffer for thrust scan temps (necessary for smaller task inputs)
+          constexpr std::size_t MIN_THRUST_SCAN_TEMP_SIZE = 2048;
+
+          return MIN_THRUST_SCAN_TEMP_SIZE + max_out_size + input_size + reduction_size;
         }
         case legate::mapping::StoreTarget::ZCMEM: {
           return 0;
@@ -649,7 +653,7 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       using ACC = legate::AccessorRO<std::int8_t, LEGATE_MAX_DIM>;
       return memory_kind == legate::mapping::StoreTarget::ZCMEM
                ? (task.num_inputs() * sizeof(ACC_TYPE) + 15)
-               : 0;
+               : 1;
     }
     case CUPYNUMERIC_IN1D: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {

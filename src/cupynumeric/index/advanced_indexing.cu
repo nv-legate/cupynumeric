@@ -17,6 +17,7 @@
 #include "cupynumeric/index/advanced_indexing.h"
 #include "cupynumeric/index/advanced_indexing_template.inl"
 #include "cupynumeric/utilities/thrust_util.h"
+#include "cupynumeric/utilities/thrust_allocator.h"
 #include "cupynumeric/cuda_help.h"
 
 #include <thrust/scan.h>
@@ -114,8 +115,11 @@ struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, DIM, OUT_TYPE> {
 
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
+    auto alloc   = ThrustAllocator(legate::Memory::Kind::GPU_FB_MEM);
+    auto exe_pol = DEFAULT_POLICY(alloc).on(stream);
     auto off_ptr = offsets.ptr(0);
-    thrust::exclusive_scan(DEFAULT_POLICY.on(stream), off_ptr, off_ptr + volume, off_ptr);
+
+    thrust::exclusive_scan(exe_pol, off_ptr, off_ptr + volume, off_ptr);
 
     return size.read(stream);
   }
