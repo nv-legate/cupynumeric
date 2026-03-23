@@ -177,6 +177,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_MAX_MAPPERS: int
     CUPYNUMERIC_MAX_REDOPS: int
     CUPYNUMERIC_MAX_TASKS: int
+    CUPYNUMERIC_MGRID: int
     CUPYNUMERIC_MP_POTRF: int
     CUPYNUMERIC_MP_QR: int
     CUPYNUMERIC_MP_SOLVE: int
@@ -403,6 +404,7 @@ class CuPyNumericOpCode(IntEnum):
     LOAD_CUDALIBS = _cupynumeric.CUPYNUMERIC_LOAD_CUDALIBS
     MATMUL = _cupynumeric.CUPYNUMERIC_MATMUL
     MATVECMUL = _cupynumeric.CUPYNUMERIC_MATVECMUL
+    MGRID = _cupynumeric.CUPYNUMERIC_MGRID
     MP_POTRF = _cupynumeric.CUPYNUMERIC_MP_POTRF
     MP_QR = _cupynumeric.CUPYNUMERIC_MP_QR
     MP_SOLVE = _cupynumeric.CUPYNUMERIC_MP_SOLVE

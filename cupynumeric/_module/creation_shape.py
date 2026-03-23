@@ -1,4 +1,4 @@
-# Copyright 2024 NVIDIA Corporation
+# Copyright 2026 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
 #
 from __future__ import annotations
 
+import math
 import operator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
@@ -34,6 +35,87 @@ def _uninitialized(
 
 
 add_boilerplate("a")
+
+
+class _MGridClass:
+    """
+    Slicing an instance of this class returns a multi-dimensional
+    grid of coordinates, a.k.a. a "meshgrid".
+
+    Complex value step are not supported, unlike NumPy.
+    """
+
+    def __init__(self) -> None:
+        return
+
+    def __getitem__(self, key: slice | Sequence[slice]) -> ndarray:
+        """
+        Parameters
+        ----------
+        key : Sequence[slice]
+            The slices over which the meshgrid is constructed.
+
+        Returns
+        -------
+        out : ndarray
+            The meshgrid of coordinates. out has len(key) + 1
+            dimensions, where the first dimension is of size len(key).
+            out[i] represents the meshgrid for the i-th dimension.
+
+        See Also
+        --------
+        numpy.mgrid
+
+        Availability
+        ------------
+        Multiple GPUs, Multiple CPUs
+        """
+
+        if isinstance(key, slice) or len(key) == 1:
+            from .creation_ranges import arange
+
+            if not isinstance(key, slice):
+                key = key[0]
+
+            return arange(key.start if key.start else 0, key.stop, key.step)
+
+        # Process slices to determine output shape and scalars for task
+        shape = [len(key)]
+        slice_dtypes = []
+        cleaned_slices = []
+        for s in key:
+            # if no end, treat start as end
+            start = s.start
+            stop = s.stop
+            step = s.step
+
+            if stop is None:
+                raise ValueError("slice stop cannot be None for mgrid")
+            if start is None:
+                start = 0
+            if step is None:
+                step = 1
+
+            cleaned_slices.append(slice(start, stop, step))
+            shape.append(int(math.ceil((stop - start) / step)))
+            slice_dtypes.append(np.result_type(start, stop, step))
+
+        # determine overarching dtype for meshgrid
+        dtype = np.result_type(*slice_dtypes)
+
+        # return empty array if empty shape
+        for dim in shape:
+            if dim == 0:
+                return ndarray(tuple(shape), dtype=dtype)
+
+        # otherwise, create a meshgrid and fill it
+        result = ndarray(tuple(shape), dtype=dtype)
+        result._thunk.mgrid(cleaned_slices)
+
+        return result
+
+
+mgrid = _MGridClass()
 
 
 def _uninitialized_like(

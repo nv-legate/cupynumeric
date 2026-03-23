@@ -522,6 +522,9 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         }
       }
     }
+    case CUPYNUMERIC_MGRID: {
+      return 0;
+    }
     case CUPYNUMERIC_MP_QR:
     case CUPYNUMERIC_MP_POTRF:
     case CUPYNUMERIC_MP_SOLVE: {

@@ -230,6 +230,9 @@ class NumPyThunk(ABC):
     def putmask(self, mask: Any, values: Any) -> None: ...
 
     @abstractmethod
+    def mgrid(self, slices: Sequence[slice]) -> None: ...
+
+    @abstractmethod
     def eye(self, k: int) -> None: ...
 
     @abstractmethod

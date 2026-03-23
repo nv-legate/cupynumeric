@@ -936,6 +936,12 @@ class EagerArray(NumPyThunk):
         else:
             np.putmask(self.array, mask.array, values.array)
 
+    def mgrid(self, slices: Sequence[slice]) -> None:
+        if self.deferred is not None:
+            self.deferred.mgrid(slices)
+        else:
+            self.array[:] = np.mgrid[slices]
+
     def eye(self, k: int) -> None:
         if self.deferred is not None:
             self.deferred.eye(k)

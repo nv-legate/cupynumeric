@@ -123,6 +123,7 @@ def test_CuPyNumericOpCode() -> None:
         "LOAD_CUDALIBS",
         "MATMUL",
         "MATVECMUL",
+        "MGRID",
         "MP_POTRF",
         "MP_QR",
         "MP_SOLVE",

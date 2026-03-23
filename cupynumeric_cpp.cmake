@@ -131,6 +131,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/nullary/arange.cc
   src/cupynumeric/nullary/eye.cc
   src/cupynumeric/nullary/fill.cc
+  src/cupynumeric/nullary/mgrid.cc
   src/cupynumeric/nullary/window.cc
   src/cupynumeric/index/advanced_indexing.cc
   src/cupynumeric/index/choose.cc
@@ -206,6 +207,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/nullary/arange_omp.cc
     src/cupynumeric/nullary/eye_omp.cc
     src/cupynumeric/nullary/fill_omp.cc
+    src/cupynumeric/nullary/mgrid_omp.cc
     src/cupynumeric/nullary/window_omp.cc
     src/cupynumeric/index/advanced_indexing_omp.cc
     src/cupynumeric/index/choose_omp.cc
@@ -266,6 +268,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/nullary/arange.cu
     src/cupynumeric/nullary/eye.cu
     src/cupynumeric/nullary/fill.cu
+    src/cupynumeric/nullary/mgrid.cu
     src/cupynumeric/nullary/window.cu
     src/cupynumeric/index/advanced_indexing.cu
     src/cupynumeric/index/choose.cu

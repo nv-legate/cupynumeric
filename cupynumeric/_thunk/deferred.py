@@ -2921,6 +2921,20 @@ class DeferredArray(NumPyThunk):
         task.add_constraint(align(p_self, p_values))
         task.execute()
 
+    def mgrid(self, slices: Sequence[slice]) -> None:
+        assert self.ndim >= 3  # otherwise arange should be used
+        assert len(slices) == self.ndim - 1
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.MGRID
+        )
+
+        task.add_output(self.base)
+        for s in slices:
+            task.add_scalar_arg(s.start, self.base.type)
+            task.add_scalar_arg(s.step, self.base.type)
+        task.execute()
+
     # Create an identity array with the ones offset from the diagonal by k
     def eye(self, k: int) -> None:
         assert self.ndim == 2  # Only 2-D arrays should be here
