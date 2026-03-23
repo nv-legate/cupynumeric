@@ -22,7 +22,6 @@ from sphinx.util.logging import getLogger
 
 import cupynumeric as cn
 
-from .._utils.coverage import is_implemented
 from . import PARALLEL_SAFE, SphinxParallelSpec
 from ._cupynumeric_directive import CupynumericDirective
 
@@ -30,10 +29,8 @@ log = getLogger(__name__)
 
 
 def _filter(x: Any) -> bool:
-    return (
-        callable(x)
-        and is_implemented(x)
-        and (x.__name__.startswith("__") or not x.__name__.startswith("_"))
+    return callable(x) and (
+        x.__name__.startswith("__") or not x.__name__.startswith("_")
     )
 
 

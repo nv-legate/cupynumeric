@@ -26,9 +26,7 @@ from .._array.util import (
 )
 from .._module.array_dimension import broadcast_arrays, broadcast_to
 from .._utils.array import calculate_volume
-from .._utils.coverage import is_implemented
 from ..lib.array_utils import normalize_axis_index
-from ..runtime import runtime
 from ..types import NdShape
 from .array_joining import hstack
 from .array_shape import reshape
@@ -232,12 +230,6 @@ def mask_indices(
     """
     # this implementation is based on the Cupy
     a = ones((n, n), dtype=bool)
-    if not is_implemented(mask_func):
-        runtime.warn(
-            "Calling non-cuPyNumeric functions in mask_func can result in bad "
-            "performance",
-            category=UserWarning,
-        )
     return mask_func(a, k).nonzero()
 
 

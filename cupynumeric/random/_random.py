@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from .._array.array import ndarray
-from .._utils.coverage import clone_class
 from ..runtime import runtime
 from ._generator import default_rng, get_static_generator  # NOQA
 
@@ -1705,18 +1704,6 @@ def zipf(
     return get_static_generator().zipf(a, size, dtype)
 
 
-def _random_state_fallback(obj: Any) -> Any:
-    # meant for the `self` argument; forward any unimplemented methods to the
-    # wrapped vanilla NumPy RandomState
-    if isinstance(obj, RandomState):
-        return obj._np_random_state
-    # eagerly convert any cuPyNumeric ndarrays to NumPy
-    if isinstance(obj, ndarray):
-        return obj.__array__()
-    return obj
-
-
-@clone_class(np.random.RandomState, fallback=_random_state_fallback)
 class RandomState:
     """
     Container for a pseudo-random number generator.

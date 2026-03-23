@@ -95,7 +95,7 @@ def test_multi_axes(str_method, axes, qin_arr, keepdims, overwrite_input):
 
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to isclose",
+        match="cuPyNumeric does not support `equal_nan` yet for isclose",
     ):
         assert allclose(np_q_out, q_out, atol=eps, equal_nan=True)
 

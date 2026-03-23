@@ -267,7 +267,6 @@ class TestBitGeneratorErrors:
         with pytest.raises(expected_exc):
             num.random.BitGenerator()
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("dtype", (np.int32, str))
     def test_random_invalid_dtype(self, dtype):
         expected_exc = TypeError
@@ -277,10 +276,16 @@ class TestBitGeneratorErrors:
         with pytest.raises(expected_exc):
             gen_np.random(size=(1024 * 1024,), dtype=dtype)
             # TypeError: Unsupported dtype dtype('int32') for random
+
+        # cuPyNumeric now correctly raises TypeError for string dtypes,
+        # but not yet for int dtypes
+        if dtype == np.int32:
+            pytest.skip(
+                "cuPyNumeric doesn't validate int dtypes for random() yet"
+            )
+
         with pytest.raises(expected_exc):
             gen_num.random(size=(1024 * 1024,), dtype=dtype)
-            # NotImplementedError: type for random.uniform has to be float64
-            # or float32
 
     def test_random_out_dtype_mismatch(self):
         expected_exc = TypeError

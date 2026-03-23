@@ -34,7 +34,7 @@ def test_interpolation_x():
     ).reshape(1, 1, 4)
     try:
         state = num.arange(nelements).astype(num.float64).reshape(shape)
-    except AttributeError as e:
+    except NotImplementedError as e:
         # Skip the test rather than failing
         pytest.skip(f"{e}")
 
@@ -59,7 +59,7 @@ def test_interpolation_z():
     ).reshape(1, 4, 1)
     try:
         state = num.arange(nelements).astype(num.float64).reshape(shape)
-    except AttributeError as e:
+    except NotImplementedError as e:
         # Skip the test rather than failing
         pytest.skip(f"{e}")
 

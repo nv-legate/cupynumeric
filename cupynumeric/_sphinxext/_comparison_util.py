@@ -18,13 +18,8 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
-from .._utils.coverage import (
-    GPUSupport,
-    is_implemented,
-    is_multi,
-    is_single,
-    is_wrapped,
-)
+from ._gpu_support import parse_gpu_support_from_docstring, GPUSupport
+
 from ._comparison_config import MISSING_NP_REFS, SKIP
 
 if TYPE_CHECKING:
@@ -95,8 +90,8 @@ def filter_wrapped_names(
 ) -> Iterator[str]:
     names = (n for n in dir(obj))  # every name in the module or class
     names = (
-        n for n in names if is_wrapped(getattr(obj, n))
-    )  # that is wrapped
+        n for n in names if callable(getattr(obj, n, None))
+    )  # Exists and is callable
     names = (n for n in names if n not in skip)  # except the ones we skip
     names = (n for n in names if not n.startswith("_"))  # or any private names
     return names
@@ -113,17 +108,17 @@ def filter_type_names(obj: Any, *, skip: Iterable[str] = ()) -> Iterator[str]:
 
 
 def get_item(name: str, np_obj: Any, lg_obj: Any) -> ItemDetail:
-    lg_attr = getattr(lg_obj, name, None)
-
-    # If attribute doesn't exist in cuPyNumeric, mark as not implemented
-    if lg_attr is None:
-        implemented = False
-        single = multi = ""
-    elif implemented := is_implemented(lg_attr):
-        single = _support_symbol(is_single(lg_attr))
-        multi = _support_symbol(is_multi(lg_attr))
+    if (lg_attr := getattr(lg_obj, name, None)) is not None:
+        # Parse docstring at build time
+        single_support, multi_support = parse_gpu_support_from_docstring(
+            lg_attr
+        )
+        single = single_support.value
+        multi = multi_support.value
+        implemented = True
     else:
         single = multi = ""
+        implemented = False
 
     return ItemDetail(
         name=name,

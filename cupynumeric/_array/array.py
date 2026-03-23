@@ -27,7 +27,6 @@ from numpy.exceptions import AxisError
 
 from .. import _ufunc
 from .._utils.array import max_identity, min_identity, to_core_type
-from .._utils.coverage import clone_class, is_implemented
 from .._utils.linalg import dot_modes
 from ..config import (
     FFTDirection,
@@ -49,7 +48,6 @@ from .util import (
     broadcast_where,
     check_writeable,
     convert_to_cupynumeric_ndarray,
-    maybe_convert_to_np_ndarray,
     sanitize_shape,
 )
 
@@ -89,21 +87,6 @@ if TYPE_CHECKING:
 
 from math import prod
 
-NDARRAY_INTERNAL = {
-    "__array_finalize__",
-    "__array_function__",
-    "__array_interface__",
-    "__array_prepare__",
-    "__array_priority__",
-    "__array_struct__",
-    "__array_ufunc__",
-    "__array_wrap__",
-    # Avoid auto-wrapping Array API specifics:
-    "__array_namespace__",
-    "device",
-    "to_device",
-}
-
 
 def _warn_and_convert(array: ndarray, dtype: np.dtype[Any]) -> ndarray:
     if array.dtype != dtype:
@@ -115,7 +98,6 @@ def _warn_and_convert(array: ndarray, dtype: np.dtype[Any]) -> ndarray:
         return array
 
 
-@clone_class(np.ndarray, NDARRAY_INTERNAL, maybe_convert_to_np_ndarray)
 class ndarray:
     _thunk: NumPyThunk
     _legate_data: dict[str, Any] | None
@@ -312,8 +294,6 @@ class ndarray:
     ) -> Any:
         import cupynumeric as cn
 
-        what = func.__name__
-
         for t in types:
             # Be strict about which types we support.  Accept superclasses
             # (for basic subclassing support) and NumPy.
@@ -323,29 +303,13 @@ class ndarray:
         # We are wrapping all NumPy modules, so we can expect to find the implemented
         # NumPy API call in cuPyNumeric.
         module = reduce(getattr, func.__module__.split(".")[1:], cn)
-        cn_func = getattr(module, func.__name__)
+        cn_func = getattr(module, func.__name__, None)
 
-        # We can't immediately forward to the corresponding cuPyNumeric
-        # entrypoint. Say that we reached this point because the user code
-        # invoked `np.foo(x, bar=True)` where `x` is a `cupynumeric.ndarray`.
-        # If our implementation of `foo` is not complete, and cannot handle
-        # `bar=True`, then forwarding this call to `cn.foo` would fail. This
-        # goes against the semantics of `__array_function__`, which shouldn't
-        # fail if the custom implementation cannot handle the provided
-        # arguments. Conversely, if the user calls `cn.foo(x, bar=True)`
-        # directly, that means they requested the cuPyNumeric implementation
-        # specifically, and the `NotImplementedError` should not be hidden.
-        if is_implemented(cn_func):
-            try:
-                return cn_func(*args, **kwargs)
-            except NotImplementedError:
-                # Inform the user that we support the requested API in general,
-                # but not this specific combination of arguments.
-                what = f"the requested combination of arguments to {what}"
+        if cn_func is not None:
+            return cn_func(*args, **kwargs)
 
-        # We cannot handle this call - raise an error instead of falling back
         raise NotImplementedError(
-            f"cuPyNumeric has not implemented {what}. "
+            f"cuPyNumeric has not implemented {func.__name__}. "
             f"This function is not available."
         )
 

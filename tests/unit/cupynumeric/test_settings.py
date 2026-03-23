@@ -37,9 +37,6 @@ _expected_settings = (
     "min_omp_chunk",
     "numpy_compat",
     "preload_cudalibs",
-    "report_coverage",
-    "report_dump_callstack",
-    "report_dump_csv",
     "take_default",
     "test",
     "warn",
@@ -110,12 +107,6 @@ class TestSettings:
         assert m.settings.doctor_traceback.convert_type == 'bool ("0" or "1")'
         assert m.settings.preload_cudalibs.convert_type == 'bool ("0" or "1")'
         assert m.settings.warn.convert_type == 'bool ("0" or "1")'
-        assert m.settings.report_coverage.convert_type == 'bool ("0" or "1")'
-        assert (
-            m.settings.report_dump_callstack.convert_type
-            == 'bool ("0" or "1")'
-        )
-        assert m.settings.report_dump_csv.convert_type == "str"
         assert (
             m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
         )
@@ -140,15 +131,6 @@ class TestDefaults:
 
     def test_warn(self) -> None:
         assert m.settings.warn.default is False
-
-    def test_report_coverage(self) -> None:
-        assert m.settings.report_coverage.default is False
-
-    def test_report_dump_callstack(self) -> None:
-        assert m.settings.report_dump_callstack.default is False
-
-    def test_report_dump_csv(self) -> None:
-        assert m.settings.report_dump_csv.default is None
 
     def test_fallback_stacktrace(self) -> None:
         assert m.settings.fallback_stacktrace.default is False

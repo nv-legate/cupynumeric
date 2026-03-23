@@ -108,35 +108,6 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
-    report_coverage: PrioritizedSetting[bool] = PrioritizedSetting(
-        "report_coverage",
-        "CUPYNUMERIC_REPORT_COVERAGE",
-        default=False,
-        convert=convert_bool,
-        help="""
-        Print an overall percentage of cupynumeric coverage.
-        """,
-    )
-
-    report_dump_callstack: PrioritizedSetting[bool] = PrioritizedSetting(
-        "report_dump_callstack",
-        "CUPYNUMERIC_REPORT_DUMP_CALLSTACK",
-        default=False,
-        convert=convert_bool,
-        help="""
-        Print an overall percentage of cupynumeric coverage with a call stack.
-        """,
-    )
-
-    report_dump_csv: PrioritizedSetting[str | None] = PrioritizedSetting(
-        "report_dump_csv",
-        "CUPYNUMERIC_REPORT_DUMP_CSV",
-        default=None,
-        help="""
-        Save a coverage report to a specified CSV file.
-        """,
-    )
-
     numpy_compat: PrioritizedSetting[bool] = PrioritizedSetting(
         "numpy_compat",
         "CUPYNUMERIC_NUMPY_COMPATIBILITY",

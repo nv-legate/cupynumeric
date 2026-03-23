@@ -40,7 +40,7 @@ def test_fill_float_with_none():
     a_num.fill(None)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(a_np, a_num, equal_nan=True)
 
@@ -52,7 +52,7 @@ def test_fill_float_with_nan():
     a_num.fill(np.nan)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(a_np, a_num, equal_nan=True)
 

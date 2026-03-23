@@ -298,7 +298,7 @@ def test_select(size):
         res_num = num.select(
             (cond_num1, cond_num2), (choice_num1, choice_num2)
         )
-    except AttributeError as e:
+    except NotImplementedError as e:
         # cuPyNumeric does not implement this combination of arguments
         # Skip the test rather than failing
         pytest.skip(f"{e}")
@@ -312,7 +312,7 @@ def test_select(size):
     res_np = np.select(cond_np, choice_np)
     try:
         res_num = num.select(cond_num, choice_num)
-    except AttributeError as e:
+    except NotImplementedError as e:
         # cuPyNumeric does not implement this combination of arguments
         # Skip the test rather than failing
         pytest.skip(f"{e}")
@@ -326,7 +326,7 @@ def test_select(size):
     res_np = np.select(cond_np, choice_np)
     try:
         res_num = num.select(cond_num, choice_num)
-    except AttributeError as e:
+    except NotImplementedError as e:
         # cuPyNumeric does not implement this combination of arguments
         # Skip the test rather than failing
         pytest.skip(f"{e}")
@@ -352,7 +352,7 @@ def test_select_maxdim():
         res_np = np.select(condlist_np, choicelist_np)
         try:
             res_num = num.select(condlist_num, choicelist_num)
-        except AttributeError as e:
+        except NotImplementedError as e:
             # cuPyNumeric does not implement this combination of arguments
             # Skip the test rather than failing
             pytest.skip(f"{e}")
@@ -370,7 +370,7 @@ def test_select_default(size, default):
     res_np = np.select(cond_np, choice_np, default)
     try:
         res_num = num.select(cond_num, choice_num, default)
-    except AttributeError as e:
+    except NotImplementedError as e:
         # cuPyNumeric does not implement this combination of arguments
         # Skip the test rather than failing
         pytest.skip(f"{e}")
@@ -420,7 +420,7 @@ def test_select_different_shape(
     res_np = np.select((cond_np,), (choice_np,))
     try:
         res_num = num.select((cond_num,), (choice_num,))
-    except AttributeError as e:
+    except NotImplementedError as e:
         # cuPyNumeric does not implement this combination of arguments
         # Skip the test rather than failing
         pytest.skip(f"{e}")

@@ -14,24 +14,6 @@
 #
 from __future__ import annotations
 
-import numpy.random as _nprandom
-
-from .._array.util import maybe_convert_to_np_ndarray
-from .._utils.coverage import clone_module
-from ..runtime import runtime
-
 from ._random import *  # noqa: F403
 from ._bitgenerator import *  # noqa: F403
 from ._generator import *  # noqa: F403
-
-clone_module(
-    _nprandom,
-    globals(),
-    maybe_convert_to_np_ndarray,
-    include_builtin_function_type=True,
-)
-
-del maybe_convert_to_np_ndarray
-del clone_module
-del runtime
-del _nprandom

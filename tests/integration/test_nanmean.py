@@ -60,7 +60,7 @@ def test_scalar(val):
     res_num = num.nanmean(val)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
@@ -71,7 +71,7 @@ def test_scalar_where(val):
     res_num = num.nanmean(val, where=True)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
@@ -85,7 +85,7 @@ def test_basic(size):
     res_num = num.nanmean(arr_num)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
@@ -102,7 +102,7 @@ def test_basic_where(size):
     res_num = num.nanmean(arr_num, where=where_num)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
@@ -120,7 +120,7 @@ def test_axis_tuple(axis):
     out_num = num.nanmean(arr_num, axis=axis)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(out_np, out_num, equal_nan=True)
 
@@ -137,7 +137,7 @@ def test_axis_keepdims(size, keepdims):
         out_num = num.nanmean(arr_num, axis=axis, keepdims=keepdims)
         with pytest.raises(
             NotImplementedError,
-            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+            match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
         ):
             assert np.array_equal(out_np, out_num, equal_nan=True)
 
@@ -156,7 +156,7 @@ def test_axis_where(size):
         out_num = num.nanmean(arr_num, axis=axis, where=where_num)
         with pytest.raises(
             NotImplementedError,
-            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+            match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
         ):
             assert np.array_equal(out_np, out_num, equal_nan=True)
 
@@ -176,7 +176,7 @@ def test_out(size, out_dt):
         num.nanmean(arr_num, axis=axis, out=out_num)
         with pytest.raises(
             NotImplementedError,
-            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+            match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
         ):
             np.array_equal(out_np, out_num, equal_nan=True)
 

@@ -216,7 +216,7 @@ def test_nan_scalar_convert(op: str) -> None:
     out_num = getattr(num, op)(arr_num, dtype=np.float64)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(out_np, out_num, equal_nan=True)
 

@@ -83,7 +83,6 @@ class Runtime(object):
         self.current_random_bitgenid = 0
         self.current_random_bitgen_zombies: tuple[Any, ...] = ()
         self.destroyed = False
-        self.api_calls: list[tuple[str, str, bool]] = []
 
         max_eager_volume = (
             cupynumeric_lib.shared_object.cupynumeric_max_eager_volume()
@@ -121,14 +120,6 @@ class Runtime(object):
     def num_gpus(self) -> int:
         return legate_runtime.machine.count(TaskTarget.GPU)
 
-    def record_api_call(
-        self, name: str, location: str, implemented: bool
-    ) -> None:
-        from .settings import settings
-
-        assert settings.report_coverage()
-        self.api_calls.append((name, location, implemented))
-
     def _load_cudalibs(self) -> None:
         task = legate_runtime.create_manual_task(
             self.library, CuPyNumericOpCode.LOAD_CUDALIBS, [self.num_gpus]
@@ -153,32 +144,8 @@ class Runtime(object):
         )
         return argred_dtype
 
-    def _report_coverage(self) -> None:
-        total = len(self.api_calls)
-        implemented = sum(int(impl) for (_, _, impl) in self.api_calls)
-
-        if total == 0:
-            print("cuPyNumeric API coverage: 0/0")
-        else:
-            print(
-                f"cuPyNumeric API coverage: {implemented}/{total} "
-                f"({implemented / total * 100}%)"
-            )
-
-        from .settings import settings
-
-        if (dump_csv := settings.report_dump_csv()) is not None:
-            with open(dump_csv, "w") as f:
-                print("function_name,location,implemented", file=f)
-                for func_name, loc, impl in self.api_calls:
-                    print(f"{func_name},{loc},{impl}", file=f)
-
     def destroy(self) -> None:
-        from .settings import settings
-
         assert not self.destroyed
-        if settings.report_coverage():
-            self._report_coverage()
         self.destroyed = True
 
     def bitgenerator_populate_task(

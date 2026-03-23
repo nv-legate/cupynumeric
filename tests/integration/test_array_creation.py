@@ -341,7 +341,7 @@ def test_array_astype_str_promote_raises() -> None:
         arr.astype("str")
 
 
-class TestRuntimeInitAndCoverageReporting:
+class TestRuntimeInit:
     def test_init_preload_cudalibs(self) -> None:
         saved_preload = settings.preload_cudalibs()
         settings.preload_cudalibs = True  # type: ignore[assignment]
@@ -351,40 +351,6 @@ class TestRuntimeInitAndCoverageReporting:
             _ = Runtime()
         finally:
             settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
-
-    def test_report_coverage_total_zero(self) -> None:
-        saved_report = settings.report_coverage()
-        saved_preload = settings.preload_cudalibs()
-        settings.preload_cudalibs = False  # type: ignore[assignment]
-        settings.report_coverage = True  # type: ignore[assignment]
-        try:
-            r = Runtime()
-            r.api_calls = []
-            r.destroy()
-        finally:
-            settings.report_coverage = saved_report  # type: ignore[assignment]
-            settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
-
-    def test_report_coverage_dump_csv(self, tmp_path) -> None:
-        path = tmp_path / "coverage.csv"
-        saved_report = settings.report_coverage()
-        saved_dump = settings.report_dump_csv()
-        saved_preload = settings.preload_cudalibs()
-        settings.preload_cudalibs = False  # type: ignore[assignment]
-        settings.report_coverage = True  # type: ignore[assignment]
-        settings.report_dump_csv = str(path)  # type: ignore[assignment]
-
-        try:
-            r = Runtime()
-            r.api_calls = [("f", "loc", True)]
-            r.destroy()
-        finally:
-            settings.report_coverage = saved_report  # type: ignore[assignment]
-            settings.report_dump_csv = saved_dump  # type: ignore[assignment]
-            settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
-
-        text = path.read_text()
-        assert "function_name,location,implemented" in text
 
 
 def test_repeat_warn_not_warn() -> None:

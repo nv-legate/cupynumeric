@@ -148,7 +148,7 @@ def test_special_values():
     result = num.diagflat(x_num)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to isclose",
+        match="cuPyNumeric does not support `equal_nan` yet for isclose",
     ):
         assert allclose(result, expected, equal_nan=True)
 

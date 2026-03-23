@@ -47,8 +47,8 @@ def test_array_function_implemented():
 
 def test_array_function_unimplemented():
     with pytest.raises(
-        AttributeError,
-        match="module 'cupynumeric.linalg' has no attribute 'tensorsolve'",
+        NotImplementedError,
+        match="has not implemented tensorsolve. This function is not available.",
     ):
         np.linalg.tensorsolve(arr_num, vec_num)
 

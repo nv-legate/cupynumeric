@@ -152,7 +152,7 @@ class TestNanmedian:
             num_res = num.nanmedian(num_arr, axis=axis)
             with pytest.raises(
                 NotImplementedError,
-                match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+                match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
             ):
                 assert np.array_equal(np_res, num_res, equal_nan=True)
 
@@ -179,7 +179,7 @@ class TestNanmedian:
         assert np.array_equal(median_axis0, [3, 7])
         with pytest.raises(
             NotImplementedError,
-            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+            match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
         ):
             assert np.array_equal(
                 arr_2d, [[1, np.nan], [5, 7]], equal_nan=True

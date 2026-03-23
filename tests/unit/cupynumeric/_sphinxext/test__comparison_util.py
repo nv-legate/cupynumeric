@@ -36,8 +36,8 @@ def test_get_namespaces_attr(attr):
 
 
 class _wrapped:
-    class _cupynumeric_metadata:
-        implemeneted = True
+    def __call__(self):
+        pass
 
 
 class _TestObj:

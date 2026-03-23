@@ -25,22 +25,54 @@ with GPU acceleration.
 
 from __future__ import annotations
 
-import numpy as _np
 
-from . import linalg, random, fft, ma  # noqa: F401
+from . import linalg, random, fft  # noqa: F401
 from ._array.array import ndarray  # noqa: F401
-from ._array.util import maybe_convert_to_np_ndarray
 from ._dlpack import from_dlpack  # noqa: F401
 from ._module import *  # noqa: F403
 from ._ufunc import *  # noqa: F403
 from ._utils.array import is_supported_dtype, local_task_array  # noqa: F401
-from ._utils.coverage import clone_module
 
-clone_module(_np, globals(), maybe_convert_to_np_ndarray)
+# ============================================================
+# NumPy dtypes and constants
+# These were previously copied by clone_module(), now explicit
+# ============================================================
 
-del maybe_convert_to_np_ndarray
-del clone_module
-del _np
+from numpy import (
+    # Commonly used dtypes
+    bool_,  # noqa: F401
+    int8,  # noqa: F401
+    int16,  # noqa: F401
+    int32,  # noqa: F401
+    int64,  # noqa: F401
+    uint8,  # noqa: F401
+    uint16,  # noqa: F401
+    uint32,  # noqa: F401
+    uint64,  # noqa: F401
+    float16,  # noqa: F401
+    float32,  # noqa: F401
+    float64,  # noqa: F401
+    complex64,  # noqa: F401
+    complex128,  # noqa: F401
+    # Type hierarchy (abstract base classes)
+    integer,  # noqa: F401
+    signedinteger,  # noqa: F401
+    unsignedinteger,  # noqa: F401
+    inexact,  # noqa: F401
+    floating,  # noqa: F401
+    complexfloating,  # noqa: F401
+    # Commonly used constants
+    pi,  # noqa: F401
+    e,  # noqa: F401
+    inf,  # noqa: F401
+    nan,  # noqa: F401
+    newaxis,  # noqa: F401
+    # Dtype class
+    dtype,  # noqa: F401
+    # Info functions
+    iinfo,  # noqa: F401
+    finfo,  # noqa: F401
+)
 
 
 def _fixup_version() -> str:

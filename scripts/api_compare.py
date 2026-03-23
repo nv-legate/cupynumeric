@@ -20,7 +20,6 @@ from dataclasses import astuple, dataclass
 
 from cupynumeric._sphinxext._comparison_config import GROUPED_CONFIGS
 from cupynumeric._sphinxext._comparison_util import filter_names
-from cupynumeric.coverage import is_implemented
 
 
 @dataclass
@@ -78,7 +77,7 @@ def generate_row(config):
 
 
 def is_lg(name, obj):
-    return is_implemented(getattr(obj, name))
+    return getattr(obj, name, None) is not None
 
 
 def is_cp(name, obj):

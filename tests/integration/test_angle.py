@@ -91,7 +91,7 @@ class TestAngle:
         # Testing behavior with NaN and Inf values
         with pytest.raises(
             NotImplementedError,
-            match="has not implemented the requested combination of arguments to array_equal",
+            match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
         ):
             assert np.array_equal(
                 np.angle(np.nan + 1j), num.angle(np.nan + 1j), equal_nan=True

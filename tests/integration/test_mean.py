@@ -88,7 +88,7 @@ def test_basic_where(size):
     res_num = num.mean(arr_num, where=where_num)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
@@ -103,7 +103,7 @@ def test_where_broadcast(size):
     res_num = num.mean(arr_num, where=where_num)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
     ):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
@@ -146,7 +146,7 @@ def test_axis_where(size):
         out_num = num.mean(arr_num, axis=axis, where=where_num)
         with pytest.raises(
             NotImplementedError,
-            match="cuPyNumeric has not implemented the requested combination of arguments to array_equal",
+            match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
         ):
             assert np.array_equal(out_np, out_num, equal_nan=True)
 

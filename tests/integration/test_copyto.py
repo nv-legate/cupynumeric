@@ -295,7 +295,7 @@ def test_nan_inf_with_where():
     num.copyto(num_dst, num_src, where=num_where)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+        match="cuPyNumeric does not support `equal_nan` yet for allclose",
     ):
         np.allclose(dst, num_dst, equal_nan=True)
 

@@ -187,7 +187,7 @@ def test_nan_inf_values(array_a, array_b):
     expected = np.cross(array_a, array_b)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to isclose",
+        match="cuPyNumeric does not support `equal_nan` yet for isclose",
     ):
         allclose(result, expected, equal_nan=True)
 

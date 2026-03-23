@@ -163,7 +163,7 @@ def test_scalar_varargs(ndim, varargs):
     res_cn = num.nan_to_num(in_cn, varargs)
     with pytest.raises(
         NotImplementedError,
-        match="cuPyNumeric has not implemented the requested combination of arguments to allclose",
+        match="cuPyNumeric does not support `equal_nan` yet for allclose",
     ):
         assert np.allclose(res_np, res_cn, equal_nan=True)
 

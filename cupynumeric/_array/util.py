@@ -230,10 +230,9 @@ def maybe_convert_to_np_ndarray(obj: Any) -> Any:
     """
     Converts cuPyNumeric arrays into NumPy arrays, otherwise has no effect.
     """
-    from ..ma import MaskedArray
     from .array import ndarray
 
-    if isinstance(obj, (ndarray, MaskedArray)):
+    if isinstance(obj, ndarray):
         return obj.__array__()
     return obj
 
