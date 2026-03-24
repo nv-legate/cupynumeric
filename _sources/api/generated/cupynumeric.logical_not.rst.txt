@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autofunction:: logical_not
+.. autodata:: logical_not

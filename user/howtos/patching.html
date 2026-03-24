@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Trying Numpy code without changes &#8212; NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517)</title>
+    <title>Trying Numpy code without changes &#8212; NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../../_static/documentation_options.js?v=c4dd62c6"></script>
+    <script src="../../_static/documentation_options.js?v=ca412060"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -138,11 +138,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d)</p>
   
 </a></div>
     
@@ -245,11 +245,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+40.g9939b517)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+42.gcdc8739d)</p>
   
 </a>
 
@@ -318,7 +318,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../usage.html">Usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../practices.html">Best practices</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="index.html">Howtos</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="measuring.html">Measure API coverage</a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarking.html">Performance Benchmarking</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">Trying Numpy code without changes</a></li>
 </ul>
@@ -951,10 +950,8 @@ patch:</p>
 </div>
 <p>You can invoke <code class="docutils literal notranslate"><span class="pre">lgpatch</span></code> to run <code class="docutils literal notranslate"><span class="pre">test.py</span></code> using <code class="docutils literal notranslate"><span class="pre">cupynumeric</span></code> functions
 instead, without any changes to the original source code. Any standard
-<code class="docutils literal notranslate"><span class="pre">cupynumeric</span></code> runtime options (e.g. for <a class="reference internal" href="measuring.html#measuring-api-coverage"><span class="std std-ref">Measure API coverage</span></a>) may
-also be used:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CUPYNUMERIC_REPORT_COVERAGE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">LEGATE_CONFIG</span><span class="o">=</span><span class="s2">&quot;--cpus 4&quot;</span><span class="w">  </span>lgpatch<span class="w"> </span>test.py<span class="w"> </span>-patch<span class="w"> </span>numpy
-cuPyNumeric<span class="w"> </span>API<span class="w"> </span>coverage:<span class="w"> </span><span class="m">4</span>/4<span class="w"> </span><span class="o">(</span><span class="m">100</span>.0%<span class="o">)</span>
+<code class="docutils literal notranslate"><span class="pre">cupynumeric</span></code> runtime options may also be used:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">LEGATE_CONFIG</span><span class="o">=</span><span class="s2">&quot;--cpus 4&quot;</span><span class="w">  </span>lgpatch<span class="w"> </span>test.py<span class="w"> </span>-patch<span class="w"> </span>numpy
 </pre></div>
 </div>
 </section>

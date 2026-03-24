@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autofunction:: log2
+.. autodata:: log2

@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autofunction:: bitwise_and
+.. autodata:: bitwise_and

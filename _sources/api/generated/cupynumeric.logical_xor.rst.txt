@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autofunction:: logical_xor
+.. autodata:: logical_xor

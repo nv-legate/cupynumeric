@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autofunction:: bitwise_xor
+.. autodata:: bitwise_xor

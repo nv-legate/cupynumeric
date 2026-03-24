@@ -25,10 +25,8 @@ For example, here is a small ``test.py`` program that imports and uses various
 
 You can invoke ``lgpatch`` to run ``test.py`` using ``cupynumeric`` functions
 instead, without any changes to the original source code. Any standard
-``cupynumeric`` runtime options (e.g. for :ref:`measuring api coverage`) may
-also be used:
+``cupynumeric`` runtime options may also be used:
 
 .. code-block:: sh
 
-    $ CUPYNUMERIC_REPORT_COVERAGE=1 LEGATE_CONFIG="--cpus 4"  lgpatch test.py -patch numpy
-    cuPyNumeric API coverage: 4/4 (100.0%)
+    $ LEGATE_CONFIG="--cpus 4"  lgpatch test.py -patch numpy

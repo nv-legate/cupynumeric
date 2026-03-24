@@ -3,4 +3,4 @@
 
 .. currentmodule:: cupynumeric
 
-.. autofunction:: bitwise_or
+.. autodata:: bitwise_or
