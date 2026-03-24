@@ -1710,6 +1710,13 @@ class EagerArray(NumPyThunk):
         """
         Helper method to apply binary ufunc operations.
         """
+        from .._array.array import ndarray
+
+        self.check_eager_args(
+            rhs._thunk if isinstance(rhs, ndarray) else rhs,
+            out._thunk if isinstance(out, ndarray) else out,
+        )
+
         if self.deferred is not None:
             from .._array.array import ndarray
             from .._module.linalg_mvp import matmul
