@@ -10,9 +10,25 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
+    reviewers:
+      - "nv-legate/devops-reviewers"
     labels:
       - CI
     groups:
       gha-all:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      # Check for updates to pre-commit hooks every month
+      interval: "monthly"
+    reviewers:
+      - "nv-legate/devops-reviewers"
+    labels:
+      - CI
+    groups:
+      pre-commit-all:
         patterns:
           - "*"

@@ -56,8 +56,5 @@ repos:
         stages: [pre-commit]
         exclude: '^src/cupynumeric/cupynumeric_c\.h$'
 
-ci:
-  autoupdate_schedule: quarterly
-
 default_language_version:
   python: python3
