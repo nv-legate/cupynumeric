@@ -27,6 +27,7 @@ from legate.core import get_machine
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from .._module import dot, empty_like, eye, matmul, ndarray
 from .._module.array_rearrange import flip
+from .._module.array_dimension import broadcast_to
 from .._module.creation_matrices import diag
 from .._module.creation_shape import zeros, zeros_like
 from .._module.ssc_searching import where
@@ -1629,6 +1630,61 @@ def make_uv(A: ndarray, b: Any, m: int) -> tuple[ndarray, ndarray]:
     U = matmul(A, U)
 
     return (U, V)
+
+
+@add_boilerplate("a")
+def inv(a: ndarray) -> ndarray:
+    """
+    Compute theinverse of a matrix.
+
+    Parameters
+    ----------
+    a : (..., M, M) array_like
+        Square matrix or batch of square matrices to be inverted.
+
+    Returns
+    -------
+    inv_a : ndarray
+        Inverse of the input matrix `a`.
+
+    Raises
+    ------
+    LinAlgError
+        If `a` is non-invertible or not square.
+
+    Notes
+    -----
+    Only supports inputs of at least two dimensions.
+    Batched inversion supported if input has >2 dimensions.
+
+    See Also
+    --------
+    numpy.linalg.inv
+
+    Availability
+    -----------
+    Single GPU, Single CPU
+    """
+    if len(a.shape) < 2:
+        raise LinAlgError(
+            f"{len(a.shape)}-dimensional array given. "
+            "Array must be at least two-dimensional."
+        )
+    if a.shape[-2] != a.shape[-1]:
+        raise LinAlgError(
+            f"Array of shape {a.shape} given. "
+            "Last 2 dimensions of the array must be square."
+        )
+
+    n = a.shape[-1]
+    eye_shape = a.shape[:-2] + (n, n)
+    eye_arr = eye(n, dtype=a.dtype)
+
+    # If batched, we need to broadcast I to batch it as well
+    if a.ndim > 2:
+        eye_arr = broadcast_to(eye_arr, eye_shape)
+
+    return _thunk_solve(a, eye_arr)
 
 
 @add_boilerplate("a")
