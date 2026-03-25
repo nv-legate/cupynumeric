@@ -54,17 +54,17 @@ jobs:
 
           # please keep the matrices sorted in ascending order by the following:
           #
-          #     [ARCH, PY_VER, CUDA_VER, LINUX_VER]
+          #     [ARCH, CUDA_VER, PY_VER, LINUX_VER]
           #
           export MATRIX="
           # amd64
-          - { ARCH: 'amd64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
-          - { ARCH: 'amd64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          - { ARCH: 'amd64', PY_VER: '3.13', CUDA_VER: '12.9.1', TARGET_DEV: 'gpu', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
-          # arm64 - disabled due to ARM GPU runner availability
-          # - { ARCH: 'arm64', PY_VER: '3.11', CUDA_VER: '12.2.2', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
-          # - { ARCH: 'arm64', PY_VER: '3.12', CUDA_VER: '12.8.0', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu24.04' }
-          # - { ARCH: 'arm64', PY_VER: '3.13', CUDA_VER: '12.9.1', TARGET_DEV: 'gpu', GPU: 'a100', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', CUDA_VER: '12.2.2', PY_VER: '3.11', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', CUDA_VER: '12.8.0', PY_VER: '3.12', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
+          - { ARCH: 'amd64', CUDA_VER: '12.9.1', PY_VER: '3.13', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          # Disable runtime tests for CUDA 13, this is pending fixes see #1679.
+          #- { ARCH: 'amd64', CUDA_VER: '13.0.0', PY_VER: '3.11', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          #- { ARCH: 'amd64', CUDA_VER: '13.1.0', PY_VER: '3.12', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          #- { ARCH: 'amd64', CUDA_VER: '13.2.0', PY_VER: '3.13', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
           "
 
           MATRIX="$(
@@ -75,7 +75,7 @@ jobs:
           echo "MATRIX=${MATRIX}" | tee --append "${GITHUB_OUTPUT}"
 
   build:
-    name: ${{ matrix.ARCH }}, py${{ matrix.PY_VER }}, ${{ matrix.CUDA_VER }}, ${{ matrix.LINUX_VER }}, ${{ matrix.GPU }}
+    name: ${{ matrix.ARCH }}, ${{ matrix.CUDA_VER }}, py${{ matrix.PY_VER }}, ${{ matrix.LINUX_VER }}, ${{ matrix.GPU }}
     needs: compute-matrix
     timeout-minutes: 90
     strategy:
@@ -95,12 +95,7 @@ jobs:
           extra_attributes: "legate.PACKAGER=conda,legate.CUDA_VER=${{ matrix.CUDA_VER }},legate.PY_VER=${{ matrix.PY_VER }},legate.ARCH=${{ matrix.ARCH }}"
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Get the SHA
-        id: get-sha
-        run: |
-          sha=$(echo ${{github.sha}} | head -c 10)
-          echo "sha=$sha" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -113,22 +108,32 @@ jobs:
       - name: Setup proxy cache
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
-        # Skip the cache on RDS Lab nodes
-        if: ${{ matrix.GPU != 'v100' && matrix.GPU != 'a100' }}
+      - name: Extract CUDA major version
+        env:
+          CUDA_VER: ${{ matrix.CUDA_VER }}
+        run: |
+          cuda_major_ver="${CUDA_VER%%.*}"
+          case "${cuda_major_ver}" in
+            12|13) ;;
+            *)
+              echo "Unsupported CUDA major version: ${cuda_major_ver}" >&2
+              exit 1
+              ;;
+          esac
+          echo "CUDA_MAJOR_VER=${cuda_major_ver}" >> "${GITHUB_ENV}"
       - name: Download the legate wheel
         env:
-          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12-py${{ matrix.PY_VER }}
+          BUILD_NAME: ${{ matrix.ARCH }}-cuda${{ env.CUDA_MAJOR_VER }}-py${{ matrix.PY_VER }}
           GH_TOKEN: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
         run: |
           legate-gh-download-artifact ${{ inputs.legate-sha }} "legate-wheel-${{ env.BUILD_NAME }}" "wheel"
       - name: Download the wheel from the build job
         env:
-          BUILD_SHA: ${{ steps.get-sha.outputs.sha }}
-          BUILD_NAME: ${{ matrix.ARCH }}-${{ matrix.TARGET_DEV }}-cuda12-py${{ matrix.PY_VER }}
+          BUILD_NAME: ${{ matrix.ARCH }}-cuda${{ env.CUDA_MAJOR_VER }}-py${{ matrix.PY_VER }}
         uses: actions/download-artifact@v8
         with:
           path: final-dist
-          name: cupynumeric-wheel-${{ env.BUILD_NAME }}-g${{ env.BUILD_SHA }}
+          name: cupynumeric-wheel-${{ env.BUILD_NAME }}
       - name: Run tests
         run: ${{ inputs.script }}
       - name: Telemetry upload attributes
