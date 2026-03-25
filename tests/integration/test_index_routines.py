@@ -602,7 +602,9 @@ class TestDiagonalErrors:
     @pytest.mark.diff
     def test_extra_axes(self):
         # NumPy does not have axes arg
-        axes = num.arange(self.a.ndim + 1, dtype=int)
+        # Use NumPy vector axes because indexing it returns a hashable scalar
+        # which is necessary for _diag_helper
+        axes = np.arange(self.a.ndim + 1, dtype=int)
         with pytest.raises(ValueError):
             self.a._diag_helper(self.a, axes=axes)
 

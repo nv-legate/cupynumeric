@@ -17,7 +17,7 @@ from __future__ import annotations
 import operator
 from functools import reduce
 from math import prod as builtin_prod
-from typing import TYPE_CHECKING, Any, Sequence, cast
+from typing import TYPE_CHECKING, Any, Iterator, Sequence, cast
 
 import legate.core.types as ty
 import numpy as np
@@ -1124,7 +1124,12 @@ class ndarray:
         """a.__iter__(/)"""
         if settings.doctor():
             doctor.diagnose("__iter__", (self,), {})
-        return self.__array__().__iter__()
+
+        def iter_array(arr: ndarray) -> Iterator[Any]:
+            for i in range(len(arr)):
+                yield arr[i]
+
+        return iter_array(self)
 
     def __isub__(self, rhs: Any) -> ndarray:
         """a.__isub__(/)
