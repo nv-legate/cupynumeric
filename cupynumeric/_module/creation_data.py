@@ -130,7 +130,7 @@ def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
     a : array_like
         Input data, in any form that can be converted to an array.  This
         includes lists, lists of tuples, tuples, tuples of tuples, tuples
-        of lists and ndarrays.
+        of lists, ndarrays, and PhysicalStore.
     dtype : data-type, optional
         By default, the data-type is inferred from the input data.
 
@@ -152,6 +152,16 @@ def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
+    from legate.core import PhysicalStore
+    from .._thunk.deferred import DeferredArray
+
+    if isinstance(a, PhysicalStore):
+        logical_store = a.to_logical_store()
+        arr = ndarray._from_thunk(DeferredArray(logical_store), writeable=True)
+        if dtype is not None and arr.dtype != dtype:
+            arr = arr.astype(dtype)
+        return arr
+
     if isinstance(a, np.ndarray):
         if a.base is None and (dtype is None or a.dtype == dtype):
             # The array is not a view, so we attach to this buffer.
