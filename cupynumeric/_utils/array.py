@@ -81,6 +81,73 @@ def is_advanced_indexing(key: Any) -> bool:
     return True
 
 
+def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
+    """
+    Return True for advanced indexing patterns that use the unoptimized
+    gather/scatter path.
+
+    As gather/scatter paths are optimized, the corresponding checks here
+    should be removed so the function returns False for those cases.
+
+    Returns False for:
+
+    * Basic indexing (scalar, slice, ellipsis, None)
+    * Solo boolean array — uses the ADVANCED_INDEXING task directly,
+      no gather or scatter (optimized path)
+    * Single integer-array, all other dims ``slice(None)``, ndim < 5
+      — routed through einsum (optimized path)
+
+    Returns True for:
+
+    * Boolean array alongside any co-keys (including ``slice(None)``) —
+      ``_prepare_boolean_array_indexing`` falls through to nonzero →
+      ZIP + gather/scatter
+    * Multiple advanced index components — ZIP + gather/scatter
+    * Advanced index mixed with a non-trivial slice — gather/scatter
+    * Single integer array with ndim >= 5 — einsum not applied, gather used
+
+    Intended for use by the Doctor tool to detect genuinely expensive
+    indexing operations.
+
+    Args:
+        key:  The index key passed to ``__getitem__`` or ``__setitem__``.
+        ndim: Number of dimensions of the array being indexed.
+
+    Returns:
+        True if the key will trigger an unoptimized gather or scatter operation.
+    """
+    if not is_advanced_indexing(key):
+        return False
+
+    key_tuple = key if isinstance(key, tuple) else (key,)
+
+    adv_components = [k for k in key_tuple if is_advanced_indexing(k)]
+    non_trivial_slices = [
+        k for k in key_tuple if isinstance(k, slice) and k != slice(None)
+    ]
+
+    # Multiple advanced components or a non-trivial slice alongside an
+    # advanced component cannot be routed to einsum — always gather/scatter.
+    if len(adv_components) > 1 or non_trivial_slices:
+        return True
+
+    # Exactly one advanced component from here.
+    single = adv_components[0]
+    arr = single if isinstance(single, np.ndarray) else np.asarray(single)
+
+    if arr.dtype.kind == "b":
+        # Solo boolean array (no co-keys) → ADVANCED_INDEXING task only,
+        # no gather or scatter — this is an optimized path.
+        # Boolean array alongside any co-keys (including slice(None)) →
+        # _prepare_boolean_array_indexing falls through to nonzero →
+        # ZIP + gather/scatter.
+        return len(key_tuple) > 1
+
+    # Single integer-array index, all other dims slice(None).
+    # cuPyNumeric uses einsum for ndim < 5: not expensive.
+    return ndim >= 5
+
+
 def calculate_volume(shape: NdShape) -> int:
     if len(shape) == 0:
         return 0
