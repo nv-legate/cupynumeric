@@ -956,7 +956,7 @@ def select(
             )
 
     choicelist_ = tuple(convert_to_cupynumeric_ndarray(c) for c in choicelist)
-    common_type = np.result_type(*choicelist_, default)
+    common_type = np.result_type(*(c.dtype for c in choicelist_), default)
     args = condlist_ + choicelist_
     choicelist_ = tuple(
         c._maybe_convert(common_type, args) for c in choicelist_
