@@ -2929,7 +2929,11 @@ class DeferredArray(NumPyThunk):
             self.library, CuPyNumericOpCode.MGRID
         )
 
-        task.add_output(self.base)
+        p_out = task.add_output(self.base)
+        # Dimension 0 is the grid index dimension (size == len(slices)).
+        # The C++ kernel requires each task to see all grid indices, so
+        # we must prevent the auto-partitioner from splitting this dimension.
+        task.add_constraint(broadcast(p_out, (0,)))
         for s in slices:
             task.add_scalar_arg(s.start, self.base.type)
             task.add_scalar_arg(s.step, self.base.type)
