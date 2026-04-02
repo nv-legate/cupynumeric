@@ -94,11 +94,6 @@ def eig_deferred(
 ) -> None:
     library = a.library
 
-    m = a.shape[-1]
-
-    if m == 0:
-        raise ValueError("Input shape dimension 0 not allowed!")
-
     tilesize, color_shape = prepare_manual_task_for_batched_matrices(a.shape)
 
     # partition defined py local batchsize
@@ -125,11 +120,6 @@ def eigh_deferred(
     ev: Optional[DeferredArray] = None,
 ) -> None:
     library = a.library
-
-    m = a.shape[-1]
-
-    if m == 0:
-        raise ValueError("Input shape dimension 0 not allowed!")
 
     tilesize, color_shape = prepare_manual_task_for_batched_matrices(a.shape)
 
