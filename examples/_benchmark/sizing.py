@@ -48,6 +48,7 @@ def add_size_request_parser_group(parser: ArgumentParser) -> None:
         "--size",
         type=int,
         default=argparse.SUPPRESS,
+        nargs="*",
         help=(
             "Exact benchmark size with suite-specific semantics "
             f"(default: {DEFAULT_PROBLEM_SIZE:,} when neither sizing flag "
@@ -60,6 +61,7 @@ def add_size_request_parser_group(parser: ArgumentParser) -> None:
         metavar="SIZE",
         type=parse_memory_size,
         default=argparse.SUPPRESS,
+        nargs="*",
         help=(
             "Approximate benchmark working-set target using binary units "
             "(B, KiB, MiB, GiB, TiB)"
@@ -93,8 +95,8 @@ class SizeResolution:
 
 @dataclass(frozen=True)
 class SizeRequest:
-    exact_size: int | None = None
-    memory_target_bytes: int | None = None
+    exact_size: list[int] | None = None
+    memory_target_bytes: list[int] | None = None
 
     @classmethod
     def from_namespace(
@@ -106,10 +108,19 @@ class SizeRequest:
         exact_size = getattr(args, "size", None)
         memory_target_bytes = getattr(args, "memory_size", None)
 
+        if isinstance(exact_size, list) and not exact_size:
+            raise RuntimeError(
+                "--size requires at least one value, none given"
+            )
+        if isinstance(memory_target_bytes, list) and not memory_target_bytes:
+            raise RuntimeError(
+                "--size requires at least one value, none given"
+            )
+
         if exact_size is None and memory_target_bytes is None:
             if default_exact_size is None:
                 raise RuntimeError("size request must specify a sizing mode")
-            exact_size = default_exact_size
+            exact_size = [default_exact_size]
 
         if exact_size is not None and memory_target_bytes is not None:
             raise RuntimeError(
@@ -121,18 +132,14 @@ class SizeRequest:
 
     def config_lines(self) -> list[str]:
         if self.exact_size is not None:
-            return [
-                "Sizing: exact (--size)",
-                f"Suite-defined size: {self.exact_size:,}",
-            ]
+            sizes = ", ".join([f"{e:,}" for e in self.exact_size])
+            return ["Sizing: exact (--size)", f"Suite-defined size: {sizes}"]
 
         assert self.memory_target_bytes is not None
+        sizes = ", ".join([f"{e:,}" for e in self.memory_target_bytes])
         return [
             "Sizing: heuristic target (--memory-size)",
-            (
-                "Approximate working-set target: "
-                f"{self.memory_target_bytes:,} bytes"
-            ),
+            (f"Approximate working-set target (bytes): {sizes}"),
         ]
 
 
@@ -142,7 +149,7 @@ def resolve_suite_size(
     resolve_from_target: Callable[[int], int],
     estimate_working_set_bytes: Callable[[int], int],
     describe_size: Callable[[int], Iterable[str]] | None = None,
-) -> tuple[int, SizeResolution | None]:
+) -> tuple[list[int], list[SizeResolution] | None]:
     """
     Resolve an exact suite size from an explicit size or memory target.
 
@@ -160,28 +167,32 @@ def resolve_suite_size(
     if size_request.exact_size is not None:
         return size_request.exact_size, None
 
-    target_bytes = size_request.memory_target_bytes
-    assert target_bytes is not None
-    resolved_size = resolve_from_target(target_bytes)
-    detail_lines: Iterable[str] = ()
-    if describe_size is not None:
-        detail_lines = describe_size(resolved_size)
-    estimated_working_set_bytes = estimate_working_set_bytes(resolved_size)
-    resolution = SizeResolution(
-        resolved_size=resolved_size,
-        requested_memory_target_bytes=target_bytes,
-        estimated_working_set_bytes=estimated_working_set_bytes,
-        detail_lines=tuple(detail_lines),
-    )
-    if estimated_working_set_bytes > target_bytes:
-        warnings.warn(
-            "memory target is smaller than estimated working set: "
-            f"estimated={estimated_working_set_bytes:,} bytes, "
-            f"target={target_bytes:,} bytes",
-            RuntimeWarning,
-            stacklevel=2,
+    resolved_sizes = []
+    resolutions = []
+    assert size_request.memory_target_bytes is not None
+    for target_bytes in size_request.memory_target_bytes:
+        resolved_size = resolve_from_target(target_bytes)
+        detail_lines: Iterable[str] = ()
+        if describe_size is not None:
+            detail_lines = describe_size(resolved_size)
+        estimated_working_set_bytes = estimate_working_set_bytes(resolved_size)
+        resolution = SizeResolution(
+            resolved_size=resolved_size,
+            requested_memory_target_bytes=target_bytes,
+            estimated_working_set_bytes=estimated_working_set_bytes,
+            detail_lines=tuple(detail_lines),
         )
-    return resolved_size, resolution
+        resolved_sizes.append(resolved_size)
+        resolutions.append(resolution)
+        if estimated_working_set_bytes > target_bytes:
+            warnings.warn(
+                "memory target is smaller than estimated working set: "
+                f"estimated={estimated_working_set_bytes:,} bytes, "
+                f"target={target_bytes:,} bytes",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+    return resolved_sizes, resolutions
 
 
 def resolve_size_by_binary_search(
@@ -211,7 +222,7 @@ def resolve_linear_suite_size(
     *,
     bytes_per_element: int,
     describe_size: Callable[[int], Iterable[str]] | None = None,
-) -> tuple[int, SizeResolution | None]:
+) -> tuple[list[int], list[SizeResolution] | None]:
     if bytes_per_element <= 0:
         raise ValueError("bytes_per_element must be positive")
 

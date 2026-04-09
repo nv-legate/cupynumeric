@@ -77,7 +77,7 @@ def boolean_get(np, size, runs, warmup, *, timer):
     def operation():
         return a[mask]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def boolean_set_array(np, size, runs, warmup, *, timer):
@@ -90,7 +90,7 @@ def boolean_set_array(np, size, runs, warmup, *, timer):
     def operation():
         a[mask] = values
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def boolean_2d(np, n, runs, warmup, *, timer):
@@ -101,7 +101,7 @@ def boolean_2d(np, n, runs, warmup, *, timer):
     def operation():
         return a[mask]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
@@ -112,7 +112,7 @@ def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
     def operation():
         return a[indices, :, : n // 2]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def non_contiguous_indexing(np, n, num_indices, runs, warmup, *, timer):
@@ -124,7 +124,7 @@ def non_contiguous_indexing(np, n, num_indices, runs, warmup, *, timer):
     def operation():
         return a[idx_row, :, idx_col]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def boolean_with_slice(np, n, runs, warmup, *, timer):
@@ -135,7 +135,7 @@ def boolean_with_slice(np, n, runs, warmup, *, timer):
     def operation():
         return a[mask, :]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def array_get_1d(np, size, num_indices, runs, warmup, *, timer):
@@ -146,7 +146,7 @@ def array_get_1d(np, size, num_indices, runs, warmup, *, timer):
     def operation():
         return a[indices]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def array_set_1d(np, size, num_indices, runs, warmup, *, timer):
@@ -158,7 +158,7 @@ def array_set_1d(np, size, num_indices, runs, warmup, *, timer):
     def operation():
         a[indices] = values
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
@@ -169,7 +169,7 @@ def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
     def operation():
         return a[row_indices]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
@@ -181,7 +181,7 @@ def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
     def operation():
         a[idx, positions] = 999.0
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def take_one_per_row(np, m, n, runs, warmup, *, timer):
@@ -198,7 +198,7 @@ def take_one_per_row(np, m, n, runs, warmup, *, timer):
     def operation():
         return a[row_indices, col_indices]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 # =============================================================================
@@ -212,71 +212,85 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_linear_suite_size(
+    sizes, resolutions = resolve_linear_suite_size(
         size_request,
         bytes_per_element=_GENERAL_INDEXING_BYTES_PER_ELEMENT,
         describe_size=_describe_size,
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     # Derived sizes
-    n = math.isqrt(size)  # For 2D arrays
-    n_3d = int(size ** (1 / 3))  # For 3D arrays
-    num_row_idx = clamp(n // 10, 1, 1000)
-    num_col_idx = clamp(n // 10, 1, 1000)
-    num_indices = clamp(n_3d // 5, 1, 1000)
+    ns = [math.isqrt(size) for size in sizes]
+
+    def arg_gen_1d():
+        for size in sizes:
+            n = math.isqrt(size)
+            num_row_idx = clamp(n // 10, 1, 1000)
+            yield (np, size, num_row_idx, runs, warmup)
+
+    def arg_gen_2d():
+        for size in sizes:
+            n = math.isqrt(size)
+            num_row_idx = clamp(n // 10, 1, 1000)
+            yield (np, n, num_row_idx, runs, warmup)
+
+    def arg_gen_3d():
+        for size in sizes:
+            n_3d = int(size ** (1 / 3))  # For 3D arrays
+            num_indices = clamp(n_3d // 5, 1, 1000)
+            yield (np, n_3d, num_indices, runs, warmup)
 
     # 1. Boolean mask GET
-    suite.run_timed(boolean_get, np, size, runs, warmup, timer=timer)
+    suite.run_timed(boolean_get, np, sizes, runs, warmup, timer=timer)
 
     # 2. Boolean mask SET (array)
-    suite.run_timed(boolean_set_array, np, size, runs, warmup, timer=timer)
+    suite.run_timed(boolean_set_array, np, sizes, runs, warmup, timer=timer)
 
     # 3. 2D Boolean indexing
-    suite.run_timed(boolean_2d, np, n, runs, warmup, timer=timer)
+    suite.run_timed(boolean_2d, np, ns, runs, warmup, timer=timer)
 
     # 4. Mixed indexing
-    suite.run_timed(
-        mixed_indexing, np, n_3d, num_indices, runs, warmup, timer=timer
+    suite.run_timed_with_generator(
+        None, mixed_indexing, arg_gen_3d(), timer=timer
     )
 
     # 5. Non-contiguous indexing (indices on non-adjacent dimensions)
-    suite.run_timed(
-        non_contiguous_indexing,
-        np,
-        n_3d,
-        num_indices,
-        runs,
-        warmup,
-        timer=timer,
+    suite.run_timed_with_generator(
+        None, non_contiguous_indexing, arg_gen_3d(), timer=timer
     )
 
     # 6. Boolean mask with slice
-    suite.run_timed(boolean_with_slice, np, n, runs, warmup, timer=timer)
+    suite.run_timed(boolean_with_slice, np, ns, runs, warmup, timer=timer)
 
     # 7. Take one from each row (Legate-Boost: A[arange(M), index])
     # Note: This also covers fancy_2d and take_pairs patterns (same code path)
-    suite.run_timed(take_one_per_row, np, n, n, runs, warmup, timer=timer)
+    def arg_gen_one_per_row():
+        for n in ns:
+            yield (np, n, n, runs, warmup)
+
+    suite.run_timed_with_generator(
+        None, take_one_per_row, arg_gen_one_per_row(), timer=timer
+    )
 
     # 8. 1D integer array GET (Hamiltonian: config_ints[safe_indices])
-    suite.run_timed(
-        array_get_1d, np, size, num_row_idx, runs, warmup, timer=timer
+    suite.run_timed_with_generator(
+        None, array_get_1d, arg_gen_1d(), timer=timer
     )
 
     # 9. 1D integer array SET (Hamiltonian: Hv[batch_indices] = values)
-    suite.run_timed(
-        array_set_1d, np, size, num_row_idx, runs, warmup, timer=timer
+    suite.run_timed_with_generator(
+        None, array_set_1d, arg_gen_1d(), timer=timer
     )
 
     # 10. 2D row selection (Hamiltonian: alph_configs[alph_idx])
-    suite.run_timed(
-        row_select_2d, np, n, num_row_idx, runs, warmup, timer=timer
+    suite.run_timed_with_generator(
+        None, row_select_2d, arg_gen_2d(), timer=timer
     )
 
     # 11. 2D scalar + list assignment (Hamiltonian: result[idx, list(positions)])
-    suite.run_timed(
-        scalar_list_set_2d, np, n, num_col_idx, runs, warmup, timer=timer
+    suite.run_timed_with_generator(
+        None, scalar_list_set_2d, arg_gen_2d(), timer=timer
     )
 
 

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import gc
+import importlib
 import inspect
 import json
 
@@ -32,9 +33,8 @@ from legate.util.benchmark import (
 )
 from legate.util.info import info as legate_info
 from subprocess import CalledProcessError, check_output
-from sys import stdout
 from types import ModuleType
-from typing import Any
+from typing import Any, Iterable
 
 from .info import BenchmarkInfo, get_benchmark_info, _TIME
 from .log_null import BenchmarkLogNull
@@ -206,6 +206,12 @@ class BenchmarkHarnessConfig:
         vargs = vars(args)
         summarize: Summarize | None = None
         if vargs["__cpn_summarize"]:
+            if vargs["__cpn_package"] == ArrayPackage.LEGATE:
+                # import here because legate may patch sys.stdout
+                importlib.import_module("legate.core")
+
+            from sys import stdout
+
             summarize = Summarize(out=stdout)
         return BenchmarkHarnessConfig(
             repeat=vargs["__cpn_repeat"],
@@ -251,6 +257,16 @@ def _conda_list() -> dict[str, Any] | str:
         return "(conda missing)"
     else:
         return FAILED_TO_DETECT
+
+
+def _product_args(args: tuple[Any, ...]) -> Iterable[tuple[Any, ...]]:
+    arg_lists = []
+    for arg in args:
+        if not isinstance(arg, list):
+            arg_lists.append([arg])
+        else:
+            arg_lists.append(arg)
+    return product(*arg_lists)
 
 
 class BenchmarkHarness:
@@ -356,8 +372,9 @@ class BenchmarkHarness:
         self,
         info: BenchmarkInfo,
         f: Callable[..., Any],
-        args: list[Any],
+        args: list[Any] | None,
         kwargs: dict[str, Any],
+        plan: Iterable[tuple[Any, ...]],
         mode: RunMode,
     ) -> None:
         benchmark_name = info.name
@@ -367,7 +384,7 @@ class BenchmarkHarness:
             for p, v in sig.parameters.items()
             if v.kind in [v.POSITIONAL_ONLY, v.POSITIONAL_OR_KEYWORD]
         ]
-        if len(args) != len(input_columns):
+        if args is not None and len(args) != len(input_columns):
             raise RuntimeError(
                 f"{benchmark_name}: {len(args)} positional arguments, expected {len(input_columns)}"
             )
@@ -400,15 +417,6 @@ class BenchmarkHarness:
             )
         repeat = max(1, repeat)
 
-        arg_lists = []
-
-        for arg in args:
-            if not isinstance(arg, list):
-                arg_lists.append([arg])
-            else:
-                arg_lists.append(arg)
-
-        plan = product(*arg_lists)
         timer = self.timer
         summarize = self.summarize if mode != RunMode.UNTIMED else None
         with bmark as b:
@@ -457,6 +465,33 @@ class BenchmarkHarness:
         if summarize and self.summarize_flush == SummarizeFlush.RUN:
             summarize.flush(title=benchmark_name)
 
+    def run_with_generator(
+        self,
+        info: BenchmarkInfo | None,
+        f: Callable[..., Any],
+        arg_gen: Iterable[tuple[Any, ...]],
+        **kwargs: Any,
+    ) -> None:
+        """Run a function in the harness on arguments from a generator."""
+        if info is None:
+            info = get_benchmark_info(f)
+        self._run(info, f, None, kwargs, arg_gen, RunMode.UNTIMED)
+
+    def run_timed_with_generator(
+        self,
+        info: BenchmarkInfo | None,
+        f: Callable[..., Any],
+        arg_gen: Iterable[tuple[Any, ...]],
+        **kwargs: Any,
+    ) -> None:
+        """Run and time function in the harness on arguments from a generator."""
+        if info is None:
+            info = get_benchmark_info(f)
+        if info.returns_time >= 0:
+            self._run(info, f, None, kwargs, arg_gen, RunMode.TIMED_INTERNAL)
+        else:
+            self._run(info, f, None, kwargs, arg_gen, RunMode.TIMED_EXTERNAL)
+
     def run_with_info(
         self,
         info: BenchmarkInfo,
@@ -467,7 +502,9 @@ class BenchmarkHarness:
         """Run a function with ``info`` that overrides benchmark details attached
         to ``f`` by :py:func:`benchmark_info`.
         """
-        self._run(info, f, list(args), kwargs, RunMode.UNTIMED)
+        self._run(
+            info, f, list(args), kwargs, _product_args(args), RunMode.UNTIMED
+        )
 
     def run_timed_with_info(
         self,
@@ -480,9 +517,23 @@ class BenchmarkHarness:
         details attached to ``f`` by :py:func:`benchmark_info`.
         """
         if info.returns_time >= 0:
-            self._run(info, f, list(args), kwargs, RunMode.TIMED_INTERNAL)
+            self._run(
+                info,
+                f,
+                list(args),
+                kwargs,
+                _product_args(args),
+                RunMode.TIMED_INTERNAL,
+            )
         else:
-            self._run(info, f, list(args), kwargs, RunMode.TIMED_EXTERNAL)
+            self._run(
+                info,
+                f,
+                list(args),
+                kwargs,
+                _product_args(args),
+                RunMode.TIMED_EXTERNAL,
+            )
 
     def run(self, f: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         """Run a function in the benchmark harness.
@@ -496,7 +547,10 @@ class BenchmarkHarness:
             should not.  It is also expected that each return value of ``f`` should
             generate a column in the table. (See :py:func:`benchmark_info`).
         *args:
-            positional arguments for ``f``.
+            positional arguments for ``f``.  When any arguments in ``args`` is
+            a ``list``, ``run`` will generate a separate call to ``f`` for each
+            combination of arguments in the product of the lists.
+
         **kwargs:
             keyword arguments for ``f``.
         """

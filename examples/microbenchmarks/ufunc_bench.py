@@ -86,7 +86,7 @@ def unary_exp(np, size, runs, warmup, *, timer, perform_check):
     def operation():
         np.exp(x, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = host_np.exp(_to_host(x))
         _check_allclose("exp", out, expected)
@@ -101,7 +101,7 @@ def binary_add(np, size, runs, warmup, *, timer, perform_check):
     def operation():
         np.add(lhs, rhs, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = _to_host(lhs) + _to_host(rhs)
         _check_allclose("add", out, expected)
@@ -118,7 +118,7 @@ def binary_add_broadcast(
     def operation():
         np.add(lhs, rhs, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = _to_host(lhs) + _to_host(rhs)
         _check_allclose("add_broadcast", out, expected)
@@ -133,7 +133,7 @@ def comparison_greater(np, size, runs, warmup, *, timer, perform_check):
     def operation():
         np.greater(lhs, rhs, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = _to_host(lhs) > _to_host(rhs)
         _check_equal("greater", out, expected)
@@ -148,7 +148,7 @@ def binary_ldexp(np, size, runs, warmup, *, timer, perform_check):
     def operation():
         np.ldexp(lhs, rhs, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = host_np.ldexp(_to_host(lhs), _to_host(rhs))
         _check_allclose("ldexp", out, expected)
@@ -163,7 +163,7 @@ def logical_and(np, size, runs, warmup, *, timer, perform_check):
     def operation():
         np.logical_and(lhs, rhs, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = host_np.logical_and(_to_host(lhs), _to_host(rhs))
         _check_equal("logical_and", out, expected)
@@ -178,7 +178,7 @@ def multiout_frexp(np, size, runs, warmup, *, timer, perform_check):
     def operation():
         np.frexp(x, out=(mantissa, exponent))
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected_mantissa, expected_exponent = host_np.frexp(_to_host(x))
         _check_allclose("frexp_mantissa", mantissa, expected_mantissa)
@@ -192,17 +192,17 @@ def run_benchmarks(suite, size_request, perform_check):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_linear_suite_size(
+    sizes, resolutions = resolve_linear_suite_size(
         size_request,
         bytes_per_element=_UFUNC_BYTES_PER_ELEMENT,
         describe_size=lambda resolved_size: _describe_size(
             resolved_size, perform_check
         ),
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
-    args = (np, size, runs, warmup)
+    args = (np, sizes, runs, warmup)
     kwargs = {"timer": timer, "perform_check": perform_check}
 
     basic_ufuncs = [
@@ -217,9 +217,13 @@ def run_benchmarks(suite, size_request, perform_check):
     for f in basic_ufuncs:
         suite.run_timed(f, *args, **kwargs)
 
-    rows, cols = _broadcast_shape(size)
-    suite.run_timed(
-        binary_add_broadcast, np, rows, cols, runs, warmup, **kwargs
+    def arg_gen_2d():
+        for size in sizes:
+            rows, cols = _broadcast_shape(size)
+            yield (np, rows, cols, runs, warmup)
+
+    suite.run_timed_with_generator(
+        None, binary_add_broadcast, arg_gen_2d(), **kwargs
     )
 
 

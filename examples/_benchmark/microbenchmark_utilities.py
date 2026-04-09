@@ -30,11 +30,12 @@ Design:
 
 from __future__ import annotations
 
-from sys import stdout
+import importlib
 
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
-from typing import Any, Callable
+from math import prod
+from typing import Any, Callable, Iterable
 
 from .harness import ArrayPackage, BenchmarkHarness, BenchmarkHarnessConfig
 from .info import BenchmarkInfo, get_benchmark_info
@@ -56,7 +57,7 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             metavar="RUNS",
             type=int,
             default=5,
-            help="Number of timing runs per benchmark (default: 5)",
+            help="Number of timing runs per benchmark",
         )
         group.add_argument(
             "--warmup",
@@ -64,7 +65,7 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             metavar="WARMUP",
             type=int,
             default=2,
-            help="Number of warmup runs (default: 2)",
+            help="Number of warmup runs",
         )
         return group
 
@@ -79,6 +80,12 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
         )
 
     def print_panel(self, lines: list[str], title: str = "") -> None:
+        if self.package == ArrayPackage.LEGATE:
+            # import here because legate may patch stdout
+            importlib.import_module("legate.core")
+
+        from sys import stdout
+
         if HAVE_RICH and use_rich(
             stdout, start_runtime=self.package == ArrayPackage.LEGATE
         ):
@@ -131,9 +138,7 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         self._config: MicrobenchmarkConfig
         super().__init__(config)
         self.benchmark_count: int = 0
-        self._benchmark_names: list[
-            str
-        ] = []  # Track benchmark names for summary
+        self.benchmark_variant_count: int = 0
 
     @property
     def runs(self) -> int:
@@ -143,6 +148,66 @@ class MicrobenchmarkSuite(BenchmarkHarness):
     def warmup(self) -> int:
         return self._config.warmup
 
+    def _modify_info(self, info: BenchmarkInfo) -> BenchmarkInfo:
+        """Prepend the suite name and change the default time output column to
+        'time per run (ms)'"""
+        full_name = f"{self.name}_{info.name}"
+        info = info.replace(name=full_name)
+        time_output = info.returns_time
+        time_string = "time per run (ms)"
+        if time_output >= 0:
+            if isinstance(info.output_names, str):
+                assert time_output == 0
+                info = info.replace(output_names=time_string)
+            else:
+                new_output_names = [name for name in info.output_names]
+                new_output_names[time_output] = time_string
+                info = info.replace(output_names=new_output_names)
+        return info
+
+    def _update_counts(self, args: Iterable[Any]) -> None:
+        lengths = [(len(a) if isinstance(a, list) else 1) for a in args]
+        num_variants = int(prod(lengths))
+        self.benchmark_count += 1
+        self.benchmark_variant_count += num_variants
+
+    def _counted_arg_gen(
+        self, arg_gen: Iterable[tuple[Any, ...]]
+    ) -> Iterable[tuple[Any, ...]]:
+        for args in arg_gen:
+            self.benchmark_variant_count += 1
+            yield args
+
+    def run_with_generator(
+        self,
+        info: BenchmarkInfo | None,
+        f: Callable[..., Any],
+        arg_gen: Iterable[tuple[Any, ...]],
+        **kwargs: Any,
+    ) -> None:
+        if info is None:
+            info = get_benchmark_info(f)
+        info = self._modify_info(info)
+        super().run_with_generator(
+            info, f, self._counted_arg_gen(arg_gen), **kwargs
+        )
+        self.benchmark_count += 1
+
+    def run_timed_with_generator(
+        self,
+        info: BenchmarkInfo | None,
+        f: Callable[..., Any],
+        arg_gen: Iterable[tuple[Any, ...]],
+        **kwargs: Any,
+    ) -> None:
+        if info is None:
+            info = get_benchmark_info(f)
+        info = self._modify_info(info)
+        super().run_timed_with_generator(
+            info, f, self._counted_arg_gen(arg_gen), **kwargs
+        )
+        self.benchmark_count += 1
+
     def run_with_info(
         self,
         info: BenchmarkInfo,
@@ -150,12 +215,9 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        name = info.name
-        full_name = f"{self.name}_{name}"
-        info = info.replace(name=full_name)
+        info = self._modify_info(info)
         super().run_with_info(info, f, *args, **kwargs)
-        self.benchmark_count += 1
-        self._benchmark_names.append(full_name)
+        self._update_counts(args)
 
     def run_timed_with_info(
         self,
@@ -164,12 +226,9 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        name = info.name
-        full_name = f"{self.name}_{name}"
-        info = info.replace(name=full_name)
+        info = self._modify_info(info)
         super().run_timed_with_info(info, f, *args, **kwargs)
-        self.benchmark_count += 1
-        self._benchmark_names.append(full_name)
+        self._update_counts(args)
 
     def run(self, f: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         self.run_with_info(get_benchmark_info(f), f, *args, **kwargs)
@@ -188,13 +247,18 @@ class MicrobenchmarkSuite(BenchmarkHarness):
     def print_suite_summary(self) -> None:
         """Print suite-level summary."""
         if self.benchmark_count > 0:
-            msg = [f"Total benchmarks run: {self.benchmark_count}"]
-            self.print_panel(msg, f"SUITE COMPLETE: {self.name}")
+            msg = f"Total benchmarks run: {self.benchmark_count}"
+            if self.benchmark_variant_count > self.benchmark_count:
+                msg += f" ({self.benchmark_variant_count} variants)"
+            self.print_panel([msg], f"SUITE COMPLETE: {self.name}")
 
-    def print_size_resolution(self, resolution: SizeResolution) -> None:
-        self.print_panel(
-            resolution.panel_lines(), title="Memory Size Heuristic"
-        )
+    def print_size_resolution(self, resolutions: list[SizeResolution]) -> None:
+        lines = []
+        for i, resolution in enumerate(resolutions):
+            if i > 0:
+                lines.append("")
+            lines.extend(resolution.panel_lines())
+        self.print_panel(lines, title=f"Memory Size Heuristic: {self.name}")
 
     def run_suite(self, size_request: SizeRequest) -> None:
         pass

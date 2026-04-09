@@ -27,14 +27,13 @@ benchmarks.
 
 
 def sync(np, mode, runs, warmup, *, timer):
-    return timed_loop(lambda: None, timer, runs, warmup, sync_mode=mode)
+    return timed_loop(lambda: None, timer, runs, warmup, sync_mode=mode) / runs
 
 
 class SyncSuite(MicrobenchmarkSuite):
     name = "sync"
 
-    def run_suite(self, size_request: SizeRequest) -> None:
-        del size_request
+    def run_suite(self, _: SizeRequest) -> None:
         self.run_timed(
             sync,
             self.np,

@@ -146,6 +146,7 @@ def main(argv: Sequence[str] | None = None):
     orig_flush = config.summarize_flush
     if config.summarize is not None:
         # Flush the summary at the end of all the suite
+        summarize.summary_column_name = "time per run (ms)"
         config = replace(config, summarize_flush=SummarizeFlush.NEVER)
 
     suites: dict[str, MicrobenchmarkSuite] = {}
@@ -198,9 +199,13 @@ def main(argv: Sequence[str] | None = None):
 
     if len(completed) > 1:
         total_benchmarks = sum(s.benchmark_count for s in completed)
+        total_benchmark_variants = sum(
+            s.benchmark_variant_count for s in completed
+        )
         final_msg = [
             f"Total suites run: {len(completed)}",
             f"Total benchmarks: {total_benchmarks}",
+            f"Total variants:   {total_benchmark_variants}",
         ]
         config.print_panel(final_msg, "OVERALL SUMMARY")
 

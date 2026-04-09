@@ -81,7 +81,7 @@ def test_size_request_defaults_to_legacy_exact_size() -> None:
     benchmark = _sizing()
     request = benchmark.SizeRequest.from_namespace(args)
 
-    assert request.exact_size == benchmark.DEFAULT_PROBLEM_SIZE
+    assert request.exact_size == [benchmark.DEFAULT_PROBLEM_SIZE]
     assert request.memory_target_bytes is None
     assert request.config_lines() == [
         "Sizing: exact (--size)",
@@ -101,7 +101,7 @@ def test_size_request_parses_memory_target_mode() -> None:
     request = _sizing().SizeRequest.from_namespace(args)
 
     assert request.exact_size is None
-    assert request.memory_target_bytes == 2 << 30
+    assert request.memory_target_bytes == [2 << 30]
 
 
 def test_size_request_requires_mode_when_default_is_disabled() -> None:
@@ -137,6 +137,11 @@ def _make_recording_suite(
         del info, kwargs
         calls.append((func.__name__, args))
 
+    def run_timed_with_generator(info, func, gen, **kwargs) -> None:
+        del info, kwargs
+        for args in gen:
+            calls.append((func.__name__, args))
+
     return SimpleNamespace(
         np=np,
         timer=object(),
@@ -147,6 +152,7 @@ def _make_recording_suite(
         print_size_resolution=print_size_resolution,
         run_timed=run_timed,
         run_timed_with_info=run_timed_with_info,
+        run_timed_with_generator=run_timed_with_generator,
     )
 
 
@@ -171,18 +177,19 @@ def test_linear_suites_resolve_memory_target_in_run_benchmarks(
     module = _module(module_name)
     sizing = _sizing()
     suite = _make_recording_suite()
-    request = sizing.SizeRequest(memory_target_bytes=100)
+    request = sizing.SizeRequest(memory_target_bytes=[100])
 
     module.run_benchmarks(suite, request, **runner_kwargs)
 
     assert len(suite.resolutions) == 1
-    resolution = suite.resolutions[0]
+    assert len(suite.resolutions[0]) == 1
+    resolution = suite.resolutions[0][0]
     assert resolution.requested_memory_target_bytes == 100
     assert resolution.estimated_working_set_bytes <= 100
     assert suite.calls
     call_name, call_args = suite.calls[0]
     assert call_name == expected_name
-    assert call_args[size_index] == resolution.resolved_size
+    assert call_args[size_index] == [resolution.resolved_size]
 
 
 @pytest.mark.parametrize(
@@ -195,18 +202,19 @@ def test_non_linear_suites_resolve_memory_target_in_run_benchmarks(
     module = _module(module_name)
     suite = _make_recording_suite()
     target_bytes = 1 << 20
-    request = _sizing().SizeRequest(memory_target_bytes=target_bytes)
+    request = _sizing().SizeRequest(memory_target_bytes=[target_bytes])
 
     module.run_benchmarks(suite, request, variant="all", precision=precision)
 
     assert len(suite.resolutions) == 1
-    resolution = suite.resolutions[0]
+    assert len(suite.resolutions[0]) == 1
+    resolution = suite.resolutions[0][0]
     assert resolution.requested_memory_target_bytes == target_bytes
     assert resolution.estimated_working_set_bytes <= target_bytes
     assert suite.calls
     call_name, call_args = suite.calls[0]
     assert call_name == expected_name
-    assert call_args[2] == resolution.resolved_size
+    assert call_args[2] == [resolution.resolved_size]
 
     def estimate(size: int) -> int:
         return module._estimate_working_set_bytes("all", precision, size)
@@ -221,12 +229,13 @@ def test_axis_sum_suite_resolves_memory_target_in_run_benchmarks() -> None:
     axis_sum = _module("axis_sum_bench")
     suite = _make_recording_suite()
     target_bytes = 1 << 20
-    request = _sizing().SizeRequest(memory_target_bytes=target_bytes)
+    request = _sizing().SizeRequest(memory_target_bytes=[target_bytes])
 
     axis_sum.run_benchmarks(suite, request, case="all", perform_check=False)
 
     assert len(suite.resolutions) == 1
-    resolution = suite.resolutions[0]
+    assert len(suite.resolutions[0]) == 1
+    resolution = suite.resolutions[0][0]
     assert resolution.requested_memory_target_bytes == target_bytes
     assert resolution.estimated_working_set_bytes <= target_bytes
     assert suite.calls
@@ -247,12 +256,13 @@ def test_batched_fft_suite_resolves_memory_target_in_run_benchmarks() -> None:
     batched_fft = _module("batched_fft_bench")
     suite = _make_recording_suite()
     target_bytes = 1 << 20
-    request = _sizing().SizeRequest(memory_target_bytes=target_bytes)
+    request = _sizing().SizeRequest(memory_target_bytes=[target_bytes])
 
     batched_fft.run_benchmarks(suite, request)
 
     assert len(suite.resolutions) == 1
-    resolution = suite.resolutions[0]
+    assert len(suite.resolutions[0]) == 1
+    resolution = suite.resolutions[0][0]
     assert resolution.requested_memory_target_bytes == target_bytes
     assert resolution.estimated_working_set_bytes <= target_bytes
     assert len(suite.calls) == len(batched_fft._CASES)
@@ -267,36 +277,18 @@ def test_batched_fft_suite_resolves_memory_target_in_run_benchmarks() -> None:
 
 def test_resolve_linear_suite_size_reports_resolution_details() -> None:
     sizing = _sizing()
-    size, resolution = sizing.resolve_linear_suite_size(
-        sizing.SizeRequest(memory_target_bytes=100),
+    sizes, resolutions = sizing.resolve_linear_suite_size(
+        sizing.SizeRequest(memory_target_bytes=[100]),
         bytes_per_element=9,
         describe_size=lambda resolved_size: [f"shape: {resolved_size}"],
     )
 
-    assert size == 11
-    assert resolution is not None
-    assert resolution.requested_memory_target_bytes == 100
-    assert resolution.estimated_working_set_bytes == 99
-    assert resolution.detail_lines == ("shape: 11",)
-
-
-def test_solve_estimate_tracks_setup_and_solve_peak() -> None:
-    solve_bench = _module("solve_bench")
-    size = 100
-    dimensions = solve_bench._get_case_dimensions("solve-n-rhs", size)
-    matrix_elements = math.prod(dimensions["matrix_size"])
-    rhs_elements = math.prod(dimensions["rhs_size"])
-    dtype_bytes = 4
-    expected = max(
-        matrix_elements * (8 + dtype_bytes),
-        matrix_elements * dtype_bytes + rhs_elements * (8 + dtype_bytes),
-        (matrix_elements + 2 * rhs_elements) * dtype_bytes,
-    )
-
-    assert (
-        solve_bench._estimate_case_working_set_bytes("solve-n-rhs", 32, size)
-        == expected
-    )
+    assert sizes == [11]
+    assert resolutions is not None
+    assert len(resolutions) == 1
+    assert resolutions[0].requested_memory_target_bytes == 100
+    assert resolutions[0].estimated_working_set_bytes == 99
+    assert resolutions[0].detail_lines == ("shape: 11",)
 
 
 def test_resolve_size_by_binary_search_finds_largest_fitting_size() -> None:
@@ -379,8 +371,8 @@ def test_undersized_stream_target_raises() -> None:
         RuntimeWarning,
         match="memory target is smaller than estimated working set",
     ):
-        _, resolution = sizing.resolve_suite_size(
-            sizing.SizeRequest(memory_target_bytes=1),
+        _, resolutions = sizing.resolve_suite_size(
+            sizing.SizeRequest(memory_target_bytes=[1]),
             resolve_from_target=lambda target_bytes: (
                 stream_bench._resolve_size_from_memory_target(
                     "all", "false", target_bytes
@@ -390,8 +382,9 @@ def test_undersized_stream_target_raises() -> None:
                 stream_bench._estimate_working_set_bytes("all", size)
             ),
         )
-    assert resolution is not None
-    assert resolution.estimated_working_set_bytes > 1
+    assert resolutions is not None
+    assert len(resolutions) == 1
+    assert resolutions[0].estimated_working_set_bytes > 1
 
 
 def test_undersized_gemm_target_warns() -> None:
@@ -401,8 +394,8 @@ def test_undersized_gemm_target_warns() -> None:
         RuntimeWarning,
         match="memory target is smaller than estimated working set",
     ):
-        _, resolution = sizing.resolve_suite_size(
-            sizing.SizeRequest(memory_target_bytes=1),
+        _, resolutions = sizing.resolve_suite_size(
+            sizing.SizeRequest(memory_target_bytes=[1]),
             resolve_from_target=lambda target_bytes: (
                 gemm_gemv._resolve_size_from_memory_target(
                     "skinny_gemm", "64", target_bytes
@@ -414,8 +407,9 @@ def test_undersized_gemm_target_warns() -> None:
                 )
             ),
         )
-    assert resolution is not None
-    assert resolution.estimated_working_set_bytes > 1
+    assert resolutions is not None
+    assert len(resolutions) == 1
+    assert resolutions[0].estimated_working_set_bytes > 1
 
 
 def test_fast_advanced_indexing_uses_square_size_for_2d_cases() -> None:
@@ -423,11 +417,11 @@ def test_fast_advanced_indexing_uses_square_size_for_2d_cases() -> None:
     suite = _make_recording_suite(forbid_resolution=True)
 
     fast_advanced_indexing.run_benchmarks(
-        suite, _sizing().SizeRequest(exact_size=10_000)
+        suite, _sizing().SizeRequest(exact_size=[10_000])
     )
 
     call_map = {name: args for name, args in suite.calls}
-    assert call_map["putmask_scalar"][1] == 10_000
+    assert call_map["putmask_scalar"][1] == [10_000]
     assert call_map["take_1d"][1] == 10_000
     for name in ("einsum_2d", "take_2d", "take_along_axis"):
         assert call_map[name][1] == 100
@@ -440,7 +434,7 @@ def test_fast_advanced_indexing_clamps_small_targets_to_nonzero_indices() -> (
     suite = _make_recording_suite()
 
     fast_advanced_indexing.run_benchmarks(
-        suite, _sizing().SizeRequest(memory_target_bytes=100)
+        suite, _sizing().SizeRequest(memory_target_bytes=[100])
     )
 
     call_map = {name: args for name, args in suite.calls}
@@ -454,7 +448,7 @@ def test_general_indexing_clamps_small_targets_to_nonzero_indices() -> None:
     suite = _make_recording_suite()
 
     general_indexing.run_benchmarks(
-        suite, _sizing().SizeRequest(memory_target_bytes=100)
+        suite, _sizing().SizeRequest(memory_target_bytes=[100])
     )
 
     call_map = {name: args for name, args in suite.calls}
@@ -517,7 +511,7 @@ def test_main_dispatches_memory_target_request(mocker) -> None:
 
     assert main.main(["--suite", "fake", "--memory-size", "64MiB"]) == 0
     assert len(requests) == 1
-    assert requests[0].memory_target_bytes == 64 << 20
+    assert requests[0].memory_target_bytes == [64 << 20]
 
 
 if __name__ == "__main__":

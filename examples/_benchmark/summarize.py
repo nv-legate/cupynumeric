@@ -15,8 +15,6 @@
 
 from __future__ import annotations
 
-import sys
-
 from math import sqrt
 from typing import Any, TextIO
 from dataclasses import dataclass
@@ -41,10 +39,13 @@ class Summary:
 
 
 class Summarize:
-    def __init__(self, out: TextIO = sys.stdout) -> None:
+    def __init__(
+        self, out: TextIO, *, summary_column_name: str = _TIME
+    ) -> None:
         self.data: dict[str, list[tuple[dict[str, Any], list[float]]]] = {}
         self.stream = out
         self.use_rich = use_rich(out)
+        self.summary_column_name = summary_column_name
         if use_rich(out):
             self.console = Console(file=out)
 
@@ -135,9 +136,9 @@ class Summarize:
             line_width = 0
             if table:
                 table.add_column("benchmark")
-                table.add_column(_TIME)
+                table.add_column(self.summary_column_name)
             else:
-                header_string = f"{'benchmark':<{max_width}} | {_TIME}\n"
+                header_string = f"{'benchmark':<{max_width}} | {self.summary_column_name}\n"
                 line_width = max(80, len(header_string))
 
                 self.stream.write("=" * line_width + "\n")
@@ -175,7 +176,9 @@ class Summarize:
                 else:
                     self.stream.write("SUMMARY\n")
                 self.stream.write("-" * line_width + "\n")
-                self.stream.write(f"{'':<{max_width}}   {_TIME:^53}\n")
+                self.stream.write(
+                    f"{'':<{max_width}}   {self.summary_column_name:^53}\n"
+                )
                 self.stream.write(header_string)
                 self.stream.write("-" * line_width + "\n")
             for s in summaries:

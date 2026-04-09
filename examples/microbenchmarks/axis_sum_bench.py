@@ -260,8 +260,8 @@ def axis_sum(
     size: int,
     runs: int,
     warmup: int,
+    alloc_shape: tuple[int, ...] | None,
     *,
-    alloc_shape: tuple[int, ...] | None = None,
     timer,
     perform_check: bool = False,
 ):
@@ -283,7 +283,7 @@ def axis_sum(
     def operation():
         np.sum(src, axis=axis, out=out)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
     if perform_check:
         expected = host_np.sum(_to_host(src), axis=axis)
         _check_result(case_name, dtype_name, out, expected)
@@ -308,7 +308,7 @@ def run_benchmarks(suite, size_request, *, case="all", perform_check=False):
     runs = suite.runs
     warmup = suite.warmup
     info = get_benchmark_info(axis_sum)
-    size, resolution = resolve_suite_size(
+    sizes, resolutions = resolve_suite_size(
         size_request,
         resolve_from_target=lambda target_bytes: (
             _resolve_size_from_memory_target(case, target_bytes)
@@ -320,20 +320,27 @@ def run_benchmarks(suite, size_request, *, case="all", perform_check=False):
             resolved_size, case
         ),
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     for case_name in _get_cases(case):
-        alloc_shape = _base_shape(_CASES[case_name], size)
-        suite.run_timed_with_info(
+
+        def arg_gen():
+            for size in sizes:
+                alloc_shape = _base_shape(_CASES[case_name], size)
+                yield (
+                    np,
+                    *_case_args(case_name, size),
+                    size,
+                    runs,
+                    warmup,
+                    alloc_shape,
+                )
+
+        suite.run_timed_with_generator(
             info.replace(name=case_name),
             axis_sum,
-            np,
-            *_case_args(case_name, size),
-            size,
-            runs,
-            warmup,
-            alloc_shape=alloc_shape,
+            arg_gen(),
             timer=timer,
             perform_check=perform_check,
         )
@@ -350,7 +357,7 @@ class AxisSumSuite(MicrobenchmarkSuite):
             type=str,
             default="all",
             choices=[*_CASES, "all"],
-            help="Axis-wise sum case to run (default: all)",
+            help="Axis-wise sum case to run",
         )
         group.add_argument(
             "--axis-sum-check",

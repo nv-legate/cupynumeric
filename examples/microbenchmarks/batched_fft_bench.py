@@ -110,7 +110,7 @@ def batched_fft(np, dims, dtype_name, batch, extent, runs, warmup, *, timer):
     def operation():
         np.fft.fftn(src, axes=axes)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def run_benchmarks(suite, size_request: SizeRequest):
@@ -119,30 +119,29 @@ def run_benchmarks(suite, size_request: SizeRequest):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_suite_size(
+    sizes, resolutions = resolve_suite_size(
         size_request,
         resolve_from_target=_resolve_size_from_memory_target,
         estimate_working_set_bytes=_estimate_working_set_bytes,
         describe_size=_describe_size,
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     base_info = get_benchmark_info(batched_fft)
 
     for case_name, dims, dtype_name in _CASES:
-        shape = _case_shape(size, dims)
-        batch, extent = shape[0], shape[1]
-        suite.run_timed_with_info(
+
+        def arg_gen():
+            for size in sizes:
+                shape = _case_shape(size, dims)
+                batch, extent = shape[0], shape[1]
+                yield (np, dims, dtype_name, batch, extent, runs, warmup)
+
+        suite.run_timed_with_generator(
             base_info.replace(name=case_name),
             batched_fft,
-            np,
-            dims,
-            dtype_name,
-            batch,
-            extent,
-            runs,
-            warmup,
+            arg_gen(),
             timer=timer,
         )
 

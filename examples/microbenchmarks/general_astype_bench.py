@@ -49,7 +49,7 @@ def astype(np, dtype, size, runs, warmup, *, timer):
 
         return out_arr
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 # =============================================================================
@@ -63,15 +63,15 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_linear_suite_size(
+    sizes, resolutions = resolve_linear_suite_size(
         size_request, bytes_per_element=_ASTYPE_BYTES_PER_ELEMENT
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     dtypes = [np.float32, np.float64]
 
-    suite.run_timed(astype, np, dtypes, size, runs, warmup, timer=timer)
+    suite.run_timed(astype, np, dtypes, sizes, runs, warmup, timer=timer)
 
 
 class AsTypeSuite(MicrobenchmarkSuite):

@@ -29,10 +29,20 @@ from __future__ import annotations
 
 import math
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, resolve_suite_size
+from _benchmark import MicrobenchmarkSuite, benchmark_info, timed_loop
+from _benchmark.sizing import (
+    SizeRequest,
+    resolve_size_by_binary_search,
+    resolve_suite_size,
+)
 
 SKINNY_OUTER_DIM = 8
+
+
+def _dtype_bytes(dtype) -> int:
+    import numpy
+
+    return numpy.dtype(dtype).itemsize
 
 
 def _square_dim(size):
@@ -71,65 +81,50 @@ def _get_case_dimensions(variant, size):
     return {"m": n, "n": n}
 
 
-def _estimate_case_working_set_bytes(variant, precision, size):
+def _estimate_case_working_set_bytes(variant, dtype, size):
     dimensions = _get_case_dimensions(variant, size)
-    itemsize = precision // 8
+    itemsize = _dtype_bytes(dtype)
 
     if variant == "skinny_gemm":
         m = dimensions["m"]
         n = dimensions["n"]
         k = dimensions["k"]
-        return itemsize * (m * k + k * n + m * n)
+        return itemsize * (2 * m * k * n)
 
     n = dimensions["n"]
     if variant == "square_gemm":
-        return itemsize * 3 * n * n
+        return itemsize * 2 * n * n * n
 
-    return itemsize * (n * n + 2 * n)
-
-
-def _resolve_case_size_from_memory_target(variant, precision, target_bytes):
-    itemsize = precision // 8
-    available_elements = target_bytes // itemsize
-
-    if variant == "skinny_gemm":
-        k = max(1, (available_elements - 64) // 16)
-        return max(SKINNY_OUTER_DIM, SKINNY_OUTER_DIM * k)
-
-    if variant == "square_gemm":
-        n = max(1, math.isqrt(available_elements // 3))
-        return n * n
-
-    n = max(1, math.isqrt(available_elements + 1) - 1)
-    return n * n
-
-
-def _resolve_size_from_memory_target(variant, precision, target_bytes):
-    variants = _get_variants(variant)
-    precisions = _get_precisions(precision)
-    return min(
-        _resolve_case_size_from_memory_target(case, bits, target_bytes)
-        for case in variants
-        for bits in precisions
-    )
+    # gemv
+    return itemsize * 2 * n * n
 
 
 def _estimate_working_set_bytes(variant, precision, size):
     variants = _get_variants(variant)
-    precisions = _get_precisions(precision)
+    dtypes = _get_dtypes(precision)
     return max(
-        _estimate_case_working_set_bytes(case, bits, size)
+        _estimate_case_working_set_bytes(case, dtype, size)
         for case in variants
-        for bits in precisions
+        for dtype in dtypes
+    )
+
+
+def _resolve_size_from_memory_target(variant, precision, target_bytes):
+    return resolve_size_by_binary_search(
+        target_bytes,
+        estimate_working_set_bytes=lambda size: _estimate_working_set_bytes(
+            variant, precision, size
+        ),
+        initial_guess=8,
     )
 
 
 def _describe_size(variant, precision, size):
     variants = _get_variants(variant)
-    precisions = _get_precisions(precision)
+    dtypes = _get_dtypes(precision)
     lines = [
         f"variants: {', '.join(variants)}",
-        f"precisions: {', '.join(f'float{bits}' for bits in precisions)}",
+        f"dtypes:   {', '.join(dtypes)}",
     ]
     for case in variants:
         dimensions = _get_case_dimensions(case, size)
@@ -170,16 +165,15 @@ def _initialize_case(array_module, variant, size, dtype):
     return dimensions, (a, x, y)
 
 
-def _get_check_tolerances(precision):
-    if precision == 32:
+def _get_check_tolerances(dtype):
+    if dtype == "float32":
         return 1e-4, 1e-6
     return 1e-8, 1e-10
 
 
-def _check_case(variant, size, precision, result):
+def _check_case(variant, size, dtype, result):
     import numpy as host_np
 
-    dtype = host_np.float32 if precision == 32 else host_np.float64
     _, operands = _initialize_case(host_np, variant, size, dtype)
 
     if variant == "gemv":
@@ -194,7 +188,7 @@ def _check_case(variant, size, precision, result):
     actual = (
         result.get() if hasattr(result, "get") else host_np.asarray(result)
     )
-    rtol, atol = _get_check_tolerances(precision)
+    rtol, atol = _get_check_tolerances(dtype)
     if not host_np.allclose(actual, expected, rtol=rtol, atol=atol):
         abs_diff = host_np.abs(actual - expected)
         rel_diff = abs_diff / host_np.maximum(host_np.abs(expected), atol)
@@ -207,28 +201,21 @@ def _check_case(variant, size, precision, result):
 
 
 def run_gemm_gemv_case(
-    np, variant, size, runs, warmup, precision, timer, perform_check
+    np, variant, size, runs, warmup, dtype, timer, perform_check
 ):
-    dtype = np.float32 if precision == 32 else np.float64
     _, operands = _initialize_case(np, variant, size, dtype)
 
-    if variant == "gemv":
-        a, x, y = operands
-    else:
-        a, b, c = operands
+    a, b, c = operands
 
     def operation():
-        if variant == "gemv":
-            np.matmul(a, x, out=y)
-        else:
-            np.matmul(a, b, out=c)
+        np.matmul(a, b, out=c)
 
-    total = timed_loop(operation, timer, runs, warmup)
+    total = timed_loop(operation, timer, runs, warmup) / runs
 
     if perform_check:
-        _check_case(variant, size, precision, y if variant == "gemv" else c)
+        _check_case(variant, size, dtype, c)
 
-    return total
+    return ((a.shape, b.shape), total)
 
 
 def _get_variants(variant):
@@ -237,27 +224,38 @@ def _get_variants(variant):
     return [variant]
 
 
-def _get_precisions(precision):
+def _get_dtypes(precision):
     if precision == "all":
-        return [32, 64]
-    return [int(precision)]
+        return ["float32", "float64"]
+    else:
+        assert precision in ["32", "64"]
+        return [f"float{precision}"]
 
 
-def skinny_gemm(np, size, runs, warmup, precision, *, timer, perform_check):
+_INFO = {
+    "output_names": ["input shapes", "time per run (ms)"],
+    "returns_time": 1,
+}
+
+
+@benchmark_info(**_INFO)
+def skinny_gemm(np, size, runs, warmup, dtype, *, timer, perform_check):
     return run_gemm_gemv_case(
-        np, "skinny_gemm", size, runs, warmup, precision, timer, perform_check
+        np, "skinny_gemm", size, runs, warmup, dtype, timer, perform_check
     )
 
 
-def square_gemm(np, size, runs, warmup, precision, *, timer, perform_check):
+@benchmark_info(**_INFO)
+def square_gemm(np, size, runs, warmup, dtype, *, timer, perform_check):
     return run_gemm_gemv_case(
-        np, "square_gemm", size, runs, warmup, precision, timer, perform_check
+        np, "square_gemm", size, runs, warmup, dtype, timer, perform_check
     )
 
 
-def gemv(np, size, runs, warmup, precision, *, timer, perform_check):
+@benchmark_info(**_INFO)
+def gemv(np, size, runs, warmup, dtype, *, timer, perform_check):
     return run_gemm_gemv_case(
-        np, "gemv", size, runs, warmup, precision, timer, perform_check
+        np, "gemv", size, runs, warmup, dtype, timer, perform_check
     )
 
 
@@ -267,7 +265,7 @@ def run_benchmarks(suite, size_request, variant, precision, perform_check):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_suite_size(
+    sizes, resolutions = resolve_suite_size(
         size_request,
         resolve_from_target=lambda target_bytes: (
             _resolve_size_from_memory_target(variant, precision, target_bytes)
@@ -279,21 +277,21 @@ def run_benchmarks(suite, size_request, variant, precision, perform_check):
             variant, precision, resolved_size
         ),
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     variants = _get_variants(variant)
-    precisions = _get_precisions(precision)
+    dtypes = _get_dtypes(precision)
     funcs = [skinny_gemm, square_gemm, gemv]
     for func in funcs:
         if func.__name__ in variants:
             suite.run_timed(
                 func,
                 np,
-                size,
+                sizes,
                 runs,
                 warmup,
-                precisions,
+                dtypes,
                 timer=timer,
                 perform_check=perform_check,
             )

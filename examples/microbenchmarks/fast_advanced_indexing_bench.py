@@ -73,7 +73,7 @@ def putmask_scalar(np, size, runs, warmup, *, timer):
     def operation():
         a[mask] = 999.0
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def einsum_2d(np, n, num_indices, runs, warmup, *, timer):
@@ -88,7 +88,7 @@ def einsum_2d(np, n, num_indices, runs, warmup, *, timer):
     def operation():
         return a[indices, :]
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def take_1d(np, size, num_indices, runs, warmup, *, timer):
@@ -103,7 +103,7 @@ def take_1d(np, size, num_indices, runs, warmup, *, timer):
     def operation():
         return np.take(a, indices, axis=0)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def take_2d(np, n, num_indices, runs, warmup, *, timer):
@@ -118,7 +118,7 @@ def take_2d(np, n, num_indices, runs, warmup, *, timer):
     def operation():
         return np.take(a, indices, axis=0)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 def take_along_axis(np, n, num_indices, runs, warmup, *, timer):
@@ -133,7 +133,7 @@ def take_along_axis(np, n, num_indices, runs, warmup, *, timer):
     def operation():
         return np.take_along_axis(a, indices, axis=0)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 # =============================================================================
@@ -147,22 +147,36 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_linear_suite_size(
+    sizes, resolutions = resolve_linear_suite_size(
         size_request,
         bytes_per_element=_ADVANCED_INDEXING_BYTES_PER_ELEMENT,
         describe_size=_describe_size,
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
-    # Derived sizes
-    n = max(1, math.isqrt(size))  # For 2D arrays
-    num_indices = clamp(n // 10, 1, 1000)
+    def arg_gen_take_1d():
+        for size in sizes:
+            # Derived sizes
+            n = max(1, math.isqrt(size))
+            num_indices = clamp(n // 10, 1, 1000)
+            yield (np, size, num_indices, runs, warmup)
 
-    suite.run_timed(putmask_scalar, np, size, runs, warmup, timer=timer)
-    suite.run_timed(take_1d, np, size, num_indices, runs, warmup, timer=timer)
+    def arg_gen_generic():
+        for size in sizes:
+            # Derived sizes
+            n = max(1, math.isqrt(size))
+            num_indices = clamp(n // 10, 1, 1000)
+            yield (np, n, num_indices, runs, warmup)
+
+    suite.run_timed(putmask_scalar, np, sizes, runs, warmup, timer=timer)
+    suite.run_timed_with_generator(
+        None, take_1d, arg_gen_take_1d(), timer=timer
+    )
     for func in [einsum_2d, take_2d, take_along_axis]:
-        suite.run_timed(func, np, n, num_indices, runs, warmup, timer=timer)
+        suite.run_timed_with_generator(
+            None, func, arg_gen_generic(), timer=timer
+        )
 
 
 class FastAdvancedIndexingSuite(MicrobenchmarkSuite):

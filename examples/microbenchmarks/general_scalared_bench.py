@@ -53,7 +53,7 @@ def scalar_red(np, func, dtype, size, runs, warmup, *, timer):
 
         return func(in_arr)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 # =============================================================================
@@ -67,17 +67,17 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_linear_suite_size(
+    sizes, resolutions = resolve_linear_suite_size(
         size_request, bytes_per_element=_SCALARRED_BYTES_PER_ELEMENT
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     dtypes = [np.float32, np.float64]
     red_types = [np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]
 
     suite.run_timed(
-        scalar_red, np, red_types, dtypes, size, runs, warmup, timer=timer
+        scalar_red, np, red_types, dtypes, sizes, runs, warmup, timer=timer
     )
 
 

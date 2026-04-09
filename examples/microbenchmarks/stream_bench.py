@@ -36,10 +36,16 @@ not currently lower `a[...] = b + scalar * c` as one fused backend kernel.
 SCALAR = 3.0
 
 
+def _dtype_bytes(dtype) -> int:
+    import numpy
+
+    return numpy.dtype(dtype).itemsize
+
+
 def _resolve_size_from_memory_target(
     precision: str, contiguous: str, target_bytes: int
 ) -> int:
-    itemsize = max(_get_precisions(precision)) // 8
+    itemsize = max(_dtype_bytes(d) for d in _get_dtypes(precision))
     elements = max(1, target_bytes // (3 * itemsize))
     if False not in _get_contiguous_modes(contiguous):
         return elements
@@ -49,7 +55,7 @@ def _resolve_size_from_memory_target(
 
 
 def _estimate_working_set_bytes(precision: str, size: int) -> int:
-    return 3 * size * (max(_get_precisions(precision)) // 8)
+    return 3 * size * max(_dtype_bytes(d) for d in _get_dtypes(precision))
 
 
 def _describe_size(size: int, precision: str, contiguous: str) -> list[str]:
@@ -59,10 +65,7 @@ def _describe_size(size: int, precision: str, contiguous: str) -> list[str]:
     ]
     lines = [
         f"layouts: {', '.join(layouts)}",
-        (
-            "precisions: "
-            f"{', '.join(f'float{p}' for p in _get_precisions(precision))}"
-        ),
+        f"dtypes:   {', '.join(_get_dtypes(precision))}",
     ]
     if False in _get_contiguous_modes(contiguous):
         rows, cols = get_noncontiguous_shape(size)
@@ -98,10 +101,9 @@ def initialize(array_module, size, dtype, contiguous):
     return a.T, b.T, c.T
 
 
-def check_stream(operation, size, precision, contiguous, result):
+def check_stream(operation, size, dtype, contiguous, result):
     import numpy as host_np
 
-    dtype = host_np.float32 if precision == 32 else host_np.float64
     a, b, c = initialize(host_np, size, dtype, contiguous)
 
     if operation == "copy":
@@ -126,7 +128,7 @@ def stream(
     np,
     operation,
     contiguous,
-    precision,
+    dtype,
     size,
     runs,
     warmup,
@@ -134,7 +136,6 @@ def stream(
     timer,
     perform_check,
 ):
-    dtype = np.float32 if precision == 32 else np.float64
     a, b, c = initialize(np, size, dtype, contiguous)
 
     def op():
@@ -145,19 +146,21 @@ def stream(
         else:
             np.add(a, b, out=c)
 
-    total = timed_loop(op, timer, runs, warmup)
+    total = timed_loop(op, timer, runs, warmup) / runs
 
     if perform_check:
         result = b if operation == "mul" else c
-        check_stream(operation, size, precision, contiguous, result)
+        check_stream(operation, size, dtype, contiguous, result)
 
     return total
 
 
-def _get_precisions(precision):
+def _get_dtypes(precision):
     if precision == "all":
-        return [32, 64]
-    return [int(precision)]
+        return ["float32", "float64"]
+    else:
+        assert precision in ["32", "64"]
+        return [f"float{precision}"]
 
 
 def _get_contiguous_modes(contiguous):
@@ -174,7 +177,7 @@ def run_benchmarks(
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_suite_size(
+    sizes, resolutions = resolve_suite_size(
         size_request,
         resolve_from_target=lambda target_bytes: (
             _resolve_size_from_memory_target(
@@ -188,10 +191,10 @@ def run_benchmarks(
             resolved_size, precision, contiguous
         ),
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
-    precisions = _get_precisions(precision)
+    dtypes = _get_dtypes(precision)
     contigs = _get_contiguous_modes(contiguous)
     operation = "mul" if operation == "scale" else operation
     ops = ["copy", "mul", "add"] if operation == "all" else [operation]
@@ -201,8 +204,8 @@ def run_benchmarks(
         np,
         ops,
         contigs,
-        precisions,
-        size,
+        dtypes,
+        sizes,
         runs,
         warmup,
         timer=timer,

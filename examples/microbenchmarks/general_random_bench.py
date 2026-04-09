@@ -43,7 +43,7 @@ def randint(np, size, runs, warmup, *, timer):
     def operation():
         return np.random.randint(1, 1000, size=size)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 @benchmark_info(
@@ -73,7 +73,7 @@ def bitgenerator(
         else:
             return gen.uniform(low, high, size=size)
 
-    return timed_loop(operation, timer, runs, warmup)
+    return timed_loop(operation, timer, runs, warmup) / runs
 
 
 # =============================================================================
@@ -87,11 +87,11 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_linear_suite_size(
+    sizes, resolutions = resolve_linear_suite_size(
         size_request, bytes_per_element=_RANDOM_BYTES_PER_ELEMENT
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     dtypes = [np.float32, np.float64]
     uniform_takes_dtype = True
@@ -123,11 +123,11 @@ def run_benchmarks(suite, size_request):
         case _:
             assert False, f"Unexpected package: {np.__name__}"
 
-    suite.run_timed(randint, np, size, runs, warmup, timer=timer)
+    suite.run_timed(randint, np, sizes, runs, warmup, timer=timer)
     suite.run_timed(
         bitgenerator,
         np,
-        size,
+        sizes,
         runs,
         warmup,
         bitgen_types,

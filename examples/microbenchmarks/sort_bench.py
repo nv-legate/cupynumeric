@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 """
-SORT microbenchmark suite.
+Sort microbenchmark suite.
 
 Sort variants:
 1. sort-1D: single dimension sort
@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import math
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark import MicrobenchmarkSuite, benchmark_info, timed_loop
 from _benchmark.sizing import (
     SizeRequest,
     resolve_size_by_binary_search,
@@ -54,15 +54,23 @@ def _get_variants(variant):
     return [variant]
 
 
-def _get_precisions(precision):
+def _get_dtypes(precision):
     if precision == "all":
-        return [32, 64]
-    return [int(precision)]
+        return ["float32", "float64"]
+    else:
+        assert precision in ["32", "64"]
+        return [f"float{precision}"]
 
 
-def _initial_bytes_per_size(precision: str) -> int:
+def _dtype_bytes(dtype) -> int:
+    import numpy
+
+    return numpy.dtype(dtype).itemsize
+
+
+def _initial_bytes_per_size(precision) -> int:
     # Seed the search with a cheap upper-bound guess before the full estimate.
-    return 8 + (max(_get_precisions(precision)) // 8)
+    return 8 + max(_dtype_bytes(d) for d in _get_dtypes(precision))
 
 
 def _get_case_dimension(variant, size):
@@ -86,16 +94,16 @@ def _get_case_dimension(variant, size):
         raise ValueError(f"Invalid variant: {variant}")
 
 
-def _estimate_case_working_set_bytes(variant, precision_bits, size):
+def _estimate_case_working_set_bytes(variant, dtype, size):
     elements = math.prod(_get_case_dimension(variant, size)["size"])
-    return elements * (8 + (precision_bits // 8))
+    return elements * (8 + _dtype_bytes(dtype))
 
 
 def _estimate_working_set_bytes(variant, precision, size):
     return max(
-        _estimate_case_working_set_bytes(case, bits, size)
+        _estimate_case_working_set_bytes(case, dtype, size)
         for case in _get_variants(variant)
-        for bits in _get_precisions(precision)
+        for dtype in _get_dtypes(precision)
     )
 
 
@@ -112,10 +120,7 @@ def _resolve_size_from_memory_target(variant, precision, target_bytes):
 def _describe_size(size, variant, precision):
     lines = [
         f"variants: {', '.join(_get_variants(variant))}",
-        (
-            "precisions: "
-            f"{', '.join(f'float{bits}' for bits in _get_precisions(precision))}"
-        ),
+        f"dtypes:   {', '.join(_get_dtypes(precision))}",
     ]
     for case in _get_variants(variant):
         shape = _get_case_dimension(case, size)["size"]
@@ -133,8 +138,10 @@ def _initialize_case(array_module, variant, size, dtype):
     return dimensions, input_array
 
 
-def sort(np, variant, size, runs, warmup, precision, *, timer):
-    dtype = np.float32 if precision == 32 else np.float64
+@benchmark_info(
+    output_names=["array shape", "time per run (ms)"], returns_time=1
+)
+def sort(np, variant, size, runs, warmup, dtype, *, timer):
     _, input_array = _initialize_case(np, variant, size, dtype)
 
     if variant.startswith("sort"):
@@ -149,16 +156,17 @@ def sort(np, variant, size, runs, warmup, precision, *, timer):
     else:
         raise ValueError(f"Invalid variant: {variant}")
 
-    return timed_loop(operation, timer, runs, warmup)
+    avg = timed_loop(operation, timer, runs, warmup) / runs
+    return (input_array.shape, avg)
 
 
 def run_benchmarks(suite, size_request, *, variant="all", precision="32"):
-    """Run SORT benchmarks inside the suite framework."""
+    """Run Sort benchmarks inside the suite framework."""
     np = suite.np
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    size, resolution = resolve_suite_size(
+    sizes, resolutions = resolve_suite_size(
         size_request,
         resolve_from_target=lambda target_bytes: (
             _resolve_size_from_memory_target(variant, precision, target_bytes)
@@ -170,13 +178,13 @@ def run_benchmarks(suite, size_request, *, variant="all", precision="32"):
             resolved_size, variant, precision
         ),
     )
-    if resolution is not None:
-        suite.print_size_resolution(resolution)
+    if resolutions is not None:
+        suite.print_size_resolution(resolutions)
 
     variants = _get_variants(variant)
-    precisions = _get_precisions(precision)
+    dtypes = _get_dtypes(precision)
     suite.run_timed(
-        sort, np, variants, size, runs, warmup, precisions, timer=timer
+        sort, np, variants, sizes, runs, warmup, dtypes, timer=timer
     )
 
 
@@ -185,7 +193,7 @@ class SortSuite(MicrobenchmarkSuite):
 
     @staticmethod
     def add_suite_parser_group(parser):
-        group = parser.add_argument_group("SORT Suite")
+        group = parser.add_argument_group("Sort Suite")
         group.add_argument(
             "--sort-variant",
             type=str,
@@ -199,14 +207,14 @@ class SortSuite(MicrobenchmarkSuite):
                 "argsort-2D-skinny",
                 "all",
             ],
-            help="SORT variant to run (default: all)",
+            help="Sort variant to run",
         )
         group.add_argument(
             "--sort-precision",
             type=str,
             default="32",
             choices=["32", "64", "all"],
-            help="SORT precision in bits (default: 32)",
+            help="Sort precision in bits",
         )
 
     def __init__(self, config, args):
@@ -219,7 +227,7 @@ class SortSuite(MicrobenchmarkSuite):
             f"variant: {self.sort_variant}",
             f"precision: {self.sort_precision}",
         ]
-        self.print_panel(msg, title="SORT Suite")
+        self.print_panel(msg, title="Sort Suite")
 
     def run_suite(self, size_request: SizeRequest):
         run_benchmarks(
