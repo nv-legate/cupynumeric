@@ -164,7 +164,7 @@ def _make_recording_suite(
         ("general_nanred_bench", {}, "nan_red", 3),
         ("general_scalared_bench", {}, "scalar_red", 3),
         ("ufunc_bench", {"perform_check": False}, "unary_exp", 1),
-        ("general_indexing_bench", {}, "boolean_get", 1),
+        ("general_indexing_bench", {}, "boolean_set_array", 1),
         ("fast_advanced_indexing_bench", {}, "putmask_scalar", 1),
     ],
 )
@@ -422,8 +422,7 @@ def test_fast_advanced_indexing_uses_square_size_for_2d_cases() -> None:
 
     call_map = {name: args for name, args in suite.calls}
     assert call_map["putmask_scalar"][1] == [10_000]
-    assert call_map["take_1d"][1] == 10_000
-    for name in ("einsum_2d", "take_2d", "take_along_axis"):
+    for name in ("einsum_2d",):
         assert call_map[name][1] == 100
 
 
@@ -438,8 +437,7 @@ def test_fast_advanced_indexing_clamps_small_targets_to_nonzero_indices() -> (
     )
 
     call_map = {name: args for name, args in suite.calls}
-    assert call_map["take_1d"][2] == 1
-    for name in ("einsum_2d", "take_2d", "take_along_axis"):
+    for name in ("einsum_2d",):
         assert call_map[name][2] == 1
 
 
@@ -457,7 +455,6 @@ def test_general_indexing_clamps_small_targets_to_nonzero_indices() -> None:
         "non_contiguous_indexing",
         "array_get_1d",
         "array_set_1d",
-        "row_select_2d",
         "scalar_list_set_2d",
     ):
         assert call_map[name][2] == 1

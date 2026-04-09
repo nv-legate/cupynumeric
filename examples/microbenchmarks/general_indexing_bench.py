@@ -16,25 +16,29 @@
 General Advanced Indexing Benchmark - Copy Operation Path
 
 Tests general advanced indexing operations that GO THROUGH Legion/Legate Copy operations:
-- These operations use the ADVANCED_INDEXING task
 - They trigger indirect copy operations via Legion runtime
 - Performance depends on Copy operation efficiency and task launch overhead
 
-Operations tested (all use ADVANCED_INDEXING task):
-1. Boolean mask GET (1D): result = a[bool_mask]
-2. Boolean mask SET (1D): a[bool_mask] = array_values
-3. 2D Boolean indexing: a[mask_2d]
-4. Mixed indexing (3D): a[indices, :, slice] - integer array + slices
-5. Non-contiguous (3D): a[idx_row, :, idx_col] - indices on non-adjacent dims
-6. Boolean with slice (2D): a[mask, :] - boolean on first dimension
-7. Take one per row: a[arange(M), index] - Legate-Boost pattern (fancy 2D indexing)
-8. 1D integer array GET: a[indices] - Hamiltonian pattern
-9. 1D integer array SET: a[indices] = values - Hamiltonian pattern
-10. 2D row selection: a[row_indices] - Hamiltonian pattern
-11. 2D scalar + list SET: a[idx, list(cols)] = value - Hamiltonian pattern
+Operations tested (all use gather/scatter):
+1.  Boolean mask SET (1D): a[bool_mask] = array_values
+2.  Mixed indexing (3D): a[indices, :, slice] - integer array + slices
+3.  Non-contiguous (3D): a[idx_row, :, idx_col] - indices on non-adjacent dims
+4.  Boolean with slice row (2D): a[mask, :] - boolean on first dim (nonzero + ZIP + gather)
+5.  Take one per row: a[arange(M), index] - Legate-Boost pattern (fancy 2D indexing)
+6.  1D integer array GET: a[indices] - Hamiltonian pattern
+7.  1D integer array SET: a[indices] = values - Hamiltonian pattern
+8.  2D scalar + list SET: a[idx, list(cols)] = value - Hamiltonian pattern
+9.  Column-wise integer SET (2D): a[:, indices] = v - ZIP + scatter
+10. Boolean mask on non-first dim: a[:, bool_mask] - nonzero + ZIP + gather
+11. newaxis GET: a[indices, np.newaxis] - newaxis key type forces ZIP path
+12. Ellipsis GET (2D): a[..., indices] - Ellipsis key type, tests normalization vs einsum routing
+13. Non-contiguous GET: a.T[indices] - F-contiguous source requires copy before gather
+14. Scalar RHS + integer array SET: a[indices] = scalar - scatter path, no putmask
 
-For optimized paths that AVOID Copy operations (putmask, einsum, take_task),
-see fast_advanced_indexing_bench.py
+For np.take, np.take_along_axis, np.put and np.put_along_axis, see take_put_bench.py.
+
+For boolean GET without gather/scatter (ADVANCED_INDEXING task only), and
+other optimized paths (putmask, einsum), see fast_advanced_indexing_bench.py
 
 Usage:
     Run via main.py:
@@ -43,6 +47,8 @@ Usage:
     # Compare with numpy backend:
     python main.py --suite general_indexing --package numpy
 """
+
+from __future__ import annotations
 
 import math
 import random
@@ -69,17 +75,6 @@ def _describe_size(size: int) -> list[str]:
     ]
 
 
-def boolean_get(np, size, runs, warmup, *, timer):
-    """Boolean mask get operation."""
-    a = np.random.random(size)
-    mask = a > 0.5
-
-    def operation():
-        return a[mask]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
 def boolean_set_array(np, size, runs, warmup, *, timer):
     """Array assignment to boolean mask."""
     a = np.random.random(size)
@@ -89,17 +84,6 @@ def boolean_set_array(np, size, runs, warmup, *, timer):
 
     def operation():
         a[mask] = values
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def boolean_2d(np, n, runs, warmup, *, timer):
-    """Multi-dimensional boolean indexing."""
-    a = np.random.random((n, n))
-    mask = a > 0.5
-
-    def operation():
-        return a[mask]
 
     return timed_loop(operation, timer, runs, warmup) / runs
 
@@ -128,7 +112,7 @@ def non_contiguous_indexing(np, n, num_indices, runs, warmup, *, timer):
 
 
 def boolean_with_slice(np, n, runs, warmup, *, timer):
-    """Boolean mask on first dimension with slice on remaining dimensions."""
+    """Boolean mask on first dim with slice: a[mask, :] — nonzero + ZIP + gather."""
     a = np.random.random((n, n))
     mask = a[:, 0] > 0.5
 
@@ -161,17 +145,6 @@ def array_set_1d(np, size, num_indices, runs, warmup, *, timer):
     return timed_loop(operation, timer, runs, warmup) / runs
 
 
-def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
-    """2D row selection with integer array (like alph_configs[alph_idx])."""
-    a = np.random.random((n, n))
-    row_indices = np.random.randint(0, n, num_rows)
-
-    def operation():
-        return a[row_indices]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
 def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
     """2D assignment with scalar row + list of columns (like result[idx, list(positions)] = True)."""
     a = np.random.random((n, n))
@@ -184,6 +157,90 @@ def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
     return timed_loop(operation, timer, runs, warmup) / runs
 
 
+def array_set_col_2d(np, n, num_indices, runs, warmup, *, timer):
+    """Column-wise integer array SET: a[:, indices] = v — ZIP + scatter."""
+    a = np.random.random((n, n))
+    indices = np.random.randint(0, n, num_indices)
+    values = np.random.random((n, num_indices))
+
+    def operation():
+        a[:, indices] = values
+
+    return timed_loop(operation, timer, runs, warmup) / runs
+
+
+def boolean_col_with_slice(np, n, runs, warmup, *, timer):
+    """Boolean mask on non-first dim: a[:, bool_mask] — nonzero + ZIP + gather."""
+    a = np.random.random((n, n))
+    mask = a[0, :] > 0.5
+
+    def operation():
+        return a[:, mask]
+
+    return timed_loop(operation, timer, runs, warmup) / runs
+
+
+def newaxis_int_get(np, size, num_indices, runs, warmup, *, timer):
+    """
+    Integer array GET with trailing newaxis: a[indices, np.newaxis].
+    Covers key type: newaxis; key composition: int array + newaxis (mixed).
+    Path: newaxis in key prevents einsum routing → ZIP + gather.
+    """
+    a = np.random.random(size)
+    indices = np.random.randint(0, size, num_indices)
+
+    def operation():
+        return a[indices, np.newaxis]  # shape: (num_indices, 1)
+
+    return timed_loop(operation, timer, runs, warmup) / runs
+
+
+def ellipsis_int_get(np, n, num_indices, runs, warmup, *, timer):
+    """
+    Integer array GET with Ellipsis on leading axes: a[..., indices] (2D).
+    Covers key type: Ellipsis; key composition: Ellipsis + int array (mixed).
+    Semantically equivalent to a[:, indices] but tests whether Ellipsis
+    normalization routes to einsum or falls back to ZIP + gather.
+    """
+    a = np.random.random((n, n))
+    indices = np.random.randint(0, n, num_indices)
+
+    def operation():
+        return a[..., indices]  # Ellipsis expands to slice(None) for dim 0
+
+    return timed_loop(operation, timer, runs, warmup) / runs
+
+
+def noncontiguous_get(np, n, num_indices, runs, warmup, *, timer):
+    """
+    Integer array GET from a non-contiguous (transposed) source array: a.T[indices].
+    Covers contiguity: F-contiguous (non-C-contiguous) source requires a copy
+    before gather can proceed.
+    """
+    a = np.random.random((n, n)).T  # F-contiguous (transposed view)
+    indices = np.random.randint(0, n, num_indices)
+
+    def operation():
+        return a[indices]  # gather from non-contiguous source
+
+    return timed_loop(operation, timer, runs, warmup) / runs
+
+
+def array_key_scalar_set(np, size, num_indices, runs, warmup, *, timer):
+    """
+    Scalar RHS assignment via integer array key: a[indices] = scalar.
+    Covers RHS type: scalar with non-boolean key (no putmask path).
+    Path: ZIP task → scatter (scalar broadcast, distinct from putmask).
+    """
+    a = np.random.random(size)
+    indices = np.random.randint(0, size, num_indices)
+
+    def operation():
+        a[indices] = 0.0
+
+    return timed_loop(operation, timer, runs, warmup) / runs
+
+
 def take_one_per_row(np, m, n, runs, warmup, *, timer):
     """
     Take one element from each row (Legate-Boost pattern).
@@ -191,7 +248,6 @@ def take_one_per_row(np, m, n, runs, warmup, *, timer):
     Equivalent to: np.stack([A[row, index[row]] for row in range(M)])
     """
     a = np.random.random((m, n))
-    # Each row gets a different column index
     col_indices = np.random.randint(0, n, m)
     row_indices = np.arange(m)
 
@@ -220,7 +276,6 @@ def run_benchmarks(suite, size_request):
     if resolutions is not None:
         suite.print_size_resolution(resolutions)
 
-    # Derived sizes
     ns = [math.isqrt(size) for size in sizes]
 
     def arg_gen_1d():
@@ -237,60 +292,74 @@ def run_benchmarks(suite, size_request):
 
     def arg_gen_3d():
         for size in sizes:
-            n_3d = int(size ** (1 / 3))  # For 3D arrays
+            n_3d = int(size ** (1 / 3))
             num_indices = clamp(n_3d // 5, 1, 1000)
             yield (np, n_3d, num_indices, runs, warmup)
 
-    # 1. Boolean mask GET
-    suite.run_timed(boolean_get, np, sizes, runs, warmup, timer=timer)
-
-    # 2. Boolean mask SET (array)
-    suite.run_timed(boolean_set_array, np, sizes, runs, warmup, timer=timer)
-
-    # 3. 2D Boolean indexing
-    suite.run_timed(boolean_2d, np, ns, runs, warmup, timer=timer)
-
-    # 4. Mixed indexing
-    suite.run_timed_with_generator(
-        None, mixed_indexing, arg_gen_3d(), timer=timer
-    )
-
-    # 5. Non-contiguous indexing (indices on non-adjacent dimensions)
-    suite.run_timed_with_generator(
-        None, non_contiguous_indexing, arg_gen_3d(), timer=timer
-    )
-
-    # 6. Boolean mask with slice
-    suite.run_timed(boolean_with_slice, np, ns, runs, warmup, timer=timer)
-
-    # 7. Take one from each row (Legate-Boost: A[arange(M), index])
-    # Note: This also covers fancy_2d and take_pairs patterns (same code path)
     def arg_gen_one_per_row():
         for n in ns:
             yield (np, n, n, runs, warmup)
 
+    # 1. Boolean mask SET (array) — ADVANCED_INDEXING task + scatter
+    suite.run_timed(boolean_set_array, np, sizes, runs, warmup, timer=timer)
+
+    # 2. Mixed indexing: a[indices, :, slice] — ZIP + gather
+    suite.run_timed_with_generator(
+        None, mixed_indexing, arg_gen_3d(), timer=timer
+    )
+
+    # 3. Non-contiguous indexing (indices on non-adjacent dims — ZIP + gather)
+    suite.run_timed_with_generator(
+        None, non_contiguous_indexing, arg_gen_3d(), timer=timer
+    )
+
+    # 4. Boolean mask with slice: a[mask, :] — nonzero + ZIP + gather
+    suite.run_timed(boolean_with_slice, np, ns, runs, warmup, timer=timer)
+
+    # 5. Take one from each row (Legate-Boost: A[arange(M), index] — ZIP + gather)
     suite.run_timed_with_generator(
         None, take_one_per_row, arg_gen_one_per_row(), timer=timer
     )
 
-    # 8. 1D integer array GET (Hamiltonian: config_ints[safe_indices])
+    # 6-7. 1D integer array GET and SET (Hamiltonian pattern)
     suite.run_timed_with_generator(
         None, array_get_1d, arg_gen_1d(), timer=timer
     )
-
-    # 9. 1D integer array SET (Hamiltonian: Hv[batch_indices] = values)
     suite.run_timed_with_generator(
         None, array_set_1d, arg_gen_1d(), timer=timer
     )
 
-    # 10. 2D row selection (Hamiltonian: alph_configs[alph_idx])
-    suite.run_timed_with_generator(
-        None, row_select_2d, arg_gen_2d(), timer=timer
-    )
-
-    # 11. 2D scalar + list assignment (Hamiltonian: result[idx, list(positions)])
+    # 8. 2D scalar+list assignment (Hamiltonian pattern)
     suite.run_timed_with_generator(
         None, scalar_list_set_2d, arg_gen_2d(), timer=timer
+    )
+
+    # 9. Column-wise integer SET: a[:, indices] = v — ZIP + scatter
+    suite.run_timed_with_generator(
+        None, array_set_col_2d, arg_gen_2d(), timer=timer
+    )
+
+    # 10. Boolean mask on non-first dim: a[:, bool_mask] — nonzero + ZIP + gather
+    suite.run_timed(boolean_col_with_slice, np, ns, runs, warmup, timer=timer)
+
+    # 11. newaxis key type: a[indices, np.newaxis] — ZIP + gather
+    suite.run_timed_with_generator(
+        None, newaxis_int_get, arg_gen_1d(), timer=timer
+    )
+
+    # 12. Ellipsis key type: a[..., indices] — tests normalization vs einsum routing
+    suite.run_timed_with_generator(
+        None, ellipsis_int_get, arg_gen_2d(), timer=timer
+    )
+
+    # 13. Non-contiguous GET: a.T[indices] — copy before gather
+    suite.run_timed_with_generator(
+        None, noncontiguous_get, arg_gen_2d(), timer=timer
+    )
+
+    # 14. Scalar RHS + integer array key: a[indices] = scalar — scatter, no putmask
+    suite.run_timed_with_generator(
+        None, array_key_scalar_set, arg_gen_1d(), timer=timer
     )
 
 

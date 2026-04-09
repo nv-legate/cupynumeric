@@ -61,6 +61,8 @@ from axis_sum_bench import AxisSumSuite
 from batched_fft_bench import BatchedFFTSuite
 from fast_advanced_indexing_bench import FastAdvancedIndexingSuite
 from general_indexing_bench import GeneralIndexingSuite
+from indexing_opt_targets_bench import IndexingOptTargetsSuite
+from take_put_bench import TakePutSuite
 from general_astype_bench import AsTypeSuite
 from general_nanred_bench import NanRedSuite
 from general_random_bench import RandomSuite
@@ -77,6 +79,8 @@ SUITE_CLASSES: list[type[MicrobenchmarkSuite]] = [
     FastAdvancedIndexingSuite,
     AxisSumSuite,
     GeneralIndexingSuite,
+    IndexingOptTargetsSuite,
+    TakePutSuite,
     RandomSuite,
     GemmSuite,
     SolveSuite,
