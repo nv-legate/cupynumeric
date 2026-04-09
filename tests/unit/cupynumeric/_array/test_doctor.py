@@ -355,6 +355,29 @@ class TestAdvancedIndexingCheck:
         assert info is None
 
 
+class TestIterCheck:
+    def test_run_iter(self) -> None:
+        checkup = m.IterCheck()
+        info = checkup.run("__iter__", (), {})
+        assert info is not None
+
+    def test_run_other_func(self) -> None:
+        checkup = m.IterCheck()
+        info = checkup.run("__getitem__", (), {})
+        assert info is None
+
+    def test_run_locator_none(self, monkeypatch) -> None:
+        checkup = m.IterCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+        info = checkup.run("__iter__", (), {})
+        assert info is None
+
+    def test_description(self) -> None:
+        checkup = m.IterCheck()
+        assert "__iter__" in checkup.description
+        assert checkup.reference is not None
+
+
 def test_ALL_CHECKS() -> None:
     assert m.ALL_CHECKS == (
         m.RepeatedItemOps,
@@ -366,6 +389,7 @@ def test_ALL_CHECKS() -> None:
         m.NumbaJitCheck,
         m.BuiltinReductionCheck,
         m.Mpi4pyCheck,
+        m.IterCheck,
     )
 
 

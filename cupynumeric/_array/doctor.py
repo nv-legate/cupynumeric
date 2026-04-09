@@ -690,6 +690,26 @@ class BuiltinReductionCheck(Checkup):
         )
 
 
+class IterCheck(Checkup):
+    """
+    Attempt to detect and warn about usage of __iter__ on cuPyNumeric arrays,
+    which forces element-by-element access and can be slow.
+    """
+
+    description = (
+        "iterating over a cuPyNumeric array with __iter__ is slow; "
+        "use vectorized operations instead"
+    )
+    reference = "https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-array-based-operations-avoid-loops-with-indexing"  # noqa
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        if func == "__iter__":
+            if (locator := self.locate()) is None:
+                return None
+            return self.report(locator)
+        return None
+
+
 class Mpi4pyCheck(Checkup):
     """
     Detect when mpi4py has been imported in the same process as cuPyNumeric.
@@ -730,6 +750,7 @@ ALL_CHECKS: Final[tuple[Type[Checkup], ...]] = (
     NumbaJitCheck,
     BuiltinReductionCheck,
     Mpi4pyCheck,
+    IterCheck,
 )
 
 
