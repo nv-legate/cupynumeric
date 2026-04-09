@@ -30,6 +30,7 @@ from typing import Any, Final, Type
 import numpy as np
 
 from .._utils.stack import find_last_user_frame
+from .._utils.array import is_true_unoptimized_advanced_indexing
 from ..settings import settings
 
 
@@ -425,6 +426,42 @@ class ArrayGatherCheck(Checkup):
         return None
 
 
+class StackOpsCheck(Checkup):
+    """
+    Attempt to detect and warn about usage of hstack or vstack, which can
+    result in performance penalties in cuPyNumeric.
+
+    """
+
+    description = "use of hstack/vstack can result in a performance penalty"
+    reference = None
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        """
+        Check for use of hstack or vstack.
+
+        Args:
+            func (str):
+                Name of the function being invoked
+            args (tuple):
+                Any positional arguments the function is being called with
+            kwargs (dict):
+                Any keyword arguments the function is being called with
+
+        Returns:
+            a ``Diagnostic`` in case a new detection at the current location
+            is reported, otherwise None
+
+        """
+        if func in {"hstack", "vstack"}:
+            if (locator := self.locate()) is None:
+                return None
+
+            return self.report(locator)
+
+        return None
+
+
 class NumbaJitCheck(Checkup):
     """
     Attempt to detect and warn when cuPyNumeric APIs are invoked from a
@@ -476,6 +513,81 @@ class NumbaJitCheck(Checkup):
             return None
 
         if self._call_stack_contains_numba(current):
+            return self.report(locator)
+
+        return None
+
+
+class AdvancedIndexingCheck(Checkup):
+    """
+    Attempt to detect and warn about usage of advanced indexing, which can
+    cause performance penalties in cuPyNumeric.
+
+    """
+
+    description = "use of advanced indexing can be slow in cuPyNumeric"
+    reference = None
+
+    def run(self, func: str, args: Any, _kwargs: Any) -> Diagnostic | None:
+        """
+        Check for use of advanced indexing in __getitem__ and __setitem__.
+
+        Args:
+            func (str):
+                Name of the function being invoked
+            args (tuple):
+                Any positional arguments the function is being called with
+            kwargs (dict):
+                Any keyword arguments the function is being called with
+
+        Returns:
+            a ``Diagnostic`` in case a new detection at the current location
+            is reported, otherwise None
+
+        """
+        if func in {"__getitem__", "__setitem__"}:
+            key = args[1]
+            if is_true_unoptimized_advanced_indexing(key, args[0].ndim):
+                if (locator := self.locate()) is None:
+                    return None
+
+                return self.report(locator)
+
+        return None
+
+
+class NonzeroCheck(Checkup):
+    """
+    Attempt to detect and warn about usage of nonzero, which forces a
+    synchronization point in cuPyNumeric because the output size is not
+    known until the computation completes.
+
+    """
+
+    description = "use of nonzero can be slow in cuPyNumeric"
+    reference = None
+
+    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        """
+        Check for use of nonzero.
+
+        Args:
+            func (str):
+                Name of the function being invoked
+            args (tuple):
+                Any positional arguments the function is being called with
+            kwargs (dict):
+                Any keyword arguments the function is being called with
+
+        Returns:
+            a ``Diagnostic`` in case a new detection at the current location
+            is reported, otherwise None
+
+        """
+        if func == "nonzero":
+            if (locator := self.locate()) is None:
+                return None
+
             return self.report(locator)
 
         return None
@@ -612,6 +724,9 @@ ALL_CHECKS: Final[tuple[Type[Checkup], ...]] = (
     RepeatedItemOps,
     RepeatedSliceAccessCheck,
     ArrayGatherCheck,
+    StackOpsCheck,
+    NonzeroCheck,
+    AdvancedIndexingCheck,
     NumbaJitCheck,
     BuiltinReductionCheck,
     Mpi4pyCheck,

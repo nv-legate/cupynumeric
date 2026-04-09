@@ -284,11 +284,85 @@ class TestBuiltinReductionCheck:
 # ========================================================================
 
 
+class TestStackOpsCheck:
+    @pytest.mark.parametrize("func", ("hstack", "vstack"))
+    def test_run_stack_func(self, func: str) -> None:
+        checkup = m.StackOpsCheck()
+        info = checkup.run(func, (), {})
+        assert info is not None
+
+    @pytest.mark.parametrize("func", ("hstack", "vstack"))
+    def test_run_locator_none(self, func: str, monkeypatch) -> None:
+        checkup = m.StackOpsCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+        info = checkup.run(func, (), {})
+        assert info is None
+
+
+class TestNonzeroCheck:
+    def test_run_nonzero(self) -> None:
+        checkup = m.NonzeroCheck()
+        info = checkup.run("nonzero", (), {})
+        assert info is not None
+
+    def test_run_locator_none(self, monkeypatch) -> None:
+        checkup = m.NonzeroCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+        info = checkup.run("nonzero", (), {})
+        assert info is None
+
+
+class TestAdvancedIndexingCheck:
+    @pytest.mark.parametrize("func", ("__getitem__", "__setitem__"))
+    @pytest.mark.parametrize(
+        "key", ([1, 2], np.array([1, 2]), (np.array([1, 2]), slice(None)))
+    )
+    def test_run_advanced_key(self, func: str, key: Any) -> None:
+        checkup = m.AdvancedIndexingCheck()
+        info = checkup.run(func, (_Ndim(5), key), {})
+        assert info is not None
+
+    @pytest.mark.parametrize("func", ("__getitem__", "__setitem__"))
+    @pytest.mark.parametrize(
+        "key",
+        (
+            (
+                np.array([1, 2]),
+                np.array([3, 4]),
+            ),  # multiple advanced components
+            (np.array([1, 2]), slice(1, 3)),  # advanced + non-trivial slice
+        ),
+    )
+    def test_run_advanced_key_low_ndim(self, func: str, key: Any) -> None:
+        checkup = m.AdvancedIndexingCheck()
+        info = checkup.run(func, (_Ndim(3), key), {})
+        assert info is not None
+
+    @pytest.mark.parametrize("func", ("__getitem__", "__setitem__"))
+    @pytest.mark.parametrize(
+        "key", (0, slice(1, 3), Ellipsis, (0, slice(None)))
+    )
+    def test_run_basic_key(self, func: str, key: Any) -> None:
+        checkup = m.AdvancedIndexingCheck()
+        info = checkup.run(func, (_Ndim(2), key), {})
+        assert info is None
+
+    @pytest.mark.parametrize("func", ("__getitem__", "__setitem__"))
+    def test_run_locator_none(self, func: str, monkeypatch) -> None:
+        checkup = m.AdvancedIndexingCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+        info = checkup.run(func, (_Ndim(5), [1, 2]), {})
+        assert info is None
+
+
 def test_ALL_CHECKS() -> None:
     assert m.ALL_CHECKS == (
         m.RepeatedItemOps,
         m.RepeatedSliceAccessCheck,
         m.ArrayGatherCheck,
+        m.StackOpsCheck,
+        m.NonzeroCheck,
+        m.AdvancedIndexingCheck,
         m.NumbaJitCheck,
         m.BuiltinReductionCheck,
         m.Mpi4pyCheck,

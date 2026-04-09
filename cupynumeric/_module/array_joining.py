@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Sequence
 import numpy as np
 
 from .._array.array import ndarray
+from .._array.doctor import doctor
 from .._array.util import add_boilerplate, convert_to_cupynumeric_ndarray
 from ..lib.array_utils import normalize_axis_index
 from .array_dimension import _atleast_nd
@@ -27,6 +28,8 @@ from .array_transpose import moveaxis
 from .creation_ranges import arange
 from .creation_shape import empty, ones, zeros
 from .ssc_searching import flatnonzero
+
+from ..settings import settings as cupynumeric_settings
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -545,6 +548,10 @@ def vstack(tup: Sequence[ndarray]) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
+
+    if cupynumeric_settings.doctor():
+        doctor.diagnose(vstack.__name__, (tup,), {})
+
     # Reshape arrays in the `array_list` if needed before concatenation
     reshaped = _atleast_nd(2, tup)
     if not isinstance(reshaped, list):
@@ -589,6 +596,9 @@ def hstack(tup: Sequence[ndarray]) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
+    if cupynumeric_settings.doctor():
+        doctor.diagnose(hstack.__name__, (tup,), {})
+
     # Reshape arrays in the `array_list` to handle scalars
     reshaped = _atleast_nd(1, tup)
     if not isinstance(reshaped, list):
