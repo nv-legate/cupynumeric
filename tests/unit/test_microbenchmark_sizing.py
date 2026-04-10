@@ -155,6 +155,15 @@ def _make_recording_suite(
     )
 
 
+class _TransposeStub:
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    @property
+    def T(self) -> str:
+        return f"{self._name}.T"
+
+
 @pytest.mark.parametrize(
     ("module_name", "runner_kwargs", "expected_name", "size_index"),
     [
@@ -326,6 +335,84 @@ def test_stream_target_resolution_for_noncontiguous_layout() -> None:
         stream_bench._estimate_working_set_bytes("all", next_size)
         > target_bytes
     )
+
+
+def test_stream_noncontiguous_initializer_uses_random_final_shape() -> None:
+    stream_bench = _module("stream_bench")
+    random_array = _TransposeStub("a")
+    full_b = _TransposeStub("b")
+    full_c = _TransposeStub("c")
+    generator = SimpleNamespace(random=Mock(return_value=random_array))
+    tracker_float32 = object()
+    tracker = SimpleNamespace(
+        float32=tracker_float32,
+        arange=Mock(
+            side_effect=AssertionError("non-contiguous init should not arange")
+        ),
+        full=Mock(side_effect=[full_b, full_c]),
+        random=SimpleNamespace(default_rng=Mock(return_value=generator)),
+    )
+
+    result = stream_bench.initialize(tracker, 36, "float32", False)
+    shape = stream_bench.get_noncontiguous_shape(36)
+
+    tracker.random.default_rng.assert_called_once_with()
+    generator.random.assert_called_once_with(shape, dtype=tracker_float32)
+    assert tracker.full.call_args_list == [
+        ((shape, 2), {"dtype": "float32"}),
+        ((shape, 1), {"dtype": "float32"}),
+    ]
+    assert result == (random_array.T, full_b.T, full_c.T)
+
+
+@pytest.mark.parametrize("operation", ["copy", "mul", "add"])
+def test_stream_check_uses_actual_initialized_arrays(operation: str) -> None:
+    stream_bench = _module("stream_bench")
+    a = np.array([[0.125, 0.25], [0.5, 0.75]], dtype=np.float32).T
+    b = np.full_like(a, 2)
+    c = np.full_like(a, 1)
+
+    if operation == "copy":
+        result = a.copy()
+    elif operation == "mul":
+        result = c * stream_bench.SCALAR
+    else:
+        result = a + b
+
+    stream_bench.check_stream(operation, a, b, c, result)
+
+
+def test_stream_check_uses_pre_op_snapshots(monkeypatch) -> None:
+    stream_bench = _module("stream_bench")
+    a = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    b = np.full_like(a, 2.0)
+    c = np.full_like(a, 1.0)
+
+    def fake_initialize(np_module, size, dtype, contiguous):
+        del np_module, size, dtype, contiguous
+        return a, b, c
+
+    def fake_timed_loop(op, timer, runs, warmup):
+        del op, timer, runs, warmup
+        a[...] = a + 1.0
+        c[...] = a
+        return 1.0
+
+    monkeypatch.setattr(stream_bench, "initialize", fake_initialize)
+    monkeypatch.setattr(stream_bench, "timed_loop", fake_timed_loop)
+
+    with pytest.raises(AssertionError, match="stream result mismatch"):
+        stream_bench.stream(
+            np,
+            "copy",
+            True,
+            "float32",
+            3,
+            1,
+            0,
+            timer=object(),
+            perform_check=True,
+        )
 
 
 def test_gemm_target_resolution_for_all_variants() -> None:

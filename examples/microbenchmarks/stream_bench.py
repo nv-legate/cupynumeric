@@ -86,6 +86,12 @@ def get_noncontiguous_shape(size):
     return rows, size // rows
 
 
+def _to_host(array):
+    import numpy as host_np
+
+    return array.get() if hasattr(array, "get") else host_np.asarray(array)
+
+
 def initialize(array_module, size, dtype, contiguous):
     """Allocate contiguous or transpose-based non-contiguous arrays."""
     if contiguous:
@@ -95,30 +101,24 @@ def initialize(array_module, size, dtype, contiguous):
         return a, b, c
 
     shape = get_noncontiguous_shape(size)
-    a = array_module.arange(1, size + 1, dtype=dtype).reshape(shape)
+    rng = array_module.random.default_rng()
+    a = rng.random(shape, dtype=getattr(array_module, dtype))
     b = array_module.full(shape, 2, dtype=dtype)
     c = array_module.full(shape, 1, dtype=dtype)
     return a.T, b.T, c.T
 
 
-def check_stream(operation, size, dtype, contiguous, result):
+def check_stream(operation, a, b, c, result):
     import numpy as host_np
 
-    a, b, c = initialize(host_np, size, dtype, contiguous)
-
     if operation == "copy":
-        c[...] = a
-        expected = c
+        expected = _to_host(a)
     elif operation == "mul":
-        host_np.multiply(c, SCALAR, out=b)
-        expected = b
+        expected = _to_host(c) * SCALAR
     else:
-        host_np.add(a, b, out=c)
-        expected = c
+        expected = _to_host(a) + _to_host(b)
 
-    actual = (
-        result.get() if hasattr(result, "get") else host_np.asarray(result)
-    )
+    actual = _to_host(result)
 
     if not host_np.allclose(actual, expected):
         raise AssertionError("stream result mismatch")
@@ -137,6 +137,12 @@ def stream(
     perform_check,
 ):
     a, b, c = initialize(np, size, dtype, contiguous)
+    check_inputs = None
+
+    if perform_check:
+        # Preserve the pre-op operands so validation still catches unexpected
+        # source-array mutations while using the actual benchmark inputs.
+        check_inputs = tuple(_to_host(array).copy() for array in (a, b, c))
 
     def op():
         if operation == "copy":
@@ -150,7 +156,8 @@ def stream(
 
     if perform_check:
         result = b if operation == "mul" else c
-        check_stream(operation, size, dtype, contiguous, result)
+        assert check_inputs is not None
+        check_stream(operation, *check_inputs, result)
 
     return total
 
