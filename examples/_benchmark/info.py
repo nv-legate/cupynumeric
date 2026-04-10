@@ -48,17 +48,10 @@ _TIME: str = "time (milliseconds)"
 
 def _format_package(np: ModuleType) -> str:
     if np.__name__ == "cupynumeric":
-        from cupynumeric.settings import settings as cupynumeric_settings
         from legate.core import get_machine
 
-        force_thunk = cupynumeric_settings.force_thunk()
         target = get_machine().preferred_target.name
-        if force_thunk == "eager":
-            return "cupynumeric.eager"
-        elif force_thunk == "deferred":
-            return f"cupynumeric.{target}_deferred"
-        else:
-            return f"cupynumeric.{target}"
+        return f"cupynumeric.{target}"
     else:
         return np.__name__
 

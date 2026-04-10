@@ -262,13 +262,7 @@ TEST(Argwhere, EmptyArray)
                                                   {1, 0, 1}};
 
   std::vector<std::vector<uint64_t>> exp_shapes = {
-    // {0, 1}, {0, 2}, {0, 2}, {0, 3}, {0, 3}, {0, 3}}；//This is shape of numpy output array.
-    {0, 0},
-    {0, 0},
-    {0, 0},
-    {0, 0},
-    {0, 0},
-    {0, 0}  // This is shape of cupynumeric output array
+    {0, 1}, {0, 2}, {0, 2}, {0, 3}, {0, 3}, {0, 3}  // Match NumPy behavior
   };
 
   assert(in_shapes.size() == exp_shapes.size());

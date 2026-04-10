@@ -354,8 +354,6 @@ bool cupynumeric_has_cusolvermp();
 
 bool cupynumeric_cusolver_has_geev();
 
-unsigned cupynumeric_max_eager_volume();
-
 unsigned cupynumeric_matmul_cache_size();
 
 struct ReductionOpIds cupynumeric_register_reduction_ops(int code);

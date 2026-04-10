@@ -300,9 +300,6 @@ class _CupynumericSharedLib:
     def cupynumeric_cusolver_has_geev(self) -> bool: ...
 
     @abstractmethod
-    def cupynumeric_max_eager_volume(self) -> int: ...
-
-    @abstractmethod
     def cupynumeric_register_reduction_ops(
         self, code: int
     ) -> _ReductionOpIds: ...

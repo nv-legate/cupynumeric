@@ -159,8 +159,11 @@ static void potrf_task_context_dispatch(TaskContext& context)
   assert(scalars.size() == 2);
   bool lower   = scalars[0].value<bool>();
   bool zeroout = scalars[1].value<bool>();
-  double_dispatch(
-    input.dim(), input.type().code(), PotrfImpl<KIND>{context, lower, zeroout}, input, output);
+  double_dispatch(std::max(1, input.dim()),
+                  input.type().code(),
+                  PotrfImpl<KIND>{context, lower, zeroout},
+                  input,
+                  output);
 }
 
 }  // namespace cupynumeric

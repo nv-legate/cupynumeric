@@ -226,14 +226,8 @@ def parse_args(parser):
         import cupynumeric as np
 
         timer = CuPyNumericTimer()
-        force_thunk = cupynumeric_settings.force_thunk()
         target = get_machine().preferred_target.name
-        if force_thunk == "eager":
-            _backend = "cupynumeric.eager"
-        elif force_thunk == "deferred":
-            _backend = f"cupynumeric.{target}_deferred"
-        else:
-            _backend = f"cupynumeric.{target}"
+        _backend = f"cupynumeric.{target}"
     elif args.package == "cupy":
         import cupy as np
 

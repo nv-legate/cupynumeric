@@ -70,11 +70,13 @@ static void repeat_template(TaskContext& context)
                     repeats,
                     axis,
                     scalar_repeats};
-    double_dispatch(args.input.dim(), args.input.code(), RepeatImpl<KIND>{context}, args);
+    double_dispatch(
+      std::max(1, args.input.dim()), args.input.code(), RepeatImpl<KIND>{context}, args);
   } else {
     auto repeats = context.input(1);
     RepeatArgs args{context.output(0), context.input(0), repeats, 0, axis, scalar_repeats};
-    double_dispatch(args.input.dim(), args.input.code(), RepeatImpl<KIND>{context}, args);
+    double_dispatch(
+      std::max(1, args.input.dim()), args.input.code(), RepeatImpl<KIND>{context}, args);
   }
 }
 

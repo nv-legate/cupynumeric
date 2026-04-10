@@ -114,7 +114,7 @@ static void pad_template(TaskContext& context)
                constant_rows,
                constant_cols};
 
-  double_dispatch(args.output.dim(), args.output.code(), PadImpl<KIND>{context}, args);
+  double_dispatch(std::max(1, args.output.dim()), args.output.code(), PadImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

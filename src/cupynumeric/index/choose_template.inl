@@ -74,7 +74,8 @@ static void choose_template(TaskContext& context)
     inputs.emplace_back(input);
   }
   ChooseArgs args{context.output(0), std::move(inputs)};
-  double_dispatch(args.inputs[0].dim(), args.inputs[0].code(), ChooseImpl<KIND>{context}, args);
+  double_dispatch(
+    std::max(1, args.inputs[0].dim()), args.inputs[0].code(), ChooseImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

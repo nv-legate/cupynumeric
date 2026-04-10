@@ -210,12 +210,12 @@ def broadcast_where(where: ndarray | None, shape: NdShape) -> ndarray | None:
 
 def convert_to_cupynumeric_ndarray(obj: Any, share: bool = False) -> ndarray:
     from .array import ndarray
-    from .._thunk.thunk import NumPyThunk
+    from .._thunk.deferred import DeferredArray
 
     # If this is an instance of one of our ndarrays then we're done
     if isinstance(obj, ndarray):
         return obj
-    if isinstance(obj, NumPyThunk):
+    if isinstance(obj, DeferredArray):
         thunk = obj
     else:
         # Ask the runtime to make a numpy thunk for this object

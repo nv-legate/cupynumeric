@@ -79,7 +79,8 @@ struct FFTDispatch {
     // Not expecting changing dimensions, at least for now
     assert(args.input.dim() == args.output.dim());
 
-    double_dispatch(args.input.dim(), args.input.code(), FFTImpl<KIND, FFT_TYPE>{context}, args);
+    double_dispatch(
+      std::max(1, args.input.dim()), args.input.code(), FFTImpl<KIND, FFT_TYPE>{context}, args);
   }
 };
 

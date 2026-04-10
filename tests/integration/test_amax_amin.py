@@ -250,6 +250,24 @@ class TestAmaxAminErrors:
         with pytest.raises(expected_exc):
             func_num([])
 
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("func_name", FUNCS)
+    def test_empty_array_message(self, func_name):
+        """Test that empty array error messages match NumPy"""
+        # cuPyNumeric uses function name in error message (e.g. "amax")
+        # NumPy uses operation name (e.g. "maximum")
+        func_np = getattr(np, func_name)
+        func_num = getattr(num, func_name)
+
+        # Get NumPy's error message
+        with pytest.raises(ValueError) as excinfo_np:
+            func_np([])
+        np_message = str(excinfo_np.value)
+
+        # Verify cuPyNumeric raises with same message
+        with pytest.raises(ValueError, match=np_message):
+            func_num([])
+
     @pytest.mark.parametrize(
         "axis", (-4, 3), ids=lambda axis: f"(axis={axis})"
     )

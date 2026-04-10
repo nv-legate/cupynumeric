@@ -19,6 +19,11 @@ from utils.comparisons import allclose as _allclose
 
 import cupynumeric as num
 from cupynumeric.config import FFTCode, FFTDirection
+from cupynumeric.runtime import runtime
+
+pytestmark = pytest.mark.skipif(
+    runtime.num_gpus == 0, reason="FFT is only supported on GPU"
+)
 
 
 def allclose(A: np.ndarray, B: np.ndarray) -> bool:

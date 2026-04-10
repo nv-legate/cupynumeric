@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 
-import os
 from math import prod
 
 import numpy as np
@@ -24,8 +23,6 @@ import cupynumeric as num
 from cupynumeric.settings import settings
 
 NAN_ARG_FUNCS = ("nanargmax", "nanargmin")
-
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 DISALLOWED_DTYPES = (np.complex64, np.complex128)
 
@@ -144,10 +141,6 @@ class TestNanArgReductions:
 
         settings.numpy_compat.unset_value()
 
-    @pytest.mark.skipif(
-        EAGER_TEST,
-        reason="Eager and Deferred mode will give different results",
-    )
     @pytest.mark.parametrize("func_name", NAN_ARG_FUNCS)
     @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE)
     def test_all_nan_no_numpy_compat(self, func_name, ndim):
@@ -194,10 +187,6 @@ class TestNanArgReductions:
 
         settings.numpy_compat.unset_value()
 
-    @pytest.mark.skipif(
-        EAGER_TEST,
-        reason="Eager and Deferred mode will give different results",
-    )
     @pytest.mark.parametrize(
         "identity, func_name",
         [

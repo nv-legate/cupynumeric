@@ -178,7 +178,8 @@ static void take_template(TaskContext& context, const exec_policy_t& policy)
                 context.scalar(0).value<std::int8_t>(),
                 context.scalar(1).value<bool>()};
 
-  double_dispatch(args.res.dim(), args.res.code(), TakeImpl<exec_policy_t>{context}, args, policy);
+  double_dispatch(
+    std::max(1, args.res.dim()), args.res.code(), TakeImpl<exec_policy_t>{context}, args, policy);
 }
 
 }  // namespace cupynumeric

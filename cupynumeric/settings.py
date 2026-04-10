@@ -148,20 +148,6 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
-    max_eager_volume: EnvOnlySetting[int] = EnvOnlySetting(
-        "max_eager_volume",
-        "CUPYNUMERIC_MAX_EAGER_VOLUME",
-        default=8192,  # 1 << 13
-        test_default=2,
-        convert=convert_int,
-        help="""
-        cuPyNumeric will fall-back to eager execution with Numpy when data
-        sizes are below this value.
-
-        This is a read-only environment variable setting used by the runtime.
-        """,
-    )
-
     min_gpu_chunk: EnvOnlySetting[int] = EnvOnlySetting(
         "min_gpu_chunk",
         "CUPYNUMERIC_MIN_GPU_CHUNK",
@@ -169,7 +155,7 @@ class CupynumericRuntimeSettings(Settings):
         test_default=2,
         convert=convert_int,
         help="""
-        DEPRECATED: use CUPYNUMERIC_MAX_EAGER_VOLUME instead.
+        Minimum chunk size for GPU operations.
 
         This is a read-only environment variable setting used by the runtime.
         """,
@@ -182,7 +168,7 @@ class CupynumericRuntimeSettings(Settings):
         test_default=2,
         convert=convert_int,
         help="""
-        DEPRECATED: use CUPYNUMERIC_MAX_EAGER_VOLUME instead.
+        Minimum chunk size for CPU operations.
 
         This is a read-only environment variable setting used by the runtime.
         """,
@@ -195,25 +181,7 @@ class CupynumericRuntimeSettings(Settings):
         test_default=2,
         convert=convert_int,
         help="""
-        DEPRECATED: use CUPYNUMERIC_MAX_EAGER_VOLUME instead.
-
-        This is a read-only environment variable setting used by the runtime.
-        """,
-    )
-
-    force_thunk: EnvOnlySetting[str | None] = EnvOnlySetting(
-        "force_thunk",
-        "CUPYNUMERIC_FORCE_THUNK",
-        default=None,
-        test_default="deferred",
-        help="""
-        Force cuPyNumeric to always use a specific strategy for backing
-        ndarrays: "deferred", i.e. managed by the Legate runtime, which
-        enables distribution and accelerated operations, but has some
-        up-front offloading overhead, or "eager", i.e. falling back to
-        using a vanilla NumPy array. By default cuPyNumeric will decide
-        this on a per-array basis, based on the size of the array and
-        the accelerator in use.
+        Minimum chunk size for OpenMP operations.
 
         This is a read-only environment variable setting used by the runtime.
         """,

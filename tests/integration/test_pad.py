@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os
 
 import numpy as np
 import pytest
 from utils.generators import mk_seq_array
 
 import cupynumeric as num
-
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 class TestPadConstant:
@@ -744,9 +741,6 @@ class TestPadCornerCases:
         num_result = num.pad(num_arr, ((0, 0)), mode="edge")
         assert np.array_equal(np_result, np.array(num_result))
 
-    @pytest.mark.skipif(
-        EAGER_TEST, reason="'EagerArray' DID NOT RAISE <class 'ValueError'>"
-    )
     def test_pad_constant_no_value(self) -> None:
         arr = num.array([1, 2, 3])
         with pytest.raises(ValueError, match="constant mode requires"):

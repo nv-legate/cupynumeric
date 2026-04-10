@@ -116,7 +116,7 @@ static void diag_template(TaskContext& context)
   legate::PhysicalStore matrix = extract ? context.input(0) : context.output(0);
   legate::PhysicalStore diag   = extract ? context.reduction(0) : context.input(0);
   DiagArgs args{naxes, extract, matrix, diag};
-  double_dispatch(matrix.dim(), matrix.code(), DiagImpl<KIND>{context}, args);
+  double_dispatch(std::max(1, matrix.dim()), matrix.code(), DiagImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

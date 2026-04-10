@@ -29,7 +29,8 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
                   Pitches<DIM - 1> pitches,
                   Point<DIM> origin,
                   Buffer<int64_t> offsets,
-                  Buffer<int64_t, 2> output)
+                  Buffer<int64_t, 2> output,
+                  int32_t actual_ndim)
 {
   const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= volume) {
@@ -39,7 +40,7 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   auto in_p = pitches.unflatten(tid, origin);
   if (in[in_p] != VAL(0)) {
     auto offset = offsets[tid];
-    for (int32_t dim = 0; dim < DIM; ++dim) {
+    for (int32_t dim = 0; dim < actual_ndim; ++dim) {
       output[Point<2>(offset, dim)] = in_p[dim];
     }
   }
@@ -56,7 +57,8 @@ struct ArgWhereImplBody<VariantKind::GPU, CODE, DIM> {
                   AccessorRO<VAL, DIM> input,
                   const Pitches<DIM - 1>& pitches,
                   const Rect<DIM>& rect,
-                  size_t volume) const
+                  size_t volume,
+                  int32_t actual_ndim) const
   {
     auto stream = context.get_task_stream();
 
@@ -64,12 +66,12 @@ struct ArgWhereImplBody<VariantKind::GPU, CODE, DIM> {
     auto size    = compute_offsets(input, pitches, rect, volume, offsets, stream);
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
-    auto out = out_array.create_output_buffer<int64_t, 2>(Point<2>(size, DIM), true);
+    auto out = out_array.create_output_buffer<int64_t, 2>(Point<2>(size, actual_ndim), true);
 
     if (size > 0) {
       const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
       argwhere_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-        volume, input, pitches, rect.lo, offsets, out);
+        volume, input, pitches, rect.lo, offsets, out, actual_ndim);
       CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
     }
   }

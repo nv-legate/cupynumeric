@@ -98,13 +98,21 @@ static void packbits_template(TaskContext& context)
   auto code = input.code();
   switch (bitorder) {
     case Bitorder::BIG: {
-      double_dispatch(
-        input.dim(), code, PackbitsImpl<KIND, Bitorder::BIG>{context}, output, input, axis);
+      double_dispatch(std::max(1, input.dim()),
+                      code,
+                      PackbitsImpl<KIND, Bitorder::BIG>{context},
+                      output,
+                      input,
+                      axis);
       break;
     }
     case Bitorder::LITTLE: {
-      double_dispatch(
-        input.dim(), code, PackbitsImpl<KIND, Bitorder::LITTLE>{context}, output, input, axis);
+      double_dispatch(std::max(1, input.dim()),
+                      code,
+                      PackbitsImpl<KIND, Bitorder::LITTLE>{context},
+                      output,
+                      input,
+                      axis);
       break;
     }
   }

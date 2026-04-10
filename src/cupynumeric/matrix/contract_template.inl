@@ -235,7 +235,7 @@ static void contract_template(legate::TaskContext& context)
   assert(code == args.rhs2.code());
 #endif
 
-  double_dispatch(dim, code, ContractImpl<KIND>{context}, args);
+  double_dispatch(std::max(1, dim), code, ContractImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

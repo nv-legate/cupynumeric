@@ -94,9 +94,7 @@ class TestToDLPack:
 
     def test_dlpack_deferred_thunk(self) -> None:
         num_array = num.arange(4, dtype=np.float32)
-        # If eager, force conversion; in cuda stage it's already deferred.
-        if runtime.is_eager_array(num_array._thunk):
-            num_array._thunk.to_deferred_array(read_only=False)
+        assert runtime.is_deferred_array(num_array._thunk)
 
         capsule = num_array.__dlpack__()
         assert capsule is not None

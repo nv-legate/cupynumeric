@@ -284,7 +284,7 @@ struct UnaryOp<UnaryOpCode::ANGLE, CODE> {
   constexpr decltype(auto) operator()(const T& x) const
   {
     double res = atan2(0.0, static_cast<double>(x));
-    return res >= 0 ? 0.0 : (deg ? 180.0 : M_PI);
+    return deg ? res * 180.0 / M_PI : res;
   }
 
   bool deg;

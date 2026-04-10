@@ -32,6 +32,7 @@ from _benchmark import (
     get_benchmark_info,
     timed_loop,
 )
+from _benchmark.harness import ArrayPackage
 from _benchmark.sizing import (
     SizeRequest,
     resolve_size_by_binary_search,
@@ -150,4 +151,11 @@ class BatchedFFTSuite(MicrobenchmarkSuite):
     name = "batched_fft"
 
     def run_suite(self, size_request: SizeRequest):
+        # FFT is only supported on GPU in cuPyNumeric
+        if self._config.package == ArrayPackage.LEGATE:
+            from cupynumeric.runtime import runtime
+
+            if runtime.num_gpus == 0:
+                print("Skipping batched_fft suite: FFT requires GPU")
+                return
         run_benchmarks(self, size_request)

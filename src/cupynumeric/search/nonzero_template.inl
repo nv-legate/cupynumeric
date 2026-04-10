@@ -62,7 +62,8 @@ static void nonzero_template(TaskContext& context)
     outputs.emplace_back(output);
   }
   NonzeroArgs args{context.input(0), std::move(outputs)};
-  double_dispatch(args.input.dim(), args.input.code(), NonzeroImpl<KIND>{context}, args);
+  double_dispatch(
+    std::max(1, args.input.dim()), args.input.code(), NonzeroImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

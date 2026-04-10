@@ -43,12 +43,16 @@ struct ArgWhereImpl {
     size_t volume = pitches.flatten(rect_in);
 
     if (volume == 0) {
-      args.out.bind_empty_data();
+      // Create empty output with correct shape (0, actual_ndim) to match NumPy behavior
+      // Use actual_ndim instead of DIM to handle scalars correctly
+      [[maybe_unused]] auto out =
+        args.out.create_output_buffer<int64_t, 2>(Point<2>(0, args.actual_ndim), true);
       return;
     }
 
     auto in = args.in.read_accessor<VAL, DIM>(rect_in);
-    ArgWhereImplBody<KIND, CODE, DIM>{context}(args.out, in, pitches, rect_in, volume);
+    ArgWhereImplBody<KIND, CODE, DIM>{context}(
+      args.out, in, pitches, rect_in, volume, args.actual_ndim);
   }
 };
 
@@ -56,7 +60,9 @@ template <VariantKind KIND>
 static void argwhere_template(TaskContext& context)
 {
   ArgWhereArgs args{context.output(0), context.input(0)};
-  double_dispatch(args.in.dim(), args.in.code(), ArgWhereImpl<KIND>{context}, args);
+  // Store the actual ndim for correct output shape
+  args.actual_ndim = args.in.dim();
+  double_dispatch(std::max(1, args.in.dim()), args.in.code(), ArgWhereImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

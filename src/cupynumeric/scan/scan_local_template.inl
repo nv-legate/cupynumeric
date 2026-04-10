@@ -96,8 +96,10 @@ struct ScanLocalDispatch {
   template <ScanCode OP_CODE, bool NAN_TO_IDENTITY>
   void operator()(ScanLocalArgs& args) const
   {
-    return double_dispatch(
-      args.in.dim(), args.in.code(), ScanLocalImpl<KIND, OP_CODE, NAN_TO_IDENTITY>{context}, args);
+    return double_dispatch(std::max(1, args.in.dim()),
+                           args.in.code(),
+                           ScanLocalImpl<KIND, OP_CODE, NAN_TO_IDENTITY>{context},
+                           args);
   }
 };
 

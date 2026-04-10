@@ -140,8 +140,12 @@ static void solve_template(TaskContext& context)
   auto a_array = context.input(0);
   auto b_array = context.input(1);
   auto x_array = context.output(0);
-  double_dispatch(
-    a_array.dim(), a_array.type().code(), SolveImpl<KIND>{context}, a_array, b_array, x_array);
+  double_dispatch(std::max(1, a_array.dim()),
+                  a_array.type().code(),
+                  SolveImpl<KIND>{context},
+                  a_array,
+                  b_array,
+                  x_array);
 }
 
 }  // namespace cupynumeric

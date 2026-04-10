@@ -23,10 +23,14 @@ import cupynumeric as num
 def test_set_value(write):
     array_np = np.array(3)
     array_num = num.array(3)
-    assert array_np.flags == array_num.flags
+    # Compare all flags except OWNDATA (cuPyNumeric data is managed by Legate)
+    FLAGS_TO_CHECK = ("C", "F", "W", "A", "X")
+    for flag in FLAGS_TO_CHECK:
+        assert array_np.flags[flag] == array_num.flags[flag]
     array_np.setflags(write)
     array_num.setflags(write)
-    assert array_np.flags == array_num.flags
+    for flag in FLAGS_TO_CHECK:
+        assert array_np.flags[flag] == array_num.flags[flag]
 
 
 def test_array_default_flags():

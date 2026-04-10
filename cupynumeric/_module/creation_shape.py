@@ -156,10 +156,8 @@ def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     Multiple GPUs, Multiple CPUs
     """
     arr = _uninitialized(shape=shape, dtype=dtype)
-    # FIXME: we need to initialize this to 0 temporary until
+    # FIXME: we need to initialize this to 0 temporarily until
     # we can check if LogicalStore is initialized
-    # otherwise we get error when empty cupynumeric code is
-    # taking eager mode
     arr.fill(0)
     return arr
 
@@ -201,11 +199,9 @@ def empty_like(
     Multiple GPUs, Multiple CPUs
     """
     arr = _uninitialized_like(a, dtype, shape)
-    # FIXME: we need to initialize this to 0 temporary until
-    # we can check if LogicalStore is initialized
-    # otherwise we get error when empty cupynumeric code is
-    # taking eager mode. Please see issue
-    # https://github.com/nv-legate/cupynumeric.internal/issues/751
+    # FIXME: we need to initialize this to 0 temporarily until
+    # we can check if LogicalStore is initialized.
+    # See issue: https://github.com/nv-legate/cupynumeric.internal/issues/751
     arr.fill(0)
     return arr
 
@@ -247,9 +243,20 @@ def eye(
     --------
     Multiple GPUs, Multiple CPUs
     """
-    resolved_dtype = np.float64 if dtype is None else np.dtype(dtype)
-    if M is None:
+    # Validate N
+    N = operator.index(N)
+    if N < 0:
+        raise ValueError("negative dimensions are not allowed")
+
+    # Validate M
+    if M is not None:
+        M = operator.index(M)
+        if M < 0:
+            raise ValueError("negative dimensions are not allowed")
+    else:
         M = N
+
+    resolved_dtype = np.float64 if dtype is None else np.dtype(dtype)
     k = operator.index(k)
     result = ndarray((N, M), resolved_dtype)
     result._thunk.eye(k)

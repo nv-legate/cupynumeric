@@ -175,7 +175,7 @@ static void trsm_template(TaskContext& context)
   int32_t transa     = scalars[2].value<int32_t>();
   bool unit_diagonal = scalars[3].value<bool>();
 
-  double_dispatch(a_array.dim(),
+  double_dispatch(std::max(1, a_array.dim()),
                   a_array.type().code(),
                   TrsmImpl<KIND>{context, side_left, lower, transa, unit_diagonal},
                   a_array,

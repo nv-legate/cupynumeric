@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import copy
-import os
 from itertools import product
 
 import numpy as np
@@ -23,7 +22,7 @@ import cupynumeric as num
 from cupynumeric.runtime import Runtime, runtime
 from cupynumeric.settings import settings
 
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
+# Eager mode removed - EAGER_TEST no longer needed
 
 
 def test_array():
@@ -386,13 +385,13 @@ class TestRuntimeParentChildMapping:
         )
         child = parent[:, :]
 
-        saved_force_thunk = settings.force_thunk
-        settings.force_thunk = lambda: "eager"  # type: ignore[assignment]
-        try:
-            arr = num.array(child, copy=False)
-        finally:
-            settings.force_thunk = saved_force_thunk  # type: ignore[assignment]
-        assert np.array_equal(np.asarray(arr), child)
+        # With eager mode removed, deferred mode correctly rejects
+        # non-contiguous arrays when copy=False
+        with pytest.raises(
+            ValueError,
+            match=r"Only F_CONTIGUOUS and C_CONTIGUOUS arrays are supported",
+        ):
+            num.array(child, copy=False)
 
     def test_removed_added_dim(self) -> None:
         buf = bytearray(3 * np.dtype(np.int64).itemsize)
@@ -402,13 +401,14 @@ class TestRuntimeParentChildMapping:
         )
         child = parent[0]
 
-        saved_force_thunk = settings.force_thunk
-        settings.force_thunk = lambda: "eager"  # type: ignore[assignment]
-        try:
-            arr = num.array(child, copy=False)
-        finally:
-            settings.force_thunk = saved_force_thunk  # type: ignore[assignment]
-        assert np.array_equal(np.asarray(arr), np.asarray(parent[:, :1]))
+        # Even though child is contiguous, its base (parent) is not.
+        # With eager mode removed, deferred mode correctly rejects this
+        # because it tries to share the parent array which is non-contiguous.
+        with pytest.raises(
+            ValueError,
+            match=r"Only F_CONTIGUOUS and C_CONTIGUOUS arrays are supported",
+        ):
+            num.array(child, copy=False)
 
     def test_added_dim_in_child(self) -> None:
         base = np.arange(3, dtype=np.int64)
@@ -430,10 +430,7 @@ class TestRuntimeParentChildMapping:
 
 
 class TestRuntimeFindOrCreateArrayThunk:
-    @pytest.mark.skipif(
-        EAGER_TEST,
-        reason="contiguity check is deferred-only; eager attach may bypass it",
-    )
+    # Always deferred mode now - test always runs
     def test_noncontiguous_share_raises(self) -> None:
         buf = bytearray(64)
         arr = np.ndarray(
@@ -450,22 +447,7 @@ class TestRuntimeFindOrCreateArrayThunk:
 
 
 class TestRuntimeShapeAndConversions:
-    def test_is_eager_shape_volume_print(self) -> None:
-        saved_force_thunk = settings.force_thunk
-        settings.force_thunk = lambda: None  # type: ignore[assignment]
-        try:
-            a = num.empty((2, 2), dtype=np.int64)
-            assert a.shape == (2, 2)
-        finally:
-            settings.force_thunk = saved_force_thunk  # type: ignore[assignment]
-
-    def test_are_all_eager_inputs_none(self) -> None:
-        assert Runtime.are_all_eager_inputs(None) is True
-
-    def test_to_eager_array_invalid_type(self) -> None:
-        with pytest.raises(RuntimeError, match=r"invalid array type"):
-            runtime.to_eager_array(None)  # type: ignore[arg-type]
-
+    # Eager mode removed - these tests are no longer relevant
     def test_to_deferred_array_invalid_type(self) -> None:
         with pytest.raises(RuntimeError, match=r"invalid array type"):
             runtime.to_deferred_array(None, read_only=False)  # type: ignore[arg-type]

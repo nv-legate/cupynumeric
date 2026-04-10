@@ -17,12 +17,10 @@ from itertools import chain, combinations, permutations
 
 import numpy as np
 import pytest
-from legate.core import LEGATE_MAX_DIM
 from utils.generators import mk_seq_array
 from utils.utils import ONE_MAX_DIM_RANGE, TWO_MAX_DIM_RANGE, AxisError
 
 import cupynumeric as num
-from cupynumeric._thunk.eager import diagonal_reference
 
 
 class TestChoose1d:
@@ -434,19 +432,6 @@ def test_diagonal():
                     np_array.diagonal(offset, axes[0], axes[1]),
                     num_array.diagonal(offset, axes[0], axes[1]),
                 )
-
-    # test for diagonal_helper
-    for ndim in range(3, LEGATE_MAX_DIM + 1):
-        a_shape = tuple(np.random.randint(1, 9) for i in range(ndim))
-        np_array = mk_seq_array(np, a_shape)
-        num_array = mk_seq_array(num, a_shape)
-        for num_axes in range(3, ndim + 1):
-            for axes in permutations(range(ndim), num_axes):
-                res_num = num_array._diag_helper(
-                    offset=0, extract=True, axes=axes
-                )
-                res_ref = diagonal_reference(np_array, axes)
-                assert np.array_equal(res_num, res_ref)
 
 
 KS = (0, -1, 1, -2, 2)

@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 
-import os
 from math import prod
 
 import numpy as np
@@ -25,8 +24,6 @@ import cupynumeric as num
 from cupynumeric.settings import settings
 
 NAN_FUNCS = ("nanmax", "nanmin", "nanprod", "nansum")
-
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 NDIMS = MAX_DIM_RANGE
 
@@ -201,10 +198,6 @@ class TestNanReductions:
 
         settings.numpy_compat.unset_value()
 
-    @pytest.mark.skipif(
-        EAGER_TEST,
-        reason="Eager and Deferred mode will give different results",
-    )
     @pytest.mark.parametrize(
         "identity, func_name",
         [
@@ -248,10 +241,6 @@ class TestNanReductions:
 
         settings.numpy_compat.unset_value()
 
-    @pytest.mark.skipif(
-        EAGER_TEST,
-        reason="Eager and Deferred mode will give different results",
-    )
     @pytest.mark.parametrize(
         "identity, func_name",
         [
@@ -388,6 +377,24 @@ class TestCornerCases:
     def test_empty_for_prod_sum(self):
         assert num.nanprod([]) == 1.0
         assert num.nansum([]) == 0.0
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("func_name", ["nanmin", "nanmax"])
+    def test_empty_array_message(self, func_name):
+        """Test that empty array error messages match NumPy"""
+        # cuPyNumeric uses function name in error message (e.g. "nanmax")
+        # NumPy uses operation name (e.g. "maximum")
+        func_np = getattr(np, func_name)
+        func_num = getattr(num, func_name)
+
+        # Get NumPy's error message
+        with pytest.raises(ValueError) as np_err_msg:
+            func_np([])
+        np_message = str(np_err_msg.value)
+
+        # Verify cuPyNumeric raises with same message
+        with pytest.raises(ValueError, match=np_message):
+            func_num([])
 
 
 class TestXFail:

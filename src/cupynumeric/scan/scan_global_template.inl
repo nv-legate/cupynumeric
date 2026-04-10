@@ -70,7 +70,7 @@ struct ScanGlobalDispatch {
   void operator()(ScanGlobalArgs& args) const
   {
     return double_dispatch(
-      args.out.dim(), args.out.code(), ScanGlobalImpl<KIND, OP_CODE>{context}, args);
+      std::max(1, args.out.dim()), args.out.code(), ScanGlobalImpl<KIND, OP_CODE>{context}, args);
   }
 };
 

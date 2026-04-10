@@ -111,8 +111,12 @@ static void sort_template(TaskContext& context)
                 local_rank,
                 num_ranks,
                 num_sort_ranks};
-  double_dispatch(
-    args.input.dim(), args.input.code(), SortImpl<KIND>{}, args, context, context.communicators());
+  double_dispatch(std::max(1, args.input.dim()),
+                  args.input.code(),
+                  SortImpl<KIND>{},
+                  args,
+                  context,
+                  context.communicators());
 }
 
 }  // namespace cupynumeric

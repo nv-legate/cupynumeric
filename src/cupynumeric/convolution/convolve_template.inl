@@ -91,7 +91,7 @@ static void convolve_template(TaskContext& context)
 
   args.method = static_cast<CuPyNumericConvolveMethod>(context.scalar(1).value<std::int32_t>());
 
-  double_dispatch(args.out.dim(), args.out.code(), ConvolveImpl<KIND>{context}, args);
+  double_dispatch(std::max(1, args.out.dim()), args.out.code(), ConvolveImpl<KIND>{context}, args);
 }
 
 template <typename VAL, int DIM>

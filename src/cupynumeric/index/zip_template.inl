@@ -102,12 +102,7 @@ static void zip_template(TaskContext& context)
     inputs.emplace_back(input);
   }
   ZipArgs args{context.output(0), std::move(inputs), N, key_dim, start_index, shape};
-  int dim = args.inputs[0].dim();
-  // if scalar passed as an input, convert it to the array size 1
-  if (dim == 0) {
-    dim = 1;
-  }
-
+  int dim = std::max(1, args.inputs[0].dim());
   double_dispatch(dim, N, ZipImpl<KIND>{context}, args);
 }
 

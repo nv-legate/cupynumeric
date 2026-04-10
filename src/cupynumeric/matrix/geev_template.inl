@@ -151,7 +151,8 @@ template <VariantKind KIND>
 static void geev_template(TaskContext& context)
 {
   auto a_array = context.input(0);
-  double_dispatch(a_array.dim(), a_array.type().code(), GeevImpl<KIND>{context}, context);
+  double_dispatch(
+    std::max(1, a_array.dim()), a_array.type().code(), GeevImpl<KIND>{context}, context);
 }
 
 }  // namespace cupynumeric

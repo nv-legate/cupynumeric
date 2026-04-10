@@ -152,7 +152,8 @@ template <VariantKind KIND>
 static void syev_template(TaskContext& context)
 {
   auto a_array = context.input(0);
-  double_dispatch(a_array.dim(), a_array.type().code(), SyevImpl<KIND>{context}, context);
+  double_dispatch(
+    std::max(1, a_array.dim()), a_array.type().code(), SyevImpl<KIND>{context}, context);
 }
 
 }  // namespace cupynumeric

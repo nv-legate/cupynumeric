@@ -163,36 +163,6 @@ std::uint32_t extract_env(const char* env_name,
 
 extern "C" {
 
-unsigned cupynumeric_max_eager_volume()
-{
-  auto machine = legate::get_machine();
-
-  if (!getenv("CUPYNUMERIC_MAX_EAGER_VOLUME")) {
-    if (machine.count(legate::mapping::TaskTarget::GPU) > 0) {
-      if (const auto* min_gpu_chunk = std::getenv("CUPYNUMERIC_MIN_GPU_CHUNK"); min_gpu_chunk) {
-        cupynumeric::cupynumeric_log().warning()
-          << "CUPYNUMERIC_MIN_GPU_CHUNK is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME";
-        return cupynumeric::parse_value(min_gpu_chunk);
-      }
-    }
-    if (machine.count(legate::mapping::TaskTarget::OMP) > 0) {
-      if (const auto* min_omp_chunk = std::getenv("CUPYNUMERIC_MIN_OMP_CHUNK"); min_omp_chunk) {
-        cupynumeric::cupynumeric_log().warning()
-          << "CUPYNUMERIC_MIN_OMP_CHUNK is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME";
-        return cupynumeric::parse_value(min_omp_chunk);
-      }
-    }
-    if (const auto* min_cpu_chunk = std::getenv("CUPYNUMERIC_MIN_CPU_CHUNK"); min_cpu_chunk) {
-      cupynumeric::cupynumeric_log().warning()
-        << "CUPYNUMERIC_MIN_CPU_CHUNK is deprecated, use CUPYNUMERIC_MAX_EAGER_VOLUME";
-      return cupynumeric::parse_value(min_cpu_chunk);
-    }
-  }
-  static const auto max_eager_volume = cupynumeric::extract_env(
-    "CUPYNUMERIC_MAX_EAGER_VOLUME", MAX_EAGER_VOLUME_DEFAULT, MAX_EAGER_VOLUME_TEST);
-  return max_eager_volume;
-}
-
 unsigned cupynumeric_matmul_cache_size()
 {
   static const auto max_cache_size = cupynumeric::extract_env(

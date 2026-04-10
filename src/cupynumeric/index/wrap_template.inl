@@ -86,7 +86,7 @@ template <VariantKind KIND>
 static void wrap_template(TaskContext& context)
 {
   auto shape        = context.scalar(0).value<DomainPoint>();
-  int dim           = shape.dim;
+  int dim           = std::max(1, shape.dim);
   bool has_input    = context.scalar(1).value<bool>();
   bool check_bounds = context.scalar(2).value<bool>();
   legate::PhysicalStore tmp_array{nullptr};

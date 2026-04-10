@@ -23,6 +23,7 @@ namespace cupynumeric {
 struct ArgWhereArgs {
   legate::PhysicalStore out;
   legate::PhysicalStore in;
+  int32_t actual_ndim;
 };
 
 class ArgWhereTask : public CuPyNumericTask<ArgWhereTask> {

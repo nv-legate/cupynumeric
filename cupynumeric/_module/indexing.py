@@ -807,15 +807,40 @@ def put_along_axis(
             raise ValueError("a.ndim>1 case is not supported when axis=None")
         if indices.size == 0:
             return
-        if values.shape != indices.shape:
+
+        # NumPy 2.4+ added strict broadcasting validation for axis=None
+        if np.lib.NumpyVersion(np.__version__) >= "2.4.0":
+            # Validate broadcasting compatibility before any size checks
             try:
-                values = broadcast_to(values, indices.shape)
-            except ValueError as exc:
+                np.broadcast_shapes(values.shape, indices.shape)
+            except ValueError as e:
                 raise ValueError(
-                    "shape mismatch: value array of shape "
-                    f"{values.shape} could not be broadcast to indexing "
-                    f"result of shape {indices.shape}"
-                ) from exc
+                    f"'values' cannot be broadcast to match 'indices' when axis=None. "
+                    f"values.shape={values.shape}, indices.shape={indices.shape}"
+                ) from e
+
+            # If values is empty, nothing to do
+            if values.size == 0:
+                return
+
+            # If shapes don't match, broadcast values to match indices shape
+            if values.shape != indices.shape:
+                values = broadcast_to(values, indices.shape)
+        else:
+            # NumPy < 2.4 uses cyclic/repeating values behavior
+            if values.size == 0:
+                return
+
+            # For axis=None, NumPy's fancy indexing uses cyclic/repeating values
+            # if values.shape doesn't match indices.shape
+            if values.shape != indices.shape:
+                # Flatten values and cycle to match indices length
+                values_flat = values.ravel()
+                # Use take with wrap mode to cycle values
+                cycled_values = take(
+                    values_flat, arange(indices.size), mode="wrap"
+                )
+                values = cycled_values
     else:
         computed_axis = normalize_axis_index(axis, a.ndim)
 

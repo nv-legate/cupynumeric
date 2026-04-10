@@ -81,7 +81,8 @@ static void trilu_template(TaskContext& context)
   auto input  = context.input(0);
   auto output = context.output(0);
   TriluArgs args{lower, k, output, input};
-  double_dispatch(args.output.dim(), args.output.type().code(), TriluImpl<KIND>{context}, args);
+  double_dispatch(
+    std::max(1, args.output.dim()), args.output.type().code(), TriluImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

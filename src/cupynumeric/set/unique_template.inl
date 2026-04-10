@@ -57,7 +57,7 @@ static void unique_template(TaskContext& context)
   auto input  = context.input(0);
   auto output = context.output(0);
   auto comms  = context.communicators();
-  double_dispatch(input.dim(),
+  double_dispatch(std::max(1, input.dim()),
                   input.type().code(),
                   UniqueImpl<KIND>{context},
                   output,

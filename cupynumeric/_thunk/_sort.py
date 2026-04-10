@@ -25,8 +25,10 @@ from cupynumeric._utils import is_np2
 
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index
+    from numpy.exceptions import AxisError
 else:
     from numpy.core.multiarray import normalize_axis_index  # type: ignore
+    from numpy import AxisError  # type: ignore
 
 if TYPE_CHECKING:
     from .._thunk.deferred import DeferredArray
@@ -112,15 +114,23 @@ def sort_deferred(
     axis: int | None = -1,
     stable: bool = False,
 ) -> None:
-    if axis is None and input.ndim > 1:
-        sort_flattened(output, input, argsort, stable)
+    # Handle 0-D arrays (scalars)
+    if input.ndim == 0:
+        if axis is not None:
+            # NumPy raises AxisError for any other axis value
+            raise AxisError(axis, input.ndim)
+        # For 0-D arrays, axis=None just returns the scalar
+        output.base = input.base
     else:
-        if axis is None:
-            computed_axis = 0
+        if axis is None and input.ndim > 1:
+            sort_flattened(output, input, argsort, stable)
         else:
-            computed_axis = normalize_axis_index(axis, input.ndim)
+            if axis is None:
+                computed_axis = 0
+            else:
+                computed_axis = normalize_axis_index(axis, input.ndim)
 
-        if computed_axis == input.ndim - 1:
-            sort_task(output, input, argsort, stable)
-        else:
-            sort_swapped(output, input, argsort, computed_axis, stable)
+            if computed_axis == input.ndim - 1:
+                sort_task(output, input, argsort, stable)
+            else:
+                sort_swapped(output, input, argsort, computed_axis, stable)

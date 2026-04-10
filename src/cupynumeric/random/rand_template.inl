@@ -75,7 +75,8 @@ struct RandDispatch {
   template <RandGenCode GEN_CODE>
   void operator()(RandArgs& args) const
   {
-    double_dispatch(args.out.dim(), args.out.code(), RandImpl<GEN_CODE, KIND>{context}, args);
+    double_dispatch(
+      std::max(1, args.out.dim()), args.out.code(), RandImpl<GEN_CODE, KIND>{context}, args);
   }
 };
 

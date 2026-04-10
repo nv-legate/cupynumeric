@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os
 
 import numpy as np
 import pytest
@@ -21,8 +20,6 @@ from utils.generators import mk_seq_array
 from utils.utils import ONE_MAX_DIM_RANGE, TWO_MAX_DIM_RANGE
 
 import cupynumeric as num
-
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 @pytest.fixture
@@ -1305,9 +1302,6 @@ def test_integer_indexing_out_of_bounds() -> None:
         _ = arr[idx, :]
 
 
-@pytest.mark.skipif(
-    EAGER_TEST, reason="'EagerArray' object has no attribute '_zip_indices'"
-)
 def test_too_many_index_arrays() -> None:
     arr = num.arange(12).reshape(3, 4)
     idx1 = num.array([0])
@@ -1326,16 +1320,9 @@ def test_boolean_array_dimension_mismatch() -> None:
     arr = num.arange(12).reshape(3, 4)  # 2D array, ndim=2
     bool_idx = num.ones((4, 3), dtype=bool)  # 2D bool array
 
-    if EAGER_TEST:
-        # EagerArray uses NumPy which raises IndexError
-        with pytest.raises(IndexError):
-            _ = arr[:, bool_idx]
-    else:
-        # DeferredArray raises ValueError
-        with pytest.raises(
-            ValueError, match="Boolean array has .* dimensions"
-        ):
-            _ = arr[:, bool_idx]
+    # All arrays are DeferredArray since eager mode removed
+    with pytest.raises(ValueError, match="Boolean array has .* dimensions"):
+        _ = arr[:, bool_idx]
 
 
 def test_advanced_indexing_dimension_mismatch() -> None:

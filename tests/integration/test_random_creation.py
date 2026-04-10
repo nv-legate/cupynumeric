@@ -23,7 +23,6 @@ from utils.random import assert_distribution
 import cupynumeric as num
 
 LEGATE_TEST = os.environ.get("LEGATE_TEST", None) == "1"
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
 
 
 def test_randn():
@@ -41,19 +40,14 @@ def test_randn():
 
 def test_bitgenerator_bytes_scalar() -> None:
     rng = num.random.default_rng(123)
-    msg = r"invalid literal for int\(\)"
-    if EAGER_TEST:
-        with pytest.raises(ValueError, match=msg):
-            rng.bytes(1)
+    # Always use deferred mode (eager mode removed)
+    out = rng.bytes(1)
+    if isinstance(out, (bytes, bytearray)):
+        assert len(out) == 1
     else:
-        # In cuda/deferred mode this path is implemented and should not raise.
-        out = rng.bytes(1)
-        if isinstance(out, (bytes, bytearray)):
-            assert len(out) == 1
-        else:
-            arr = np.asarray(out)
-            assert arr.dtype == np.uint8
-            assert arr.size == 1
+        arr = np.asarray(out)
+        assert arr.dtype == np.uint8
+        assert arr.size == 1
 
 
 def test_bitgenerator_chisquare_scalar() -> None:
@@ -91,7 +85,7 @@ def gen_random_from_both(
         pytest.param(
             12345,
             marks=pytest.mark.xfail(
-                not EAGER_TEST,
+                True,
                 reason="cuPyNumeric does not respect the singleton generator",
             ),
             # https://github.com/nv-legate/cupynumeric/issues/601
@@ -122,9 +116,6 @@ def test_singleton_seed(seed):
     )
 
 
-@pytest.mark.xfail(
-    EAGER_TEST, reason="cuPyNumeric does not respect seed in Eager mode"
-)
 @pytest.mark.parametrize(
     "seed",
     [
@@ -147,9 +138,6 @@ def test_default_rng_seed(seed):
     assert rng_num_1.random() == rng_num_2.random()
 
 
-@pytest.mark.xfail(
-    EAGER_TEST, reason="cuPyNumeric does not respect seed in Eager mode"
-)
 def test_default_rng_bitgenerator():
     seed = 12345
     rng_np_1 = np.random.default_rng(np.random.PCG64(seed))
@@ -160,9 +148,6 @@ def test_default_rng_bitgenerator():
     assert rng_num_1.random() == rng_num_2.random()
 
 
-@pytest.mark.xfail(
-    EAGER_TEST, reason="cuPyNumeric does not respect seed in Eager mode"
-)
 @pytest.mark.xfail(reason="cupynumeric.internal#135")
 def test_default_rng_generator():
     steps = 3
@@ -255,9 +240,7 @@ def test_randint_float_range(low, high):
     )
 
 
-@pytest.mark.xfail(
-    not EAGER_TEST, reason="cuPyNumeric raises NotImplementedError"
-)
+@pytest.mark.xfail(reason="cuPyNumeric raises NotImplementedError")
 @pytest.mark.parametrize("size", ALL_RNG_SIZES, ids=str)
 @pytest.mark.parametrize("low, high", [(1000, 65535), (0, 1024)], ids=str)
 @pytest.mark.parametrize("dtype", UINT_DTYPES, ids=str)
@@ -298,9 +281,7 @@ def test_randint_distribution(low, high, size, dtype):
     )
 
 
-@pytest.mark.xfail(
-    not EAGER_TEST, reason="cuPyNumeric raises NotImplementedError"
-)
+@pytest.mark.xfail(True, reason="cuPyNumeric raises NotImplementedError")
 @pytest.mark.parametrize("size", (1024, 1025))
 def test_randint_bool(size):
     """Test randint with boolean output dtype."""
@@ -493,9 +474,6 @@ class TestRandomErrors:
 
 
 class TestLegacyRandomMethods:
-    @pytest.mark.skipif(
-        EAGER_TEST, reason="'EagerArray' object has no attribute 'random'"
-    )
     def test_random_base_method(self) -> None:
         from cupynumeric.config import RandGenCode
 

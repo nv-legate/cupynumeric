@@ -67,15 +67,15 @@ static void unpackbits_template(TaskContext& context)
   legate::PhysicalStore input  = context.input(0);
   auto axis                    = context.scalar(0).value<uint32_t>();
   auto bitorder                = context.scalar(1).value<Bitorder>();
+  auto dim                     = std::max(1, input.dim());
 
   switch (bitorder) {
     case Bitorder::BIG: {
-      dim_dispatch(input.dim(), UnpackbitsImpl<KIND, Bitorder::BIG>{context}, output, input, axis);
+      dim_dispatch(dim, UnpackbitsImpl<KIND, Bitorder::BIG>{context}, output, input, axis);
       break;
     }
     case Bitorder::LITTLE: {
-      dim_dispatch(
-        input.dim(), UnpackbitsImpl<KIND, Bitorder::LITTLE>{context}, output, input, axis);
+      dim_dispatch(dim, UnpackbitsImpl<KIND, Bitorder::LITTLE>{context}, output, input, axis);
       break;
     }
   }

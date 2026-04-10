@@ -32,7 +32,8 @@ struct ArgWhereImplBody<VariantKind::CPU, CODE, DIM> {
                   AccessorRO<VAL, DIM> input,
                   const Pitches<DIM - 1>& pitches,
                   const Rect<DIM>& rect,
-                  size_t volume) const
+                  size_t volume,
+                  int32_t actual_ndim) const
   {
     int64_t size = 0;
     for (size_t idx = 0; idx < volume; ++idx) {
@@ -40,14 +41,14 @@ struct ArgWhereImplBody<VariantKind::CPU, CODE, DIM> {
       size += input[in_p] != VAL(0);
     }
 
-    auto out = out_array.create_output_buffer<int64_t, 2>(Point<2>(size, DIM), true);
+    auto out = out_array.create_output_buffer<int64_t, 2>(Point<2>(size, actual_ndim), true);
 
     size_t out_idx = 0;
     for (size_t idx = 0; idx < volume; ++idx) {
       auto in_p = pitches.unflatten(idx, rect.lo);
 
       if (input[in_p] != VAL(0)) {
-        for (int i = 0; i < DIM; ++i) {
+        for (int i = 0; i < actual_ndim; ++i) {
           out[Point<2>(out_idx, i)] = in_p[i];
         }
         out_idx++;

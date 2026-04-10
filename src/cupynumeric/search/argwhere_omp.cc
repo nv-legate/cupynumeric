@@ -34,7 +34,8 @@ struct ArgWhereImplBody<VariantKind::OMP, CODE, DIM> {
                   AccessorRO<VAL, DIM> input,
                   const Pitches<DIM - 1>& pitches,
                   const Rect<DIM>& rect,
-                  size_t volume) const
+                  size_t volume,
+                  int32_t actual_ndim) const
   {
     const auto max_threads = omp_get_max_threads();
 
@@ -63,7 +64,7 @@ struct ArgWhereImplBody<VariantKind::OMP, CODE, DIM> {
       }
     }
 
-    auto out = out_array.create_output_buffer<int64_t, 2>(Point<2>(size, DIM), true);
+    auto out = out_array.create_output_buffer<int64_t, 2>(Point<2>(size, actual_ndim), true);
 
 #pragma omp parallel
     {
@@ -74,7 +75,7 @@ struct ArgWhereImplBody<VariantKind::OMP, CODE, DIM> {
         auto in_p = pitches.unflatten(idx, rect.lo);
 
         if (input[in_p] != VAL(0)) {
-          for (int i = 0; i < DIM; ++i) {
+          for (int i = 0; i < actual_ndim; ++i) {
             out[Point<2>(out_idx, i)] = in_p[i];
           }
           out_idx++;

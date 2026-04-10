@@ -29,8 +29,6 @@ def _create_window(M: int, op_code: WindowOpCode, *args: Any) -> ndarray:
     elif M == 1:
         return ones((1,))
 
-    # TODO: the eager implementation could avoid a copy if we didn't have to
-    # create the output ndarray upfront.
     out = ndarray((M,), dtype=np.float64)
     out._thunk.create_window(op_code, M, *args)
     return out

@@ -64,8 +64,10 @@ def argsort(
     --------
     Multiple GPUs, Multiple CPUs
     """
-
-    result = ndarray(a.shape, np.int64)
+    if axis is None:
+        result = ndarray((a.size,), np.int64)
+    else:
+        result = ndarray(a.shape, np.int64)
     result._thunk.sort(
         rhs=a._thunk, argsort=True, axis=axis, kind=kind, order=order
     )
@@ -111,7 +113,10 @@ def sort(
     --------
     Multiple GPUs, Multiple CPUs
     """
-    result = ndarray(a.shape, a.dtype)
+    if axis is None:
+        result = ndarray((a.size,), a.dtype)
+    else:
+        result = ndarray(a.shape, a.dtype)
     result._thunk.sort(rhs=a._thunk, axis=axis, kind=kind, order=order)
     return result
 

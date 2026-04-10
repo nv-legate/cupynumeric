@@ -307,7 +307,10 @@ def tril(library: Library, p_output: LogicalStorePartition, n: int) -> None:
 def _rounding_divide(
     lhs: tuple[int, ...], rhs: tuple[int, ...]
 ) -> tuple[int, ...]:
-    return tuple((lh + rh - 1) // rh for (lh, rh) in zip(lhs, rhs))
+    # Handle division by zero for empty dimensions
+    return tuple(
+        (lh + rh - 1) // rh if rh > 0 else 0 for (lh, rh) in zip(lhs, rhs)
+    )
 
 
 def cho_solve_deferred(
@@ -379,6 +382,11 @@ def cholesky_deferred(
 
     # parallel implementation for individual matrices
     shape = tuple(output.base.shape)
+
+    # Handle empty matrices - nothing to compute
+    if output.base.volume == 0:
+        return
+
     tile_shape: tuple[int, ...]
     if (
         runtime.has_cusolvermp

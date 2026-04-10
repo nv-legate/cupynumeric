@@ -80,7 +80,7 @@ struct TileDispatch {
   void operator()(TileArgs& args) const
   {
     using VAL = type_of<CODE>;
-    double_dispatch(args.out.dim(), args.in.dim(), TileImpl<KIND, VAL>{context}, args);
+    double_dispatch(std::max(1, args.out.dim()), args.in.dim(), TileImpl<KIND, VAL>{context}, args);
   }
 };
 

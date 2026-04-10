@@ -111,11 +111,22 @@ def convolve(
 
     if a.ndim != v.ndim:
         raise RuntimeError("Arrays should have the same dimensions")
+    elif a.ndim == 0:
+        # NumPy converts 0-d inputs to 1-d for convolve
+        a_1d = atleast_1d(a)
+        v_1d = atleast_1d(v)
+        return convolve(a_1d, v_1d, mode=mode, method=method)  # type: ignore[arg-type]
     elif a.ndim > 3:
         raise NotImplementedError(f"{a.ndim}-D arrays are not yet supported")
 
     if a.ndim == 1 and a.size < v.size:
         v, a = a, v
+
+    # Match NumPy's validation for empty arrays (check after swap)
+    if a.size == 0:
+        raise ValueError("a cannot be empty")
+    if v.size == 0:
+        raise ValueError("v cannot be empty")
 
     if not hasattr(ConvolveMethod, method.upper()):
         raise ValueError(

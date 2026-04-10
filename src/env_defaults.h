@@ -19,10 +19,6 @@
 // values agree. If these values are modified, the corresponding Python values
 // must also be updated.
 
-// 1 << 13 (need actual number for python to parse)
-#define MAX_EAGER_VOLUME_DEFAULT 8192
-#define MAX_EAGER_VOLUME_TEST 2
-
 // 1 << 27 (need actual number for python to parse)
 #define MATMUL_CACHE_SIZE_DEFAULT 134217728
 #define MATMUL_CACHE_SIZE_TEST 4096

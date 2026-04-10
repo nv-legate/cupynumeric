@@ -13,15 +13,16 @@
 # limitations under the License.
 #
 
-import os
-
 import numpy as np
 import pytest
 from utils.comparisons import allclose as _allclose
 
 import cupynumeric as num
+from cupynumeric.runtime import runtime
 
-EAGER_TEST = os.environ.get("CUPYNUMERIC_FORCE_THUNK", None) == "eager"
+pytestmark = pytest.mark.skipif(
+    runtime.num_gpus == 0, reason="FFT is only supported on GPU"
+)
 
 
 def allclose(A: np.ndarray, B: np.ndarray) -> bool:
@@ -187,9 +188,8 @@ def test_fftn_axis_out_of_bounds() -> None:
         num.fft.fftn(arr, axes=(3,))
 
 
-@pytest.mark.skipif(
-    not EAGER_TEST,
-    reason="eager-only: deferred/cuda path does not exercise eager FFT",
+@pytest.mark.skip(
+    reason="eager-only: this test required eager mode which has been removed"
 )
 def test_rfft_single_precision_unsupported_dtype(
     monkeypatch: pytest.MonkeyPatch,

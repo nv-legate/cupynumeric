@@ -1339,12 +1339,9 @@ def _thunk_eig(a: ndarray) -> tuple[ndarray, ...]:
         raise TypeError("Eig input not supported (missing a conversion?)")
 
     if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
-        a = ndarray._from_thunk(runtime.to_eager_array(a._thunk))
-        out_ew = ndarray._from_thunk(
-            runtime.create_eager_thunk(shape=a.shape[:-1], dtype=complex_dtype)
-        )
-        out_ev = ndarray._from_thunk(
-            runtime.create_eager_thunk(shape=a.shape, dtype=complex_dtype)
+        raise NotImplementedError(
+            "eig requires cuSOLVER geev support, which is not available. "
+            "Please use a newer CUDA toolkit version with cuSOLVER geev support."
         )
     else:
         out_ew = ndarray._from_inputs(
@@ -1373,9 +1370,9 @@ def _thunk_eigvals(a: ndarray) -> ndarray:
         raise TypeError("Eigvals input not supported (missing a conversion?)")
 
     if runtime.num_gpus > 0 and not runtime.cusolver_has_geev():
-        a = ndarray._from_thunk(runtime.to_eager_array(a._thunk))
-        out_ew = ndarray._from_thunk(
-            runtime.create_eager_thunk(shape=a.shape[:-1], dtype=complex_dtype)
+        raise NotImplementedError(
+            "eigvals requires cuSOLVER geev support, which is not available. "
+            "Please use a newer CUDA toolkit version with cuSOLVER geev support."
         )
     else:
         out_ew = ndarray._from_inputs(

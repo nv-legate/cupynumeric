@@ -226,6 +226,80 @@ class TestArgSort(object):
             res_num = num.sort(arr_num, axis=axis, kind=sort_type)
             assert allclose(res_num, res_np)
 
+    @pytest.mark.parametrize("size", SIZES)
+    def test_axis_none(self, size):
+        """Test argsort with axis=None returns flat indices"""
+        arr_np = np.random.randint(-100, 100, size)
+        arr_num = num.array(arr_np)
+
+        res_np = np.argsort(arr_np, axis=None)
+        res_num = num.argsort(arr_num, axis=None)
+
+        # Verify shape is flattened
+        assert res_num.shape == (np.prod(size),)
+        assert res_np.shape == (np.prod(size),)
+
+        # Verify indices are correct by comparing sorted values
+        sorted_np = arr_np.flatten()[res_np]
+        sorted_num = arr_num.flatten()[res_num]
+        assert allclose(sorted_np, sorted_num)
+
+    @pytest.mark.parametrize("size", SIZES)
+    @pytest.mark.parametrize("sort_type", SORT_TYPES)
+    def test_axis_none_sort_type(self, size, sort_type):
+        """Test argsort with axis=None works with all sort types"""
+        arr_np = np.arange(np.prod(size))  # Unique values for unstable sorts
+        np.random.shuffle(arr_np)
+        arr_np = arr_np.reshape(size)
+        arr_num = num.array(arr_np)
+
+        res_np = np.argsort(arr_np, axis=None, kind=sort_type)
+        res_num = num.argsort(arr_num, axis=None, kind=sort_type)
+
+        assert res_num.shape == (np.prod(size),)
+        sorted_np = arr_np.flatten()[res_np]
+        sorted_num = arr_num.flatten()[res_num]
+        assert allclose(sorted_np, sorted_num)
+
+    @pytest.mark.xfail
+    def test_0d_axis_none(self):
+        """Test argsort on 0-D array with axis=None"""
+        # cuPyNumeric returns shape () but NumPy returns shape (1,)
+        # NumPy flattens 0-D arrays to 1-D when axis=None
+        arr_np = np.array(42)  # 0-D array
+        arr_num = num.array(42)
+
+        # Verify input is 0-D
+        assert arr_np.shape == ()
+        assert arr_num.shape == ()
+
+        res_np = np.argsort(arr_np, axis=None)
+        res_num = num.argsort(arr_num, axis=None)
+
+        # Verify output is 1-D with shape (1,) - axis=None flattens
+        assert res_num.shape == (1,)
+        assert res_np.shape == (1,)
+
+        # Verify indices are correct
+        assert np.array_equal(res_num, res_np)
+
+    @pytest.mark.xfail
+    def test_0d_invalid_axis(self):
+        """Test argsort on 0-D array raises AxisError for axis=0"""
+        # cuPyNumeric raises ValueError but NumPy raises AxisError
+        from utils.utils import AxisError
+
+        arr_np = np.array(42)
+        arr_num = num.array(42)
+
+        # NumPy behavior
+        with pytest.raises(AxisError):
+            np.argsort(arr_np, axis=0)
+
+        # cuPyNumeric should match
+        with pytest.raises(AxisError):
+            num.argsort(arr_num, axis=0)
+
 
 if __name__ == "__main__":
     import sys

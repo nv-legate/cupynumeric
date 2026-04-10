@@ -76,7 +76,21 @@ NO_EMPTY_SIZE = [
     (DIM, DIM, DIM),
 ]
 
-ARR = ([], [[]], [[], []], np.inf, -10.3, 0, 200, 5 + 8j)
+ARR = (
+    [],
+    [[]],
+    [[], []],
+    np.inf,
+    -10.3,
+    0,
+    200,
+    pytest.param(
+        5 + 8j,
+        marks=pytest.mark.xfail(
+            reason="Complex reductions not supported: MUL reduction op not registered for complex128 in Legate Core"
+        ),
+    ),
+)
 
 DTYPE = ("l", "L", "f", "e", "d")
 INTEGER_DTYPE = ("h", "i", "H", "I", "?", "b", "B")

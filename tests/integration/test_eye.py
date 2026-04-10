@@ -55,7 +55,7 @@ class TestEyeErrors:
         with pytest.raises(ValueError):
             num.eye(-1)
 
-        msg = r"expected a sequence of integers or a single integer"
+        msg = r"'float' object cannot be interpreted as an integer"
         with pytest.raises(TypeError, match=msg):
             num.eye(5.0)
 
@@ -67,7 +67,7 @@ class TestEyeErrors:
         with pytest.raises(ValueError, match=msg):
             num.eye(0, -1)
 
-        msg = r"expected a sequence of integers or a single integer"
+        msg = r"'float' object cannot be interpreted as an integer"
         with pytest.raises(TypeError, match=msg):
             num.eye(5, 5.0)
 

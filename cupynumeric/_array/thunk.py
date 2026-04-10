@@ -28,22 +28,18 @@ from ..config import (
 )
 from ..lib.array_utils import normalize_axis_index, normalize_axis_tuple
 from ..types import NdShape
-from .util import (
-    broadcast_where,
-    convert_to_cupynumeric_ndarray,
-    find_common_type,
-)
+from .util import broadcast_where, find_common_type
 
 if TYPE_CHECKING:
     import numpy.typing as npt
 
-    from .._thunk.thunk import NumPyThunk
+    from .._thunk.deferred import DeferredArray
     from .array import ndarray
 
 
 def get_where_thunk(
     where: ndarray | None, out_shape: NdShape
-) -> NumPyThunk | None:
+) -> DeferredArray | None:
     from .array import ndarray
 
     if where is None:
@@ -217,8 +213,40 @@ def perform_unary_reduction(
     else:
         out_dtype = numpy_accum_dtype
 
-    # TODO: Need to require initial to be given when the array is empty
-    #       or a where mask is given.
+    # Validate that initial is provided for empty arrays with operations that
+    # have no identity. NumPy raises ValueError for these cases.
+    # Only check for zero-size axes when initial is None to avoid unnecessary
+    # blocking operations on src.shape.
+    has_zero_axis = (initial is None) and any(
+        src.shape[ax] == 0 for ax in axes
+    )
+
+    if has_zero_axis:
+        # ARGMAX/ARGMIN have different error messages
+        if op in (
+            UnaryRedCode.ARGMAX,
+            UnaryRedCode.ARGMIN,
+            UnaryRedCode.NANARGMAX,
+            UnaryRedCode.NANARGMIN,
+        ):
+            op_name = op.name.lower()
+            raise ValueError(f"attempt to get {op_name} of an empty sequence")
+
+        has_no_identity = op in (
+            UnaryRedCode.MAX,
+            UnaryRedCode.MIN,
+            UnaryRedCode.NANMAX,
+            UnaryRedCode.NANMIN,
+        )
+
+        if has_no_identity:
+            # Match NumPy's error message format
+            op_name = op.name.lower()
+            raise ValueError(
+                f"zero-size array to reduction operation {op_name} "
+                f"which has no identity"
+            )
+
     if (
         op
         in (
@@ -261,21 +289,13 @@ def perform_unary_reduction(
             shape=out_shape, dtype=task_accum_dtype, inputs=(src, where)
         )
 
-    # src might have taken eager path above:
-    if not isinstance(src, ndarray):
-        from .array import ndarray  # type: ignore [unreachable]
-
-        src = convert_to_cupynumeric_ndarray(src)
     where_array = broadcast_where(where, src.shape)
+    where_thunk = get_where_thunk(where_array, src.shape)
+    initial_arg: Scalar | None = (
+        Scalar(initial) if initial is not None else None
+    )
     result._thunk.unary_reduction(
-        op,
-        src._thunk,
-        get_where_thunk(where_array, src.shape),
-        axis,
-        axes,
-        keepdims,
-        args,
-        initial,
+        op, src._thunk, where_thunk, axis, axes, keepdims, args, initial_arg
     )
 
     if result is not out:

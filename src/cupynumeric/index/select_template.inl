@@ -83,8 +83,8 @@ template <VariantKind KIND>
 static void select_template(TaskContext& context)
 {
   SelectArgs args{context.output(0), context.inputs(), context.scalar(0)};
-  auto dim = std::max(1, args.out.dim());
-  double_dispatch(dim, args.out.type().code(), SelectImpl<KIND>{context}, args);
+  double_dispatch(
+    std::max(1, args.out.dim()), args.out.type().code(), SelectImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

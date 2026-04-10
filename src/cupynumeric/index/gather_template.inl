@@ -94,7 +94,7 @@ struct GatherTypeDispatch {
   {
     using T = type_of<CODE>;
     GatherDimDispatch<exec_policy_t, T> impl{policy, output, source, indices};
-    cupynumeric::double_dispatch(source.dim(), output.dim(), impl);
+    cupynumeric::double_dispatch(std::max(1, source.dim()), output.dim(), impl);
   }
 };
 

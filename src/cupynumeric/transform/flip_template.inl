@@ -57,7 +57,7 @@ template <VariantKind KIND>
 static void flip_template(TaskContext& context)
 {
   FlipArgs args{context.input(0), context.output(0), context.scalar(0).values<int32_t>()};
-  double_dispatch(args.in.dim(), args.in.code(), FlipImpl<KIND>{context}, args);
+  double_dispatch(std::max(1, args.in.dim()), args.in.code(), FlipImpl<KIND>{context}, args);
 }
 
 }  // namespace cupynumeric

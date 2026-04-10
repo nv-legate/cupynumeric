@@ -548,7 +548,12 @@ def _contract(
         if mode not in a_modes and mode not in b_modes:
             c_bloated_shape += (1,)
         else:
-            assert extent > 1
+            # Allow extent=0 (empty arrays) and extent>1, but not extent=1 (singletons)
+            # Singleton dimensions should have been squeezed from inputs already
+            assert extent != 1, (
+                f"Mode {mode} has singleton dimension (extent=1) in output "
+                f"but appears in input modes (should have been squeezed)"
+            )
             c_modes.append(mode)
             c_shape += (extent,)
             c_bloated_shape += (extent,)

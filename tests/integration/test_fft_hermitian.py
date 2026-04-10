@@ -18,6 +18,11 @@ import pytest
 from utils.comparisons import allclose as _allclose
 
 import cupynumeric as num
+from cupynumeric.runtime import runtime
+
+pytestmark = pytest.mark.skipif(
+    runtime.num_gpus == 0, reason="FFT is only supported on GPU"
+)
 
 
 def allclose(A, B):

@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from typing_extensions import CapsuleType
 
-    from .._thunk.thunk import NumPyThunk
+    from .._thunk.deferred import DeferredArray
     from ..types import (
         BoundsMode,
         CastingKind,
@@ -99,7 +99,7 @@ def _warn_and_convert(array: ndarray, dtype: np.dtype[Any]) -> ndarray:
 
 
 class ndarray:
-    _thunk: NumPyThunk
+    _thunk: DeferredArray
     _legate_data: dict[str, Any] | None
 
     def __init__(
@@ -132,7 +132,9 @@ class ndarray:
             )
 
     @staticmethod
-    def _from_thunk(thunk: NumPyThunk, *, writeable: bool = True) -> ndarray:
+    def _from_thunk(
+        thunk: DeferredArray, *, writeable: bool = True
+    ) -> ndarray:
         array: ndarray = object.__new__(ndarray)
         array._init_from_thunk(thunk, writeable=writeable)
         return array
@@ -173,7 +175,7 @@ class ndarray:
         return array
 
     def _init_from_thunk(
-        self, thunk: NumPyThunk, *, writeable: bool = True
+        self, thunk: DeferredArray, *, writeable: bool = True
     ) -> None:
         self._thunk = thunk
         self._legate_data = None
@@ -190,7 +192,7 @@ class ndarray:
         *,
         writeable: bool = True,
     ) -> None:
-        arr = np.ndarray(
+        arr: npt.NDArray[Any] = np.ndarray(
             shape=sanitize_shape(shape),
             dtype=dtype,
             buffer=buffer,
@@ -211,39 +213,26 @@ class ndarray:
         *,
         writeable: bool = True,
     ) -> None:
-        from .._thunk.thunk import NumPyThunk
+        from .._thunk.deferred import DeferredArray
 
         shape_tuple = sanitize_shape(shape)
 
-        filtered_inputs: list[NumPyThunk] = []
+        filtered_inputs: list[DeferredArray] = []
         for inp in inputs:
             if isinstance(inp, ndarray):
                 filtered_inputs.append(inp._thunk)
-            elif isinstance(inp, NumPyThunk):
+            elif isinstance(inp, DeferredArray):
                 filtered_inputs.append(inp)
 
         core_dtype = to_core_type(np.dtype(dtype))
-        eager_shape = runtime.is_eager_shape(shape_tuple)
-        eager_inputs = runtime.are_all_eager_inputs(filtered_inputs)
-
-        if eager_shape and eager_inputs:
-            thunk = runtime.create_eager_thunk(
-                shape_tuple, core_dtype.to_numpy_dtype()
-            )
-            self._init_from_thunk(thunk, writeable=writeable)
-        else:
-            thunk = runtime.create_deferred_thunk(shape_tuple, core_dtype)
-            self._init_from_thunk(thunk, writeable=writeable)
+        thunk = runtime.create_deferred_thunk(shape_tuple, core_dtype)
+        self._init_from_thunk(thunk, writeable=writeable)
 
     # Support for the Legate data interface
     @property
     def __legate_data_interface__(self) -> dict[str, Any]:
         if self._legate_data is None:
-            # If the thunk is an eager array, we need to convert it to a
-            # deferred array so we can extract a legate store
-            deferred_thunk = runtime.to_deferred_array(
-                self._thunk, read_only=False
-            )
+            deferred_thunk = self._thunk
             # We don't have nullable data for the moment
             # until we support masked arrays
             dtype = deferred_thunk.base.type
@@ -2563,9 +2552,6 @@ class ndarray:
                 v = values[0]
             self._thunk.copy(v._thunk, deep=False)
             return
-
-        # indices might have taken an eager path above
-        indices = convert_to_cupynumeric_ndarray(indices)
 
         # call _wrap on the values if they need to be wrapped
         if values.ndim != indices.ndim or values.size != indices.size:

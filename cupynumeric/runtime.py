@@ -17,19 +17,13 @@ from __future__ import annotations
 import math
 import warnings
 from functools import lru_cache, reduce
-from typing import TYPE_CHECKING, Any, Sequence, TypeGuard
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 import legate.core.types as ty
 import numpy as np
-from legate.core import (
-    LEGATE_MAX_DIM,
-    Scalar,
-    TaskTarget,
-    get_legate_runtime,
-    DimOrdering,
-)
+from legate.core import Scalar, TaskTarget, get_legate_runtime, DimOrdering
 
-from ._utils.array import calculate_volume, is_supported_dtype, to_core_type
+from ._utils.array import is_supported_dtype, to_core_type
 from ._utils.stack import find_last_user_stacklevel
 from .config import (
     BitGeneratorOperation,
@@ -49,8 +43,6 @@ if TYPE_CHECKING:
     from legate.core import AutoTask, ManualTask
 
     from ._thunk.deferred import DeferredArray
-    from ._thunk.eager import EagerArray
-    from ._thunk.thunk import NumPyThunk
     from .types import NdShape
 
 DIMENSION = int
@@ -83,11 +75,6 @@ class Runtime(object):
         self.current_random_bitgenid = 0
         self.current_random_bitgen_zombies: tuple[Any, ...] = ()
         self.destroyed = False
-
-        max_eager_volume = (
-            cupynumeric_lib.shared_object.cupynumeric_max_eager_volume()
-        )
-        self.max_eager_volume = int(np.asarray(max_eager_volume))
 
         assert cupynumeric_lib.shared_object is not None
         self.cupynumeric_lib = cupynumeric_lib.shared_object
@@ -222,7 +209,7 @@ class Runtime(object):
 
     def get_numpy_thunk(
         self, obj: Any, share: bool = False, dtype: np.dtype[Any] | None = None
-    ) -> NumPyThunk:
+    ) -> DeferredArray:
         # Check to see if this object implements the Legate data interface
         if hasattr(obj, "__legate_data_interface__"):
             legate_data = obj.__legate_data_interface__
@@ -247,7 +234,7 @@ class Runtime(object):
         # See if this is a normal numpy array
         # Make sure to convert numpy matrices to numpy arrays here
         # as the former doesn't behave quite like the latter
-        if type(obj) is not np.ndarray:
+        if needs_conversion := type(obj) is not np.ndarray:
             # Check to see if this object implements the dlpack interface
             if hasattr(obj, "__dlpack__"):
                 from . import from_dlpack
@@ -275,7 +262,9 @@ class Runtime(object):
         # writeable
         share = share and obj.flags["W"]
         transfer = TransferType.SHARE if share else TransferType.MAKE_COPY
-        return self.find_or_create_array_thunk(obj, transfer)
+        return self.find_or_create_array_thunk(
+            obj, transfer, read_only=needs_conversion
+        )
 
     @staticmethod
     def compute_parent_child_mapping(
@@ -354,7 +343,7 @@ class Runtime(object):
         transfer: TransferType,
         read_only: bool = False,
         defer: bool = False,
-    ) -> NumPyThunk:
+    ) -> DeferredArray:
         from ._thunk.deferred import DeferredArray
 
         assert isinstance(array, np.ndarray)
@@ -389,61 +378,57 @@ class Runtime(object):
             return parent_thunk.get_item(key)
 
         # Once it's a normal numpy array we can make it into one of our arrays
-        # Check to see if it is a type that we support for doing deferred
-        # execution and big enough to be worth off-loading onto Legion
-        if defer or not self.is_eager_shape(array.shape):
-            if array.size == 1 and transfer != TransferType.SHARE:
-                # This is a single value array that we're not attaching to.
-                # We cache these, but only if the user has promised not to
-                # write-through them.
-                # TODO(mpapadakis): Also mark the Store as read-only, whenever
-                # Legate supports that.
-                if read_only:
-                    return cached_thunk_from_scalar(
-                        array.tobytes(), array.shape, array.dtype
-                    )
-                else:
-                    return thunk_from_scalar(
-                        array.tobytes(), array.shape, array.dtype
-                    )
+        # For 0-D arrays that we're not sharing, use scalar storage (Legate Futures)
+        # since Legate's affine projection system doesn't support 0-D arrays (dims must be 1-6).
+        # For 0-D arrays that we ARE sharing (output parameters), we need to reshape to 1-D
+        # internally to create a valid region, then reshape back.
+        # Also use scalar storage for 1-D single-element arrays when not sharing.
+        if (
+            array.ndim == 0 or array.size == 1
+        ) and transfer != TransferType.SHARE:
+            # This is a 0-D array we're not sharing - use scalar storage
+            if read_only:
+                return cached_thunk_from_scalar(
+                    array.tobytes(), array.shape, array.dtype
+                )
+            return thunk_from_scalar(array.tobytes(), array.shape, array.dtype)
 
-            if transfer == TransferType.MAKE_COPY:
+        # For 0-D shared arrays, reshape to 1-D internally to work around Legate limitation
+        # The reshape creates a view that shares memory with the original 0-D array
+        original_shape = array.shape
+        if array.ndim == 0 and transfer == TransferType.SHARE:
+            array = array.reshape((1,))
+
+        if transfer == TransferType.MAKE_COPY:
+            ordering = DimOrdering.c_order()
+        else:
+            if array.flags["F_CONTIGUOUS"]:
+                ordering = DimOrdering.fortran_order()
+            elif array.flags["C_CONTIGUOUS"]:
                 ordering = DimOrdering.c_order()
             else:
-                if array.flags["F_CONTIGUOUS"]:
-                    ordering = DimOrdering.fortran_order()
-                elif array.flags["C_CONTIGUOUS"]:
-                    ordering = DimOrdering.c_order()
-                else:
-                    raise ValueError(
-                        "Only F_CONTIGUOUS and C_CONTIGUOUS arrays are supported."
-                    )
+                raise ValueError(
+                    "Only F_CONTIGUOUS and C_CONTIGUOUS arrays are supported."
+                )
 
-            # This is not a scalar so make a field.
-            # We won't try to cache these bigger arrays.
-            store = legate_runtime.create_store_from_buffer(
-                to_core_type(array.dtype),
-                array.shape,
-                array.copy() if transfer == TransferType.MAKE_COPY else array,
-                # This argument should really be called "donate"
-                read_only=read_only,
-                ordering=ordering,
-            )
-            return DeferredArray(store)
-
-        from ._thunk.eager import EagerArray
-
-        # Make this into an eagerly evaluated thunk
-        return EagerArray(
-            array.copy() if transfer == TransferType.MAKE_COPY else array
+        # This is not a scalar so make a field.
+        # We won't try to cache these bigger arrays.
+        store = legate_runtime.create_store_from_buffer(
+            to_core_type(array.dtype),
+            array.shape,
+            array.copy() if transfer == TransferType.MAKE_COPY else array,
+            # This argument should really be called "donate"
+            read_only=read_only,
+            ordering=ordering,
         )
 
-    def create_eager_thunk(
-        self, shape: NdShape, dtype: np.dtype[Any]
-    ) -> NumPyThunk:
-        from ._thunk.eager import EagerArray
+        result = DeferredArray(store)
 
-        return EagerArray(np.empty(shape, dtype=dtype))
+        # If we reshaped a 0-D array to 1-D, reshape the DeferredArray back to 0-D
+        if len(original_shape) == 0 and array.ndim == 1:
+            result = result.reshape(original_shape, order="C")
+
+        return result
 
     def create_deferred_thunk(
         self, shape: NdShape, dtype: ty.Type
@@ -464,79 +449,20 @@ class Runtime(object):
         store = legate_runtime.create_store(dtype, ndim=ndim)
         return DeferredArray(store)
 
-    def is_eager_shape(self, shape: NdShape) -> bool:
-        volume = calculate_volume(shape)
-
-        # Special cases that must always be eager:
-
-        # Newly created empty arrays
-        if volume == 0:
-            return True
-
-        # Arrays with more dimensions than what Legion was compiled for
-        if len(shape) > LEGATE_MAX_DIM:
-            return True
-
-        from .settings import settings
-
-        # CUPYNUMERIC_FORCE_THUNK == "eager"
-        if settings.force_thunk() == "eager":
-            return True
-
-        if settings.force_thunk() == "deferred":
-            return False
-
-        # no forcing; auto mode
-        if len(shape) == 0:
-            return self.max_eager_volume > 0
-
-        # Otherwise, see if the volume is large enough
-        return volume <= self.max_eager_volume
-
-    @staticmethod
-    def are_all_eager_inputs(inputs: Sequence[NumPyThunk] | None) -> bool:
-        from ._thunk.eager import EagerArray
-        from ._thunk.thunk import NumPyThunk
-
-        if inputs is None:
-            return True
-        for inp in inputs:
-            assert isinstance(inp, NumPyThunk)
-            if not isinstance(inp, EagerArray):
-                return False
-        return True
-
-    @staticmethod
-    def is_eager_array(array: NumPyThunk) -> TypeGuard[EagerArray]:
-        from ._thunk.eager import EagerArray
-
-        return isinstance(array, EagerArray)
-
     @staticmethod
     def is_deferred_array(
-        array: NumPyThunk | None,
+        array: DeferredArray | None,
     ) -> TypeGuard[DeferredArray]:
         from ._thunk.deferred import DeferredArray
 
         return isinstance(array, DeferredArray)
 
-    def to_eager_array(self, array: NumPyThunk) -> EagerArray:
-        from ._thunk.eager import EagerArray
-
-        if self.is_eager_array(array):
-            return array
-        elif self.is_deferred_array(array):
-            return EagerArray(array.__numpy_array__())
-        else:
-            raise RuntimeError("invalid array type")
-
     def to_deferred_array(
-        self, array: NumPyThunk, read_only: bool
+        self, array: DeferredArray, read_only: bool
     ) -> DeferredArray:
+        # All arrays are now DeferredArray, so just return it
         if self.is_deferred_array(array):
             return array
-        elif self.is_eager_array(array):
-            return array.to_deferred_array(read_only)
         else:
             raise RuntimeError("invalid array type")
 

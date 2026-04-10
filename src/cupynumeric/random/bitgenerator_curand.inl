@@ -1262,9 +1262,10 @@ struct generate_distribution {
                        const std::vector<float>& floatparams,
                        const std::vector<double>& doubleparams)
   {
+    auto dim = std::max(1, res.dim());
     generator_t dist_gen(intparams, floatparams, doubleparams);
     generate_distribution<output_t, generator_t> generate_func(dist_gen);
-    dim_dispatch(res.dim(), generate_func, cugen, res);
+    dim_dispatch(dim, generate_func, cugen, res);
   }
 };
 
@@ -1398,8 +1399,9 @@ struct BitGeneratorImplBody {
         CURANDGenerator* genptr = genmap.get(generatorID);
         if (output.size() != 0) {
           legate::PhysicalStore& res = output[0];
+          auto dim                   = std::max(1, res.dim());
           CURANDGenerator& cugen     = *genptr;
-          dim_dispatch(res.dim(), generate_fn{}, cugen, res);
+          dim_dispatch(dim, generate_fn{}, cugen, res);
         }
         break;
       }

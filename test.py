@@ -66,14 +66,7 @@ class CPNProject(Project):
         ]
 
     def stage_env(self, feature: FeatureType) -> EnvDict:
-        match feature:
-            case "eager":
-                return {
-                    "CUPYNUMERIC_FORCE_THUNK": "eager",
-                    "CUPYNUMERIC_MAX_EAGER_VOLUME": "2000000000",
-                }
-            case _:
-                return {}
+        return {}
 
 
 if __name__ == "__main__":

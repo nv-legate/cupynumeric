@@ -74,8 +74,10 @@ static void advanced_indexing_template(TaskContext& context)
   bool is_set     = context.scalar(0).value<bool>();
   int64_t key_dim = context.scalar(1).value<int64_t>();
   AdvancedIndexingArgs args{context.output(0), context.input(0), context.input(1), is_set, key_dim};
-  double_dispatch(
-    args.input_array.dim(), args.input_array.code(), AdvancedIndexingImpl<KIND>{context}, args);
+  double_dispatch(std::max(1, args.input_array.dim()),
+                  args.input_array.code(),
+                  AdvancedIndexingImpl<KIND>{context},
+                  args);
 }
 
 }  // namespace cupynumeric
