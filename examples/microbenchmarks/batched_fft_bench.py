@@ -39,6 +39,8 @@ from _benchmark.sizing import (
     resolve_suite_size,
 )
 
+RAND_SCALE_FACTOR = 100
+
 BATCH_SIZE = 8
 _CASES = (
     ("1d", 1, "complex64"),
@@ -60,11 +62,10 @@ def _make_input(array_module, shape: tuple[int, ...], dtype_name: str):
         if dtype_name == "complex128"
         else array_module.float32
     )
-    return (
-        array_module.arange(math.prod(shape), dtype=real_dtype)
-        .reshape(shape)
-        .astype(getattr(array_module, dtype_name))
+    float_array = (
+        array_module.random.rand(*shape).astype(real_dtype) * RAND_SCALE_FACTOR
     )
+    return float_array.astype(getattr(array_module, dtype_name))
 
 
 def _estimate_case_working_set_bytes(

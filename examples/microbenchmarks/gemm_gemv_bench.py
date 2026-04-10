@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as host_np
+
 from _benchmark import MicrobenchmarkSuite, benchmark_info, timed_loop
 from _benchmark.sizing import (
     SizeRequest,
@@ -53,18 +55,12 @@ def _skinny_inner_dim(size):
     return max(1, size // SKINNY_OUTER_DIM)
 
 
-def _make_matrix(array_module, rows, cols, dtype, start):
-    values = array_module.arange(
-        start, start + rows * cols, dtype=dtype
-    ).reshape((rows, cols))
-    values /= max(rows * cols, 1)
-    return values
+def _make_matrix(array_module, rows, cols, dtype):
+    return array_module.random.rand(rows, cols).astype(dtype)
 
 
-def _make_vector(array_module, size, dtype, start):
-    values = array_module.arange(start, start + size, dtype=dtype)
-    values /= max(size, 1)
-    return values
+def _make_vector(array_module, size, dtype):
+    return array_module.random.rand(size).astype(dtype)
 
 
 def _get_case_dimensions(variant, size):
@@ -147,20 +143,20 @@ def _initialize_case(array_module, variant, size, dtype):
         m = dimensions["m"]
         n = dimensions["n"]
         k = dimensions["k"]
-        a = _make_matrix(array_module, m, k, dtype, 1)
-        b = _make_matrix(array_module, k, n, dtype, 2)
+        a = _make_matrix(array_module, m, k, dtype)
+        b = _make_matrix(array_module, k, n, dtype)
         c = array_module.zeros((m, n), dtype=dtype)
         return dimensions, (a, b, c)
 
     n = dimensions["n"]
-    a = _make_matrix(array_module, n, n, dtype, 1)
+    a = _make_matrix(array_module, n, n, dtype)
 
     if variant == "square_gemm":
-        b = _make_matrix(array_module, n, n, dtype, 2)
+        b = _make_matrix(array_module, n, n, dtype)
         c = array_module.zeros((n, n), dtype=dtype)
         return dimensions, (a, b, c)
 
-    x = _make_vector(array_module, n, dtype, 2)
+    x = _make_vector(array_module, n, dtype)
     y = array_module.zeros(n, dtype=dtype)
     return dimensions, (a, x, y)
 
@@ -171,23 +167,12 @@ def _get_check_tolerances(dtype):
     return 1e-8, 1e-10
 
 
-def _check_case(variant, size, dtype, result):
-    import numpy as host_np
+def _to_host(array) -> host_np.ndarray:
+    return array.get() if hasattr(array, "get") else host_np.asarray(array)
 
-    _, operands = _initialize_case(host_np, variant, size, dtype)
 
-    if variant == "gemv":
-        a, x, y = operands
-        host_np.matmul(a, x, out=y)
-        expected = y
-    else:
-        a, b, c = operands
-        host_np.matmul(a, b, out=c)
-        expected = c
-
-    actual = (
-        result.get() if hasattr(result, "get") else host_np.asarray(result)
-    )
+def _check_case(variant, dtype, result, expected):
+    actual = _to_host(result)
     rtol, atol = _get_check_tolerances(dtype)
     if not host_np.allclose(actual, expected, rtol=rtol, atol=atol):
         abs_diff = host_np.abs(actual - expected)
@@ -213,7 +198,8 @@ def run_gemm_gemv_case(
     total = timed_loop(operation, timer, runs, warmup) / runs
 
     if perform_check:
-        _check_case(variant, size, dtype, c)
+        expected = host_np.matmul(_to_host(a), _to_host(b))
+        _check_case(variant, dtype, c, expected)
 
     return ((a.shape, b.shape), total)
 

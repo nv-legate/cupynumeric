@@ -50,6 +50,8 @@ from _benchmark.sizing import (
 FLOAT_RTOL = 5e-5
 FLOAT_ATOL = 1e-6
 
+RAND_SCALE_FACTOR = 100
+
 _CASES = {
     "axis_last": {
         "axis": 1,
@@ -116,14 +118,8 @@ def _tensor_shape(size: int) -> tuple[int, int, int]:
 
 
 def _make_array(array_module, shape: tuple[int, ...], dtype_name: str):
-    total = math.prod(shape)
-    values = array_module.arange(
-        total, dtype=getattr(array_module, dtype_name)
-    )
-    values = values.reshape(shape)
-    if dtype_name == "int32":
-        return values % 97 - 48
-    return values / total
+    values = (array_module.random.rand(*shape) - 0.5) * RAND_SCALE_FACTOR
+    return values.astype(getattr(array_module, dtype_name))
 
 
 def _base_shape(case: dict[str, Any], size: int) -> tuple[int, ...]:

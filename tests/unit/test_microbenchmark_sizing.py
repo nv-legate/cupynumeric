@@ -8,7 +8,6 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, Mock
 
 import numpy as np
 import pytest
@@ -342,26 +341,6 @@ def test_gemm_target_resolution_for_all_variants() -> None:
         estimate,
         target_bytes=8 << 20,
     )
-
-
-def test_gemm_initializers_normalize_in_place() -> None:
-    gemm_gemv = _module("gemm_gemv_bench")
-    matrix = MagicMock(name="matrix")
-    matrix.reshape.return_value = matrix
-    matrix.__itruediv__.return_value = matrix
-    vector = MagicMock(name="vector")
-    vector.__itruediv__.return_value = vector
-    tracker = SimpleNamespace(
-        float64=object(), arange=Mock(side_effect=[matrix, vector])
-    )
-
-    gemm_gemv._make_matrix(tracker, 8, 16, tracker.float64, 1)
-    gemm_gemv._make_vector(tracker, 16, tracker.float64, 2)
-
-    matrix.__itruediv__.assert_called_once()
-    matrix.__truediv__.assert_not_called()
-    vector.__itruediv__.assert_called_once()
-    vector.__truediv__.assert_not_called()
 
 
 def test_undersized_stream_target_raises() -> None:
