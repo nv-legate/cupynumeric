@@ -209,22 +209,14 @@ class TestMeanErrors:
             num.mean(self.arr_num, axis=axis, out=out_num)
 
 
-def test_string_array_fallback():
-    """Test that mean falls back to NumPy for unsupported dtypes"""
-    # Object arrays with strings - mean doesn't make sense but tests fallback
+def test_string_array_raises():
+    """Test that mean raises TypeError for unsupported dtypes"""
+    # Object arrays with strings - cuPyNumeric doesn't support object dtype
     arr_np = np.array(["a", "b", "c"], dtype=object)
 
-    # NumPy will raise TypeError for mean on strings
-    with pytest.raises(TypeError):
-        np.mean(arr_np)
-
-    # cuPyNumeric should fall back and propagate the same TypeError
-    with pytest.warns(
-        RuntimeWarning,
-        match="cuPyNumeric does not support.*falling back to NumPy",
-    ):
-        with pytest.raises(TypeError):
-            num.mean(arr_np)
+    # cuPyNumeric should raise TypeError for object dtype
+    with pytest.raises(TypeError, match="cuPyNumeric does not support dtype"):
+        num.mean(arr_np)
 
 
 if __name__ == "__main__":

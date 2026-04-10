@@ -757,26 +757,15 @@ def test_axis_none(a, b):
         num.lexsort(num_keys, axis=None)
 
 
-def test_string_arrays_fallback():
-    """Test that lexsort falls back to NumPy for unsupported dtypes like strings"""
+def test_string_arrays_raises():
+    """Test that lexsort raises TypeError for unsupported dtypes like strings"""
     # Example from NumPy documentation
     surnames = ("Hertz", "Galilei", "Hertz")
     first_names = ("Heinrich", "Galileo", "Gustav")
 
-    # NumPy result
-    expected = np.lexsort((first_names, surnames))
-
-    # cuPyNumeric should fall back to NumPy with a warning
-    with pytest.warns(
-        RuntimeWarning,
-        match="cuPyNumeric does not support.*falling back to NumPy",
-    ):
-        result = num.lexsort((first_names, surnames))
-
-    # Results should match
-    assert allclose(result, expected)
-    # Result should still be a cuPyNumeric ndarray
-    assert isinstance(result, num.ndarray)
+    # cuPyNumeric should raise TypeError for string dtype
+    with pytest.raises(TypeError, match="cuPyNumeric does not support dtype"):
+        num.lexsort((first_names, surnames))
 
 
 if __name__ == "__main__":
