@@ -23,10 +23,14 @@ namespace cupynumeric {
 
 using namespace legate;
 
+// cublas batched solve performs bad for larger N
+constexpr auto BATCHED_SOLVE_THRESHOLD = 256;
+
 template <typename GetrfBufferSize, typename Getrf, typename Getrs, typename VAL>
 static inline void solve_template(GetrfBufferSize getrf_buffer_size,
                                   Getrf getrf,
                                   Getrs getrs,
+                                  int32_t batchsize,
                                   int32_t m,
                                   int32_t n,
                                   int32_t nrhs,
@@ -39,30 +43,40 @@ static inline void solve_template(GetrfBufferSize getrf_buffer_size,
 
   auto handle = get_cusolver();
 
-  // copy inputs for in-place compute
-  auto a_copy = create_buffer<VAL>(int64_t(m) * n, Memory::Kind::GPU_FB_MEM);
-  CUPYNUMERIC_CHECK_CUDA(
-    cudaMemcpyAsync(a_copy.ptr(0), a, sizeof(VAL) * m * n, cudaMemcpyDeviceToDevice, stream));
-  CUPYNUMERIC_CHECK_CUDA(
-    cudaMemcpyAsync(x, b, sizeof(VAL) * m * nrhs, cudaMemcpyDeviceToDevice, stream));
-
   CHECK_CUSOLVER(cusolverDnSetStream(handle, stream));
 
+  auto ipiv = create_buffer<int32_t>(std::min(m, n), Memory::Kind::GPU_FB_MEM);
+  auto info = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
+  Buffer<VAL> buffer;
   int32_t buffer_size;
-  CHECK_CUSOLVER(getrf_buffer_size(handle, m, n, a_copy.ptr(0), m, &buffer_size));
 
-  auto ipiv   = create_buffer<int32_t>(std::min(m, n), Memory::Kind::GPU_FB_MEM);
-  auto buffer = create_buffer<VAL>(buffer_size, Memory::Kind::GPU_FB_MEM);
-  auto info   = create_buffer<int32_t>(1, Memory::Kind::Z_COPY_MEM);
+  // copy inputs for in-place compute
+  auto a_copy = create_buffer<VAL>(int64_t(m) * n, Memory::Kind::GPU_FB_MEM);
 
-  CHECK_CUSOLVER(getrf(handle, m, n, a_copy.ptr(0), m, buffer.ptr(0), ipiv.ptr(0), info.ptr(0)));
-  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+  for (int i = 0; i < batchsize; ++i) {
+    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
+      a_copy.ptr(0), a + i * m * n, sizeof(VAL) * m * n, cudaMemcpyDeviceToDevice, stream));
+    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(x + i * m * nrhs,
+                                           b + i * m * nrhs,
+                                           sizeof(VAL) * m * nrhs,
+                                           cudaMemcpyDeviceToDevice,
+                                           stream));
 
-  if (info[0] != 0) {
-    throw legate::TaskException(SolveTask::ERROR_MESSAGE);
+    if (i == 0) {
+      CHECK_CUSOLVER(getrf_buffer_size(handle, m, n, a_copy.ptr(0), m, &buffer_size));
+      buffer = create_buffer<VAL>(buffer_size, Memory::Kind::GPU_FB_MEM);
+    }
+
+    CHECK_CUSOLVER(getrf(handle, m, n, a_copy.ptr(0), m, buffer.ptr(0), ipiv.ptr(0), info.ptr(0)));
+    CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+
+    if (info[0] != 0) {
+      throw legate::TaskException(SolveTask::ERROR_MESSAGE);
+    }
+
+    CHECK_CUSOLVER(getrs(
+      handle, trans, n, nrhs, a_copy.ptr(0), m, ipiv.ptr(0), x + i * m * nrhs, n, info.ptr(0)));
   }
-
-  CHECK_CUSOLVER(getrs(handle, trans, n, nrhs, a_copy.ptr(0), m, ipiv.ptr(0), x, n, info.ptr(0)));
 
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
@@ -144,13 +158,14 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT32> {
     int32_t batchsize, int32_t m, int32_t n, int32_t nrhs, const float* a, const float* b, float* x)
   {
     auto stream = context.get_task_stream();
-    if (batchsize > 1) {
+    if (batchsize > 1 && n <= BATCHED_SOLVE_THRESHOLD) {
       solve_template_batched(
         cublasSgetrfBatched, cublasSgetrsBatched, batchsize, n, nrhs, a, b, x, stream);
     } else {
       solve_template(cusolverDnSgetrf_bufferSize,
                      cusolverDnSgetrf,
                      cusolverDnSgetrs,
+                     batchsize,
                      m,
                      n,
                      nrhs,
@@ -176,13 +191,14 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::FLOAT64> {
                   double* x)
   {
     auto stream = context.get_task_stream();
-    if (batchsize > 1) {
+    if (batchsize > 1 && n <= BATCHED_SOLVE_THRESHOLD) {
       solve_template_batched(
         cublasDgetrfBatched, cublasDgetrsBatched, batchsize, n, nrhs, a, b, x, stream);
     } else {
       solve_template(cusolverDnDgetrf_bufferSize,
                      cusolverDnDgetrf,
                      cusolverDnDgetrs,
+                     batchsize,
                      m,
                      n,
                      nrhs,
@@ -208,7 +224,7 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
                   legate::Complex<float>* x)
   {
     auto stream = context.get_task_stream();
-    if (batchsize > 1) {
+    if (batchsize > 1 && n <= BATCHED_SOLVE_THRESHOLD) {
       solve_template_batched(cublasCgetrfBatched,
                              cublasCgetrsBatched,
                              batchsize,
@@ -222,6 +238,7 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX64> {
       solve_template(cusolverDnCgetrf_bufferSize,
                      cusolverDnCgetrf,
                      cusolverDnCgetrs,
+                     batchsize,
                      m,
                      n,
                      nrhs,
@@ -247,7 +264,7 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
                   legate::Complex<double>* x)
   {
     auto stream = context.get_task_stream();
-    if (batchsize > 1) {
+    if (batchsize > 1 && n <= BATCHED_SOLVE_THRESHOLD) {
       solve_template_batched(cublasZgetrfBatched,
                              cublasZgetrsBatched,
                              batchsize,
@@ -261,6 +278,7 @@ struct SolveImplBody<VariantKind::GPU, Type::Code::COMPLEX128> {
       solve_template(cusolverDnZgetrf_bufferSize,
                      cusolverDnZgetrf,
                      cusolverDnZgetrs,
+                     batchsize,
                      m,
                      n,
                      nrhs,
