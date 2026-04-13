@@ -8,6 +8,7 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
