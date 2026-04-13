@@ -63,6 +63,7 @@ class CPNProject(Project):
             CustomTest("tests/integration/test_unique.py"),
             CustomTest("tests/integration/test_cho_factor.py"),
             CustomTest("tests/integration/test_cho_solve.py"),
+            CustomTest("tests/integration/test_lexsort.py"),
         ]
 
     def stage_env(self, feature: FeatureType) -> EnvDict:
