@@ -31,13 +31,18 @@ Design:
 from __future__ import annotations
 
 import importlib
+import re
 
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
-from math import prod
 from typing import Any, Callable, Iterable
 
-from .harness import ArrayPackage, BenchmarkHarness, BenchmarkHarnessConfig
+from .harness import (
+    ArrayPackage,
+    BenchmarkHarness,
+    BenchmarkHarnessConfig,
+    product_args,
+)
 from .info import BenchmarkInfo, get_benchmark_info
 from .sizing import SizeRequest, SizeResolution
 from .use_rich import use_rich, HAVE_RICH
@@ -47,6 +52,9 @@ from .use_rich import use_rich, HAVE_RICH
 class MicrobenchmarkConfig(BenchmarkHarnessConfig):
     runs: int
     warmup: int
+    include: re.Pattern[str] | None
+    exclude: re.Pattern[str] | None
+    verbose: bool
 
     @classmethod
     def add_parser_group(cls, parser: ArgumentParser, name: str) -> Any:
@@ -67,17 +75,65 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             default=2,
             help="Number of warmup runs",
         )
+        group.add_argument(
+            "--include",
+            dest="__cpn_include",
+            metavar="REGEX",
+            type=str,
+            help="Filter to restrict to benchmarks matching a regular expression",
+        )
+        group.add_argument(
+            "--exclude",
+            dest="__cpn_exclude",
+            metavar="REGEX",
+            type=str,
+            help="Filter to exclude benchmarks matching a regular expression",
+        )
+        group.add_argument(
+            "--verbose",
+            dest="__cpn_verbose",
+            action="store_true",
+            help="Print benchmark names as they are being called",
+        )
         return group
 
     @classmethod
     def from_args(cls, args: Namespace) -> MicrobenchmarkConfig:
         super_conf = super(MicrobenchmarkConfig, cls).from_args(args)
         vargs = vars(args)
+        include: re.Pattern[str] | None = None
+        exclude: re.Pattern[str] | None = None
+        if vargs.get("__cpn_include", None) is not None:
+            include = re.compile(vargs["__cpn_include"])
+        if vargs.get("__cpn_exclude", None) is not None:
+            exclude = re.compile(vargs["__cpn_exclude"])
         return MicrobenchmarkConfig(
             **super_conf.to_dict(),
             runs=int(vargs["__cpn_runs"]),
             warmup=int(vargs["__cpn_warmup"]),
+            include=include,
+            exclude=exclude,
+            verbose=bool(vargs["__cpn_verbose"]),
         )
+
+    def info(self, msg: str) -> None:
+        if not self.verbose:
+            return
+        if self.package == ArrayPackage.LEGATE:
+            # import here because legate may patch stdout
+            importlib.import_module("legate.core")
+
+        from sys import stdout
+
+        if HAVE_RICH and use_rich(
+            stdout, start_runtime=self.package == ArrayPackage.LEGATE
+        ):
+            from rich.console import Console
+
+            console = Console(file=stdout)
+            console.print(msg)
+        else:
+            print(msg)
 
     def print_panel(self, lines: list[str], title: str = "") -> None:
         if self.package == ArrayPackage.LEGATE:
@@ -107,6 +163,13 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             for line in lines:
                 print(line)
             print("=" * 80)
+
+    def check_run(self, name: str) -> bool:
+        if self.include is not None:
+            return self.include.search(name) is not None
+        if self.exclude is not None:
+            return self.exclude.search(name) is None
+        return True
 
 
 class MicrobenchmarkSuite(BenchmarkHarness):
@@ -148,10 +211,17 @@ class MicrobenchmarkSuite(BenchmarkHarness):
     def warmup(self) -> int:
         return self._config.warmup
 
-    def _modify_info(self, info: BenchmarkInfo) -> BenchmarkInfo:
+    def check_run(self, name: str) -> bool:
+        return self._config.check_run(name)
+
+    def _preprocess_info(
+        self, info: BenchmarkInfo
+    ) -> tuple[BenchmarkInfo, bool]:
         """Prepend the suite name and change the default time output column to
-        'time per run (ms)'"""
+        'time per run (ms)', then check if the name is not excluded by a filter"""
         full_name = f"{self.name}_{info.name}"
+        if not self.check_run(full_name):
+            return (info, False)
         info = info.replace(name=full_name)
         time_output = info.returns_time
         time_string = "time per run (ms)"
@@ -163,19 +233,14 @@ class MicrobenchmarkSuite(BenchmarkHarness):
                 new_output_names = [name for name in info.output_names]
                 new_output_names[time_output] = time_string
                 info = info.replace(output_names=new_output_names)
-        return info
-
-    def _update_counts(self, args: Iterable[Any]) -> None:
-        lengths = [(len(a) if isinstance(a, list) else 1) for a in args]
-        num_variants = int(prod(lengths))
-        self.benchmark_count += 1
-        self.benchmark_variant_count += num_variants
+        return (info, True)
 
     def _counted_arg_gen(
-        self, arg_gen: Iterable[tuple[Any, ...]]
+        self, name: str, arg_gen: Iterable[tuple[Any, ...]]
     ) -> Iterable[tuple[Any, ...]]:
         for args in arg_gen:
             self.benchmark_variant_count += 1
+            self.info(f"{name}{args}")
             yield args
 
     def run_with_generator(
@@ -187,9 +252,11 @@ class MicrobenchmarkSuite(BenchmarkHarness):
     ) -> None:
         if info is None:
             info = get_benchmark_info(f)
-        info = self._modify_info(info)
+        info, run = self._preprocess_info(info)
+        if not run:
+            return
         super().run_with_generator(
-            info, f, self._counted_arg_gen(arg_gen), **kwargs
+            info, f, self._counted_arg_gen(info.name, arg_gen), **kwargs
         )
         self.benchmark_count += 1
 
@@ -202,9 +269,11 @@ class MicrobenchmarkSuite(BenchmarkHarness):
     ) -> None:
         if info is None:
             info = get_benchmark_info(f)
-        info = self._modify_info(info)
+        info, run = self._preprocess_info(info)
+        if not run:
+            return
         super().run_timed_with_generator(
-            info, f, self._counted_arg_gen(arg_gen), **kwargs
+            info, f, self._counted_arg_gen(info.name, arg_gen), **kwargs
         )
         self.benchmark_count += 1
 
@@ -215,9 +284,7 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        info = self._modify_info(info)
-        super().run_with_info(info, f, *args, **kwargs)
-        self._update_counts(args)
+        self.run_with_generator(info, f, product_args(args), **kwargs)
 
     def run_timed_with_info(
         self,
@@ -226,9 +293,7 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        info = self._modify_info(info)
-        super().run_timed_with_info(info, f, *args, **kwargs)
-        self._update_counts(args)
+        self.run_timed_with_generator(info, f, product_args(args), **kwargs)
 
     def run(self, f: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         self.run_with_info(get_benchmark_info(f), f, *args, **kwargs)
@@ -237,6 +302,9 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         self, f: Callable[..., Any], *args: Any, **kwargs: Any
     ) -> None:
         self.run_timed_with_info(get_benchmark_info(f), f, *args, **kwargs)
+
+    def info(self, msg: str) -> None:
+        self._config.info(msg)
 
     def print_panel(self, lines: list[str], title: str = "") -> None:
         self._config.print_panel(lines, title)

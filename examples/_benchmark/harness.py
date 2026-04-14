@@ -259,7 +259,8 @@ def _conda_list() -> dict[str, Any] | str:
         return FAILED_TO_DETECT
 
 
-def _product_args(args: tuple[Any, ...]) -> Iterable[tuple[Any, ...]]:
+def product_args(args: tuple[Any, ...]) -> Iterable[tuple[Any, ...]]:
+    """Create a generator that is a product over list arguments."""
     arg_lists = []
     for arg in args:
         if not isinstance(arg, list):
@@ -503,7 +504,7 @@ class BenchmarkHarness:
         to ``f`` by :py:func:`benchmark_info`.
         """
         self._run(
-            info, f, list(args), kwargs, _product_args(args), RunMode.UNTIMED
+            info, f, list(args), kwargs, product_args(args), RunMode.UNTIMED
         )
 
     def run_timed_with_info(
@@ -522,7 +523,7 @@ class BenchmarkHarness:
                 f,
                 list(args),
                 kwargs,
-                _product_args(args),
+                product_args(args),
                 RunMode.TIMED_INTERNAL,
             )
         else:
@@ -531,7 +532,7 @@ class BenchmarkHarness:
                 f,
                 list(args),
                 kwargs,
-                _product_args(args),
+                product_args(args),
                 RunMode.TIMED_EXTERNAL,
             )
 
