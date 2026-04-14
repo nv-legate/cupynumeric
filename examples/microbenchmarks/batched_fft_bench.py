@@ -41,7 +41,7 @@ from _benchmark.sizing import (
 
 RAND_SCALE_FACTOR = 100
 
-BATCH_SIZE = 8
+BATCH_SIZE = 64
 _CASES = (
     ("1d", 1, "complex64"),
     ("2d", 2, "complex64"),

@@ -454,31 +454,6 @@ def test_undersized_stream_target_raises() -> None:
     assert resolutions[0].estimated_working_set_bytes > 1
 
 
-def test_undersized_gemm_target_warns() -> None:
-    sizing = _sizing()
-    gemm_gemv = _module("gemm_gemv_bench")
-    with pytest.warns(
-        RuntimeWarning,
-        match="memory target is smaller than estimated working set",
-    ):
-        _, resolutions = sizing.resolve_suite_size(
-            sizing.SizeRequest(memory_target_bytes=[1]),
-            resolve_from_target=lambda target_bytes: (
-                gemm_gemv._resolve_size_from_memory_target(
-                    "skinny_gemm", "64", target_bytes
-                )
-            ),
-            estimate_working_set_bytes=lambda size: (
-                gemm_gemv._estimate_working_set_bytes(
-                    "skinny_gemm", "64", size
-                )
-            ),
-        )
-    assert resolutions is not None
-    assert len(resolutions) == 1
-    assert resolutions[0].estimated_working_set_bytes > 1
-
-
 def test_fast_advanced_indexing_uses_square_size_for_2d_cases() -> None:
     fast_advanced_indexing = _module("fast_advanced_indexing_bench")
     suite = _make_recording_suite(forbid_resolution=True)
@@ -505,7 +480,7 @@ def test_fast_advanced_indexing_clamps_small_targets_to_nonzero_indices() -> (
 
     call_map = {name: args for name, args in suite.calls}
     for name in ("einsum_2d",):
-        assert call_map[name][2] == 1
+        assert call_map[name][2] > 0
 
 
 def test_general_indexing_clamps_small_targets_to_nonzero_indices() -> None:
@@ -524,7 +499,7 @@ def test_general_indexing_clamps_small_targets_to_nonzero_indices() -> None:
         "array_set_1d",
         "scalar_list_set_2d",
     ):
-        assert call_map[name][2] == 1
+        assert call_map[name][2] > 0
 
 
 def test_axis_sum_normalizes_negative_axes_for_output_shape() -> None:

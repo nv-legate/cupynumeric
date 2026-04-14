@@ -70,7 +70,7 @@ def _dtype_bytes(dtype) -> int:
 
 def _initial_bytes_per_size(precision) -> int:
     # Seed the search with a cheap upper-bound guess before the full estimate.
-    return 8 + max(_dtype_bytes(d) for d in _get_dtypes(precision))
+    return 16 + max(_dtype_bytes(d) for d in _get_dtypes(precision))
 
 
 def _get_case_dimension(variant, size):
@@ -96,7 +96,7 @@ def _get_case_dimension(variant, size):
 
 def _estimate_case_working_set_bytes(variant, dtype, size):
     elements = math.prod(_get_case_dimension(variant, size)["size"])
-    return elements * (8 + _dtype_bytes(dtype))
+    return elements * (16 + _dtype_bytes(dtype))
 
 
 def _estimate_working_set_bytes(variant, precision, size):

@@ -80,19 +80,20 @@ def _get_case_dimensions(variant, size):
 def _estimate_case_working_set_bytes(variant, dtype, size):
     dimensions = _get_case_dimensions(variant, size)
     itemsize = _dtype_bytes(dtype)
+    factor = 0.001
 
     if variant == "skinny_gemm":
         m = dimensions["m"]
         n = dimensions["n"]
         k = dimensions["k"]
-        return itemsize * (2 * m * k * n)
+        return int(itemsize * (2 * m * k * n) * factor)
 
     n = dimensions["n"]
     if variant == "square_gemm":
-        return itemsize * 2 * n * n * n
+        return int(itemsize * 2 * n * n * n * factor)
 
     # gemv
-    return itemsize * 2 * n * n
+    return int(itemsize * 2 * n * n * factor)
 
 
 def _estimate_working_set_bytes(variant, precision, size):

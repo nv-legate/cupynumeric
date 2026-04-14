@@ -54,7 +54,7 @@ import math
 import random
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
+from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 
 
 # =============================================================================
@@ -63,7 +63,7 @@ from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
 
 
 # Model float64 data plus int64/boolean index structures across the suite.
-_GENERAL_INDEXING_BYTES_PER_ELEMENT = 17
+_GENERAL_INDEXING_BYTES_PER_ELEMENT = 48
 
 
 def _describe_size(size: int) -> list[str]:
@@ -280,20 +280,19 @@ def run_benchmarks(suite, size_request):
 
     def arg_gen_1d():
         for size in sizes:
-            n = math.isqrt(size)
-            num_row_idx = clamp(n // 10, 1, 1000)
+            num_row_idx = size
             yield (np, size, num_row_idx, runs, warmup)
 
     def arg_gen_2d():
         for size in sizes:
             n = math.isqrt(size)
-            num_row_idx = clamp(n // 10, 1, 1000)
+            num_row_idx = n
             yield (np, n, num_row_idx, runs, warmup)
 
     def arg_gen_3d():
         for size in sizes:
             n_3d = int(size ** (1 / 3))
-            num_indices = clamp(n_3d // 5, 1, 1000)
+            num_indices = n_3d
             yield (np, n_3d, num_indices, runs, warmup)
 
     def arg_gen_one_per_row():
