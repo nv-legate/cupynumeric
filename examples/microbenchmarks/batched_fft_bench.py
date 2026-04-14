@@ -50,9 +50,31 @@ _CASES = (
 )
 
 
+def _find_largest_prime_factor(n: int) -> int:
+    max_prime = -1
+    while n % 2 == 0:
+        max_prime = 2
+        n //= 2
+    for i in range(3, int(n**0.5) + 1, 2):
+        while n % i == 0:
+            max_prime = i
+            n //= i
+
+    if n > 1:
+        max_prime = n
+
+    return max_prime
+
+
 def _case_shape(size: int, dims: int) -> tuple[int, ...]:
     work_size = max(1, size // BATCH_SIZE)
     extent = max(2, round(work_size ** (1 / dims)))
+
+    # prevent the largest prime factor from being too large
+    # if it is >= 131 cufftwill use the Bluestein path using 6x scratch memory
+    while _find_largest_prime_factor(extent) >= 131:
+        extent += 1
+
     return (BATCH_SIZE,) + (extent,) * dims
 
 
