@@ -133,9 +133,11 @@ def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
 
     # Exactly one advanced component from here.
     single = adv_components[0]
-    arr = single if isinstance(single, np.ndarray) else np.asarray(single)
-
-    if arr.dtype.kind == "b":
+    # Access .dtype directly — both numpy and cupynumeric arrays expose it.
+    # Plain Python sequences (lists) have no .dtype and are always integer
+    # indices, so treat them as non-boolean without any conversion.
+    dtype = getattr(single, "dtype", None)
+    if dtype is not None and dtype.kind == "b":
         # Solo boolean array (no co-keys) → ADVANCED_INDEXING task only,
         # no gather or scatter — this is an optimized path.
         # Boolean array alongside any co-keys (including slice(None)) →
