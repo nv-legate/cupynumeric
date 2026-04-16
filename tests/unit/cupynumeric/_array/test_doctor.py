@@ -227,12 +227,61 @@ class TestArrayGatherCheck:
 
 
 class TestBuiltinReductionCheck:
+    @pytest.mark.parametrize("name", sorted(m._DISCOURAGED_BUILTINS))
+    def test_each_discouraged_builtin_detected(self, name: str) -> None:
+        line = f"result = {name}(arr)"
+        assert m.BuiltinReductionCheck._builtins_in_source_line(line) == {name}
+
+    def test_multiple_calls(self) -> None:
+        assert m.BuiltinReductionCheck._builtins_in_source_line(
+            "x = min(a) + max(b)"
+        ) == {"min", "max"}
+
+    @pytest.mark.parametrize("line", ("min_value = 0", "x = foo(arr)"))
+    def test_no_false_positives(self, line: str) -> None:
+        assert m.BuiltinReductionCheck._builtins_in_source_line(line) == set()
+
+    def test_method_call_ignored(self) -> None:
+        assert (
+            m.BuiltinReductionCheck._builtins_in_source_line("arr.min()")
+            == set()
+        )
+
+    def test_builtin_in_comment_ignored(self, monkeypatch) -> None:
+        checkup = m.BuiltinReductionCheck()
+        fixed = m.CheckupLocator(__file__, 1, "tb")
+        monkeypatch.setattr(checkup, "locate", lambda: fixed)
+        monkeypatch.setattr(
+            m, "lookup_source", lambda *_: "m = np.min(a)  # was min(a)"
+        )
+        info = checkup.run("__iter__", (), {})
+        assert info is None
+
     def test_no_builtin_no_diagnostic(self) -> None:
         checkup = m.BuiltinReductionCheck()
         info = checkup.run("add", (), {})
         assert info is None
 
-    def test_reduction_builtins_on_array_detected(self, monkeypatch) -> None:
+    def test_ignores_non_iter_non_numpy_array(self) -> None:
+        checkup = m.BuiltinReductionCheck()
+        info = checkup.run("__getitem__", (), {})
+        assert info is None
+
+    @pytest.mark.parametrize("name", sorted(m._DISCOURAGED_BUILTINS))
+    def test_each_discouraged_builtin_detected_via_source(
+        self, name: str, monkeypatch
+    ) -> None:
+        checkup = m.BuiltinReductionCheck()
+        fixed = m.CheckupLocator(__file__, 1, "tb")
+        monkeypatch.setattr(checkup, "locate", lambda: fixed)
+        monkeypatch.setattr(
+            m, "lookup_source", lambda *_, n=name: f"result = {n}(arr)"
+        )
+        info = checkup.run("__iter__", (), {})
+        assert info is not None
+        assert name in info.description
+
+    def test_indirect_builtin_detected_via_frame(self, monkeypatch) -> None:
         checkup = m.BuiltinReductionCheck()
         fixed = m.CheckupLocator("test.py", 1, "tb")
         monkeypatch.setattr(checkup, "locate", lambda: fixed)

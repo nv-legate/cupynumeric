@@ -19,6 +19,7 @@ import builtins
 import inspect
 import io
 import sys
+import tokenize
 import traceback
 import warnings
 from abc import ABC, abstractmethod
@@ -574,6 +575,37 @@ class BuiltinReductionCheck(Checkup):
         "https://docs.nvidia.com/cupynumeric/latest/user/practices.html"
     )
 
+    @staticmethod
+    def _builtins_in_source_line(line: str) -> set[str]:
+        """
+        Tokenize a source line and return discouraged built-in names that
+        appear as function calls (``NAME`` immediately followed by ``(``).
+
+        This detects direct calls like ``min(arr)`` or ``sum(arr)`` without
+        false-positives on variables like ``min_value`` or method calls like
+        ``arr.min()``.
+        """
+        found: set[str] = set()
+        try:
+            tokens = list(tokenize.generate_tokens(io.StringIO(line).readline))
+            for i, tok in enumerate(tokens):
+                if (
+                    tok.type == tokenize.NAME  # 1. it's an identifier
+                    and tok.string
+                    in _DISCOURAGED_BUILTINS  # 2. check if it is a discouraged builtin
+                    and i + 1 < len(tokens)  # 3. there's a next token
+                    and tokens[i + 1].string == "("  # 4. followed by "("
+                    and (
+                        i == 0 or tokens[i - 1].string != "."
+                    )  # 5. preceded by "."
+                ):
+                    # For x = min(arr) will pass all the above checks
+                    # but np.min(arr) wouldn't since, e.g., the last check would fail
+                    found.add(tok.string)
+        except tokenize.TokenError:
+            pass
+        return found
+
     def _builtin_names_in_frame(self, frame: FrameType | None) -> set[str]:
         """
         Return the set of discouraged built-in names (min, max, etc.) that
@@ -590,47 +622,38 @@ class BuiltinReductionCheck(Checkup):
                 found.add(name)
         return found
 
-    def _call_stack_builtin_name(
-        self, below_frame: FrameType | None
-    ) -> str | None:
-        """
-        Return the name of the first discouraged built-in (min, max, etc.)
-        found in the call stack above ``below_frame``, or None.
-
-        Used to detect e.g. min(arr) / sum(arr) so we can suggest np.min(arr) etc.
-        C built-ins (min, max, etc.) do not appear as Python frames, so we also
-        use _builtin_names_in_frame() when we're in __iter__ / __numpy_array__.
-        """
-        if below_frame is None:
-            return None
-        frame = below_frame.f_back
-        while frame is not None:
-            if frame.f_globals.get("__name__") == "builtins":
-                name = frame.f_code.co_name
-                if name in _DISCOURAGED_BUILTINS:
-                    return name
-            frame = frame.f_back
-        return None
-
     def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+        if func not in ("__numpy_array__", "__iter__"):
+            return None
+
         if (locator := self.locate()) is None:
             return None
-        current = inspect.currentframe()
-        if current is None:
-            return None
 
-        builtin_name: str | None = self._call_stack_builtin_name(current)
+        # Primary detection: tokenize the source line for direct calls
+        # like min(arr), sum(arr). This works because C-implemented
+        # builtins don't create Python frames, so stack inspection
+        # cannot identify them.
+        source = lookup_source(locator.filename, locator.lineno)
         builtin_names: set[str] = set()
-        if builtin_name is not None:
-            builtin_names.add(builtin_name)
-        elif func in ("__numpy_array__", "__iter__"):
+        if source:
+            builtin_names = self._builtins_in_source_line(source)
+
+        # Secondary detection: check if a builtin function object is
+        # stored as a value in frame locals/globals, e.g.
+        # ``for func in (max, min): func(arr)``
+        if not builtin_names:
             user_frame = find_last_user_frame()
             builtin_names = self._builtin_names_in_frame(user_frame)
 
         if not builtin_names:
             return None
 
-        # One diagnostic per (location, set of builtins) so we report all at once.
+        # Dedup manually instead of using self.report() because we need
+        # a custom Diagnostic with builtin-specific descriptions and
+        # alternatives. The builtin names are embedded in the dedup key
+        # so that different builtins at the same location (e.g. max and
+        # min in ``for func in (max, min): func(arr)``) each get their
+        # own diagnostic.
         names_key = ",".join(sorted(builtin_names))
         synthetic = CheckupLocator(
             filename=locator.filename,
@@ -640,6 +663,7 @@ class BuiltinReductionCheck(Checkup):
         if synthetic in self._locators:
             return None
         self._locators.add(synthetic)
+
         sorted_names = sorted(builtin_names)
         label = "built-in" if len(sorted_names) == 1 else "built-ins"
         suggestions = ", ".join(
@@ -654,7 +678,7 @@ class BuiltinReductionCheck(Checkup):
             filename=locator.filename,
             lineno=locator.lineno,
             traceback=locator.traceback,
-            source=lookup_source(locator.filename, locator.lineno),
+            source=source,
             description=desc,
             reference=self.reference,
         )
