@@ -6,6 +6,7 @@ User guide
 
   usage
   practices
+  doctor
   howtos/index
   advanced
   profiling_debugging

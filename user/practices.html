@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Best practices &#8212; NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19)</title>
+    <title>Best practices &#8212; NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=e247ee2a"></script>
+    <script src="../_static/documentation_options.js?v=99922b06"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -64,7 +64,7 @@
 
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Howtos" href="howtos/index.html" />
+    <link rel="next" title="cuPyNumeric Doctor" href="doctor.html" />
     <link rel="prev" title="Usage" href="usage.html" />
 
 
@@ -137,11 +137,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213)</p>
   
 </a></div>
     
@@ -248,11 +248,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213)</p>
   
 </a>
 
@@ -320,6 +320,7 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">User guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Best practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="howtos/benchmarking.html">Performance Benchmarking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="howtos/patching.html">Trying Numpy code without changes</a></li>
@@ -944,7 +945,14 @@ designing the application since it can impact the scalability.</p>
 <p>Additionally, cuPyNumeric offers an optional “doctor” mode that will attempt to
 diagnose some common usage issues. To enable cuPyNumeric Doctor, set the
 environment variable <code class="docutils literal notranslate"><span class="pre">CUPYNUMERIC_DOCTOR=1</span></code> when you execute your code. See
-<a class="reference internal" href="../api/settings.html#settings"><span class="std std-ref">Settings</span></a> for additional configuration options for cuPyNumeric Doctor.</p>
+<a class="reference internal" href="doctor.html#doctor"><span class="std std-ref">cuPyNumeric Doctor</span></a> for a detailed walkthrough with examples, and <a class="reference internal" href="../api/settings.html#settings"><span class="std std-ref">Settings</span></a>
+for additional configuration options.</p>
+<p>We recommend users to not partition the data explicitly
+using libraries like <a class="reference external" href="https://mpi4py.readthedocs.io/en/stable/">mpi4py</a>
+since <a class="reference external" href="https://docs.nvidia.com/legate/latest/overview.html">Legate</a>
+handles data partitioning, communication and synchronization implictly.
+Instead, write a “serial” code using vectorized NumPy APIs
+or using Legate Tasks and then import cupynumeric.</p>
 </section>
 <section id="guidelines-on-using-cupynumeric-apis">
 <h2>Guidelines on using cuPyNumeric APIs<a class="headerlink" href="#guidelines-on-using-cupynumeric-apis" title="Link to this heading">#</a></h2>
@@ -1027,6 +1035,19 @@ the condition is flipped for the <cite>else</cite> statement.</p></li>
 </pre></div>
 </div>
 </section>
+<section id="use-array-based-operations-avoid-slice-access-in-a-loop">
+<h3>Use array-based operations, AVOID slice access in a loop<a class="headerlink" href="#use-array-based-operations-avoid-slice-access-in-a-loop" title="Link to this heading">#</a></h3>
+<p>Use array-based operations instead of reading or writing a
+slice of an array:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Detected: slice assigned in a loop on the same line</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="mf">2.0</span>
+
+<span class="c1"># Recommended: Perform array-based operations</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="mf">2.0</span>
+</pre></div>
+</div>
+</section>
 <section id="use-boolean-masks-avoid-advanced-indexing">
 <h3>Use boolean masks, AVOID advanced indexing<a class="headerlink" href="#use-boolean-masks-avoid-advanced-indexing" title="Link to this heading">#</a></h3>
 <p>Indexing using boolean masks instead of indices is recommended for better
@@ -1080,21 +1101,74 @@ Here is an example:</p>
 <span class="n">x</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">first_cond</span><span class="p">,</span> <span class="n">second_cond</span><span class="p">)]</span> <span class="o">=</span> <span class="n">const</span>
 </pre></div>
 </div>
+<p>Iterating over a cuPyNumeric array using a <code class="docutils literal notranslate"><span class="pre">for</span></code> loop or any other
+construct that triggers <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> dunder
+(e.g. passing the array to <code class="docutils literal notranslate"><span class="pre">list()</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple()</span></code>)
+forces element-by-element access across the array and is slow.</p>
 <p>Refer to the <a class="reference external" href="https://numpy.org/doc/stable/reference/routines.logic.html#logical-operations">documentation for other logical operations</a>.</p>
 </section>
 <section id="use-numpy-s-functions-avoid-using-python-s-built-in-functions">
 <h3>Use NumPy’s functions, AVOID using Python’s Built-in functions<a class="headerlink" href="#use-numpy-s-functions-avoid-using-python-s-built-in-functions" title="Link to this heading">#</a></h3>
-<p>Python’s built-in functions like <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">len</span></code>, <code class="docutils literal notranslate"><span class="pre">float</span></code> etc. can
-introduce blocking in the code and significantly affect application
-performance. Instead use NumPy’s functions. Here is an example:</p>
+<p>Python’s <a class="reference external" href="https://docs.python.org/3/library/functions.html">built-in functions</a>
+that don’t have an equivalent dunder method in the NumPy ndarray class are
+problematic. Using them on cuPyNumeric arrays introduces blocking and can
+significantly affect application performance. Use the equivalent NumPy
+functions or array methods instead.</p>
+<p>The following built-in functions are discouraged on cuPyNumeric arrays:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Built-in</p></th>
+<th class="head"><p>Recommended alternative</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.all(arr)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr.all()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">any</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.any(arr)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr.any()</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">arr.astype(bool)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">float</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">arr.astype(float)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">arr.astype(int)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.max(arr)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr.max()</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">min</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.min(arr)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr.min()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pow</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.power(arr,</span> <span class="pre">n)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr</span> <span class="pre">**</span> <span class="pre">n</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">round</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.round(arr)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr.round()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sorted</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.sort(arr)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sum</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">np.sum(arr)</span></code> or <code class="docutils literal notranslate"><span class="pre">arr.sum()</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Here is an example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="c1"># not recommended</span>
-<span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c1"># Not recommended</span>
 <span class="n">x_float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
 <span class="c1"># Recommended: Use equivalent methods from NumPy</span>
-<span class="n">size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
 <span class="n">x_float</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1141,7 +1215,24 @@ can also make it run slower, so we recommend using it as sparingly as possible.<
 <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.hstack.html#numpy-hstack">hstack</a>
 or
 <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.vstack.html#numpy-vstack">vstack</a>
-because they incur additional copies of data in our implementation.</p>
+since they create copies.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Not Recommended: hstack called in a loop — copies grow every iteration</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">result</span><span class="p">,</span> <span class="n">row</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><strong>Recommended fix:</strong> Collect all pieces first and call vstack once, or
+pre-allocate the output array and fill it slice-by-slice:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Recommended: single stack call</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+<span class="c1"># Recommended: pre-allocate and fill slices</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span> <span class="n">N</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">row</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="faster-i-o-routines">
@@ -1294,11 +1385,11 @@ here.</p>
       </div>
     </a>
     <a class="right-next"
-       href="howtos/index.html"
+       href="doctor.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Howtos</p>
+        <p class="prev-next-title">cuPyNumeric Doctor</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1327,6 +1418,7 @@ here.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#guidelines-on-using-cupynumeric-apis">Guidelines on using cuPyNumeric APIs</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-cupynumeric-or-numpy-arrays-avoid-native-lists">Use cuPyNumeric or NumPy arrays, AVOID native lists</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-array-based-operations-avoid-loops-with-indexing">Use array-based operations, AVOID loops with indexing</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-array-based-operations-avoid-slice-access-in-a-loop">Use array-based operations, AVOID slice access in a loop</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-boolean-masks-avoid-advanced-indexing">Use boolean masks, AVOID advanced indexing</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-putmask-to-update-an-array-based-on-another-array">Use putmask to update an array based on another array</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-logic-functions-avoid-iterating-through-a-loop">Use logic functions, AVOID iterating through a loop</a></li>

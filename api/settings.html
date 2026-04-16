@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Settings &#8212; NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19)</title>
+    <title>Settings &#8212; NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=e247ee2a"></script>
+    <script src="../_static/documentation_options.js?v=99922b06"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -137,11 +137,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213)</p>
   
 </a></div>
     
@@ -248,11 +248,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+75.g9f9c7e19)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+80.g347bc213)</p>
   
 </a>
 
@@ -320,6 +320,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../user/index.html">User guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../user/usage.html">Usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user/practices.html">Best practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user/doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../user/howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../user/howtos/benchmarking.html">Performance Benchmarking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying Numpy code without changes</a></li>
@@ -1184,6 +1185,34 @@ settings.</p>
 </dd>
 </dl>
 </section>
+<section id="disable-bounds-checking">
+<h2><code class="docutils literal notranslate"><span class="pre">disable_bounds_checking</span></code><a class="headerlink" href="#disable-bounds-checking" title="Link to this heading">#</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd"><strong>Type</strong><span class="colon">:</span></dt>
+<dd class="field-odd"><p>DisableBoundsChecking (“none”, “all”, or comma-separated selectors: indexing, take, take_along_axis, put)</p>
+</dd>
+<dt class="field-even"><strong>Env var</strong><span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">CUPYNUMERIC_DISABLE_BOUNDS_CHECKING</span></code></p>
+</dd>
+<dt class="field-odd"><strong>Default</strong><span class="colon">:</span></dt>
+<dd class="field-odd"><p>‘none’</p>
+</dd>
+</dl>
+<p>Disables explicit bounds checking for advanced-indexing-related
+operations.</p>
+<blockquote>
+<div><ul>
+<li><p>‘none’: disable no targeted explicit bounds checks</p></li>
+<li><p>‘all’:  disable all targeted explicit bounds checks</p></li>
+<li><dl class="simple">
+<dt>comma-separated selectors such as:</dt><dd><p>‘indexing,take,put’</p>
+</dd>
+</dl>
+<p>to disable checks only for the named operations</p>
+</li>
+</ul>
+</div></blockquote>
+</section>
 </section>
 
 
@@ -1250,6 +1279,7 @@ settings.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#matmul-cache-size"><code class="docutils literal notranslate"><span class="pre">matmul_cache_size</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test"><code class="docutils literal notranslate"><span class="pre">test</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#take-default"><code class="docutils literal notranslate"><span class="pre">take_default</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#disable-bounds-checking"><code class="docutils literal notranslate"><span class="pre">disable_bounds_checking</span></code></a></li>
 </ul>
   </nav></div>
 

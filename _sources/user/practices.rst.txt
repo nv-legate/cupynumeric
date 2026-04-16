@@ -19,7 +19,16 @@ designing the application since it can impact the scalability.
 Additionally, cuPyNumeric offers an optional "doctor" mode that will attempt to
 diagnose some common usage issues. To enable cuPyNumeric Doctor, set the
 environment variable ``CUPYNUMERIC_DOCTOR=1`` when you execute your code. See
-:ref:`settings` for additional configuration options for cuPyNumeric Doctor.
+:ref:`doctor` for a detailed walkthrough with examples, and :ref:`settings`
+for additional configuration options.
+
+We recommend users to not partition the data explicitly
+using libraries like `mpi4py <https://mpi4py.readthedocs.io/en/stable/>`_
+since `Legate <https://docs.nvidia.com/legate/latest/overview.html>`_
+handles data partitioning, communication and synchronization implictly.
+Instead, write a "serial" code using vectorized NumPy APIs
+or using Legate Tasks and then import cupynumeric.
+
 
 Guidelines on using cuPyNumeric APIs
 ------------------------------------
@@ -114,6 +123,21 @@ essentially breaking it down to three steps:
     x[cond] = const
     x[~cond] = 1.0 - const
 
+Use array-based operations, AVOID slice access in a loop
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use array-based operations instead of reading or writing a
+slice of an array:
+
+.. code-block:: python
+
+    # Detected: slice assigned in a loop on the same line
+    for i in range(N):
+        x[i, :] = y[i, :] * 2.0
+
+    # Recommended: Perform array-based operations
+    x = y * 2.0
+
 
 Use boolean masks, AVOID advanced indexing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,26 +199,63 @@ Here is an example:
     # Recommended: Use logical operations.
     x[np.logical_and(first_cond, second_cond)] = const
 
+Iterating over a cuPyNumeric array using a ``for`` loop or any other
+construct that triggers ``__iter__`` dunder
+(e.g. passing the array to ``list()`` or ``tuple()``)
+forces element-by-element access across the array and is slow.
 
 Refer to the `documentation for other logical operations <https://numpy.org/doc/stable/reference/routines.logic.html#logical-operations>`_.
 
 Use NumPy's functions, AVOID using Python's Built-in functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Python's built-in functions like ``int``, ``len``, ``float`` etc. can
-introduce blocking in the code and significantly affect application
-performance. Instead use NumPy's functions. Here is an example:
+Python's `built-in functions <https://docs.python.org/3/library/functions.html>`_
+that don't have an equivalent dunder method in the NumPy ndarray class are
+problematic. Using them on cuPyNumeric arrays introduces blocking and can
+significantly affect application performance. Use the equivalent NumPy
+functions or array methods instead.
+
+The following built-in functions are discouraged on cuPyNumeric arrays:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40
+
+   * - Built-in
+     - Recommended alternative
+   * - ``all``
+     - ``np.all(arr)`` or ``arr.all()``
+   * - ``any``
+     - ``np.any(arr)`` or ``arr.any()``
+   * - ``bool``
+     - ``arr.astype(bool)``
+   * - ``float``
+     - ``arr.astype(float)``
+   * - ``int``
+     - ``arr.astype(int)``
+   * - ``max``
+     - ``np.max(arr)`` or ``arr.max()``
+   * - ``min``
+     - ``np.min(arr)`` or ``arr.min()``
+   * - ``pow``
+     - ``np.power(arr, n)`` or ``arr ** n``
+   * - ``round``
+     - ``np.round(arr)`` or ``arr.round()``
+   * - ``sorted``
+     - ``np.sort(arr)``
+   * - ``sum``
+     - ``np.sum(arr)`` or ``arr.sum()``
+
+Here is an example:
 
 .. code-block:: python
 
     import cupynumeric as np
 
-    # not recommended
-    size = len(x)
+    # Not recommended
     x_float = float(x)
 
     # Recommended: Use equivalent methods from NumPy
-    size = x.size
     x_float = x.astype(np.float64)
 
 
@@ -249,7 +310,28 @@ There is a performance penalty to stacking arrays using
 `hstack <https://numpy.org/doc/stable/reference/generated/numpy.hstack.html#numpy-hstack>`_
 or
 `vstack <https://numpy.org/doc/stable/reference/generated/numpy.vstack.html#numpy-vstack>`_
-because they incur additional copies of data in our implementation.
+since they create copies.
+
+.. code-block:: python
+
+    # Not Recommended: hstack called in a loop — copies grow every iteration
+    result = np.empty((0, N))
+    for row in rows:
+        result = np.vstack([result, row])
+
+**Recommended fix:** Collect all pieces first and call vstack once, or
+pre-allocate the output array and fill it slice-by-slice:
+
+.. code-block:: python
+
+    # Recommended: single stack call
+    result = np.vstack(rows)
+
+    # Recommended: pre-allocate and fill slices
+    result = np.empty((len(rows), N))
+    for i, row in enumerate(rows):
+        result[i, :] = row
+
 
 Faster I/O Routines
 ~~~~~~~~~~~~~~~~~~~
