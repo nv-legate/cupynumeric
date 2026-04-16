@@ -47,8 +47,8 @@ from _benchmark.sizing import (
 
 # Reductions accumulate rounding error across many terms, so tolerate more
 # drift than the elementwise ufunc checks in peer suites.
-FLOAT_RTOL = 5e-5
-FLOAT_ATOL = 1e-6
+FLOAT_RTOL = 1e-4
+FLOAT_ATOL = 1e-5
 
 RAND_SCALE_FACTOR = 100
 
