@@ -163,6 +163,7 @@ struct ZipImplBody<VariantKind::GPU, DIM, N> {
                   const Rect<DIM>& rect,
                   const Pitches<DIM - 1>& pitches,
                   bool dense,
+                  bool check_bounds,
                   const int64_t key_dim,
                   const int64_t start_index,
                   const DomainPoint& shape,
@@ -177,8 +178,10 @@ struct ZipImplBody<VariantKind::GPU, DIM, N> {
     for (uint32_t idx = 0; idx < index_arrays.size(); ++idx) {
       index_buf[idx] = index_arrays[idx];
     }
-    check_out_of_bounds(
-      index_buf, volume, rect, pitches, index_arrays.size(), start_index, shape, stream);
+    if (check_bounds) {
+      check_out_of_bounds(
+        index_buf, volume, rect, pitches, index_arrays.size(), start_index, shape, stream);
+    }
 
     if (index_arrays.size() == N) {
       if (dense) {

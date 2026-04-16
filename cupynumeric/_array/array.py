@@ -2543,7 +2543,7 @@ class ndarray:
             indices = indices.ravel()
 
         if self.shape == ():
-            if mode == "raise":
+            if mode == "raise" and settings.bounds_check_enabled("put"):
                 if indices.min() < -1 or indices.max() > 0:
                     raise IndexError("Indices out of bounds")
             if values.shape == ():

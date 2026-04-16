@@ -719,7 +719,7 @@ class DeferredArray:
         return self.base.has_scalar_storage and self.base.size == 1
 
     def _zip_indices(
-        self, start_index: int, arrays: tuple[Any, ...]
+        self, start_index: int, arrays: tuple[Any, ...], check_bounds: bool
     ) -> DeferredArray:
         if not isinstance(arrays, tuple):
             raise TypeError("zip_indices expects tuple of arrays")
@@ -797,12 +797,14 @@ class DeferredArray:
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.ZIP
         )
-        task.throws_exception(IndexError)
+        if check_bounds:
+            task.throws_exception(IndexError)
         p_out = task.add_output(output_arr.base)
         task.add_scalar_arg(self.ndim, ty.int64)  # N of points in Point<N>
         task.add_scalar_arg(key_dim, ty.int64)  # key_dim
         task.add_scalar_arg(start_index, ty.int64)  # start_index
         task.add_scalar_arg(self.shape, (ty.int64,))
+        task.add_scalar_arg(check_bounds, ty.bool_)
         for a in arrays:
             p_in = task.add_input(a)
             task.add_constraint(align(p_out, p_in))
@@ -1276,7 +1278,10 @@ class DeferredArray:
         positive_equivalent = mask_array._add(axis_size)
         # Use the functional where: where(condition, if_true, if_false)
         mask_array = where(negative_mask, positive_equivalent, mask_array)
-        if (mask_array >= axis_size).any():
+        if (
+            settings.bounds_check_enabled("indexing")
+            and (mask_array >= axis_size).any()
+        ):
             raise IndexError("indices are out of bounds of the array")
 
         # Now we need to create a mask tensor where mask_tensor[i, j] = 1
@@ -1497,7 +1502,11 @@ class DeferredArray:
             rhs = self._copy_store(store)
 
         if len(tuple_of_arrays) <= rhs.ndim:
-            output_arr = rhs._zip_indices(start_index, tuple_of_arrays)
+            output_arr = rhs._zip_indices(
+                start_index,
+                tuple_of_arrays,
+                check_bounds=settings.bounds_check_enabled("indexing"),
+            )
             return True, rhs, output_arr, self
         else:
             raise ValueError("Advanced indexing dimension mismatch")
@@ -2308,7 +2317,7 @@ class DeferredArray:
             indices_shape = ()
 
         # neither implementation has checks on indices, so check them now
-        if mode == "raise":
+        if mode == "raise" and settings.bounds_check_enabled("take"):
             lim = src.shape[axis]
             if is_scalar:
                 if (indices < -lim) or (indices >= lim):
@@ -2365,7 +2374,9 @@ class DeferredArray:
         indices = runtime.to_deferred_array(indices, read_only=True)
 
         # Check bounds if mode is 'raise'
-        if mode == "raise":
+        if mode == "raise" and settings.bounds_check_enabled(
+            "take_along_axis"
+        ):
             lim = src.shape[axis]
             if indices._less(-lim).any() or indices._greater_equal(lim).any():
                 raise IndexError("index out of bounds")
@@ -2907,6 +2918,7 @@ class DeferredArray:
             shape=indices.shape, dtype=pointN_dtype
         )
 
+        check_bounds = check_bounds and settings.bounds_check_enabled("put")
         shape = self_tmp.shape
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.WRAP
@@ -2917,7 +2929,8 @@ class DeferredArray:
         task.add_scalar_arg(check_bounds, ty.bool_)
         p_indices = task.add_input(indices.base)
         task.add_constraint(align(p_indices, p_indirect))
-        task.throws_exception(IndexError)
+        if check_bounds:
+            task.throws_exception(IndexError)
         task.execute()
         if indirect.base.has_scalar_storage:
             indirect = indirect._convert_future_to_regionfield()

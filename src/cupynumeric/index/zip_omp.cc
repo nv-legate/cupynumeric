@@ -34,6 +34,7 @@ struct ZipImplBody<VariantKind::OMP, DIM, N> {
                   const Rect<DIM>& rect,
                   const Pitches<DIM - 1>& pitches,
                   bool dense,
+                  bool check_bounds,
                   const int64_t key_dim,
                   const int64_t start_index,
                   const DomainPoint& shape,
@@ -49,10 +50,14 @@ struct ZipImplBody<VariantKind::OMP, DIM, N> {
         for (size_t idx = 0; idx < volume; ++idx) {
           Point<N> new_point;
           for (size_t i = 0; i < N; i++) {
-            auto pair    = compute_idx_omp(indx_ptrs[i][idx], shape[i]);
-            new_point[i] = pair.first;
-            if (pair.second) {
-              is_out_of_bounds = true;
+            if (check_bounds) {
+              auto pair    = compute_idx_omp(indx_ptrs[i][idx], shape[i]);
+              new_point[i] = pair.first;
+              if (pair.second) {
+                is_out_of_bounds = true;
+              }
+            } else {
+              new_point[i] = compute_idx_unchecked(indx_ptrs[i][idx], shape[i]);
             }
           }
           outptr[idx] = new_point;
@@ -63,10 +68,14 @@ struct ZipImplBody<VariantKind::OMP, DIM, N> {
           auto p = pitches.unflatten(idx, rect.lo);
           Point<N> new_point;
           for (size_t i = 0; i < N; i++) {
-            auto pair    = compute_idx_omp(index_arrays[i][p], shape[i]);
-            new_point[i] = pair.first;
-            if (pair.second) {
-              is_out_of_bounds = true;
+            if (check_bounds) {
+              auto pair    = compute_idx_omp(index_arrays[i][p], shape[i]);
+              new_point[i] = pair.first;
+              if (pair.second) {
+                is_out_of_bounds = true;
+              }
+            } else {
+              new_point[i] = compute_idx_unchecked(index_arrays[i][p], shape[i]);
             }
           }
           out[p] = new_point;
@@ -84,10 +93,15 @@ struct ZipImplBody<VariantKind::OMP, DIM, N> {
           new_point[i] = p[i];
         }
         for (size_t i = 0; i < index_arrays.size(); i++) {
-          auto pair                  = compute_idx_omp(index_arrays[i][p], shape[start_index + i]);
-          new_point[start_index + i] = pair.first;
-          if (pair.second) {
-            is_out_of_bounds = true;
+          if (check_bounds) {
+            auto pair = compute_idx_omp(index_arrays[i][p], shape[start_index + i]);
+            new_point[start_index + i] = pair.first;
+            if (pair.second) {
+              is_out_of_bounds = true;
+            }
+          } else {
+            new_point[start_index + i] =
+              compute_idx_unchecked(index_arrays[i][p], shape[start_index + i]);
           }
         }
         for (size_t i = (start_index + index_arrays.size()); i < N; i++) {
@@ -97,7 +111,7 @@ struct ZipImplBody<VariantKind::OMP, DIM, N> {
         out[p] = new_point;
       }
     }
-    if (is_out_of_bounds) {
+    if (check_bounds and is_out_of_bounds) {
       throw legate::TaskException("index is out of bounds in index array");
     }
   }

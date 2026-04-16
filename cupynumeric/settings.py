@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import Final, Literal, cast
 
 from legate.util.settings import (
     EnvOnlySetting,
@@ -27,6 +27,13 @@ from legate.util.settings import (
 __all__ = ("settings",)
 
 DoctorFormat = Literal["plain", "json", "csv"]
+
+BoundsCheckOperation = Literal["indexing", "take", "take_along_axis", "put"]
+
+_BOUNDS_CHECK_OPERATIONS: Final[frozenset[str]] = frozenset(
+    {"indexing", "take", "take_along_axis", "put"}
+)
+_BOUNDS_CHECK_SENTINELS: Final[frozenset[str]] = frozenset({"all", "none"})
 
 
 def convert_doctor_format(value: str) -> DoctorFormat:
@@ -43,6 +50,48 @@ def convert_doctor_format(value: str) -> DoctorFormat:
 
 convert_doctor_format.type = (  # type: ignore [attr-defined]
     'DoctorFormat ("plain", "csv", or "json")'
+)
+
+
+def _parse_bounds_checking_tokens(value: str) -> frozenset[str]:
+    tokens = frozenset(
+        token.strip().lower() for token in value.split(",") if token.strip()
+    )
+    if not tokens:
+        raise ValueError(
+            "cuPyNumeric disabled bounds checking selector list cannot be empty"
+        )
+
+    invalid = tokens - _BOUNDS_CHECK_SENTINELS - _BOUNDS_CHECK_OPERATIONS
+    if invalid:
+        raise ValueError(
+            "unknown cuPyNumeric disabled bounds checking selector(s): "
+            f"{sorted(invalid)}; valid values are: "
+            f"{sorted(_BOUNDS_CHECK_SENTINELS | _BOUNDS_CHECK_OPERATIONS)}"
+        )
+
+    sentinels = tokens & _BOUNDS_CHECK_SENTINELS
+    if sentinels and len(tokens) > 1:
+        raise ValueError(
+            'cuPyNumeric disabled bounds checking selectors "all" and "none" '
+            "cannot be combined with operation-specific selectors"
+        )
+
+    return tokens
+
+
+def parse_bounds_checking(value: str) -> str:
+    tokens = _parse_bounds_checking_tokens(value)
+    if tokens == {"none"}:
+        return "none"
+    if tokens == {"all"}:
+        return "all"
+    return ",".join(sorted(tokens))
+
+
+parse_bounds_checking.type = (  # type: ignore [attr-defined]
+    'DisableBoundsChecking ("none", "all", or comma-separated selectors: '
+    "indexing, take, take_along_axis, put)"
 )
 
 
@@ -231,6 +280,37 @@ class CupynumericRuntimeSettings(Settings):
           - 'task':  use a task that broadcasts the indices
         """,
     )
+
+    disable_bounds_checking: PrioritizedSetting[str] = PrioritizedSetting(
+        "disable_bounds_checking",
+        "CUPYNUMERIC_DISABLE_BOUNDS_CHECKING",
+        default="none",
+        convert=parse_bounds_checking,
+        help="""
+        Disables explicit bounds checking for advanced-indexing-related
+        operations.
+
+          - 'none': disable no targeted explicit bounds checks
+          - 'all':  disable all targeted explicit bounds checks
+          - comma-separated selectors such as:
+              'indexing,take,put'
+            to disable checks only for the named operations
+        """,
+    )
+
+    def bounds_check_enabled(self, operation: BoundsCheckOperation) -> bool:
+        if operation not in _BOUNDS_CHECK_OPERATIONS:
+            raise ValueError(
+                f"unknown bounds checking operation: {operation}; "
+                f"valid values are: {sorted(_BOUNDS_CHECK_OPERATIONS)}"
+            )
+
+        tokens = _parse_bounds_checking_tokens(self.disable_bounds_checking())
+        if tokens == {"none"}:
+            return True
+        if tokens == {"all"}:
+            return False
+        return operation not in tokens
 
 
 settings = CupynumericRuntimeSettings()

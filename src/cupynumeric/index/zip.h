@@ -27,6 +27,7 @@ struct ZipArgs {
   const int64_t key_dim;
   const int64_t start_index;
   const legate::DomainPoint shape;
+  const bool check_bounds;
 };
 
 class ZipTask : public CuPyNumericTask<ZipTask> {
@@ -62,10 +63,14 @@ constexpr std::pair<legate::coord_t, bool> compute_idx_omp(legate::coord_t index
   return {new_index, out_of_bounds};
 }
 
+constexpr legate::coord_t compute_idx_unchecked(legate::coord_t index, legate::coord_t extent)
+{
+  return index < 0 ? index + extent : index;
+}
+
 constexpr legate::coord_t compute_idx_cuda(legate::coord_t index, legate::coord_t extent)
 {
-  legate::coord_t new_index = index < 0 ? index + extent : index;
-  return new_index;
+  return compute_idx_unchecked(index, extent);
 }
 
 }  // namespace cupynumeric

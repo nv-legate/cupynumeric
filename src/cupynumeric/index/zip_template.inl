@@ -60,6 +60,7 @@ struct ZipImpl {
                                        out_rect,
                                        pitches,
                                        dense,
+                                       args.check_bounds,
                                        args.key_dim,
                                        args.start_index,
                                        args.shape,
@@ -97,11 +98,12 @@ static void zip_template(TaskContext& context)
   int64_t key_dim     = context.scalar(1).value<int64_t>();
   int64_t start_index = context.scalar(2).value<int64_t>();
   auto shape          = context.scalar(3).value<DomainPoint>();
+  bool check_bounds   = context.scalar(4).value<bool>();
   std::vector<legate::PhysicalStore> inputs;
   for (auto& input : context.inputs()) {
     inputs.emplace_back(input);
   }
-  ZipArgs args{context.output(0), std::move(inputs), N, key_dim, start_index, shape};
+  ZipArgs args{context.output(0), std::move(inputs), N, key_dim, start_index, shape, check_bounds};
   int dim = std::max(1, args.inputs[0].dim());
   double_dispatch(dim, N, ZipImpl<KIND>{context}, args);
 }

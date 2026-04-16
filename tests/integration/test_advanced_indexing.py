@@ -1312,7 +1312,9 @@ def test_too_many_index_arrays() -> None:
     with pytest.raises(ValueError, match=expect_msg):
         # This should try to use 4 index arrays on a 2D array
         _ = arr._thunk._zip_indices(
-            0, (idx1._thunk, idx2._thunk, idx3._thunk, idx4._thunk)
+            0,
+            (idx1._thunk, idx2._thunk, idx3._thunk, idx4._thunk),
+            check_bounds=True,
         )
 
 

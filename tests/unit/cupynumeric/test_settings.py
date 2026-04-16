@@ -23,6 +23,7 @@ from legate.util.settings import EnvOnlySetting, PrioritizedSetting
 import cupynumeric.settings as m
 
 _expected_settings = (
+    "disable_bounds_checking",
     "doctor_filename",
     "doctor_format",
     "doctor_traceback",
@@ -78,6 +79,41 @@ class Test_convert_doctor_format:
         )
 
 
+class Test_parse_bounds_checking:
+    def test_all(self) -> None:
+        assert m.parse_bounds_checking("all") == "all"
+        assert m.parse_bounds_checking("ALL") == "all"
+
+    def test_none(self) -> None:
+        assert m.parse_bounds_checking("none") == "none"
+
+    def test_selectors(self) -> None:
+        assert (
+            m.parse_bounds_checking("indexing,put,take") == "indexing,put,take"
+        )
+
+    def test_bad_selector(self) -> None:
+        with pytest.raises(
+            ValueError,
+            match="unknown cuPyNumeric disabled bounds checking selector",
+        ):
+            m.parse_bounds_checking("junk")
+
+    def test_bad_combination(self) -> None:
+        with pytest.raises(
+            ValueError,
+            match='disabled bounds checking selectors "all" and "none" cannot be combined',
+        ):
+            m.parse_bounds_checking("all,indexing")
+
+    def test_type(self) -> None:
+        assert (
+            m.parse_bounds_checking.type
+            == 'DisableBoundsChecking ("none", "all", or comma-separated selectors: '
+            "indexing, take, take_along_axis, put)"
+        )
+
+
 class TestSettings:
     def test_standard_settings(self) -> None:
         settings = [
@@ -98,6 +134,11 @@ class TestSettings:
     def test_types(self) -> None:
         assert m.settings.doctor.convert_type == 'bool ("0" or "1")'
         assert (
+            m.settings.disable_bounds_checking.convert_type
+            == 'DisableBoundsChecking ("none", "all", or comma-separated selectors: '
+            "indexing, take, take_along_axis, put)"
+        )
+        assert (
             m.settings.doctor_format.convert_type
             == 'DoctorFormat ("plain", "csv", or "json")'
         )
@@ -112,6 +153,9 @@ class TestSettings:
 
 
 class TestDefaults:
+    def test_disable_bounds_checking(self) -> None:
+        assert m.settings.disable_bounds_checking.default == "none"
+
     def test_doctor(self) -> None:
         assert m.settings.doctor.default is False
 
@@ -151,6 +195,41 @@ class TestDefaults:
         define = setting.env_var.removeprefix("CUPYNUMERIC_") + "_TEST"
         expected = setting._convert(read_c_define(ENV_HEADER, define))
         assert setting.test_default == expected
+
+
+class TestBoundsCheckEnabled:
+    def teardown_method(self) -> None:
+        m.settings.disable_bounds_checking.unset_value()
+
+    def test_all(self) -> None:
+        assert m.settings.bounds_check_enabled("indexing") is True
+        assert m.settings.bounds_check_enabled("take") is True
+        assert m.settings.bounds_check_enabled("put") is True
+
+    def test_none(self) -> None:
+        m.settings.disable_bounds_checking = "none"
+        assert m.settings.bounds_check_enabled("indexing") is True
+        assert m.settings.bounds_check_enabled("take") is True
+        assert m.settings.bounds_check_enabled("put") is True
+
+    def test_all_disabled(self) -> None:
+        m.settings.disable_bounds_checking = "all"
+        assert m.settings.bounds_check_enabled("indexing") is False
+        assert m.settings.bounds_check_enabled("take") is False
+        assert m.settings.bounds_check_enabled("put") is False
+
+    def test_selective(self) -> None:
+        m.settings.disable_bounds_checking = "take,put,indexing"
+        assert m.settings.bounds_check_enabled("indexing") is False
+        assert m.settings.bounds_check_enabled("take") is False
+        assert m.settings.bounds_check_enabled("put") is False
+        assert m.settings.bounds_check_enabled("take_along_axis") is True
+
+    def test_bad_operation(self) -> None:
+        with pytest.raises(
+            ValueError, match="unknown bounds checking operation"
+        ):
+            m.settings.bounds_check_enabled("junk")  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

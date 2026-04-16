@@ -19,6 +19,7 @@ from utils.generators import mk_seq_array
 from utils.utils import ONE_MAX_DIM_RANGE
 
 import cupynumeric as num
+from cupynumeric.settings import settings
 
 
 @pytest.fixture(params=("auto", "index", "task"))
@@ -385,8 +386,6 @@ class TestTakeErrors:
             num.take(self.A_num, num.array(indices), axis=axis, out=out_num)
 
     def test_invalid_take_algorithm(self) -> None:
-        from cupynumeric.settings import settings
-
         arr = num.array([1, 2, 3, 4, 5])
 
         # Save original value
@@ -398,6 +397,61 @@ class TestTakeErrors:
         finally:
             # Restore original value
             settings.take_default = original
+
+
+class TestBoundsCheckingSetting:
+    def teardown_method(self) -> None:
+        settings.disable_bounds_checking.unset_value()
+        settings.take_default.unset_value()
+
+    def test_default_still_raises_for_invalid_indices(self) -> None:
+        arr = num.array([10, 20, 30])
+        indices = num.array([0, 4])
+
+        settings.take_default = "task"
+
+        with pytest.raises(IndexError, match="invalid entry in indices array"):
+            num.take(arr, indices, mode="raise")
+
+    def test_all_disables_take_raise_check(self) -> None:
+        arr_np = np.array([10, 20, 30])
+        arr = num.array(arr_np)
+        indices_np = np.array([0, 4])
+        indices = num.array(indices_np)
+
+        settings.take_default = "task"
+        settings.disable_bounds_checking = "all"
+
+        result = num.take(arr, indices, mode="raise")
+        expected = np.take(arr_np, indices_np, mode="wrap")
+
+        assert np.array_equal(result, expected)
+
+    def test_selective_indexing_does_not_disable_take_raise_check(
+        self,
+    ) -> None:
+        arr = num.array([10, 20, 30])
+        indices = num.array([0, 4])
+
+        settings.take_default = "task"
+        settings.disable_bounds_checking = "indexing"
+
+        with pytest.raises(IndexError, match="invalid entry in indices array"):
+            num.take(arr, indices, mode="raise")
+
+    def test_selective_take_disables_take_raise_check(self) -> None:
+        arr_np = np.array([10, 20, 30])
+        arr = num.array(arr_np)
+        indices_np = np.array([0, 4])
+        indices = num.array(indices_np)
+
+        settings.take_default = "task"
+        settings.disable_bounds_checking = "take"
+
+        result = num.take(arr, indices, mode="raise")
+        expected = np.take(arr_np, indices_np, mode="wrap")
+
+        assert np.array_equal(result, expected)
 
 
 if __name__ == "__main__":
