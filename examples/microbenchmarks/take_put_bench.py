@@ -71,7 +71,7 @@ def take_1d(np, size, num_indices, runs, warmup, *, timer):
     indices = np.random.randint(0, size, num_indices)
 
     def operation():
-        return np.take(a, indices, axis=0, mode="wrap")
+        return np.take(a, indices, axis=0)
 
     return timed_loop(operation, timer, runs, warmup) / runs
 
@@ -84,7 +84,7 @@ def take_2d(np, n, num_indices, runs, warmup, *, timer):
     indices = np.random.randint(0, n, num_indices)
 
     def operation():
-        return np.take(a, indices, axis=0, mode="wrap")
+        return np.take(a, indices, axis=0)
 
     return timed_loop(operation, timer, runs, warmup) / runs
 

@@ -166,15 +166,23 @@ class _TransposeStub:
 
 
 @pytest.mark.parametrize(
-    ("module_name", "runner_kwargs", "expected_name", "size_index"),
+    (
+        "module_name",
+        "runner_kwargs",
+        "expected_name",
+        "size_index",
+        "num_resolutions",
+    ),
     [
-        ("general_astype_bench", {}, "astype", 2),
-        ("general_random_bench", {}, "randint", 1),
-        ("general_nanred_bench", {}, "nan_red", 3),
-        ("general_scalared_bench", {}, "scalar_red", 3),
-        ("ufunc_bench", {"perform_check": False}, "unary_exp", 1),
-        ("general_indexing_bench", {}, "boolean_set_array", 1),
-        ("fast_advanced_indexing_bench", {}, "putmask_scalar", 1),
+        ("general_astype_bench", {}, "astype", 2, 1),
+        ("general_random_bench", {}, "randint", 1, 1),
+        ("general_nanred_bench", {}, "nan_red", 3, 1),
+        ("general_scalared_bench", {}, "scalar_red", 3, 1),
+        ("ufunc_bench", {"perform_check": False}, "unary_exp", 1, 1),
+        ("general_indexing_bench", {}, "boolean_set_array", 1, 1),
+        # fast_advanced_indexing_bench has two resolution groups: _BPE_9 (putmask)
+        # and _BPE_24 (boolean get tests), so it emits two resolutions.
+        ("fast_advanced_indexing_bench", {}, "putmask_scalar", 1, 2),
     ],
 )
 def test_linear_suites_resolve_memory_target_in_run_benchmarks(
@@ -182,6 +190,7 @@ def test_linear_suites_resolve_memory_target_in_run_benchmarks(
     runner_kwargs: dict[str, object],
     expected_name: str,
     size_index: int,
+    num_resolutions: int,
 ) -> None:
     module = _module(module_name)
     sizing = _sizing()
@@ -190,7 +199,7 @@ def test_linear_suites_resolve_memory_target_in_run_benchmarks(
 
     module.run_benchmarks(suite, request, **runner_kwargs)
 
-    assert len(suite.resolutions) == 1
+    assert len(suite.resolutions) == num_resolutions
     assert len(suite.resolutions[0]) == 1
     resolution = suite.resolutions[0][0]
     assert resolution.requested_memory_target_bytes == 100

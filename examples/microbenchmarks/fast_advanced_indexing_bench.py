@@ -64,13 +64,27 @@ from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
 # =============================================================================
 
 
-# Model one float64 data array plus boolean/int index structures.
-_ADVANCED_INDEXING_BYTES_PER_ELEMENT = 10
+# Per-test peak bytes per resolved element (float64 = 8 bytes):
+#
+#   _BPE_8  — tests that allocate only the source array; index/output arrays
+#             are bounded by num_indices (≤1000 elements) and are negligible:
+#             einsum_2d, row_select_2d, array_get_col_2d
+#
+#   _BPE_9  — putmask_scalar: source array (×8) + bool mask (×1); write is
+#             in-place so no output allocation.
+#
+#   _BPE_24 — boolean_get_1d / boolean_get_2d: AdvancedIndexingTask allocates
+#             three same-size float64 buffers per GPU shard — source (×8),
+#             intermediate int64 index array (×8), and output (×8) — giving
+#             24 B/el.  Confirmed from a crash where the task requested
+#             41,236,358,160 bytes = 3 × 8 × (resolved_size / 32 GPUs).
+_BPE_8 = 8
+_BPE_9 = 9
+_BPE_24 = 24
 
 
-def _describe_size(size: int) -> list[str]:
-    n = max(1, math.isqrt(size))
-    return [f"resolved_1d_elements: {size:,}", f"resolved_2d_shape: {n} x {n}"]
+def _describe_size_1d(size: int) -> list[str]:
+    return [f"resolved_1d_elements: {size:,}"]
 
 
 def putmask_scalar(np, size, runs, warmup, *, timer):
@@ -172,38 +186,57 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request,
-        bytes_per_element=_ADVANCED_INDEXING_BYTES_PER_ELEMENT,
-        describe_size=_describe_size,
+
+    # Resolve problem sizes independently per test group so that --memory-size
+    # accurately bounds peak allocation for every test.
+    sizes_8, _ = resolve_linear_suite_size(
+        size_request, bytes_per_element=_BPE_8
     )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
+    sizes_9, resolutions_9 = resolve_linear_suite_size(
+        size_request, bytes_per_element=_BPE_9, describe_size=_describe_size_1d
+    )
+    sizes_24, resolutions_24 = resolve_linear_suite_size(
+        size_request,
+        bytes_per_element=_BPE_24,
+        describe_size=lambda s: [
+            f"resolved_1d_elements (24 B/el): {s:,}",
+            f"resolved_2d_shape (24 B/el): {max(1, math.isqrt(s))} x "
+            f"{max(1, math.isqrt(s))}",
+        ],
+    )
+    if resolutions_9 is not None:
+        suite.print_size_resolution(resolutions_9)
+    if resolutions_24 is not None:
+        suite.print_size_resolution(resolutions_24)
 
-    ns = [max(1, math.isqrt(size)) for size in sizes]
+    # n values for 2D boolean tests.
+    ns_24 = [max(1, math.isqrt(size)) for size in sizes_24]
 
-    def arg_gen_2d():
-        for size in sizes:
+    def arg_gen_2d_8():
+        # Tests whose output is bounded by num_indices (≤1000), so only `a` counts.
+        for size in sizes_8:
             n = max(1, math.isqrt(size))
             num_indices = clamp(n // 10, 1, 1000)
             yield (np, n, num_indices, runs, warmup)
 
-    # putmask: a[bool_mask] = scalar
-    suite.run_timed(putmask_scalar, np, sizes, runs, warmup, timer=timer)
+    # putmask: a[bool_mask] = scalar  — 9 B/el (a + bool mask, in-place write)
+    suite.run_timed(putmask_scalar, np, sizes_9, runs, warmup, timer=timer)
 
-    # einsum path: a[indices, :] (2D row GET)
-    suite.run_timed_with_generator(None, einsum_2d, arg_gen_2d(), timer=timer)
-
-    # single boolean array GET (no gather)
-    suite.run_timed(boolean_get_1d, np, sizes, runs, warmup, timer=timer)
-    suite.run_timed(boolean_get_2d, np, ns, runs, warmup, timer=timer)
-
-    # einsum-routed integer GET
+    # einsum path: a[indices, :] (2D row GET)  — 8 B/el (output is ≤1000 rows)
     suite.run_timed_with_generator(
-        None, row_select_2d, arg_gen_2d(), timer=timer
+        None, einsum_2d, arg_gen_2d_8(), timer=timer
+    )
+
+    # boolean GET: AdvancedIndexingTask uses 3 same-size buffers  — 24 B/el
+    suite.run_timed(boolean_get_1d, np, sizes_24, runs, warmup, timer=timer)
+    suite.run_timed(boolean_get_2d, np, ns_24, runs, warmup, timer=timer)
+
+    # einsum-routed integer GET  — 8 B/el (output is ≤1000 rows/cols)
+    suite.run_timed_with_generator(
+        None, row_select_2d, arg_gen_2d_8(), timer=timer
     )
     suite.run_timed_with_generator(
-        None, array_get_col_2d, arg_gen_2d(), timer=timer
+        None, array_get_col_2d, arg_gen_2d_8(), timer=timer
     )
 
 

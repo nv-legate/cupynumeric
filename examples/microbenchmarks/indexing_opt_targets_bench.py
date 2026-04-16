@@ -51,6 +51,9 @@ Boolean in mixed-key position:
 Usage:
     python main.py --suite indexing_opt_targets [--size SIZE | --memory-size 64MiB]
 
+    Each test group uses its own bytes-per-element value (8, 12, or 13) so that
+    --memory-size accurately bounds the peak allocation for every test.
+
     # Compare with numpy backend:
     python main.py --suite indexing_opt_targets --package numpy
 """
@@ -67,14 +70,23 @@ from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
 # OPTIMIZATION TARGET BENCHMARKS
 # =============================================================================
 
-# float64 data + int64/bool index structures across the suite.
-_OPT_TARGETS_BYTES_PER_ELEMENT = 17
-
-
-def _describe_size(size: int) -> list[str]:
-    n = math.isqrt(size)
-    n_5d = max(2, int(size ** (1 / 5)))
-    return [f"resolved_2d_shape: {n} x {n}", f"resolved_5d_shape: {n_5d}^5"]
+# Per-test peak bytes per resolved element (float64 = 8 bytes):
+#
+#   _BPE_8  — one float64 array only; index/values arrays are ≤1000 elements
+#             and contribute negligible memory relative to n² or n^5:
+#             opt2_int_col_get_2d, opt3_int_set_1d, opt3_int_col_set_2d,
+#             opt6_flat_get_contiguous, opt8_bool_col_set_scalar
+#
+#   _BPE_12 — one float64 array + ~50% proportional float64 output or values:
+#             opt2_int_get_5d (a + indexed output),
+#             opt8_bool_row_get / opt8_bool_col_get (a + ~n/2 rows/cols),
+#             opt8_bool_col_set_array (a + values of shape n×(n/2))
+#
+#   _BPE_13 — float64 array + bool mask (×1 byte) + ~50% float64 values:
+#             opt1_bool_nonscalar_set (a + mask + ~size/2 values)
+_BPE_8 = 8
+_BPE_12 = 12
+_BPE_13 = 13
 
 
 # ---------------------------------------------------------------------------
@@ -189,7 +201,7 @@ def opt6_flat_get_contiguous(np, n, num_indices, runs, warmup, *, timer):
     indices = np.random.randint(0, flat_size, num_indices)
 
     def operation():
-        return a.flat[indices]
+        return a.ravel()[indices]
 
     return timed_loop(operation, timer, runs, warmup) / runs
 
@@ -278,67 +290,129 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request,
-        bytes_per_element=_OPT_TARGETS_BYTES_PER_ELEMENT,
-        describe_size=_describe_size,
+
+    # Resolve problem sizes independently per test group so that --memory-size
+    # accurately bounds peak allocation for every test.  Each group uses its
+    # own bytes-per-element constant that matches the actual peak footprint.
+    sizes_8, _ = resolve_linear_suite_size(
+        size_request, bytes_per_element=_BPE_8
     )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
+    sizes_12, resolutions_12 = resolve_linear_suite_size(
+        size_request,
+        bytes_per_element=_BPE_12,
+        describe_size=lambda s: [
+            f"resolved_2d_shape (12 B/el): {math.isqrt(s)} x {math.isqrt(s)}"
+        ],
+    )
+    sizes_13, resolutions_13 = resolve_linear_suite_size(
+        size_request,
+        bytes_per_element=_BPE_13,
+        describe_size=lambda s: [f"resolved_1d_size (13 B/el): {s}"],
+    )
+    if resolutions_12 is not None:
+        suite.print_size_resolution(resolutions_12)
+    if resolutions_13 is not None:
+        suite.print_size_resolution(resolutions_13)
 
-    ns = [math.isqrt(size) for size in sizes]
+    # n values for 2D tests derived from each category's sizes.
+    ns_8 = [math.isqrt(size) for size in sizes_8]
+    ns_12 = [math.isqrt(size) for size in sizes_12]
 
-    def arg_gen_2d():
-        for size in sizes:
+    def arg_gen_2d_8():
+        # Tests that hold only `a` (n²×8); indices/values are ≤1000 elements.
+        for size in sizes_8:
             n = math.isqrt(size)
             num_indices = clamp(n // 10, 1, 1000)
             yield (np, n, num_indices, runs, warmup)
 
-    def arg_gen_5d():
-        for size in sizes:
+    def arg_gen_5d_12():
+        # opt2_int_get_5d: `a` (n_5d^5×8) + indexed output (~n_5d^5×4).
+        for size in sizes_12:
             n_5d = max(2, int(size ** (1 / 5)))
             num_indices = clamp(n_5d // 2, 1, 100)
             yield (np, n_5d, num_indices, runs, warmup)
 
-    def arg_gen_1d():
-        for size in sizes:
+    def arg_gen_1d_8():
+        # opt3_int_set_1d: `a` (size×8); values array is ≤1000 elements.
+        for size in sizes_8:
             n = math.isqrt(size)
             num_indices = clamp(n // 10, 1, 1000)
             yield (np, size, num_indices, runs, warmup)
 
-    # Bool non-scalar SET: a[bool_mask] = array
+    # Bool non-scalar SET: a[bool_mask] = array  — 13 B/el (a + mask + values)
     suite.run_timed(
-        opt1_bool_nonscalar_set, np, sizes, runs, warmup, timer=timer
+        opt1_bool_nonscalar_set, np, sizes_13, runs, warmup, timer=timer
     )
 
     # Integer GET on non-leading axis / high-dimensional arrays
     suite.run_timed_with_generator(
-        None, opt2_int_col_get_2d, arg_gen_2d(), timer=timer
+        None,
+        opt2_int_col_get_2d,
+        arg_gen_2d_8(),
+        timer=timer,  # 8 B/el: a only
     )
     suite.run_timed_with_generator(
-        None, opt2_int_get_5d, arg_gen_5d(), timer=timer
+        None,
+        opt2_int_get_5d,
+        arg_gen_5d_12(),
+        timer=timer,  # 12 B/el: a + output
     )
 
     # Integer SET: a[indices] = v
     suite.run_timed_with_generator(
-        None, opt3_int_set_1d, arg_gen_1d(), timer=timer
+        None,
+        opt3_int_set_1d,
+        arg_gen_1d_8(),
+        timer=timer,  # 8 B/el: a only
     )
     suite.run_timed_with_generator(
-        None, opt3_int_col_set_2d, arg_gen_2d(), timer=timer
+        None,
+        opt3_int_col_set_2d,
+        arg_gen_2d_8(),
+        timer=timer,  # 8 B/el: a only
     )
 
     # Flat indexing GET (SET via a.flat[array] = v is not supported in cupynumeric)
     suite.run_timed_with_generator(
-        None, opt6_flat_get_contiguous, arg_gen_2d(), timer=timer
+        None,
+        opt6_flat_get_contiguous,
+        arg_gen_2d_8(),
+        timer=timer,  # 8 B/el: a only
     )
 
     # Boolean in mixed-key position
-    suite.run_timed(opt8_bool_row_get, np, ns, runs, warmup, timer=timer)
-    suite.run_timed(opt8_bool_col_get, np, ns, runs, warmup, timer=timer)
     suite.run_timed(
-        opt8_bool_col_set_scalar, np, ns, runs, warmup, timer=timer
+        opt8_bool_row_get,
+        np,
+        ns_12,
+        runs,
+        warmup,
+        timer=timer,  # 12 B/el: a + output
     )
-    suite.run_timed(opt8_bool_col_set_array, np, ns, runs, warmup, timer=timer)
+    suite.run_timed(
+        opt8_bool_col_get,
+        np,
+        ns_12,
+        runs,
+        warmup,
+        timer=timer,  # 12 B/el: a + output
+    )
+    suite.run_timed(
+        opt8_bool_col_set_scalar,
+        np,
+        ns_8,
+        runs,
+        warmup,
+        timer=timer,  # 8 B/el: a only (scalar RHS)
+    )
+    suite.run_timed(
+        opt8_bool_col_set_array,
+        np,
+        ns_12,
+        runs,
+        warmup,
+        timer=timer,  # 12 B/el: a + values
+    )
 
 
 class IndexingOptTargetsSuite(MicrobenchmarkSuite):
