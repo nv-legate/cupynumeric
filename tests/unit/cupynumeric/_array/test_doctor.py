@@ -226,20 +226,6 @@ class TestArrayGatherCheck:
         assert checkup.reference is None
 
 
-class TestNumbaJitCheck:
-    def test_numba_jit_with_loop_detected(self, monkeypatch) -> None:
-        checkup = m.NumbaJitCheck()
-        fixed = m.CheckupLocator("test.py", 2, "tb")
-        monkeypatch.setattr(checkup, "locate", lambda: fixed)
-        monkeypatch.setattr(
-            checkup, "_call_stack_contains_numba", lambda f: True
-        )
-
-        info = checkup.run("__getitem__", (), {})
-        assert info is not None
-        assert "Numba JIT" in info.description
-
-
 class TestBuiltinReductionCheck:
     def test_no_builtin_no_diagnostic(self) -> None:
         checkup = m.BuiltinReductionCheck()
@@ -286,16 +272,35 @@ class TestBuiltinReductionCheck:
 
 class TestStackOpsCheck:
     @pytest.mark.parametrize("func", ("hstack", "vstack"))
-    def test_run_stack_func(self, func: str) -> None:
+    def test_under_threshold_no_diagnostic(self, func: str) -> None:
         checkup = m.StackOpsCheck()
-        info = checkup.run(func, (), {})
+        for _ in range(checkup.LOOP_THRESHOLD):
+            info = checkup.run(func, (), {})
+            assert info is None
+
+    @pytest.mark.parametrize("func", ("hstack", "vstack"))
+    def test_over_threshold_reports(self, func: str) -> None:
+        checkup = m.StackOpsCheck()
+        for _ in range(checkup.LOOP_THRESHOLD + 1):
+            info = checkup.run(func, (), {})
         assert info is not None
+
+    @pytest.mark.parametrize("func", ("hstack", "vstack"))
+    def test_deduplicates_same_location(self, func: str, monkeypatch) -> None:
+        checkup = m.StackOpsCheck()
+        fixed = m.CheckupLocator("test.py", 42, "tb")
+        monkeypatch.setattr(checkup, "locate", lambda: fixed)
+        for _ in range(checkup.LOOP_THRESHOLD + 2):
+            info = checkup.run(func, (), {})
+        # second time over threshold at same location is deduplicated
+        assert info is None
 
     @pytest.mark.parametrize("func", ("hstack", "vstack"))
     def test_run_locator_none(self, func: str, monkeypatch) -> None:
         checkup = m.StackOpsCheck()
         monkeypatch.setattr(checkup, "locate", lambda: None)
-        info = checkup.run(func, (), {})
+        for _ in range(checkup.LOOP_THRESHOLD + 1):
+            info = checkup.run(func, (), {})
         assert info is None
 
 
@@ -386,7 +391,6 @@ def test_ALL_CHECKS() -> None:
         m.StackOpsCheck,
         m.NonzeroCheck,
         m.AdvancedIndexingCheck,
-        m.NumbaJitCheck,
         m.BuiltinReductionCheck,
         m.Mpi4pyCheck,
         m.IterCheck,

@@ -671,7 +671,7 @@ class DeferredArray:
             return np.empty(shape=self.shape, dtype=self.dtype)
 
         if settings.doctor():
-            doctor.diagnose("__numpy_array__", (), {})
+            doctor.diagnose("__numpy_array__", (self.size,), {})
 
         return np.asarray(
             self.base.get_physical_store().get_inline_allocation()

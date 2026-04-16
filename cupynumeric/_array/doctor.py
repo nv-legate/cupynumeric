@@ -392,7 +392,9 @@ class ArrayGatherCheck(Checkup):
     )
     reference = None
 
-    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
+    SIZE_THRESHOLD: int = 10
+
+    def run(self, func: str, args: Any, _kwargs: Any) -> Diagnostic | None:
         """
         Check for expensive array gathers of deferred arrays.
 
@@ -400,7 +402,8 @@ class ArrayGatherCheck(Checkup):
             func (str):
                 Name of the function being invoked
             args (tuple):
-                Any positional arguments the function is being called with
+                Any positional arguments the function is being called with.
+                For __numpy_array__, args[0] is the array size.
             kwargs (dict):
                 Any keyword arguments the function is being called with
 
@@ -415,6 +418,9 @@ class ArrayGatherCheck(Checkup):
         # invoke doctor.diagnose in case the expensive gather is actually
         # definitely happening, so there is nothing to check here besides func
         if func == "__numpy_array__":
+            if args and args[0] <= self.SIZE_THRESHOLD:
+                return None
+
             # if we can't find a user frame, then it is probably due to a
             # detection inside cupynumeric itself. Either way, there is no
             # actionable information to provide users, so just punt here.
@@ -428,17 +434,34 @@ class ArrayGatherCheck(Checkup):
 
 class StackOpsCheck(Checkup):
     """
-    Attempt to detect and warn about usage of hstack or vstack, which can
-    result in performance penalties in cuPyNumeric.
+    Attempt to detect and warn about usage of hstack or vstack inside
+    iterative loops, which can result in performance penalties in
+    cuPyNumeric.
 
+    A single call to hstack/vstack is generally fine. But calling them
+    repeatedly in a loop (e.g. accumulating results) is an anti-pattern;
+    users should pre-allocate and fill, or collect and stack once at the end.
     """
 
-    description = "use of hstack/vstack can result in a performance penalty"
-    reference = None
+    LOOP_THRESHOLD: int = 2
+
+    description = (
+        "hstack/vstack called repeatedly (likely in a loop); "
+        "consider pre-allocating or collecting results and stacking once"
+    )
+    reference = "https://docs.nvidia.com/cupynumeric/latest/user/practices.html#stack-results-in-a-performance-penalty"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._call_counts: dict[tuple[str, int], int] = defaultdict(int)
 
     def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
         """
-        Check for use of hstack or vstack.
+        Check for use of hstack or vstack inside a loop.
+
+        Only reports a diagnostic when the same source location has been
+        observed more than ``LOOP_THRESHOLD`` times, indicating the call
+        is inside an iterative loop.
 
         Args:
             func (str):
@@ -457,63 +480,10 @@ class StackOpsCheck(Checkup):
             if (locator := self.locate()) is None:
                 return None
 
-            return self.report(locator)
-
-        return None
-
-
-class NumbaJitCheck(Checkup):
-    """
-    Attempt to detect and warn when cuPyNumeric APIs are invoked from a
-    call path that involves Numba JIT (e.g. @numba.jit, @numba.njit,
-    numba.cuda.jit, or code run by Numba's dispatcher).
-
-    Mixing Numba JIT with cuPyNumeric can cause unexpected behavior or
-    performance issues: JIT-compiled code may force synchronization or
-    interact poorly with deferred execution.
-    """
-
-    description = (
-        "cuPyNumeric API was called from a call path that involves Numba JIT; "
-        "mixing Numba JIT with cuPyNumeric may cause sync points or poor performance"
-    )
-    reference = (
-        "https://docs.nvidia.com/cupynumeric/latest/user/practices.html"
-    )
-
-    def _call_stack_contains_numba(
-        self, below_frame: FrameType | None
-    ) -> bool:
-        """
-        Return True if any frame in the call stack above ``below_frame``
-        (i.e. below_frame.f_back and onward) is from the Numba package.
-        """
-        if below_frame is None:
-            return False
-        frame = below_frame.f_back
-        while frame is not None:
-            if "numba" in (frame.f_code.co_filename or ""):
-                return True
-            frame = frame.f_back
-        return False
-
-    def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
-        """
-        Check whether the current invocation's call stack includes Numba.
-
-        Returns:
-            a ``Diagnostic`` if Numba was detected in the call stack and
-            a user frame could be located, otherwise None.
-        """
-        if (locator := self.locate()) is None:
-            return None
-
-        current = inspect.currentframe()
-        if current is None:
-            return None
-
-        if self._call_stack_contains_numba(current):
-            return self.report(locator)
+            key = (locator.filename, locator.lineno)
+            self._call_counts[key] += 1
+            if self._call_counts[key] > self.LOOP_THRESHOLD:
+                return self.report(locator)
 
         return None
 
@@ -526,7 +496,7 @@ class AdvancedIndexingCheck(Checkup):
     """
 
     description = "use of advanced indexing can be slow in cuPyNumeric"
-    reference = None
+    reference = "https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-boolean-masks-avoid-advanced-indexing"
 
     def run(self, func: str, args: Any, _kwargs: Any) -> Diagnostic | None:
         """
@@ -565,7 +535,7 @@ class NonzeroCheck(Checkup):
     """
 
     description = "use of nonzero can be slow in cuPyNumeric"
-    reference = None
+    reference = "https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-boolean-masks-avoid-advanced-indexing"
 
     def run(self, func: str, _args: Any, _kwargs: Any) -> Diagnostic | None:
         """
@@ -747,7 +717,6 @@ ALL_CHECKS: Final[tuple[Type[Checkup], ...]] = (
     StackOpsCheck,
     NonzeroCheck,
     AdvancedIndexingCheck,
-    NumbaJitCheck,
     BuiltinReductionCheck,
     Mpi4pyCheck,
     IterCheck,
