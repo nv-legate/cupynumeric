@@ -247,7 +247,6 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
     return ndarray._from_thunk(result)
 
 
-@add_boilerplate("x")
 def _as_pairs(
     x: Any, ndim: int, as_index: bool = False
 ) -> tuple[tuple[int, int], ...]:
@@ -753,7 +752,7 @@ def _pad_python(
         return padded
 
     elif mode == "linear_ramp":
-        end_values = kwargs.get("end_values", 0)
+        end_values = np.array(kwargs.get("end_values", 0))
         end_values_pairs = _as_pairs(end_values, padded.ndim)
         for axis, width_pair, value_pair in zip(
             axes, pad_width_tuple, end_values_pairs
@@ -769,7 +768,7 @@ def _pad_python(
         # Default stat_length is the full length of each axis
         if length is None:
             length = tuple(array.shape[i] for i in range(array.ndim))
-        length_pairs = _as_pairs(length, padded.ndim, as_index=True)
+        length_pairs = _as_pairs(np.array(length), padded.ndim, as_index=True)
         for axis, width_pair, length_pair in zip(
             axes, pad_width_tuple, length_pairs
         ):
@@ -973,7 +972,8 @@ def pad(
             (int(pad_width), int(pad_width)) for _ in range(array.ndim)
         )
     else:
-        pad_width_array = convert_to_cupynumeric_ndarray(pad_width)
+        # convert to numpy array because pad_width is small and _as_pairs iterates over it
+        pad_width_array = np.array(pad_width)
 
         if not pad_width_array.dtype.kind == "i":
             raise TypeError("`pad_width` must be of integral type.")
