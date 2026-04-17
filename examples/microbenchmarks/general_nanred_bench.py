@@ -44,13 +44,13 @@ _NANRED_BYTES_PER_ELEMENT = 12
 def nan_red(np, func, dtype, size, runs, warmup, *, timer):
     """[np.nansum, np.nanmean](input_with_half_nans)."""
 
+    in_arr = np.empty(shape=(size,), dtype=dtype)
+    half_sz = size // 2
+
+    in_arr[0:half_sz] = np.random.rand(half_sz)
+    in_arr[half_sz:size] = np.nan
+
     def operation():
-        in_arr = np.empty(shape=(size,), dtype=dtype)
-        half_sz = size // 2
-
-        in_arr[0:half_sz] = np.random.rand(half_sz)
-        in_arr[half_sz:size] = np.nan
-
         return func(in_arr)
 
     return timed_loop(operation, timer, runs, warmup) / runs

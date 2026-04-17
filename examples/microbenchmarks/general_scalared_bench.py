@@ -48,9 +48,9 @@ _SCALARRED_BYTES_PER_ELEMENT = 16
 def scalar_red(np, func, dtype, size, runs, warmup, *, timer):
     """[np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]"""
 
-    def operation():
-        in_arr = np.random.rand(size).astype(dtype)
+    in_arr = np.random.rand(size).astype(dtype)
 
+    def operation():
         return func(in_arr)
 
     return timed_loop(operation, timer, runs, warmup) / runs

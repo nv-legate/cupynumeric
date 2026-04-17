@@ -259,7 +259,6 @@ class Checkup(ABC):
             CheckupLocator | None
 
         """
-        import inspect
 
         if (frame := find_last_user_frame()) is None:
             return None
