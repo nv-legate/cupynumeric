@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import pytest
 
-import cupynumeric  # noqa: [F401]
+import cupynumeric  # noqa: F401
 
 
 def test___version___override(monkeypatch: pytest.MonkeyPatch) -> None:

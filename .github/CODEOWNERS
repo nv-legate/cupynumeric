@@ -1,4 +1,45 @@
-# Code Ownership
-.github                   @nv-legate/devops-reviewers
-continuous_integration    @nv-legate/devops-reviewers
-conda                     @nv-legate/devops-reviewers
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES.
+#                         All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# fallback
+* @manopapad
+
+# code, tests, examples, tools, style configs
+/.clang-format @nv-legate/cupynumeric-reviewers
+/.pre-commit-config.yaml @nv-legate/cupynumeric-reviewers
+/.style.yapf @nv-legate/cupynumeric-reviewers
+/cupynumeric @nv-legate/cupynumeric-reviewers
+/examples @nv-legate/cupynumeric-reviewers
+/scripts @nv-legate/cupynumeric-reviewers
+/src @nv-legate/cupynumeric-reviewers
+/test.py @nv-legate/cupynumeric-reviewers
+/tests @nv-legate/cupynumeric-reviewers
+/tools @nv-legate/cupynumeric-reviewers
+
+# CI
+/.dockerignore @nv-legate/devops-reviewers
+/.github @nv-legate/devops-reviewers
+/continuous_integration @nv-legate/devops-reviewers
+/scripts/maint @nv-legate/devops-reviewers
+/scripts/release @nv-legate/devops-reviewers
+
+# build
+*.cmake @nv-legate/build-reviewers
+**/cmake @nv-legate/build-reviewers
+/conda @nv-legate/build-reviewers
+/install.py @nv-legate/build-reviewers
+/pyproject.toml @nv-legate/build-reviewers
+/setup.cfg @nv-legate/build-reviewers
+/setup.py @nv-legate/build-reviewers
+CMakeLists.txt @nv-legate/build-reviewers
+/scripts/build @nv-legate/build-reviewers
+/scripts/conda-build.sh @nv-legate/build-reviewers
+
+# docs
+*.md @nv-legate/docs-reviewers
+*.rst @nv-legate/docs-reviewers
+/docs @nv-legate/docs-reviewers
+
+# specific override for this file
+/.github/CODEOWNERS @manopapad
