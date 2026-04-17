@@ -45,8 +45,12 @@ else()
   set(rpaths
     "$ORIGIN/../../legate/lib64"
     "$ORIGIN/../../cutensor/lib"
+    "$ORIGIN/../../nvidia/cublas/lib"
+    "$ORIGIN/../../nvidia/cufft/lib"
+    "$ORIGIN/../../nvidia/cusolver/lib"
+    "$ORIGIN/../../nvidia/cusparse/lib"
+    "$ORIGIN/../../nvidia/nvjitlink/lib"
     "$ORIGIN/../../nvidia/nccl/lib"
-    "$ORIGIN/../../nvidia/cu13/lib"
   )
 endif()
 set_property(

@@ -12,22 +12,10 @@
 
 set -euo pipefail
 
-echo "Are my wheels there???"
-
-ls -lh
-ls -lh wheel
-ls -lh wheelhouse
 # Install legate first and then cupynumeric.
 python -m pip install wheel/*.whl wheelhouse/*.whl
 
-echo "Let's explore the wheels and see if they are installed correctly."
-sitepkgs=$(python -c 'import site; print(site.getsitepackages()[0], end="")')
-echo "=== cupynumeric ==="
-ls -lh "${sitepkgs}/cupynumeric"
-echo "=== legate ==="
-ls -lh "${sitepkgs}/legate"
-
-echo "Lamest of proof of life tests for legate"
+echo "Configure Legate and run some tests"
 export LEGATE_SHOW_CONFIG=1
 export LEGATE_CONFIG="--fbmem 1024"
 export LEGION_DEFAULT_ARGS="-ll:show_rsrv"

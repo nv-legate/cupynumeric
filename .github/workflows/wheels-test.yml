@@ -61,10 +61,10 @@ jobs:
           - { ARCH: 'amd64', CUDA_VER: '12.2.2', PY_VER: '3.11', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', CUDA_VER: '12.8.0', PY_VER: '3.12', GPU: 'l4', LINUX_VER: 'ubuntu22.04' }
           - { ARCH: 'amd64', CUDA_VER: '12.9.1', PY_VER: '3.13', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          # Disable runtime tests for CUDA 13, this is pending fixes see #1679.
-          #- { ARCH: 'amd64', CUDA_VER: '13.0.0', PY_VER: '3.11', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          #- { ARCH: 'amd64', CUDA_VER: '13.1.0', PY_VER: '3.12', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
-          #- { ARCH: 'amd64', CUDA_VER: '13.2.0', PY_VER: '3.13', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          # arm64
+          - { ARCH: 'amd64', CUDA_VER: '13.0.0', PY_VER: '3.11', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          - { ARCH: 'amd64', CUDA_VER: '13.1.0', PY_VER: '3.12', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          - { ARCH: 'amd64', CUDA_VER: '13.2.0', PY_VER: '3.13', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
           "
 
           MATRIX="$(

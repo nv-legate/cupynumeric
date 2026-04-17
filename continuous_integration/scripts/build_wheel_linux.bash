@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# SPDX-FileCopyrightText: Copyright (c) 2025-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
@@ -16,13 +16,10 @@ echo "Building a wheel..."
 
 pwd
 
-ls -lah
-
-ls -lh wheel
-
 # Configure and enable sccache for the build.
 source legate-configure-sccache
-export CMAKE_BUILD_PARALLEL_LEVEL=${PARALLEL_LEVEL}
+export CMAKE_BUILD_PARALLEL_LEVEL=${PARALLEL_LEVEL:=8}
+export CUDA_MAJOR_VER=${CUDA_MAJOR_VER:=13}
 
 if [[ "${CI:-false}" == "true" ]]; then
   echo "Installing extra system packages"
@@ -47,12 +44,21 @@ if [[ "${CUPYNUMERIC_DIR:-}" == "" ]]; then
   fi
   export CUPYNUMERIC_DIR
 fi
-package_name="cupynumeric"
-package_dir="${CUPYNUMERIC_DIR}/scripts/build/python/cupynumeric"
+package_suffix=""
+if [[ "${CUDA_MAJOR_VER}" == "12" ]]; then
+  package_suffix="-cu12"
+fi
+package_dir="${CUPYNUMERIC_DIR}/scripts/build/python/cupynumeric${package_suffix}"
+package_name="cupynumeric${package_suffix}"
 
 # This is all very hackish and needs to be fixed up.
 echo "Installing build requirements"
 python -m pip install -v --prefer-binary -r continuous_integration/requirements-build.txt
+if [[ "${CUDA_MAJOR_VER}" == "12" ]]; then
+  python -m pip install -v --prefer-binary cutensor-cu12'>=2.0,<2.3.0.6'
+else
+  python -m pip install -v --prefer-binary cutensor-cu13'>=2.0,<2.3.0.6'
+fi
 
 # Install the legate wheel that was downloaded.
 pip install wheel/*.whl

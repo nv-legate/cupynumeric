@@ -17,7 +17,7 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "nvidia-cupynumeric"
+name = "nvidia-cupynumeric-cu12"
 authors = [{name = "NVIDIA Corporation"}]
 license = {text = "Apache-2.0"}
 description = "cuPyNumeric - NumPy and SciPy on Multi-Node Multi-GPU systems"
@@ -35,14 +35,14 @@ dependencies = [
     "numpy>=1.24,!=2.1.0,<2.5.0",
     "cffi",
     "opt_einsum",
-    "legate==26.5.*,>=0.0.0a0",
-    "cutensor-cu13>=2.0,<2.3.0.6; sys_platform == 'linux'",
-    "nvidia-cublas; sys_platform == 'linux'",
-    "nvidia-cufft; sys_platform == 'linux'",
-    "nvidia-cusolver; sys_platform == 'linux'",
-    "nvidia-cusparse; sys_platform == 'linux'",
-    "nvidia-nvjitlink; sys_platform == 'linux'",
-    "nvidia-nccl-cu13; sys_platform == 'linux'",
+    "legate-cu12==26.5.*,>=0.0.0a0",
+    "cutensor-cu12>=2.0,<2.3.0.6; sys_platform == 'linux'",
+    "nvidia-cublas-cu12; sys_platform == 'linux'",
+    "nvidia-cufft-cu12; sys_platform == 'linux'",
+    "nvidia-cusolver-cu12; sys_platform == 'linux'",
+    "nvidia-cusparse-cu12; sys_platform == 'linux'",
+    "nvidia-nvjitlink-cu12; sys_platform == 'linux'",
+    "nvidia-nccl-cu12; sys_platform == 'linux'",
 ]
 dynamic = ["version"]
 requires-python = ">=3.11"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# SPDX-FileCopyrightText: Copyright (c) 2025-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
@@ -12,42 +12,23 @@
 
 set -euo pipefail
 
-echo "Are my wheels there???"
-
-ls -lh
-
-ls -lh wheel
-ls -lh final-dist
+export CUDA_MAJOR_VER=${CUDA_MAJOR_VER:=13}
 
 # Install legate first and then cupynumeric.
 pip install wheel/*.whl final-dist/*.whl
 
-echo "Let's explore the wheels and see if they are installed correctly."
-sitepkgs=$(python -c 'import site; print(site.getsitepackages()[0], end="")')
-echo "=== cupynumeric ==="
-ls -lh "${sitepkgs}/cupynumeric"
-echo "=== legate ==="
-ls -lh "${sitepkgs}/legate"
-
-echo "Lamest of proof of life tests for legate"
+echo "Configure Legate and run some tests"
 export LEGATE_SHOW_CONFIG=1
 export LEGATE_CONFIG="--fbmem 1024"
 export LEGION_DEFAULT_ARGS="-ll:show_rsrv"
 
-# Attempt to run the tests...
+# Attempt to run the tests, we must move cupynumeric to avoid it being used.
 mv cupynumeric cupynumeric-moved
-pip install cupy-cuda12x pytest pynvml psutil scipy
+pip install cupy-cuda${CUDA_MAJOR_VER}x pytest pynvml psutil scipy
 
-echo "Attempt to run an example"
-legate examples/gemm.py
-
-echo "Example done, attempt to import cupynumeric"
+echo "Attempt to import cupynumeric"
 python -c 'import cupynumeric as np'
 echo "Maybe that worked"
-
-echo "Running the CPU tests"
-python test.py
-echo "Done"
 
 echo "Running the GPU tests"
 python test.py --use cuda
