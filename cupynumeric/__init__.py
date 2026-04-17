@@ -74,6 +74,15 @@ from numpy import (
     finfo,  # noqa: F401
 )
 
+acos = arccos  # noqa: F405
+acosh = arccosh  # noqa: F405
+asin = arcsin  # noqa: F405
+asinh = arcsinh  # noqa: F405
+atan = arctan  # noqa: F405
+atanh = arctanh  # noqa: F405
+concat = concatenate  # noqa: F405
+permute_dims = transpose  # noqa: F405
+
 
 def _fixup_version() -> str:
     import os

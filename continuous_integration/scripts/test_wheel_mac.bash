@@ -22,7 +22,7 @@ export LEGION_DEFAULT_ARGS="-ll:show_rsrv"
 
 # Attempt to run the tests...
 mv cupynumeric cupynumeric-moved
-pip install pytest psutil scipy
+pip install array-api-compat pytest psutil scipy
 
 echo "Attempt to run an example"
 legate examples/gemm.py

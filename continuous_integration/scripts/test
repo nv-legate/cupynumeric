@@ -26,7 +26,7 @@ setup_test_env() {
         legate-conda-retry install -y cupy
     fi
 
-    pip install tifffile
+    pip install array-api-compat tifffile
 }
 
 setup_docs_env() {

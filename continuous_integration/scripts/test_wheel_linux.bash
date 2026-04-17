@@ -24,7 +24,7 @@ export LEGION_DEFAULT_ARGS="-ll:show_rsrv"
 
 # Attempt to run the tests, we must move cupynumeric to avoid it being used.
 mv cupynumeric cupynumeric-moved
-pip install cupy-cuda${CUDA_MAJOR_VER}x pytest pynvml psutil scipy
+pip install array-api-compat cupy-cuda${CUDA_MAJOR_VER}x pytest pynvml psutil scipy
 
 echo "Attempt to import cupynumeric"
 python -c 'import cupynumeric as np'

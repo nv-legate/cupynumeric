@@ -17,6 +17,7 @@ from __future__ import annotations
 import operator
 from functools import reduce
 from math import prod as builtin_prod
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, Iterator, Sequence, cast
 
 import legate.core.types as ty
@@ -259,6 +260,18 @@ class ndarray:
 
     def __dlpack_device__(self) -> tuple[int, int]:
         return self._thunk.__dlpack_device__()
+
+    def __array_namespace__(
+        self, api_version: str | None = None
+    ) -> ModuleType:
+        if api_version is not None:
+            raise NotImplementedError(
+                "versioned Array API negotiation is not implemented yet"
+            )
+
+        import cupynumeric as cn
+
+        return cn
 
     # Properties for ndarray
 
