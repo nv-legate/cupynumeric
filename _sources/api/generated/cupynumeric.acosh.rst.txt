@@ -1,0 +1,6 @@
+﻿cupynumeric.acosh
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: acosh

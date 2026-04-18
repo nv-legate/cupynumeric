@@ -1,0 +1,6 @@
+﻿cupynumeric.asin
+================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: asin

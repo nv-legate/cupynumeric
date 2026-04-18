@@ -1,0 +1,6 @@
+﻿cupynumeric.asinh
+=================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: asinh

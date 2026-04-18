@@ -1,0 +1,6 @@
+﻿cupynumeric.atan
+================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: atan

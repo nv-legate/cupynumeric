@@ -1,0 +1,6 @@
+﻿cupynumeric.permute\_dims
+=========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: permute_dims

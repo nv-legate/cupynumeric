@@ -31,6 +31,7 @@ Transpose-like operations
    moveaxis
    swapaxes
    transpose
+   permute_dims
 
 See also :attr:`cupynumeric.ndarray.T` property.
 
@@ -65,6 +66,7 @@ Joining arrays
    :toctree: generated/
 
    append
+   concat
    concatenate
    insert
    stack

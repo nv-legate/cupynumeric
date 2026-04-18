@@ -1,0 +1,6 @@
+﻿cupynumeric.acos
+================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: acos

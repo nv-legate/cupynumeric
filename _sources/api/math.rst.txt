@@ -12,6 +12,9 @@ Trigonometric functions
    sin
    cos
    tan
+   asin
+   acos
+   atan
    arcsin
    arccos
    arctan
@@ -32,6 +35,9 @@ Hyperbolic functions
    sinh
    cosh
    tanh
+   asinh
+   acosh
+   atanh
    arcsinh
    arccosh
    arctanh
