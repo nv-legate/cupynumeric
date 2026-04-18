@@ -36,6 +36,9 @@ CMakeLists.txt @nv-legate/build-reviewers
 /scripts/build @nv-legate/build-reviewers
 /scripts/conda-build.sh @nv-legate/build-reviewers
 
+# QA
+/cmake/versions.json @nv-legate/qa-reviewers
+
 # docs
 *.md @nv-legate/docs-reviewers
 *.rst @nv-legate/docs-reviewers
