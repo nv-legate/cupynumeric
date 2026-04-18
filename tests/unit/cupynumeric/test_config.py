@@ -98,6 +98,7 @@ def test_cupynumeric_lib() -> None:
 def test_CuPyNumericOpCode() -> None:
     assert set(m.CuPyNumericOpCode.__members__) == {
         "ADVANCED_INDEXING",
+        "ALL2ALL",
         "ARANGE",
         "ARGWHERE",
         "BINARY_OP",

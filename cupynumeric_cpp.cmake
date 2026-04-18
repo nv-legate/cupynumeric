@@ -179,6 +179,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/convolution/convolve.cc
   src/cupynumeric/transform/flip.cc
   src/cupynumeric/utilities/repartition.cc
+  src/cupynumeric/all2all/all2all.cc
   src/cupynumeric/arg_redop_register.cc
   src/cupynumeric/mapper.cc
   src/cupynumeric/ndarray.cc
@@ -306,6 +307,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/search/nonzero.cu
     src/cupynumeric/set/unique.cu
     src/cupynumeric/set/in1d.cu
+    src/cupynumeric/all2all/all2all.cu
     src/cupynumeric/stat/bincount.cu
     src/cupynumeric/convolution/convolve.cu
     src/cupynumeric/fft/fft.cu

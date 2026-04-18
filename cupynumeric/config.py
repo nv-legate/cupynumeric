@@ -35,6 +35,7 @@ class _ReductionOpIds:
 
 class _CupynumericSharedLib:
     CUPYNUMERIC_ADVANCED_INDEXING: int
+    CUPYNUMERIC_ALL2ALL: int
     CUPYNUMERIC_ARANGE: int
     CUPYNUMERIC_ARGWHERE: int
     CUPYNUMERIC_BINARY_OP: int
@@ -376,6 +377,7 @@ _cupynumeric = cupynumeric_lib.shared_object
 @unique
 class CuPyNumericOpCode(IntEnum):
     ADVANCED_INDEXING = _cupynumeric.CUPYNUMERIC_ADVANCED_INDEXING
+    ALL2ALL = _cupynumeric.CUPYNUMERIC_ALL2ALL
     ARANGE = _cupynumeric.CUPYNUMERIC_ARANGE
     ARGWHERE = _cupynumeric.CUPYNUMERIC_ARGWHERE
     BINARY_OP = _cupynumeric.CUPYNUMERIC_BINARY_OP

@@ -312,5 +312,16 @@ class CupynumericRuntimeSettings(Settings):
             return False
         return operation not in tokens
 
+    use_nccl_gather: PrioritizedSetting[bool] = PrioritizedSetting(
+        "use_nccl_gather",
+        "CUPYNUMERIC_USE_NCCL_GATHER",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Enable distributed gather via the NCCL all-to-all implementation when
+        multiple GPUs are available.
+        """,
+    )
+
 
 settings = CupynumericRuntimeSettings()

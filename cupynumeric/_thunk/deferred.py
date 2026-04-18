@@ -1161,6 +1161,14 @@ class DeferredArray:
         ):
             # use faster, single-GPU gather task if possible
             self._issue_gather_task(result, source, index_array)
+        elif (
+            settings.use_nccl_gather()
+            and runtime.num_gpus > 1
+            and result.ndim > 0
+            and source.ndim > 0
+            and index_array.ndim > 0
+        ):
+            self._nccl_all2all(source, index_array, result)
         else:
             legate_runtime.issue_gather(result, source, index_array)
 
@@ -1218,6 +1226,27 @@ class DeferredArray:
             self._issue_scatter_task(result, index_array, source)
         else:
             legate_runtime.issue_scatter(result, index_array, source)
+
+    def _nccl_all2all(
+        self,
+        source: LogicalStore,
+        index_array: LogicalStore,
+        result: LogicalStore,
+    ) -> None:
+        """
+        Distributed gather via NCCL all-to-all.
+        Semantics: result[p] = source[index_array[p]] for all p.
+        Source is partitioned across ranks; indices may reference any rank's data.
+        """
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.ALL2ALL
+        )
+        task.add_input(source)
+        task.add_input(index_array)
+        task.add_output(result)
+        task.add_alignment(result, index_array)
+        task.add_nccl_communicator()
+        task.execute()
 
     def _advanced_indexing_using_einsum(
         self, mask_axis: int, mask_array: Any

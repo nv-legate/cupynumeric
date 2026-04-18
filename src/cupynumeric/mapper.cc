@@ -267,6 +267,18 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       }
       return mappings;
     }
+    case CUPYNUMERIC_ALL2ALL: {
+      std::vector<StoreMapping> mappings;
+      auto inputs  = task.inputs();
+      auto outputs = task.outputs();
+      for (auto& input : inputs) {
+        mappings.push_back(StoreMapping::default_mapping(input.data(), options.front()));
+      }
+      for (auto& output : outputs) {
+        mappings.push_back(StoreMapping::default_mapping(output.data(), options.front()));
+      }
+      return mappings;
+    }
     case CUPYNUMERIC_SCAN_GLOBAL: {
       std::vector<StoreMapping> mappings;
       auto inputs  = task.inputs();
@@ -659,6 +671,12 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
                : 1;
     }
     case CUPYNUMERIC_IN1D: {
+      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+        return 0;
+      }
+      return std::nullopt;
+    }
+    case CUPYNUMERIC_ALL2ALL: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         return 0;
       }
