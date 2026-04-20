@@ -2313,6 +2313,12 @@ class DeferredArray:
             return "index"
         return "task"
 
+    @staticmethod
+    def _indices_out_of_bounds(indices: DeferredArray, limit: int) -> bool:
+        lower = indices._less(-limit)
+        upper = indices._greater_equal(limit)
+        return bool((lower | upper).any())
+
     def take(
         self,
         indices: Any,
@@ -2352,10 +2358,7 @@ class DeferredArray:
                 if (indices < -lim) or (indices >= lim):
                     raise IndexError("invalid index")
             else:
-                if (
-                    indices._less(-lim).any()
-                    or indices._greater_equal(lim).any()
-                ):
+                if self._indices_out_of_bounds(indices, lim):
                     raise IndexError("invalid entry in indices array")
 
         valid_algorithms = {"auto", "index", "task"}
@@ -2407,7 +2410,7 @@ class DeferredArray:
             "take_along_axis"
         ):
             lim = src.shape[axis]
-            if indices._less(-lim).any() or indices._greater_equal(lim).any():
+            if self._indices_out_of_bounds(indices, lim):
                 raise IndexError("index out of bounds")
 
         # Use TAKE task (broadcasting already handled at API layer)
