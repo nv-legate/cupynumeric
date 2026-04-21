@@ -463,6 +463,22 @@ class BenchmarkHarness:
                         if k in info.formats:
                             summarize_dict[k] = info.formats[k](v)
                     summarize.write(benchmark_name, summarize_dict, times)
+                # Flush Legate's deferred GPU deallocations between size
+                # iterations.  Without the fence, large arrays from the
+                # previous size may still occupy GPU memory when the next
+                # (larger) size tries to allocate.
+                if self._config.package == ArrayPackage.LEGATE:
+                    try:
+                        from legate.core import get_legate_runtime
+
+                        get_legate_runtime().issue_execution_fence(block=True)
+                    except Exception as e:
+                        import warnings
+
+                        warnings.warn(
+                            f"issue_execution_fence failed; GPU memory may not be released: {e}",
+                            stacklevel=2,
+                        )
         if summarize and self.summarize_flush == SummarizeFlush.RUN:
             summarize.flush(title=benchmark_name)
 

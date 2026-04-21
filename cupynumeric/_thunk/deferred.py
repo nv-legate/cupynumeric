@@ -21,7 +21,6 @@ from enum import IntEnum, unique
 from functools import reduce, wraps
 from inspect import signature
 from itertools import chain
-from string import ascii_lowercase
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1055,22 +1054,26 @@ class DeferredArray:
             transpose_index=new_boolean_position,
         )
 
-    def _check_if_can_use_einsum(
+    def _check_if_can_use_take(
         self, computed_key: tuple[Any, ...]
     ) -> tuple[bool, int, DeferredArray | None]:
         """
-        Check if we can use einsum optimization path for indexing.
+        Check if indexing can be routed through np.take.
+
+        Returns True when the key is a single 1-D integer index array on one
+        axis with slice(None) on all other axes, i.e.:
+            a[indices, :, :]   or   a[:, indices]   etc.
+        This pattern is equivalent to np.take(a, indices, axis=mask_axis) and
+        is handled by _advanced_indexing_using_take.
         """
-        can_use_einsum_path = False
+        can_use_take_path = False
         mask_axis = -1
         mask_array = None
-        max_supported_dim = 5
-        max_mask_tensor_gb = 15.0  # 15 GB max
 
         if all(dim > 0 for dim in self.shape):  # no zero-size dimensions
             array_positions = []
 
-            # Find all positions with arrays and check that everythingig else is slice(None)
+            # Find all positions with arrays and verify everything else is slice(None)
             all_others_are_slices = True
             for i, element in enumerate(computed_key):
                 if isinstance(element, DeferredArray):
@@ -1081,40 +1084,18 @@ class DeferredArray:
                     all_others_are_slices = False
                     break
 
-            # Check if we have exactly one array and everything else is slice(None)
+            # Exactly one array key, all other keys are slice(None)
             if len(array_positions) == 1 and all_others_are_slices:
                 mask_axis = array_positions[0]
                 array_element = computed_key[mask_axis]
 
-                # Check if array shape is compatible for einsum optimization
-                # arrays should be 1D and size > 0
-                # We set the limit to self.ndim<5 as the complexity of the
-                # internal C++ tensor contraction logic grows exponentially
-                # with the number of dimensions and seems to segfault for some
-                # of the advanced indexing examples
-
-                # Also limit the size to avoid creating huge mask tensors
-                # The mask tensor will have shape (array_size, axis_size) with float32 dtype (4 bytes per element)
-                max_mask_tensor_gb = max_mask_tensor_gb  # 15 GB max
-                axis_size = self.shape[mask_axis]
-                would_create_elements = array_element.size * axis_size
-                mask_tensor_size_gb = (would_create_elements * 4) / (
-                    1024**3
-                )  # 4 bytes per float32, convert to GB
-
-                if (
-                    array_element.size > 0
-                    and self.ndim < max_supported_dim
-                    and array_element.dtype != bool
-                    # Integer arrays should be 1D for einsum optimization
-                    and array_element.ndim == 1
-                    # Avoid huge mask tensors
-                    and mask_tensor_size_gb <= max_mask_tensor_gb
-                ):
-                    can_use_einsum_path = True
+                if array_element.ndim == 1 and array_element.dtype != bool:
+                    # Empty index arrays are fine — np.take(a, [], axis=k) returns an
+                    # empty result without a task-submission error.
+                    can_use_take_path = True
                     mask_array = array_element
 
-        return can_use_einsum_path, mask_axis, mask_array
+        return can_use_take_path, mask_axis, mask_array
 
     def _issue_gather_task(
         self,
@@ -1248,165 +1229,26 @@ class DeferredArray:
         task.add_nccl_communicator()
         task.execute()
 
-    def _advanced_indexing_using_einsum(
+    def _advanced_indexing_using_take(
         self, mask_axis: int, mask_array: Any
     ) -> tuple[bool, Any, Any, Any]:
-        """
-        Simulate advanced indexing a[indices, :, :] (or similar) using einsum.
-
-        This function implements advanced indexing by converting the indexing operation
-        into an einsum (Einstein summation) operation.
-        The key insight is that advanced indexing like a[indices, :, :] can be expressed
-        as a tensor contraction between a mask tensor and the input array.
-
-        Example - Integer indexing:
-        Input: a.shape = (4, 3, 2), indices = [1, 3]
-        Operation: a[indices, :, :]  # Select rows 1 and 3
-        Einsum equivalent:
-        - mask_tensor.shape = (2, 4)  # 2 selected indices, 4 total rows
-        - mask_tensor[i, a] = 1 if a == indices[i], else 0
-        - einsum("ia,abc->ibc", mask_tensor, a) produces the result
-
-        """
-        from .._module.linalg_mvp import einsum
-        from .._module.creation_ranges import arange
-        from .._module.creation_shape import empty
-        from .._module.ssc_searching import where
-
-        a = self
-
-        # Build einsum subscripts dynamically
-        # We need to create subscript strings for the einsum operation
-        # For an array with ndim dimensions, we use letters 'a', 'b', 'c', etc.
-        # to represent each dimension
-        ndim = a.ndim
-        input_subs = list(ascii_lowercase[:ndim])  # ['a', 'b', 'c', ...]
-
-        # The mask tensor will have an additional dimension representing the selected elements
-        # We use the next available letter for this new dimension
-        masked_axis_sub = ascii_lowercase[ndim]  # e.g., 'd' for 3D input array
-
-        # Store the original letter for the axis being masked
-        masked_axis_original = input_subs[
-            mask_axis
-        ]  # e.g., 'a' if masking axis 0
-
-        # Create mask tensor using broadcasting logic for integer indices
-        # The mask tensor will have shape (num_selected, axis_size) where:
-        # - num_selected is the number of elements selected by the mask
-        # - axis_size is the size of the axis being masked
-        # - mask_tensor[i, j] = 1 if the i-th selected element is at position j, else 0
-        axis_size = a.shape[mask_axis]
-
-        # For integer indices, we need to create a mask tensor that maps
-        # each selected index to its position in the original axis
-        # Convert negative indices to positive equivalents
-        # negative indices should be converted as: axis_size + negative_index
-        # Find negative indices and convert them
-        negative_mask = mask_array._less(0)
-        positive_equivalent = mask_array._add(axis_size)
-        # Use the functional where: where(condition, if_true, if_false)
-        mask_array = where(negative_mask, positive_equivalent, mask_array)
-        if (
-            settings.bounds_check_enabled("indexing")
-            and (mask_array >= axis_size).any()
-        ):
-            raise IndexError("indices are out of bounds of the array")
-
-        # Now we need to create a mask tensor where mask_tensor[i, j] = 1
-        # if mask_array[i] == j, else 0
-        # This is done by broadcasting the indices against a range array
-        mask_thunk = mask_array._thunk
-
-        mask_deferred = runtime.to_deferred_array(mask_thunk, read_only=False)
-
-        # Reshape mask_array to (N, 1) for broadcasting
-        mask_2d = DeferredArray(
-            mask_deferred.base.promote(1, 1)
-        )  # Add dimension: shape (N,) -> (N, 1)
-
-        # Create range array [0, 1, 2, ..., axis_size-1] and reshape to (1, M)
-        range_1d = arange(axis_size)  # Create range array directly
-
-        # Ensure we have a deferred array with a base attribute
-        range_1d_deferred = runtime.to_deferred_array(
-            range_1d._thunk, read_only=True
-        )
-
-        # Reshape range to (1, axis_size) for broadcasting
-        range_2d = DeferredArray(
-            range_1d_deferred.base.promote(0, 1)  # Now we can use .base
-        )  # Add dimension: shape (M,) -> (1, M)
-
-        # Compare each index with each position: (N, 1) == (1, M) -> (N, M)
-        # This creates a boolean tensor where True indicates a match
-        mask_tensor_store = mask_2d._equal(range_2d)
-        mask_tensor = mask_tensor_store.astype(
-            np.float32
-        )  # Use float32 for einsum compatibility
-
-        # Build einsum subscript strings
-        # The einsum operation will contract the mask tensor with the input array
-        # to produce the selected elements
-
-        # Input array subscript: use original dimension letters
-        # e.g., for 3D array with shape (4, 3, 2): "abc"
-        a_subscript = "".join(input_subs)
-
-        # Output array subscript: replace the masked axis with the new dimension
-        # e.g., if masking axis 0 in 3D array: "abc" -> "dbc" (where 'd' is the new dimension)
-        output_subscript_list = input_subs.copy()
-        output_subscript_list[mask_axis] = masked_axis_sub
-        output_subscript = "".join(output_subscript_list)
-
-        # Create the einsum string: "ab,abc->ibc" (for 3D example)
-        # - "ab": mask_tensor dimensions (num_selected, axis_size)
-        # - "abc": input array dimensions (axis_size, other_dims...)
-        # - "ibc": output array dimensions (num_selected, other_dims...)
-        # The 'a' dimension is contracted (summed) away, leaving only selected elements
-        einsum_str = f"{masked_axis_sub}{masked_axis_original},{a_subscript}->{output_subscript}"
-
-        # Safety check: if mask_tensor is empty (no selections), return empty result directly
-        if mask_tensor.shape[0] == 0:
-            # Handle the case where no elements are selected (empty mask)
-            # Create empty result with correct shape where the masked axis has size 0
-            result_shape = list(a.shape)
-            result_shape[mask_axis] = (
-                0  # No selections means 0 elements in masked axis
+        """Optimised path for a[indices, :, :] (or similar) using np.take."""
+        # Call _take_using_take_task directly to avoid re-entering the
+        # advanced-indexing shortcut and causing infinite recursion.
+        indices = mask_array
+        if indices.dtype != np.int64:
+            ind_64 = runtime.create_deferred_thunk(
+                shape=indices.shape, dtype=ty.int64
             )
-            empty_result = empty(tuple(result_shape), dtype=a.dtype)
-            result = empty_result._thunk
-        else:
-            # Perform the einsum operation to select elements
-            # Convert DeferredArray to ndarray for einsum (einsum expects ndarray inputs)
-            from .._array.array import ndarray
+            ind_64.convert(indices, warn=False)
+            indices = ind_64
 
-            a_ndarray = ndarray._from_thunk(a)
+        if settings.bounds_check_enabled("indexing"):
+            lim = self.shape[mask_axis]
+            if indices._less(-lim).any() or indices._greater_equal(lim).any():
+                raise IndexError("invalid entry in indices array")
 
-            # Execute the einsum operation
-            # This performs the tensor contraction: sum over the masked axis
-            # For each selected element, it multiplies by 1 (from mask_tensor) and sums
-            # For non-selected elements, it multiplies by 0, so they don't contribute
-            # Mathematically: result[i, b, c] = sum_a(mask_tensor[i, a] * a[a, b, c])
-            einsum_result = einsum(einsum_str, mask_tensor, a_ndarray)
-
-            # Preserve original dtype - einsum may promote types, but we want same dtype as input
-            # This is especially important when input is integer type but mask_tensor is float32
-            if einsum_result.dtype != a.dtype:
-                # For integer types, we may need to round to avoid precision issues
-                # that could arise from the float32 mask_tensor
-                if np.issubdtype(a.dtype, np.integer) and np.issubdtype(
-                    einsum_result.dtype, np.floating
-                ):
-                    # Round before converting to integer to handle any floating point precision issues
-                    einsum_result = einsum_result.round().astype(a.dtype)
-                else:
-                    einsum_result = einsum_result.astype(a.dtype)
-
-            result = einsum_result._thunk
-
-        # Return in the expected format (is_set, rhs, out, self)
-        # For advanced indexing, typically is_set=False, and we return the result
+        result = self._take_using_take_task(indices, mask_axis, mode="wrap")
         return False, result, result, self
 
     def _create_indexing_array(
@@ -1433,13 +1275,14 @@ class DeferredArray:
         assert isinstance(computed_key, tuple)
         computed_key = self._unpack_ellipsis(computed_key, self.ndim)
 
-        # Check for einsum optimization patterns
-        can_take_einsum_path, mask_axis, mask_array = (
-            self._check_if_can_use_einsum(computed_key)
+        # Shortcut: a[indices, :, :] / a[:, indices] → np.take
+        can_use_take_path, mask_axis, mask_array = self._check_if_can_use_take(
+            computed_key
         )
 
-        if not is_set and self.ndim > 1 and can_take_einsum_path:
-            return self._advanced_indexing_using_einsum(mask_axis, mask_array)
+        # ndim > 1: 1-D gather (a[indices]) falls through to _issue_gather_task below.
+        if not is_set and self.ndim > 1 and can_use_take_path:
+            return self._advanced_indexing_using_take(mask_axis, mask_array)
 
         # the index where the first index_array is passed to the [] operator
         start_index = -1

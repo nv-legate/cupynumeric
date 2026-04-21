@@ -51,10 +51,10 @@ struct GatherImplBody {
   {
     auto out_rect = output.shape<OUT_DIM>();
     auto idx_rect = indices.shape<OUT_DIM>();
-    assert(out_rect == idx_rect);
-    auto out_acc = output.write_accessor<T, OUT_DIM>();
-    auto src_acc = source.read_accessor<T, SRC_DIM>();
-    auto idx_acc = indices.read_accessor<Point<SRC_DIM>, OUT_DIM>();
+    LEGATE_ASSERT(out_rect == idx_rect);
+    auto out_acc = output.write_accessor<T, OUT_DIM>(out_rect);
+    auto src_acc = source.read_accessor<T, SRC_DIM>(source.shape<SRC_DIM>());
+    auto idx_acc = indices.read_accessor<Point<SRC_DIM>, OUT_DIM>(idx_rect);
 
     Pitches<OUT_DIM - 1> out_pitches;
     size_t volume = out_pitches.flatten(out_rect);
@@ -94,7 +94,10 @@ struct GatherTypeDispatch {
   {
     using T = type_of<CODE>;
     GatherDimDispatch<exec_policy_t, T> impl{policy, output, source, indices};
-    cupynumeric::double_dispatch(std::max(1, source.dim()), output.dim(), impl);
+    // cupynumeric::double_dispatch(dim, point_dim, f) calls f.operator<point_dim, dim>()
+    // so pass (source.dim(), indices.dim()) to get operator<OUT_DIM=indices.dim(),
+    // SRC_DIM=source.dim()>.
+    cupynumeric::double_dispatch(std::max(1, source.dim()), indices.dim(), impl);
   }
 };
 

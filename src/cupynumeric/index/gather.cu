@@ -105,32 +105,24 @@ struct GatherDimDispatchGPU {
   void operator()()
   {
     const auto out_rect = output.shape<OUT_DIM>();
-    const auto src_rect = source.shape<SRC_DIM>();
     const auto idx_rect = indices.shape<OUT_DIM>();
+    LEGATE_ASSERT(out_rect == idx_rect);
+    const auto src_rect = source.shape<SRC_DIM>();
 
-    assert(out_rect == idx_rect);
+    const auto idx_acc = indices.read_accessor<Point<SRC_DIM>, OUT_DIM>(idx_rect);
 
-    const auto idx_acc = indices.read_accessor<Point<SRC_DIM>, OUT_DIM>();
-
-    // Obtain raw byte pointers and byte strides without knowing the element
-    // type, using int8_t accessor with VALIDATE_TYPE=false.  ptr(rect, strides)
-    // returns a virtual-base pointer and strides in sizeof(int8_t)==1 units,
+    // Obtain raw byte pointer and strides for the source store.
     size_t src_bstrides[SRC_DIM];
-    const auto src_byte_acc = source.read_accessor<int8_t, SRC_DIM, false>();
+    const auto src_byte_acc = source.read_accessor<int8_t, SRC_DIM, false>(src_rect);
     const char* src_bytes = reinterpret_cast<const char*>(src_byte_acc.ptr(src_rect, src_bstrides));
 
-    // Output is always a fresh dense allocation.  Compute the first-element
-    // pointer from the virtual-base + lo·strides.
+    // Obtain raw byte pointer and strides for the output store.
     size_t out_bstrides[OUT_DIM];
-    const auto out_byte_acc = output.write_accessor<int8_t, OUT_DIM, false>();
+    const auto out_byte_acc = output.write_accessor<int8_t, OUT_DIM, false>(out_rect);
     char* out_bytes         = reinterpret_cast<char*>(out_byte_acc.ptr(out_rect, out_bstrides));
 
-    for (int d = 0; d < OUT_DIM; ++d) {
-      out_bytes += out_rect.lo[d] * out_bstrides[d];
-    }
-
 #if !LEGATE_DEFINED(LEGATE_BOUNDS_CHECKS)
-    // Manual density check for source (int8_t strides aren't similar to
+    // Manual density check for source (int8_t strides aren't equivalent to
     // FieldAccessor::is_dense_row_major when elem_size > 1).
     auto is_dense_row_major = [&]() {
       size_t expected = elem_size;
@@ -170,6 +162,8 @@ void GatherTask::gpu_variant(TaskContext context)
   const auto out_dim     = output.dim();
   const size_t elem_size = source.type().size();
 
+  // legate::double_dispatch(dim1, dim2, f) calls f.operator<dim1, dim2>()
+  // so pass (out_dim, src_dim) to get operator<OUT_DIM=out_dim, SRC_DIM=src_dim>.
   cupynumeric::double_dispatch(
     out_dim,
     src_dim,

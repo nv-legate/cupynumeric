@@ -354,19 +354,18 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
 
   switch (task_id) {
     case CUPYNUMERIC_ADVANCED_INDEXING: {
-      auto&& input       = task.input(0);
-      auto&& index_array = task.input(1);
-      auto input_volume  = input.domain().get_volume();
-      auto input_dim     = input.dim();
+      auto&& input      = task.input(0);
+      auto input_volume = input.domain().get_volume();
 
-      // In worst case, all boolean indices are true, so we need space for:
-      // - input_volume elements in first dimension
-      // - spatial dimensions from remaining input dims
-      // - element size from output type
-      auto max_output_volume = input_volume * input_dim;  // Conservative upper bound
-      auto element_size      = task.output(0).type().size();
-
-      auto max_out_size = aligned_size(max_output_volume * element_size, DEFAULT_ALIGNMENT);
+      // In the worst case (all boolean indices are true) the output has at
+      // most input_volume elements.  element_size already encodes the full
+      // per-element size: sizeof(VAL) for a GET and sizeof(Point<DIM>) for a
+      // SET (the is_set flag is a task scalar, not reflected in the store
+      // dimensionality visible at mapping time).  There is no extra dimension
+      // factor — multiplying by input_dim would overestimate by DIM× for GET
+      // and DIM²× for SET.
+      auto element_size = task.output(0).type().size();
+      auto max_out_size = aligned_size(input_volume * element_size, DEFAULT_ALIGNMENT);
 
       switch (memory_kind) {
         case legate::mapping::StoreTarget::SYSMEM: [[fallthrough]];
@@ -497,7 +496,9 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
                ? sizeof(std::int32_t) * task.scalar(0).values<std::int32_t>().size()
                : 0;
     }
-    case CUPYNUMERIC_GATHER: [[fallthrough]];
+    case CUPYNUMERIC_GATHER: {
+      return 0;
+    }
     case CUPYNUMERIC_SCATTER: {
       return 0;
     }
