@@ -37,13 +37,13 @@ struct AdvancedIndexingImpl {
   template <Type::Code CODE, int DIM>
   void operator()(AdvancedIndexingArgs& args) const
   {
-    using VAL       = type_of<CODE>;
-    auto input_rect = args.input_array.shape<DIM>();
-    auto input_arr  = args.input_array.read_accessor<VAL, DIM>(input_rect);
+    using VAL             = type_of<CODE>;
+    const auto input_rect = args.input_array.shape<DIM>();
+    auto input_arr        = args.input_array.read_accessor<VAL, DIM>(input_rect);
     Pitches<DIM - 1> input_pitches{};
     size_t volume = input_pitches.flatten(input_rect);
 
-    auto index_rect = args.indexing_array.shape<DIM>();
+    const auto index_rect = args.indexing_array.shape<DIM>();
     // this task is executed only for the case when index array is a bool type
     auto index_arr = args.indexing_array.read_accessor<bool, DIM>(index_rect);
 #ifdef DEBUG_CUPYNUMERIC

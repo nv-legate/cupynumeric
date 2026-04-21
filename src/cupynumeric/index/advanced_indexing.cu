@@ -20,65 +20,55 @@
 #include "cupynumeric/utilities/thrust_allocator.h"
 #include "cupynumeric/cuda_help.h"
 
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/scan.h>
 
 namespace cupynumeric {
 
-template <typename Output, typename Pitches, typename Point, int32_t DIM>
+template <typename VAL, int DIM, typename OUT_TYPE>
 static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  count_nonzero_kernel(size_t volume,
-                       Output out,
-                       Buffer<int64_t> offsets,
-                       AccessorRO<bool, DIM> index,
-                       Pitches pitches,
-                       Point origin,
-                       size_t iters,
-                       const size_t skip_size,
-                       const size_t key_dim)
-{
-  uint64_t value = 0;
-  for (size_t i = 0; i < iters; i++) {
-    size_t idx = (i * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
-    if (idx >= volume) {
-      break;
-    }
-    auto point   = pitches.unflatten(idx, origin);
-    bool val     = (index[point] && ((idx + 1) % skip_size == 0));
-    offsets[idx] = static_cast<int64_t>(val);
-    SumReduction<uint64_t>::fold<true>(value, val);
-  }
-  // Every thread in the thread block must participate in the exchange to get correct results
-  reduce_output(out, value);
-}
-
-template <typename VAL, int DIM, typename OUT_T>
-static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  advanced_indexing_kernel(size_t volume,
-                           AccessorRO<VAL, DIM> in,
-                           AccessorRO<bool, DIM> index,
-                           Buffer<OUT_T, DIM> out,
-                           Pitches<DIM - 1> pitches,
-                           Point<DIM> origin,
-                           Buffer<int64_t> offsets,
-                           const size_t skip_size,
-                           const size_t key_dim)
+  getitem_masked(const size_t volume,
+                 const AccessorRO<VAL, DIM> input,
+                 const AccessorRO<bool, DIM> index,
+                 Pitches<DIM - 1> in_pitches,
+                 Point<DIM> in_lo,
+                 uint64_t* offsets,
+                 Buffer<OUT_TYPE, DIM> out,
+                 Pitches<DIM - 1> out_pitches,
+                 Point<DIM> out_lo)
 {
   const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= volume) {
     return;
   }
-  auto point = pitches.unflatten(tid, origin);
-  if (index[point] == true) {
-    Point<DIM> out_p;
-    out_p[0] = offsets[tid];
-    for (size_t i = 0; i < DIM - key_dim; i++) {
-      size_t j     = key_dim + i;
-      out_p[i + 1] = point[j];
-    }
-    for (size_t i = DIM - key_dim + 1; i < DIM; i++) {
-      out_p[i] = 0;
-    }
-    fill_out(out[out_p], point, in[point]);
+  auto in_p = in_pitches.unflatten(tid, in_lo);
+  if (index[in_p]) {
+    auto out_p = out_pitches.unflatten(offsets[tid] - 1, out_lo);
+    fill_out(out[out_p], in_p, input[in_p]);
+  }
+}
+
+template <typename VAL, int DIM, typename OUT_TYPE>
+static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
+  getitem_masked_dense(const size_t volume,
+                       const VAL* input,
+                       const bool* index,
+                       Pitches<DIM - 1> in_pitches,
+                       Point<DIM> in_lo,
+                       uint64_t* offsets,
+                       Buffer<OUT_TYPE, DIM> out,
+                       Pitches<DIM - 1> out_pitches,
+                       Point<DIM> out_lo)
+{
+  const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid >= volume) {
+    return;
+  }
+  auto in_p = in_pitches.unflatten(tid, in_lo);
+  if (index[tid]) {
+    auto out_p = out_pitches.unflatten(offsets[tid] - 1, out_lo);
+    fill_out(out[out_p], in_p, input[tid]);
   }
 }
 
@@ -89,66 +79,69 @@ struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, DIM, OUT_TYPE> {
 
   using VAL = type_of<CODE>;
 
-  int64_t compute_size(const AccessorRO<bool, DIM>& in,
-                       const Pitches<DIM - 1>& pitches,
-                       const Rect<DIM>& rect,
-                       const size_t volume,
-                       cudaStream_t stream,
-                       Buffer<int64_t>& offsets,
-                       const size_t skip_size,
-                       const size_t key_dim) const
-  {
-    DeviceScalarReductionBuffer<SumReduction<uint64_t>> size(stream);
-
-    const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-
-    size_t shmem_size = THREADS_PER_BLOCK / 32 * sizeof(uint64_t);
-
-    if (blocks >= MAX_REDUCTION_CTAS) {
-      const size_t iters = (blocks + MAX_REDUCTION_CTAS - 1) / MAX_REDUCTION_CTAS;
-      count_nonzero_kernel<<<MAX_REDUCTION_CTAS, THREADS_PER_BLOCK, shmem_size, stream>>>(
-        volume, size, offsets, in, pitches, rect.lo, iters, skip_size, key_dim);
-    } else {
-      count_nonzero_kernel<<<blocks, THREADS_PER_BLOCK, shmem_size, stream>>>(
-        volume, size, offsets, in, pitches, rect.lo, 1, skip_size, key_dim);
-    }
-
-    CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
-
-    auto alloc   = ThrustAllocator(legate::Memory::Kind::GPU_FB_MEM);
-    auto exe_pol = DEFAULT_POLICY(alloc).on(stream);
-    auto off_ptr = offsets.ptr(0);
-
-    thrust::exclusive_scan(exe_pol, off_ptr, off_ptr + volume, off_ptr);
-
-    return size.read(stream);
-  }
-
   void operator()(PhysicalStore& out_arr,
                   const AccessorRO<VAL, DIM>& input,
                   const AccessorRO<bool, DIM>& index,
-                  const Pitches<DIM - 1>& pitches,
+                  const Pitches<DIM - 1>& in_pitches,
                   const Rect<DIM>& rect,
                   const size_t key_dim) const
   {
-    size_t size         = 0;
     const size_t volume = rect.volume();
-    auto stream         = context.get_task_stream();
-    auto offsets        = create_buffer<int64_t, 1>(volume, legate::Memory::Kind::GPU_FB_MEM);
+    const auto in_lo    = rect.lo;
 
-    size_t skip_size = 1;
-    for (int i = key_dim; i < DIM; i++) {
-      auto diff = 1 + rect.hi[i] - rect.lo[i];
-      if (diff != 0) {
-        skip_size *= diff;
-      }
+#if !LEGATE_DEFINED(LEGATE_BOUNDS_CHECKS)
+    // Check to see if this is dense or not
+    bool index_dense = index.accessor.is_dense_row_major(rect);
+    bool dense       = input.accessor.is_dense_row_major(rect) && index_dense;
+#else
+    // No dense execution if we're doing bounds checks
+    bool index_dense = false;
+    bool dense       = false;
+#endif
+
+    auto buffer          = create_buffer<uint64_t, 1>(volume, legate::Memory::Kind::GPU_FB_MEM);
+    uint64_t* buffer_ptr = buffer.ptr(Rect<1>{Point<1>{0}, Point<1>{volume}});
+
+    // perform an inclusive scan to compute indices of elements to copy to output
+    auto stream  = context.get_task_stream();
+    auto alloc   = ThrustAllocator(legate::Memory::Kind::GPU_FB_MEM);
+    auto exe_pol = DEFAULT_POLICY(alloc).on(stream);
+
+    if (index_dense) {
+      auto index_ptr   = index.ptr(rect);
+      auto cast_lambda = [] __host__ __device__(bool x) -> uint64_t {
+        return static_cast<uint64_t>(x);
+      };
+      auto cast_iter = thrust::make_transform_iterator(index_ptr, cast_lambda);
+
+      thrust::inclusive_scan(exe_pol, cast_iter, cast_iter + volume, buffer_ptr);
+    } else {
+      auto get_index_lambda =
+        [index, in_pitches, in_lo] __host__ __device__(uint64_t i) -> uint64_t {
+        return static_cast<uint64_t>(index[in_pitches.unflatten(i, in_lo)]);
+      };
+      auto get_index_iter = thrust::make_transform_iterator(
+        thrust::make_counting_iterator<uint64_t>(0), get_index_lambda);
+
+      thrust::inclusive_scan(exe_pol, get_index_iter, get_index_iter + volume, buffer_ptr);
     }
 
-    size = compute_size(index, pitches, rect, volume, stream, offsets, skip_size, key_dim);
+    // Get the last element of the buffer to compute the size
+    uint64_t count;
+    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
+      &count, buffer_ptr + volume - 1, sizeof(uint64_t), cudaMemcpyDeviceToHost, stream));
 
-    // calculating the shape of the output region for this sub-task
+    CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+
+    // Compute the outer dimension of the output buffer
+    uint64_t outer_dim_size = count;
+    for (size_t i = key_dim; i < DIM; i++) {
+      outer_dim_size /= (1 + rect.hi[i] - rect.lo[i]);
+    }
+
+    // Allocate output buffer
     Point<DIM> extents;
-    extents[0] = size;
+    extents[0] = outer_dim_size;
     for (size_t i = 0; i < DIM - key_dim; i++) {
       size_t j       = key_dim + i;
       extents[i + 1] = 1 + rect.hi[j] - rect.lo[j];
@@ -157,14 +150,27 @@ struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, DIM, OUT_TYPE> {
       extents[i] = 1;
     }
 
-    auto out = out_arr.create_output_buffer<OUT_TYPE, DIM>(extents, true);
+    auto out      = out_arr.create_output_buffer<OUT_TYPE, DIM>(extents, true);
+    auto out_rect = out.get_bounds();
+    auto out_lo   = out_rect.lo;
 
-    // populate output
-    if (size > 0) {
-      const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-      advanced_indexing_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-        volume, input, index, out, pitches, rect.lo, offsets, skip_size, key_dim);
+    Pitches<DIM - 1> out_pitches{};
+    out_pitches.flatten(out_rect);
+
+    const size_t blocks       = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    const bool any_index_true = count > 0;
+
+    if (any_index_true && dense) {
+      auto input_ptr = input.ptr(rect);
+      auto index_ptr = index.ptr(rect);
+
+      getitem_masked_dense<VAL, DIM, OUT_TYPE><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+        volume, input_ptr, index_ptr, in_pitches, in_lo, buffer_ptr, out, out_pitches, out_lo);
+    } else if (any_index_true) {
+      getitem_masked<VAL, DIM, OUT_TYPE><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+        volume, input, index, in_pitches, in_lo, buffer_ptr, out, out_pitches, out_lo);
     }
+
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }
 };

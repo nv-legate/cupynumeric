@@ -16,11 +16,10 @@
 
 #include "cupynumeric/index/advanced_indexing.h"
 #include "cupynumeric/index/advanced_indexing_template.inl"
+
 #include "cupynumeric/omp_help.h"
+
 #include <omp.h>
-#include <thrust/fill.h>
-#include <thrust/execution_policy.h>
-#include <thrust/system/omp/execution_policy.h>
 
 namespace cupynumeric {
 
