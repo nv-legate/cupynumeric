@@ -78,6 +78,9 @@ def _get_case_dimensions(variant, size):
 
 
 def _estimate_case_working_set_bytes(variant, dtype, size):
+    # NB: we are actually returning a scaled version of flops,
+    # because we are using --memory-size to scale work
+
     dimensions = _get_case_dimensions(variant, size)
     itemsize = _dtype_bytes(dtype)
     factor = 0.001

@@ -97,10 +97,14 @@ def _get_case_dimensions(variant, size):
 
 
 def _estimate_case_working_set_bytes(variant, dtype, size):
+    # NB: we are actually returning a scaled version of flops,
+    # because we are using --memory-size to scale work
+
     dimensions = _get_case_dimensions(variant, size)
     matrix_dims = dimensions["matrix_size"]
     rhs_dims = dimensions["rhs_size"]
     dtype_bytes = _dtype_bytes(dtype)
+    factor = 0.001
 
     n = matrix_dims[-1]
     k = rhs_dims[-1]
@@ -114,7 +118,7 @@ def _estimate_case_working_set_bytes(variant, dtype, size):
         if variant.endswith("-1-rhs"):
             k = 1
 
-    return dtype_bytes * b * (n * n * n + n * n * k)
+    return int(dtype_bytes * b * (n * n * n + n * n * k) * factor)
 
 
 def _estimate_working_set_bytes(variant, precision, size):
