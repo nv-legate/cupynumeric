@@ -120,6 +120,7 @@ def _make_recording_suite(
     *, forbid_resolution: bool = False
 ) -> SimpleNamespace:
     calls: list[tuple[str, tuple[object, ...]]] = []
+    info_names: list[str] = []
     resolutions: list[object] = []
 
     def print_size_resolution(resolution: object) -> None:
@@ -134,11 +135,14 @@ def _make_recording_suite(
         calls.append((func.__name__, args))
 
     def run_timed_with_info(info, func, *args, **kwargs) -> None:
-        del info, kwargs
+        del kwargs
+        info_names.append(info.name)
         calls.append((func.__name__, args))
 
     def run_timed_with_generator(info, func, gen, **kwargs) -> None:
-        del info, kwargs
+        del kwargs
+        if info is not None:
+            info_names.append(info.name)
         for args in gen:
             calls.append((func.__name__, args))
 
@@ -148,6 +152,7 @@ def _make_recording_suite(
         runs=1,
         warmup=0,
         calls=calls,
+        info_names=info_names,
         resolutions=resolutions,
         print_size_resolution=print_size_resolution,
         run_timed=run_timed,
@@ -273,7 +278,7 @@ def test_axis_sum_suite_resolves_memory_target_in_run_benchmarks() -> None:
 def test_batched_fft_suite_resolves_memory_target_in_run_benchmarks() -> None:
     batched_fft = _module("batched_fft_bench")
     suite = _make_recording_suite()
-    target_bytes = 1 << 20
+    target_bytes = 8 << 20
     request = _sizing().SizeRequest(memory_target_bytes=[target_bytes])
 
     batched_fft.run_benchmarks(suite, request)
@@ -282,15 +287,52 @@ def test_batched_fft_suite_resolves_memory_target_in_run_benchmarks() -> None:
     assert len(suite.resolutions[0]) == 1
     resolution = suite.resolutions[0][0]
     assert resolution.requested_memory_target_bytes == target_bytes
-    assert resolution.estimated_working_set_bytes <= target_bytes
-    assert len(suite.calls) == len(batched_fft._CASES)
-    call_name, call_args = suite.calls[0]
-    assert call_name == "batched_fft"
-    expected_shape = batched_fft._case_shape(
-        resolution.resolved_size, call_args[1]
+    panel_lines = resolution.panel_lines()
+    assert panel_lines[0] == (
+        f"requested_memory_target: {target_bytes:,} bytes"
     )
-    assert call_args[3] == expected_shape[0]
-    assert call_args[4] == expected_shape[1]
+    assert len(panel_lines) == len(batched_fft._CASES) + 1
+    assert len(suite.calls) == len(batched_fft._CASES)
+    assert suite.info_names == [case.name for case in batched_fft._CASES]
+    for (call_name, call_args), case in zip(
+        suite.calls, batched_fft._CASES, strict=True
+    ):
+        expected_batch = max(
+            1, target_bytes // (2 * case.transform_volume * case.itemsize)
+        )
+        assert call_name == "batched_fft"
+        assert call_args[1] == case.dims
+        assert call_args[2] == case.dtype_name
+        assert call_args[3] == expected_batch
+        assert call_args[4] == case.extent
+        assert (
+            batched_fft._estimate_case_working_set_bytes(case, expected_batch)
+            <= target_bytes
+        )
+        assert any(
+            line.startswith(f"{case.name}: ") for line in panel_lines[1:]
+        )
+
+
+def test_batched_fft_exact_size_scales_only_the_batch_dimension() -> None:
+    batched_fft = _module("batched_fft_bench")
+    suite = _make_recording_suite(forbid_resolution=True)
+    request = _sizing().SizeRequest(
+        exact_size=[3 * batched_fft._SHARED_TRANSFORM_VOLUME]
+    )
+
+    batched_fft.run_benchmarks(suite, request)
+
+    assert len(suite.calls) == len(batched_fft._CASES)
+    assert suite.info_names == [case.name for case in batched_fft._CASES]
+    for (call_name, call_args), case in zip(
+        suite.calls, batched_fft._CASES, strict=True
+    ):
+        assert call_name == "batched_fft"
+        assert call_args[1] == case.dims
+        assert call_args[2] == case.dtype_name
+        assert call_args[3] == 3
+        assert call_args[4] == case.extent
 
 
 def test_resolve_linear_suite_size_reports_resolution_details() -> None:
@@ -461,6 +503,23 @@ def test_undersized_stream_target_raises() -> None:
     assert resolutions is not None
     assert len(resolutions) == 1
     assert resolutions[0].estimated_working_set_bytes > 1
+
+
+def test_batched_fft_undersized_target_warns() -> None:
+    batched_fft = _module("batched_fft_bench")
+    suite = _make_recording_suite()
+    request = _sizing().SizeRequest(memory_target_bytes=[100])
+
+    with pytest.warns(
+        RuntimeWarning,
+        match="memory target is smaller than estimated working set for "
+        "batched FFT case\\(s\\)",
+    ):
+        batched_fft.run_benchmarks(suite, request)
+
+    assert len(suite.resolutions) == 1
+    assert len(suite.resolutions[0]) == 1
+    assert len(suite.calls) == len(batched_fft._CASES)
 
 
 def test_fast_advanced_indexing_uses_square_size_for_2d_cases() -> None:

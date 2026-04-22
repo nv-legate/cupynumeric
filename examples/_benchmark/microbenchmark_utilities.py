@@ -35,7 +35,7 @@ import re
 
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Protocol
 
 from .harness import (
     ArrayPackage,
@@ -44,8 +44,12 @@ from .harness import (
     product_args,
 )
 from .info import BenchmarkInfo, get_benchmark_info
-from .sizing import SizeRequest, SizeResolution
+from .sizing import SizeRequest
 from .use_rich import use_rich, HAVE_RICH
+
+
+class SupportsPanelLines(Protocol):
+    def panel_lines(self) -> list[str]: ...
 
 
 @dataclass
@@ -320,7 +324,9 @@ class MicrobenchmarkSuite(BenchmarkHarness):
                 msg += f" ({self.benchmark_variant_count} variants)"
             self.print_panel([msg], f"SUITE COMPLETE: {self.name}")
 
-    def print_size_resolution(self, resolutions: list[SizeResolution]) -> None:
+    def print_size_resolution(
+        self, resolutions: Iterable[SupportsPanelLines]
+    ) -> None:
         lines = []
         for i, resolution in enumerate(resolutions):
             if i > 0:
