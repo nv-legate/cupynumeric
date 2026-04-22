@@ -16,13 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from legate.core import (
-    broadcast,
-    constant,
-    dimension,
-    get_legate_runtime,
-    types as ty,
-)
+from legate.core import constant, dimension, get_legate_runtime, types as ty
 
 from ..config import CuPyNumericOpCode
 from ..runtime import runtime
@@ -38,23 +32,6 @@ if TYPE_CHECKING:
 
     from .._thunk.deferred import DeferredArray
     from ..runtime import Runtime
-
-
-def transpose_copy_single(
-    library: Library, input: LogicalStore, output: LogicalStore
-) -> None:
-    task = legate_runtime.create_auto_task(
-        library, CuPyNumericOpCode.TRANSPOSE_COPY_2D
-    )
-    p_out = task.add_output(output)
-    p_in = task.add_input(input)
-    # Output has the same shape as input, but is mapped
-    # to a column major instance
-
-    task.add_constraint(broadcast(p_out))
-    task.add_constraint(broadcast(p_in))
-
-    task.execute()
 
 
 def transpose_copy(
@@ -359,6 +336,8 @@ def solve_triangular_deferred(
 MIN_CHOLESKY_TILE_SIZE = 16 if settings.test() else 2048
 MIN_CHOLESKY_MATRIX_SIZE = 32 if settings.test() else 8192
 
+BATCHED_CHOLESKY_WARN_DIM = 32768
+
 
 def cholesky_deferred(
     output: DeferredArray, input: DeferredArray, lower: bool, zeroout: bool
@@ -367,7 +346,7 @@ def cholesky_deferred(
     batched = len(input.base.shape) > 2
     if batched or not lower or output == input or runtime.num_procs == 1:
         size = input.base.shape[-1]
-        if batched and size > 32768:
+        if batched and size > BATCHED_CHOLESKY_WARN_DIM:
             # Choose 32768 as dimension cutoff for warning
             # so that for float64 anything larger than
             # 8 GiB produces a warning

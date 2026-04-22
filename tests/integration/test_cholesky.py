@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+import warnings
+
 import numpy as np
 import pytest
 from utils.comparisons import allclose
@@ -254,6 +256,31 @@ def test_cholesky_linalgerror(dtype: np.dtype) -> None:
         num.linalg.cholesky(arr_num)
     with pytest.raises(np.linalg.LinAlgError, match=msg):
         np.linalg.cholesky(arr_np)
+
+
+def test_batched_cholesky_warns_when_submatrix_dim_exceeds_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cover batched warn branch without allocating n>32768 matrices.
+
+    Tests patch ``BATCHED_CHOLESKY_WARN_DIM`` to a small value. ``runtime.warn``
+    is patched so the assertion does not depend on ``CUPYNUMERIC_WARN``.
+    """
+    import cupynumeric.linalg._cholesky as ch
+
+    monkeypatch.setattr(ch, "BATCHED_CHOLESKY_WARN_DIM", 8)
+
+    def emit_warn(msg: str, category: type = UserWarning) -> None:
+        warnings.warn(msg, category=category, stacklevel=1)
+
+    monkeypatch.setattr(ch.runtime, "warn", emit_warn)
+
+    n = 16
+    a = _get_real_symm_posdef(n, np.float64)
+    batched = num.stack([a, a])
+    msg = r"batched cholesky is only valid"
+    with pytest.warns(UserWarning, match=msg):
+        _ = num.linalg.cholesky(batched)
 
 
 if __name__ == "__main__":
