@@ -18,12 +18,29 @@
 
 #include "cupynumeric/utilities/blas_lapack.h"
 #include <cstring>
+#include <mutex>
 
 namespace cupynumeric {
 
 using namespace legate;
 
+#if CUPYNUMERIC_BLAS_VENDOR_APPLE
+inline std::mutex geev_real_call_mutex;
+#endif
+
 namespace {
+
+template <typename Fn>
+void with_geev_real_call_serialization(Fn&& fn)
+{
+#if CUPYNUMERIC_BLAS_VENDOR_APPLE
+  // Apple Accelerate can intermittently return bad real-eigenvalue vectors
+  // when overlapping real geev calls execute concurrently, so guard the
+  // real geev calls with one process-wide mutex across CPU and OMP variants.
+  const std::scoped_lock<std::mutex> guard{geev_real_call_mutex};
+#endif
+  fn();
+}
 
 template <typename T>
 void assemble_complex(Complex<T>* ew, Complex<T>* ev, T* ew_r, T* ew_i, T* ev_r, size_t m)
@@ -86,37 +103,40 @@ struct GeevImplBody<KIND, Type::Code::FLOAT32> {
       int32_t info  = 0;
       float wkopt   = 0;
       int32_t lwork = -1;
-      sgeev_("N",
-             compute_evs ? "V" : "N",
-             &m,
-             a_copy.ptr(0),
-             &m,
-             ew_r.data(),
-             ew_i.data(),
-             nullptr,
-             &m,
-             ev_tmp_prt,
-             &m,
-             &wkopt,
-             &lwork,
-             &info);
-      lwork = (int)wkopt;
+      std::vector<float> work_tmp;
+      with_geev_real_call_serialization([&] {
+        sgeev_("N",
+               compute_evs ? "V" : "N",
+               &m,
+               a_copy.ptr(0),
+               &m,
+               ew_r.data(),
+               ew_i.data(),
+               nullptr,
+               &m,
+               ev_tmp_prt,
+               &m,
+               &wkopt,
+               &lwork,
+               &info);
+        lwork = static_cast<int32_t>(wkopt);
 
-      std::vector<float> work_tmp(lwork);
-      sgeev_("N",
-             compute_evs ? "V" : "N",
-             &m,
-             a_copy.ptr(0),
-             &m,
-             ew_r.data(),
-             ew_i.data(),
-             nullptr,
-             &m,
-             ev_tmp_prt,
-             &m,
-             work_tmp.data(),
-             &lwork,
-             &info);
+        work_tmp.resize(lwork);
+        sgeev_("N",
+               compute_evs ? "V" : "N",
+               &m,
+               a_copy.ptr(0),
+               &m,
+               ew_r.data(),
+               ew_i.data(),
+               nullptr,
+               &m,
+               ev_tmp_prt,
+               &m,
+               work_tmp.data(),
+               &lwork,
+               &info);
+      });
 
       if (info != 0) {
         throw legate::TaskException(GeevTask::ERROR_MESSAGE);
@@ -162,38 +182,40 @@ struct GeevImplBody<KIND, Type::Code::FLOAT64> {
       int32_t info  = 0;
       double wkopt  = 0;
       int32_t lwork = -1;
+      std::vector<double> work_tmp;
+      with_geev_real_call_serialization([&] {
+        dgeev_("N",
+               compute_evs ? "V" : "N",
+               &m,
+               a_copy.ptr(0),
+               &m,
+               ew_r.data(),
+               ew_i.data(),
+               nullptr,
+               &m,
+               ev_tmp_prt,
+               &m,
+               &wkopt,
+               &lwork,
+               &info);
+        lwork = static_cast<int32_t>(wkopt);
 
-      dgeev_("N",
-             compute_evs ? "V" : "N",
-             &m,
-             a_copy.ptr(0),
-             &m,
-             ew_r.data(),
-             ew_i.data(),
-             nullptr,
-             &m,
-             ev_tmp_prt,
-             &m,
-             &wkopt,
-             &lwork,
-             &info);
-      lwork = (int)wkopt;
-
-      std::vector<double> work_tmp(lwork);
-      dgeev_("N",
-             compute_evs ? "V" : "N",
-             &m,
-             a_copy.ptr(0),
-             &m,
-             ew_r.data(),
-             ew_i.data(),
-             nullptr,
-             &m,
-             ev_tmp_prt,
-             &m,
-             work_tmp.data(),
-             &lwork,
-             &info);
+        work_tmp.resize(lwork);
+        dgeev_("N",
+               compute_evs ? "V" : "N",
+               &m,
+               a_copy.ptr(0),
+               &m,
+               ew_r.data(),
+               ew_i.data(),
+               nullptr,
+               &m,
+               ev_tmp_prt,
+               &m,
+               work_tmp.data(),
+               &lwork,
+               &info);
+      });
 
       if (info != 0) {
         throw legate::TaskException(GeevTask::ERROR_MESSAGE);
