@@ -43,10 +43,10 @@ _ASTYPE_BYTES_PER_ELEMENT = 16
 def astype(np, dtype, size, runs, warmup, *, timer):
     """np.astype"""
 
-    def operation():
-        in_arr = np.random.randint(1, 1000, size=size)
-        out_arr = in_arr.astype(dtype)
+    in_arr = np.random.randint(1, 1000, size=size)
+    out_arr = in_arr.astype(dtype)
 
+    def operation():
         return out_arr
 
     return timed_loop(operation, timer, runs, warmup) / runs
