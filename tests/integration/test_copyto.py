@@ -33,6 +33,38 @@ def test_basic_copy():
     assert allclose(dst, num_dst)
 
 
+@pytest.mark.parametrize(
+    "dtype",
+    (
+        np.bool_,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.float16,
+        np.float32,
+        np.float64,
+        np.complex64,
+        np.complex128,
+    ),
+)
+@pytest.mark.parametrize("shape", ((5,), (4, 5), (2, 3, 4)))
+def test_contiguous_copy_dtypes(dtype, shape):
+    dst = np.zeros(shape, dtype=dtype)
+    src = np.arange(np.prod(shape)).reshape(shape).astype(dtype)
+
+    num_dst = num.array(dst)
+    num_src = num.array(src)
+
+    np.copyto(dst, src)
+    num.copyto(num_dst, num_src)
+    assert allclose(dst, num_dst)
+
+
 def test_broadcasting_scalar():
     dst = mk_seq_array(np, (5,))
     src = np.array(100000)
@@ -133,6 +165,17 @@ def test_empty_arrays():
 
     np.copyto(dst, src)
     num.copyto(num_dst, num_src)
+    assert allclose(dst, num_dst)
+
+
+def test_transposed_copy():
+    dst = mk_seq_array(np, (3, 4))
+    src = mk_seq_array(np, (3, 4)) + 100
+    num_dst = num.array(dst)
+    num_src = num.array(src)
+
+    np.copyto(dst.T, src.T)
+    num.copyto(num_dst.T, num_src.T)
     assert allclose(dst, num_dst)
 
 
@@ -253,22 +296,37 @@ def test_where_shape_mismatch():
         num.copyto(num_dst, num_src, where=num_where)
 
 
-def test_overlapping_memory():
-    # Test 1: Simple overlap within the same array
+def test_overlapping_memory_forward_slice():
     arr_np = mk_seq_array(np, (10,))
     arr_num = num.array(arr_np)
 
-    # Copy a slice to another slice within the same array
     np.copyto(arr_np[3:7], arr_np[0:4])
     num.copyto(arr_num[3:7], arr_num[0:4])
     assert allclose(arr_np, arr_num)
 
-    # Test 2: Overlap with different views/strides
+
+def test_overlapping_memory_reverse_slice():
+    arr_np = mk_seq_array(np, (10,))
+    arr_num = num.array(arr_np)
+
+    np.copyto(arr_np[0:4], arr_np[3:7])
+    num.copyto(arr_num[0:4], arr_num[3:7])
+    assert allclose(arr_np, arr_num)
+
+
+def test_self_copy():
+    arr_np = mk_seq_array(np, (10,))
+    arr_num = num.array(arr_np)
+
+    np.copyto(arr_np, arr_np)
+    num.copyto(arr_num, arr_num)
+    assert allclose(arr_np, arr_num)
+
+
+def test_overlapping_memory_strided_views():
     arr_np_orig = mk_seq_array(np, (5, 5))
     arr_num_orig = num.array(arr_np_orig)
 
-    # Create overlapping views (e.g., column from one array to row of
-    # another view)
     dst_np = arr_np_orig[0, :]  # first row
     src_np = arr_np_orig[:, 0]  # first column
     dst_num = arr_num_orig[0, :]
@@ -276,10 +334,8 @@ def test_overlapping_memory():
 
     np.copyto(dst_np, src_np)
     num.copyto(dst_num, src_num)
-    assert allclose(dst_np, dst_num)  # Check the copied slice
-    assert allclose(
-        arr_np_orig, arr_num_orig
-    )  # Check the whole array state after copy
+    assert allclose(dst_np, dst_num)
+    assert allclose(arr_np_orig, arr_num_orig)
 
 
 def test_nan_inf_with_where():

@@ -19,7 +19,23 @@
 
 #include "cupynumeric/cuda_help.h"
 
+#include <cstdint>
+#include <type_traits>
+
 namespace cupynumeric {
+
+// cudaMemcpyAsync requires non-overlapping ranges. Compare integer addresses
+// because source and destination may belong to different allocations; both
+// ranges are assumed to have length `bytes`.
+static bool same_size_ranges_overlap(const void* lhs, const void* rhs, size_t bytes)
+{
+  const auto lhs_begin = reinterpret_cast<std::uintptr_t>(lhs);
+  const auto rhs_begin = reinterpret_cast<std::uintptr_t>(rhs);
+  if (lhs_begin <= rhs_begin) {
+    return rhs_begin - lhs_begin < bytes;
+  }
+  return lhs_begin - rhs_begin < bytes;
+}
 
 template <typename Function, typename ARG, typename RES>
 static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
@@ -93,7 +109,22 @@ struct UnaryOpImplBody<VariantKind::GPU, OP_CODE, CODE, DIM> {
     if (dense) {
       auto outptr = out.ptr(rect);
       auto inptr  = in.ptr(rect);
-      dense_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, func, outptr, inptr);
+      if constexpr (OP_CODE == UnaryOpCode::COPY) {
+        static_assert(std::is_same_v<ARG, RES>, "COPY must use matching input and output types");
+        const size_t bytes = volume * sizeof(ARG);
+        if (outptr == inptr) {
+          // Exact self-copy is already complete.
+          return;
+        }
+        if (!same_size_ranges_overlap(outptr, inptr, bytes)) {
+          CUPYNUMERIC_CHECK_CUDA(
+            cudaMemcpyAsync(outptr, inptr, bytes, cudaMemcpyDeviceToDevice, stream));
+        } else {
+          dense_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, func, outptr, inptr);
+        }
+      } else {
+        dense_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, func, outptr, inptr);
+      }
     } else {
       generic_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
         volume, func, out, in, pitches, rect);
@@ -117,9 +148,19 @@ struct PointCopyImplBody<VariantKind::GPU, VAL, DIM> {
     const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     auto stream         = context.get_task_stream();
     if (dense) {
-      auto outptr = out.ptr(rect);
-      auto inptr  = in.ptr(rect);
-      dense_copy_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, outptr, inptr);
+      auto outptr        = out.ptr(rect);
+      auto inptr         = in.ptr(rect);
+      const size_t bytes = volume * sizeof(VAL);
+      if (outptr == inptr) {
+        // Exact self-copy is already complete.
+        return;
+      }
+      if (!same_size_ranges_overlap(outptr, inptr, bytes)) {
+        CUPYNUMERIC_CHECK_CUDA(
+          cudaMemcpyAsync(outptr, inptr, bytes, cudaMemcpyDeviceToDevice, stream));
+      } else {
+        dense_copy_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, outptr, inptr);
+      }
     } else {
       generic_copy_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume, out, in, pitches, rect);
     }
