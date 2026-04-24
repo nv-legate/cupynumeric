@@ -24,9 +24,12 @@ DEFAULT_MEAN_TOL = 0.05
 class ModuleGenerator:
     def __init__(
         self, seed=None, force_build=False
-    ):  # seed parameter is ignored here
+    ):  # seed initializes both XORWOW and the module-level static generator
         self.seed = seed
         self.bit_generator = num.random.XORWOW(seed)
+        num.random._generator._static_generator = num.random.default_rng(
+            self.bit_generator
+        )
 
     def random_raw(self, shape):
         gen = num.random._generator.get_static_generator()

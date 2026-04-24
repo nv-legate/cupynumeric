@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <random>
 #include <functional>
-#include <type_traits>
-
 #include <cstdlib>
+#include <limits>
+#include <random>
+#include <type_traits>
 
 #include <cuda/std/limits>
 
@@ -37,7 +37,13 @@ RANDUTIL_QUALIFIERS decltype(auto) engine_uniform(gen_t& gen)
   auto y = dis(gen);  // returns [0, 1);
 
   // bring to (0, 1]:
-  return 1 - y;
+  auto uniform = element_t{1} - y;
+  if (uniform == element_t{0}) {
+    // Some STL implementations can still round the upper endpoint back in.
+    // Keep the advertised interval contract and stay away from zero.
+    return std::numeric_limits<element_t>::min();
+  }
+  return uniform;
 #else
   if constexpr (std::is_same_v<element_t, float>) {
     return curand_uniform(&gen);  // returns (0, 1];
