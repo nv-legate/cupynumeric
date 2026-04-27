@@ -11,6 +11,7 @@ set -euo pipefail
 # Default values for the environment variables.
 LEGATE_WORKFLOW_NAME=${LEGATE_WORKFLOW_NAME:-"ci.yml"}
 LEGATE_REPO_NAME=${LEGATE_REPO_NAME:-"nv-legate/legate.internal"}
+LEGATE_RUN_SEARCH_LIMIT=${LEGATE_RUN_SEARCH_LIMIT:-500}
 
 # Check if the script was called with exactly 1 argument
 if [[ ${#} -ne 1 ]]; then
@@ -19,11 +20,24 @@ if [[ ${#} -ne 1 ]]; then
   exit 1
 fi
 
+sha="${1}"
+
 gh_run_id=$(gh run list \
   --repo "${LEGATE_REPO_NAME}" \
   --workflow "${LEGATE_WORKFLOW_NAME}" \
-  --commit "${1}" \
+  --commit "${sha}" \
   --json 'createdAt,databaseId' \
-  --jq 'sort_by(.createdAt) | reverse | .[0] | .databaseId')
+  --jq 'sort_by(.createdAt) | reverse | .[0].databaseId // empty')
+
+if [[ -z "${gh_run_id}" ]]; then
+  # The commit-filtered run lookup can miss older runs that are still visible
+  # in the workflow listing and still have live artifacts.
+  gh_run_id=$(gh run list \
+    --repo "${LEGATE_REPO_NAME}" \
+    --workflow "${LEGATE_WORKFLOW_NAME}" \
+    --limit "${LEGATE_RUN_SEARCH_LIMIT}" \
+    --json 'createdAt,databaseId,headSha' \
+    --jq "map(select(.headSha == \"${sha}\")) | sort_by(.createdAt) | reverse | .[0].databaseId // empty")
+fi
 
 echo -n "${gh_run_id}"
