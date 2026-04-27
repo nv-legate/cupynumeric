@@ -74,6 +74,13 @@
             overridePackageName: "libcusolvermp-dev",
         },
         {
+            description: "Ignore OpenBLAS upper bound updates",
+            enabled: false,
+            matchDatasources: ["conda"],
+            matchManagers: ["custom.regex"],
+            matchDepNames: ["openblas"],
+        },
+        {
             description: "Group conda upper bound updates",
             matchDatasources: ["conda"],
             matchManagers: ["custom.regex"],

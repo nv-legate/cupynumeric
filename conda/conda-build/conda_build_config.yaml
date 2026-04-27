@@ -36,7 +36,7 @@ cupy_version:
 
 cutensor_version:
   # cutensor 2.3 is required for CUDA 13
-  - ">=2.0,<2.6"
+  - ">=2.0,<2.7"
 
 libcufile_version:
   - ">=1.0,<1.18"
@@ -56,4 +56,4 @@ c_stdlib_version:
   - "2.28"
 
 cmake_version:
-  - ">=3.30.4,<4.3"
+  - ">=3.30.4,<4.4"
