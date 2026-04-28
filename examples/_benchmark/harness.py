@@ -19,6 +19,7 @@ import gc
 import importlib
 import inspect
 import json
+import re
 
 from argparse import ArgumentParser, Namespace
 from collections.abc import Callable
@@ -32,6 +33,7 @@ from legate.util.benchmark import (
     benchmark_log,
 )
 from legate.util.info import info as legate_info
+from legate.util.settings import SettingBase
 from subprocess import CalledProcessError, check_output
 from types import ModuleType
 from typing import Any, Iterable
@@ -235,6 +237,19 @@ FAILED_TO_DETECT: str = "(failed to detect)"
 
 
 @cache
+def _cupynumeric_settings_info() -> dict[str, Any]:
+    from cupynumeric.settings import settings as cupynumeric_settings
+
+    out: dict[str, Any] = {}
+    for att_name in dir(cupynumeric_settings):
+        att = getattr(cupynumeric_settings, att_name)
+        if isinstance(att, SettingBase):
+            assert callable(att)
+            out[att.name] = att()
+    return out
+
+
+@cache
 def _conda_list() -> dict[str, Any] | str:
     try:
         if out := check_output(["conda", "list", "--json"]):
@@ -257,6 +272,40 @@ def _conda_list() -> dict[str, Any] | str:
         return "(conda missing)"
     else:
         return FAILED_TO_DETECT
+
+
+def _try_version(module_name: str, attr: str) -> str:
+    try:
+        module = importlib.import_module(module_name)
+        if not module:
+            return FAILED_TO_DETECT
+        return str(getattr(module, attr))
+    except ModuleNotFoundError:
+        return FAILED_TO_DETECT
+    except ImportError as e:
+        err = re.sub(r" \(.*\)", "", str(e))  # remove any local path
+        return f"(ImportError: {err})"
+    except Exception as e:
+        return f"(Exception on import: {e})"
+
+
+def _try_conda(package: str) -> str:
+    try:
+        if out := check_output(["conda", "list", package, "--json"]):
+            info = json.loads(out.decode("utf-8"))[0]
+            return f"{info['dist_name']} ({info['channel']})"
+
+    except (CalledProcessError, IndexError, KeyError):
+        return FAILED_TO_DETECT
+    except FileNotFoundError:
+        return "(conda missing)"
+    else:
+        return FAILED_TO_DETECT
+
+
+@cache
+def _cupy_package_details() -> str:
+    return _try_conda("cupy")
 
 
 def product_args(args: tuple[Any, ...]) -> Iterable[tuple[Any, ...]]:
@@ -319,6 +368,17 @@ class BenchmarkHarness:
                     start_runtime=(self._config.package == ArrayPackage.LEGATE)
                 )
             )
+            if self.package == "legate":
+                metadata["CuPyNumeric settings"] = _cupynumeric_settings_info()
+            elif self.package == "cupy":
+                if "Package versions" in metadata:
+                    metadata["Package versions"]["cupy"] = (
+                        f"{_try_version('cupy', '__version__')}"
+                    )
+                if "Package details" in metadata:
+                    metadata["Package details"]["cupy"] = (
+                        _cupy_package_details()
+                    )
         if self._config.log_conda_list:
             metadata.update({"Conda list": _conda_list()})
         metadata.update(self._config.log_metadata_extra)
