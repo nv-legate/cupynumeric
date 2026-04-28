@@ -194,24 +194,23 @@ def run_benchmarks(suite, size_request: SizeRequest):
 
     base_info = get_benchmark_info(batched_fft)
 
+    def arg_gen(case: FFTCase):
+        for batch in case_batches[case]:
+            yield (
+                np,
+                case.dims,
+                case.dtype_name,
+                batch,
+                case.extent,
+                runs,
+                warmup,
+            )
+
     for case in _CASES:
-
-        def arg_gen(case: FFTCase = case):
-            for batch in case_batches[case]:
-                yield (
-                    np,
-                    case.dims,
-                    case.dtype_name,
-                    batch,
-                    case.extent,
-                    runs,
-                    warmup,
-                )
-
         suite.run_timed_with_generator(
             base_info.replace(name=case.name),
             batched_fft,
-            arg_gen(),
+            arg_gen(case),
             timer=timer,
         )
 
