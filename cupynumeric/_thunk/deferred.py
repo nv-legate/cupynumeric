@@ -1251,6 +1251,41 @@ class DeferredArray:
         result = self._take_using_take_task(indices, mask_axis, mode="wrap")
         return False, result, result, self
 
+    def _can_skip_transformed_index_copy(
+        self,
+        transformed_rhs: DeferredArray,
+        tuple_of_arrays: tuple[Any, ...],
+        is_set: bool,
+        set_value: Any | None,
+    ) -> bool:
+        task_compatible_indices = len(tuple_of_arrays) > 0 and all(
+            k.ndim > 0 for k in tuple_of_arrays
+        )
+        can_use_scatter_task = (
+            is_set
+            and set_value is not None
+            and runtime.num_procs == 1
+            and transformed_rhs.ndim > 0
+            and set_value.ndim > 0
+            and task_compatible_indices
+        )
+        can_use_gather_task = (
+            not is_set
+            and runtime.num_procs == 1
+            and transformed_rhs.ndim > 0
+            and task_compatible_indices
+        )
+        can_use_nccl_gather = (
+            not is_set
+            and settings.use_nccl_gather()
+            and runtime.num_gpus > 1
+            and transformed_rhs.ndim > 0
+            and task_compatible_indices
+        )
+        return (
+            can_use_scatter_task or can_use_gather_task or can_use_nccl_gather
+        )
+
     def _create_indexing_array(
         self, key: Any, is_set: bool = False, set_value: Any | None = None
     ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
@@ -1363,15 +1398,15 @@ class DeferredArray:
                     "indexing operation",
                 )
         if store.transformed:
-            # in the case this operation is called for the set_item, we need
-            # to apply all the transformations done to `store` to `self`
-            # as well before creating a copy
+            # For set-item, keep `self` in sync with the transformed store so
+            # later updates target the transformed view.
             if is_set:
                 self = DeferredArray(store)
-            # after store is transformed we need to to return a copy of
-            # the store since Copy operation can't be done on
-            # the store with transformation
-            rhs = self._copy_store(store)
+            transformed_rhs = DeferredArray(store)
+            can_skip_copy = self._can_skip_transformed_index_copy(
+                transformed_rhs, tuple_of_arrays, is_set, set_value
+            )
+            rhs = transformed_rhs if can_skip_copy else self._copy_store(store)
 
         if len(tuple_of_arrays) <= rhs.ndim:
             output_arr = rhs._zip_indices(
