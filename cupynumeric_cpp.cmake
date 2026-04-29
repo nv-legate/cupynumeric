@@ -179,7 +179,6 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/convolution/convolve.cc
   src/cupynumeric/transform/flip.cc
   src/cupynumeric/utilities/repartition.cc
-  src/cupynumeric/all2all/all2all.cc
   src/cupynumeric/arg_redop_register.cc
   src/cupynumeric/mapper.cc
   src/cupynumeric/ndarray.cc

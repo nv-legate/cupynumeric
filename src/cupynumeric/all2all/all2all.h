@@ -27,18 +27,10 @@ class All2AllTask : public CuPyNumericTask<All2AllTask> {
   static inline const auto TASK_CONFIG =
     legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_ALL2ALL}};
 
-  static constexpr auto CPU_VARIANT_OPTIONS =
-    legate::VariantOptions{}.with_concurrent(true).with_has_allocations(true);
   static constexpr auto GPU_VARIANT_OPTIONS =
-    legate::VariantOptions{}.with_concurrent(true).with_has_allocations(true);
-  static constexpr auto OMP_VARIANT_OPTIONS =
     legate::VariantOptions{}.with_concurrent(true).with_has_allocations(true);
 
  public:
-  static void cpu_variant(legate::TaskContext context);
-#if LEGATE_DEFINED(LEGATE_USE_OPENMP)
-  static void omp_variant(legate::TaskContext context);
-#endif
 #if LEGATE_DEFINED(LEGATE_USE_CUDA)
   static void gpu_variant(legate::TaskContext context);
 #endif

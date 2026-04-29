@@ -56,6 +56,18 @@ class Pitches {
     return point;
   }
 
+  // Convert a Point<DIM+1> back into its row-major flat index relative to lo.
+  __CUDA_HD__
+  inline size_t flatten_point(const legate::Point<DIM + 1>& point,
+                              const legate::Point<DIM + 1>& lo) const
+  {
+    size_t index = static_cast<size_t>(point[DIM] - lo[DIM]);
+    for (int d = 0; d < DIM; ++d) {
+      index += static_cast<size_t>(point[d] - lo[d]) * pitches[d];
+    }
+    return index;
+  }
+
  private:
   size_t pitches[DIM];
 };
@@ -94,6 +106,18 @@ class Pitches<DIM, false /*C_ORDER*/> {
     return point;
   }
 
+  // Convert a Point<DIM+1> back into its column-major flat index relative to lo.
+  __CUDA_HD__
+  inline size_t flatten_point(const legate::Point<DIM + 1>& point,
+                              const legate::Point<DIM + 1>& lo) const
+  {
+    size_t index = static_cast<size_t>(point[0] - lo[0]);
+    for (int d = 0; d < DIM; ++d) {
+      index += static_cast<size_t>(point[d + 1] - lo[d + 1]) * pitches[d];
+    }
+    return index;
+  }
+
  private:
   size_t pitches[DIM];
 };
@@ -117,6 +141,13 @@ class Pitches<0, C_ORDER> {
     legate::Point<1> point = lo;
     point[0] += index;
     return point;
+  }
+
+  // Convert a Point<1> back into its flat index relative to lo.
+  __CUDA_HD__
+  inline size_t flatten_point(const legate::Point<1>& point, const legate::Point<1>& lo) const
+  {
+    return static_cast<size_t>(point[0] - lo[0]);
   }
 };
 

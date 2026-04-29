@@ -680,7 +680,18 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     }
     case CUPYNUMERIC_ALL2ALL: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
-        return 0;
+        // Multi-rank all2all reserves a few small per-rank metadata buffers in
+        // pinned host memory:
+        //   - source_rects             : num_ranks rects (gathered via NCCL)
+        //   - input_rect_device        : 1 rect (this rank's local domain)
+        //   - send_counts_per_rank     : num_ranks uint64 (CUB histogram output)
+        //   - receive_counts_per_rank  : num_ranks uint64 (NCCL recv target)
+        //   - send_offsets_per_rank    : num_ranks uint64 (prefix-sum output)
+        const auto num_ranks      = task.get_launch_domain().get_volume();
+        constexpr auto rect_bytes = sizeof(legate::Rect<LEGATE_MAX_DIM>);
+        return aligned_size(num_ranks * rect_bytes, DEFAULT_ALIGNMENT) +
+               aligned_size(rect_bytes, DEFAULT_ALIGNMENT) +
+               3 * aligned_size(num_ranks * sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
       }
       return std::nullopt;
     }
