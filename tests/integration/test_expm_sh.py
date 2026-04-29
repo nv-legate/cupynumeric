@@ -207,6 +207,28 @@ def test_expm_invalid_methods(method: str) -> None:
         num.linalg.expm(arr, method=method)
 
 
+def test_expm_pade_small_l1_norm() -> None:
+    n = 4
+    a_np = 0.001 * np.eye(n, dtype=np.float64)
+    a_num = num.array(a_np)
+    result = num.linalg.expm(a_num)
+    expected = sp.linalg.expm(a_np)
+    rtol = RTOL[np.dtype(np.float64)]
+    atol = ATOL[np.dtype(np.float64)]
+    assert allclose(result, expected, rtol=rtol, atol=atol)
+
+
+def test_expm_pade_small_l1_norm_error() -> None:
+    n = 4
+    b = np.random.randn(n).astype(np.float64)
+    a_unscaled = b + b.T
+    a_norm = np.linalg.norm(a_unscaled, 1)
+    a_np = 0.001 * (a_unscaled / a_norm)
+    a_num = num.array(a_np)
+    with pytest.raises(ValueError, match="Invalid input shape for expm"):
+        num.linalg.expm(a_num)
+
+
 if __name__ == "__main__":
     import sys
 

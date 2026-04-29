@@ -190,6 +190,35 @@ class TestNormErrors:
             num.linalg.norm(num_arrays[ndim], ord=ord, axis=axis)
 
 
+class TestNormCoverageLines:
+    def test_axis_non_integer_after_normalize(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import cupynumeric.linalg.linalg as linalg_mod
+
+        monkeypatch.setattr(
+            linalg_mod, "normalize_axis_tuple", lambda axis, ndim: (1.5,)
+        )
+        x = num.array([1.0, 2.0, 3.0])
+        with pytest.raises(
+            TypeError,
+            match=r"`axis` must be None, an integer or a tuple of integers",
+        ):
+            num.linalg.norm(x, axis=0)
+
+    def test_duplicate_axes_after_normalize(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import cupynumeric.linalg.linalg as linalg_mod
+
+        monkeypatch.setattr(
+            linalg_mod, "normalize_axis_tuple", lambda axis, ndim: (0, 0)
+        )
+        x = num.ones((3, 3))
+        with pytest.raises(ValueError, match=r"Duplicate axes given"):
+            num.linalg.norm(x, axis=(0, 1))
+
+
 if __name__ == "__main__":
     import sys
 

@@ -15,11 +15,14 @@
 
 import re
 
+import types
+
 import numpy as np
 import pytest
 from numpy.linalg import LinAlgError  # noqa: F401
 
 import cupynumeric as num
+import cupynumeric.linalg.linalg as _linalg_mod
 
 SIZES = [
     (5, 5),
@@ -359,6 +362,38 @@ class TestEigh(object):
         msg = r"UPLO Y not supported"
         with pytest.raises(ValueError, match=msg):
             num.linalg.eigvalsh(arr, UPLO="Y")
+
+
+def test_eig_eigvals_unsupported_dtype(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = object()
+    fake_np = types.ModuleType("numpy_fake")
+    fake_np.__dict__.update(vars(_linalg_mod.np))
+    fake_np.float32 = sentinel  # type: ignore[attr-defined]
+    fake_np.float64 = sentinel  # type: ignore[attr-defined]
+    monkeypatch.setattr(_linalg_mod, "np", fake_np)
+    arr = num.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
+    with pytest.raises(TypeError, match=r"Eig input not supported"):
+        num.linalg.eig(arr)
+    with pytest.raises(TypeError, match=r"Eigvals input not supported"):
+        num.linalg.eigvals(arr)
+
+
+def test_eigh_eigvalsh_unsupported_dtype(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = object()
+    fake_np = types.ModuleType("numpy_fake")
+    fake_np.__dict__.update(vars(_linalg_mod.np))
+    fake_np.complex64 = sentinel  # type: ignore[attr-defined]
+    fake_np.complex128 = sentinel  # type: ignore[attr-defined]
+    monkeypatch.setattr(_linalg_mod, "np", fake_np)
+    arr = num.array([[1.0 + 0j, 0.0], [0.0, 1.0 + 0j]], dtype=np.complex128)
+    with pytest.raises(TypeError, match=r"Eigh input not supported"):
+        num.linalg.eigh(arr)
+    with pytest.raises(TypeError, match=r"Eigvalsh input not supported"):
+        num.linalg.eigvalsh(arr)
 
 
 if __name__ == "__main__":

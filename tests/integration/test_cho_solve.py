@@ -365,6 +365,13 @@ def test_cho_solve_empty():
     assert x.shape == (0, 5)
 
 
+def test_cho_solve_integer_c_dtype_conversion() -> None:
+    c_int = num.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.int64)
+    b = num.array([1.0, 2.0, 3.0], dtype=np.float64)
+    x = num.linalg.cho_solve((c_int, True), b, check_finite=False)
+    assert allclose(x, b, atol=1e-10)
+
+
 if __name__ == "__main__":
     import sys
 

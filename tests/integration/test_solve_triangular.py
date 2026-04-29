@@ -377,6 +377,22 @@ class TestSolveTriangularErrors:
         assert allclose(out_invalid_str, out_expected)
 
 
+def test_solve_triangular_check_finite_nonfinite_a() -> None:
+    a = num.eye(4, dtype=np.float64)
+    a[0, 0] = np.nan
+    b = num.ones(4, dtype=np.float64)
+    with pytest.raises(ValueError, match=r"Input contains non-finite values"):
+        num.linalg.solve_triangular(a, b, lower=True, check_finite=True)
+
+
+def test_solve_triangular_check_finite_nonfinite_b() -> None:
+    a = num.eye(4, dtype=np.float64)
+    b = num.ones(4, dtype=np.float64)
+    b[1] = np.inf
+    with pytest.raises(ValueError, match=r"Input contains non-finite values"):
+        num.linalg.solve_triangular(a, b, lower=True, check_finite=True)
+
+
 if __name__ == "__main__":
     import sys
 

@@ -120,6 +120,27 @@ def test_tssvd_vs_svd(shapes: (int, int), scale: float):
         )
 
 
+@pytest.mark.parametrize(
+    "shape", [(5,), (1, 1)], ids=["1d_array", "size_one_2d"]
+)
+def test_tssvd_invalid_input_shape(shape: tuple) -> None:
+    a = num.ones(shape, dtype=np.float64)
+    with pytest.raises(ValueError, match=r"Invalid input shape for tssvd"):
+        num.linalg.tssvd(a)
+
+
+def test_tssvd_singular_matrix() -> None:
+    from cupynumeric.linalg._exception import LinAlgError as _LinAlgError
+
+    a_np = np.array(
+        [[1.0, 0.0], [2.0, 0.0], [3.0, 0.0], [4.0, 0.0], [5.0, 0.0]],
+        dtype=np.float64,
+    )
+    a_num = num.array(a_np)
+    with pytest.raises(_LinAlgError, match=r"Singular matrix"):
+        num.linalg.tssvd(a_num)
+
+
 if __name__ == "__main__":
     import sys
 
