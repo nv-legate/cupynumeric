@@ -34,6 +34,8 @@ class ZipTask : public CuPyNumericTask<ZipTask> {
  public:
   static inline const auto TASK_CONFIG = legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_ZIP}};
 
+  // The GPU variant allocates internal Z_COPY_MEM buffers for index array accessors (zip.cu),
+  // so has_allocations must remain true even though the output store is now bound.
   static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
 
  public:

@@ -736,63 +736,56 @@ class DeferredArray:
 
         arrays = tuple(convert_and_check(a) for a in arrays)
 
-        # find a broadcasted shape for all arrays passed as indices
-        shapes = tuple(a.shape for a in arrays)
-        if len(arrays) > 1:
+        if len(arrays) > self.ndim:
+            raise ValueError("wrong number of index arrays passed")
+
+        raw_arrays: tuple[Any, ...]
+        if len(arrays) == 1:
+            # Single index array: no broadcasting needed.  Use the Legate
+            # ndim/Shape metadata (both non-blocking) so that stores whose
+            # extents are not yet known (e.g. outputs of a nonzero() task
+            # that has been submitted but not yet executed) do not stall
+            # task submission.
+            key_dim = arrays[0].base.ndim
+            raw_arrays = (arrays[0].base,)
+        else:
+            # Multiple index arrays: compute broadcast shape.
+            # These are always bound integer stores with known extents,
+            # so reading them here does not block.
+            shapes = tuple(a.shape for a in arrays)
             from .._module import broadcast_shapes
 
             b_shape = broadcast_shapes(*shapes)
-        else:
-            b_shape = arrays[0].shape
-
-        # key dim - dimension of indices arrays
-        key_dim = len(b_shape)
-        out_shape = b_shape
-
-        # broadcast shapes
-        arrays = tuple(
-            a._broadcast(b_shape) if a.shape != b_shape else a.base
-            for a in arrays
-        )
-
-        if len(arrays) < self.ndim:
-            # the case when # of arrays passed is smaller than dimension of
-            # the input array
-            N = len(arrays)
-            # output shape
-            out_shape = (
-                tuple(self.shape[i] for i in range(0, start_index))
-                + b_shape
-                + tuple(
-                    self.shape[i] for i in range(start_index + N, self.ndim)
-                )
+            key_dim = len(b_shape)
+            raw_arrays = tuple(
+                a._broadcast(b_shape) if a.shape != b_shape else a.base
+                for a in arrays
             )
-            new_arrays: tuple[Any, ...] = tuple()
-            # promote all index arrays to have the same shape as output
-            for a in arrays:
-                for i in range(0, start_index):
+
+        if len(raw_arrays) < self.ndim:
+            N = len(raw_arrays)
+            promoted: tuple[Any, ...] = ()
+            for a in raw_arrays:
+                for i in range(start_index):
                     a = a.promote(i, self.shape[i])
                 for i in range(start_index + N, self.ndim):
                     a = a.promote(key_dim + i - N, self.shape[i])
-                new_arrays += (a,)
-            arrays = new_arrays
-        elif len(arrays) > self.ndim:
-            raise ValueError("wrong number of index arrays passed")
+                promoted += (a,)
+            raw_arrays = promoted
 
-        # create output array which will store Point<N> field where
-        # N is number of index arrays
-        # shape of the output array should be the same as the shape of each
-        # index array
-        # NOTE: We need to instantiate a RegionField of non-primitive
-        # dtype, to store N-dimensional index points, to be used as the
-        # indirection field in a copy.
-        N = self.ndim
-        pointN_dtype = ty.point_type(N)
-        output_arr = runtime.create_deferred_thunk(
-            shape=out_shape, dtype=pointN_dtype
+        # The ZIP output has the same shape as the (promoted/broadcast) inputs —
+        # it is an isomorphic store, not a truly unbound one.  Pass the Legate
+        # Shape from the first processed input directly; reading its extents
+        # (which would block) is deferred until Legate needs them.
+        # NOTE: We need a RegionField of Point<N> dtype to store N-dimensional
+        # index points used as the indirection field in a copy.
+        pointN_dtype = ty.point_type(self.ndim)
+        output_store = legate_runtime.create_store(
+            pointN_dtype, shape=raw_arrays[0].shape
         )
+        output_arr = DeferredArray(base=output_store)
 
-        # call ZIP function to combine index arrays into a singe array
+        # call ZIP function to combine index arrays into a single array
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.ZIP
         )
@@ -804,7 +797,7 @@ class DeferredArray:
         task.add_scalar_arg(start_index, ty.int64)  # start_index
         task.add_scalar_arg(self.shape, (ty.int64,))
         task.add_scalar_arg(check_bounds, ty.bool_)
-        for a in arrays:
+        for a in raw_arrays:
             p_in = task.add_input(a)
             task.add_constraint(align(p_out, p_in))
         task.execute()
@@ -1108,9 +1101,6 @@ class DeferredArray:
         Semantics: result[p] = source[index_array[p]] for all p.
         Replaces legate_runtime.issue_gather() with a kernel launch.
         """
-        assert result.shape == index_array.shape, (
-            f"output shape {result.shape} != index shape {index_array.shape}"
-        )
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.GATHER
         )
@@ -1164,9 +1154,6 @@ class DeferredArray:
         Semantics: result[index_array[p]] = source[p] for all p.
         Replaces legate_runtime.issue_scatter() with a kernel launch.
         """
-        assert source.shape == index_array.shape, (
-            f"source shape {source.shape} != index shape {index_array.shape}"
-        )
         assert runtime.num_procs == 1, (
             "CuPyNumeric scatter task only supported on single-GPU, "
             "use legate_runtime.issue_scatter() instead"
@@ -1511,9 +1498,14 @@ class DeferredArray:
                     result = DeferredArray(base=result_store)
 
                 else:
-                    result = runtime.create_deferred_thunk(
-                        tuple(index_array.base.shape), self.base.type
+                    # The gather output is isomorphic to the index array — same
+                    # shape, just a different element type.  Pass the Legate
+                    # Shape directly; reading its extents (which would block)
+                    # is deferred until Legate actually needs them.
+                    result_store = legate_runtime.create_store(
+                        self.base.type, shape=index_array.base.shape
                     )
+                    result = DeferredArray(base=result_store)
 
                 self._perform_gather(result.base, rhs.base, index_array.base)
             else:

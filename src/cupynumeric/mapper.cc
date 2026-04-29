@@ -666,10 +666,11 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       return aligned_size(sizeof(bool), DEFAULT_ALIGNMENT);
     }
     case CUPYNUMERIC_ZIP: {
-      using ACC = legate::AccessorRO<std::int8_t, LEGATE_MAX_DIM>;
+      // Two Z_COPY_MEM buffers: AccessorRO array (always) + const int64_t* array (dense path).
       return memory_kind == legate::mapping::StoreTarget::ZCMEM
-               ? (task.num_inputs() * sizeof(ACC_TYPE) + 15)
-               : 1;
+               ? aligned_size(task.num_inputs() * sizeof(ACC_TYPE), DEFAULT_ALIGNMENT) +
+                   aligned_size(task.num_inputs() * sizeof(const int64_t*), DEFAULT_ALIGNMENT)
+               : 0;
     }
     case CUPYNUMERIC_IN1D: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
