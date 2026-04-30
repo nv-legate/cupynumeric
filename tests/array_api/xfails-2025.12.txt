@@ -1,0 +1,64 @@
+# Expected failures for the local Array API 2025.12 baseline.
+#
+# Entries are upstream node-id substrings consumed by array-api-tests'
+# --xfails-file option. Keep them grouped by follow-up issue and as narrow as
+# practical.
+
+# #1799: inspection metadata is not implemented yet. The runner ignores
+# test_inspection_functions.py because it imports __array_namespace_info__()
+# at collection time, before xfail markers can apply.
+array_api_tests/test_has_names.py::test_has_names[info-__array_namespace_info__]
+array_api_tests/test_signatures.py::test_info_func_signature
+
+# #1801: array-object hooks and properties are not complete enough for the
+# upstream object-method suite. The current baseline can abort before pytest
+# reports an xfail while running object-level tests such as test_getitem, so
+# the module is skipped through this file by default.
+array_api_tests/test_array_object.py
+array_api_tests/test_has_names.py::test_has_names[array_method-to_device]
+array_api_tests/test_has_names.py::test_has_names[array_attribute-device]
+array_api_tests/test_has_names.py::test_has_names[array_attribute-mT]
+array_api_tests/test_signatures.py::test_array_method_signature[to_device]
+
+# #1800: Array API namespace wrappers, standard names, and signatures that are
+# missing or still expose NumPy-compatible call shapes.
+array_api_tests/test_creation_functions.py
+array_api_tests/test_data_type_functions.py
+array_api_tests/test_indexing_functions.py
+# test_linalg.py mixes required top-level linear algebra tests with optional
+# linalg extension tests. With extension tests disabled, the current baseline
+# still aborts in test_matmul during Hypothesis array generation.
+array_api_tests/test_linalg.py
+array_api_tests/test_manipulation_functions.py
+array_api_tests/test_operators_and_elementwise_functions.py
+array_api_tests/test_searching_functions.py
+array_api_tests/test_set_functions.py
+array_api_tests/test_sorting_functions.py
+array_api_tests/test_special_cases.py
+array_api_tests/test_statistical_functions.py
+array_api_tests/test_utility_functions.py
+array_api_tests/test_signatures.py::test_func_signature
+array_api_tests/test_has_names.py::test_has_names[statistical-cumulative_sum]
+array_api_tests/test_has_names.py::test_has_names[statistical-cumulative_prod]
+array_api_tests/test_has_names.py::test_has_names[statistical-std]
+array_api_tests/test_has_names.py::test_has_names[linear_algebra-matrix_transpose]
+array_api_tests/test_has_names.py::test_has_names[linear_algebra-vecdot]
+array_api_tests/test_has_names.py::test_has_names[data_type-astype]
+array_api_tests/test_has_names.py::test_has_names[data_type-can_cast]
+array_api_tests/test_has_names.py::test_has_names[data_type-isdtype]
+array_api_tests/test_has_names.py::test_has_names[data_type-result_type]
+array_api_tests/test_has_names.py::test_has_names[set-unique_all]
+array_api_tests/test_has_names.py::test_has_names[set-unique_counts]
+array_api_tests/test_has_names.py::test_has_names[set-unique_inverse]
+array_api_tests/test_has_names.py::test_has_names[set-unique_values]
+array_api_tests/test_has_names.py::test_has_names[elementwise-atan2]
+array_api_tests/test_has_names.py::test_has_names[elementwise-bitwise_left_shift]
+array_api_tests/test_has_names.py::test_has_names[elementwise-bitwise_invert]
+array_api_tests/test_has_names.py::test_has_names[elementwise-bitwise_right_shift]
+array_api_tests/test_has_names.py::test_has_names[elementwise-pow]
+array_api_tests/test_has_names.py::test_has_names[manipulation-unstack]
+
+# Remaining unsupported behavior: Array API constants are not exposed with the
+# expected standard semantics yet.
+array_api_tests/test_constants.py::test_inf
+array_api_tests/test_constants.py::test_nan

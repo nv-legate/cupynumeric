@@ -34,6 +34,7 @@ cupynumeric/install_info.py
 /docs/cupynumeric/source/comparison/comparison_table.rst.inc
 *.egg-info
 .cache
+/.tmp/
 .vscode
 .pytest_cache
 /install*
