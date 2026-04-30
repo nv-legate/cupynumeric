@@ -16,6 +16,7 @@
 import numpy as np
 import pytest
 from utils.comparisons import allclose
+from utils.utils import requires_cusolver_geev, requires_missing_cusolver_geev
 
 import cupynumeric as num
 
@@ -29,6 +30,7 @@ def test_zero_polynomial():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_leading_zeros():
     arr = np.array([0, 0, 1, -2, 1])
     arr_num = num.array(arr)
@@ -56,6 +58,7 @@ def test_constant_polynomial():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_linear_polynomial():
     arr = np.array([2, -6])
     arr_num = num.array(arr)
@@ -65,6 +68,7 @@ def test_linear_polynomial():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_quadratic_real_roots():
     arr = np.array([1, -3, 2])
     arr_num = num.array(arr)
@@ -74,6 +78,7 @@ def test_quadratic_real_roots():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_quadratic_complex_roots():
     arr = np.array([1, 0, 1])
     arr_num = num.array(arr)
@@ -83,6 +88,7 @@ def test_quadratic_complex_roots():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_cubic_polynomial():
     arr = np.array([1, -6, 11, -6])
     arr_num = num.array(arr)
@@ -92,6 +98,7 @@ def test_cubic_polynomial():
     assert allclose(result.real, expected.real)
 
 
+@requires_cusolver_geev
 def test_quartic_polynomial():
     arr = np.array([1, 0, -5, 0, 4])
     arr_num = num.array(arr)
@@ -102,6 +109,7 @@ def test_quartic_polynomial():
     assert allclose(sorted_result, expected)
 
 
+@requires_cusolver_geev
 def test_repeated_roots():
     arr = np.array([1, -4, 6, -4, 1])
     arr_num = num.array(arr)
@@ -117,6 +125,7 @@ def test_repeated_roots():
     assert close
 
 
+@requires_cusolver_geev
 def test_large_coefficients():
     arr = np.array([1e15, -2e15, 1e15])
     arr_num = num.array(arr)
@@ -126,6 +135,7 @@ def test_large_coefficients():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_small_coefficients():
     arr = np.array([1e-15, -2e-15, 1e-15])
     arr_num = num.array(arr)
@@ -135,6 +145,7 @@ def test_small_coefficients():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_complex_coefficients():
     arr = np.array([1 + 1j, -2 - 2j, 1 + 1j])
     arr_num = num.array(arr)
@@ -172,6 +183,7 @@ def test_empty_array():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_non_contiguous_array():
     large_p = [1, -3, 2, 0, 0]
     p = num.array(large_p)[:3]
@@ -180,6 +192,7 @@ def test_non_contiguous_array():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_trailing_zeros():
     arr = np.array([1, -1, 0, 0])
     arr_num = num.array(arr)
@@ -224,6 +237,7 @@ def test_multidimensional_input_error():
         np.roots(arr)
 
 
+@requires_cusolver_geev
 def test_dtype_conversion():
     arr = np.array([1, -2, 1])
     arr_num = num.array(arr)
@@ -251,6 +265,7 @@ def test_scalar_input():
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_mixed_zeros_and_coefficients():
     arr = np.array([0, 1, 0, -5, 0, 4, 0])  # Leading and trailing zeros
     arr_num = num.array(arr)
@@ -293,6 +308,7 @@ def defective_matrix():
     return np.array([[2, 1], [0, 2]])
 
 
+@requires_cusolver_geev
 @pytest.mark.parametrize(
     "matrix_fn",
     [
@@ -314,6 +330,7 @@ def test_roots_from_random_matrix(matrix_fn):
     assert allclose(result, expected)
 
 
+@requires_cusolver_geev
 def test_roots_from_defective_matrix():
     A = defective_matrix()
     arr = np.poly(A)
@@ -322,6 +339,14 @@ def test_roots_from_defective_matrix():
     result = num.roots(arr_num)
     expected = np.roots(arr)
     assert allclose(result, expected)
+
+
+@requires_missing_cusolver_geev
+def test_roots_without_cusolver_geev_raises() -> None:
+    arr = num.array([1.0, -3.0, 2.0])
+    msg = "eigvals requires cuSOLVER geev support"
+    with pytest.raises(NotImplementedError, match=msg):
+        num.roots(arr)
 
 
 if __name__ == "__main__":

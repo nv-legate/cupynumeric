@@ -14,15 +14,26 @@
 #
 
 import numpy as np
+import pytest
 from legate.core import LEGATE_MAX_DIM
 
 import cupynumeric as num
 from cupynumeric._utils import is_np2
+from cupynumeric.runtime import runtime
 
 if is_np2:
     from numpy.exceptions import AxisError  # noqa: F401
 else:
     from numpy import AxisError  # noqa: F401
+
+
+GEEV_UNAVAILABLE = runtime.num_gpus > 0 and not runtime.cusolver_has_geev()
+requires_cusolver_geev = pytest.mark.skipif(
+    GEEV_UNAVAILABLE, reason="cuSOLVER geev is unavailable"
+)
+requires_missing_cusolver_geev = pytest.mark.skipif(
+    not GEEV_UNAVAILABLE, reason="cuSOLVER geev is available"
+)
 
 
 def compare_array(a, b, check_type=True):

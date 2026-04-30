@@ -18,6 +18,7 @@ import pytest
 from numpy.linalg import LinAlgError  # noqa: F401
 
 import cupynumeric as num
+from utils.utils import requires_cusolver_geev, requires_missing_cusolver_geev
 
 SIZES = [
     (5, 5),
@@ -85,6 +86,7 @@ class TestEigvals(object):
         res_num = num.linalg.eigvals(arr)
         assert np.equal(res_np, res_num)
 
+    @requires_cusolver_geev
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("dtype", (np.float32, np.float64))
     def test_arr_basic_real(self, size, dtype):
@@ -93,6 +95,7 @@ class TestEigvals(object):
         ew = num.linalg.eigvals(arr_num)
         assert_eigvals(arr_np, ew)
 
+    @requires_cusolver_geev
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("dtype", (np.complex64, np.complex128))
     def test_arr_basic_complex(self, size, dtype):
@@ -104,6 +107,7 @@ class TestEigvals(object):
         ew = num.linalg.eigvals(arr_num)
         assert_eigvals(arr_np, ew)
 
+    @requires_cusolver_geev
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("dtype", (np.int32, np.int64))
     def test_arr_basic_int(self, size, dtype):
@@ -112,6 +116,7 @@ class TestEigvals(object):
         ew = num.linalg.eigvals(arr_num)
         assert_eigvals(arr_np, ew)
 
+    @requires_cusolver_geev
     @pytest.mark.parametrize("size", SIZES_4D)
     @pytest.mark.parametrize("dtype", (np.float32, np.float64))
     def test_arr_4d_real(self, size, dtype):
@@ -120,6 +125,7 @@ class TestEigvals(object):
         ew = num.linalg.eigvals(arr_num)
         assert_eigvals(arr_np, ew)
 
+    @requires_cusolver_geev
     @pytest.mark.parametrize("size", SIZES_4D)
     @pytest.mark.parametrize("dtype", (np.complex64, np.complex128))
     def test_arr_4d_complex(self, size, dtype):
@@ -139,6 +145,14 @@ class TestEigvals(object):
             num.linalg.eigvals(arr_num)
         with pytest.raises(np.linalg.LinAlgError, match=msg):
             np.linalg.eigvals(arr_np)
+
+
+@requires_missing_cusolver_geev
+def test_eigvals_without_cusolver_geev_raises() -> None:
+    arr = num.array([[1.0, 2.0], [3.0, 4.0]])
+    msg = "eigvals requires cuSOLVER geev support"
+    with pytest.raises(NotImplementedError, match=msg):
+        num.linalg.eigvals(arr)
 
 
 class TestEigvalsh(object):
