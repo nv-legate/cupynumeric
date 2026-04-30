@@ -55,9 +55,13 @@ package_name="cupynumeric${package_suffix}"
 echo "Installing build requirements"
 python -m pip install -v --prefer-binary -r continuous_integration/requirements-build.txt
 if [[ "${CUDA_MAJOR_VER}" == "12" ]]; then
-  python -m pip install -v --prefer-binary cutensor-cu12'>=2.0,<2.3.0.6'
+  python -m pip install -v --prefer-binary \
+    cutensor-cu12'>=2.0,<2.3.0.6' \
+    nvidia-nccl-cu12'>=2.28,<2.30'
 else
-  python -m pip install -v --prefer-binary cutensor-cu13'>=2.0,<2.3.0.6'
+  python -m pip install -v --prefer-binary \
+    cutensor-cu13'>=2.0,<2.3.0.6' \
+    nvidia-nccl-cu13'>=2.28,<2.30'
 fi
 
 # Install the legate wheel that was downloaded.
@@ -92,7 +96,7 @@ echo "Building ${package_name}"
 # TODO(cryos): https://github.com/nv-legate/legate.internal/issues/1894
 # Improve the use of CMAKE_PREFIX_PATH to find legate and cutensor once
 # scikit-build supports it.
-CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${sitepkgs}/legate;${sitepkgs}/cutensor"
+CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${sitepkgs}/legate;${sitepkgs}/cutensor;${sitepkgs}/nvidia/nccl"
 export CMAKE_ARGS
 SKBUILD_CMAKE_ARGS="-DBUILD_SHARED_LIBS:BOOL=ON;-DBUILD_MARCH=${BUILD_MARCH}"
 export SKBUILD_CMAKE_ARGS

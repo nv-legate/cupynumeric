@@ -124,6 +124,7 @@ build:
     - libcublas
     - libcublas-dev
     - libcurand-dev
+    - nccl
     - cuda-nvcc
     - cuda-cccl
     - libcusolver
@@ -172,6 +173,7 @@ requirements:
     - libcufile-dev {{ libcufile_version }}
     - cuda-version ={{ cuda_version }}
     - libcusolvermp-dev {{ libcusolvermp_dev_version }}
+    - nccl {{ nccl_version }}
 {% endif %}
 
   run:

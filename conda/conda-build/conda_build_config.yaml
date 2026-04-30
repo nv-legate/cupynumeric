@@ -45,9 +45,9 @@ libcusolvermp_dev_version:
   - ">=0.7,<0.8"
 
 nccl_version:
-  # Exclude NCCL versions known to cause issues.
-  # Use explicit excludes instead of OR ranges to simplify Renovate parsing.
-  - ">=2.0,<2.30,!=2.27.0,!=2.27.1,!=2.27.2,!=2.27.3,!=2.27.4,!=2.27.5"
+  # NCCL >=2.28 is required for ncclAlltoAll; keep this in sync
+  # with the CMake NCCL version check.
+  - ">=2.28,<2.30"
 
 c_stdlib:
   - sysroot

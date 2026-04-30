@@ -47,7 +47,7 @@ dependencies = [
     "nvidia-cusolver; sys_platform == 'linux'",
     "nvidia-cusparse; sys_platform == 'linux'",
     "nvidia-nvjitlink; sys_platform == 'linux'",
-    "nvidia-nccl-cu13; sys_platform == 'linux'",
+    "nvidia-nccl-cu13>=2.28,<2.30; sys_platform == 'linux'",
 ]
 dynamic = ["version"]
 requires-python = ">=3.11"
