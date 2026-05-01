@@ -27,6 +27,7 @@ from legate.core.utils import OrderedSet
 from numpy.exceptions import AxisError
 
 from .. import _ufunc
+from .._array_api import __array_api_version__
 from .._utils.array import max_identity, min_identity, to_core_type
 from .._utils.linalg import dot_modes
 from ..config import (
@@ -264,9 +265,12 @@ class ndarray:
     def __array_namespace__(
         self, api_version: str | None = None
     ) -> ModuleType:
-        if api_version is not None:
+        """Return the Array API namespace for this array."""
+        if api_version not in (None, __array_api_version__):
             raise NotImplementedError(
-                "versioned Array API negotiation is not implemented yet"
+                "cuPyNumeric currently only implements the "
+                f"{__array_api_version__} Array API namespace, "
+                f"got api_version={api_version!r}"
             )
 
         import cupynumeric as cn

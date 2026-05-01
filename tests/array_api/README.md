@@ -65,11 +65,6 @@ baseline xfail file still applies in that mode, including the broad
 `--run-expected-failures` or a narrower `--xfails-file` when actively auditing
 tests currently covered by expected-failure groups.
 
-The runner ignores `array_api_tests/test_inspection_functions.py` by default.
-That module calls `__array_namespace_info__()` while pytest is still collecting
-tests, so the upstream xfail file cannot mark it. Use
-`--include-inspection-tests` after #1799 adds the required metadata hook.
-
 Entries in `xfails-2025.12.txt` are applied as skips by default via
 `ARRAY_API_TESTS_XFAIL_MARK=skip`. Some entries guard tests that can abort
 before pytest reports an xfail in the current baseline. Use
@@ -98,14 +93,6 @@ The expected-failure file is grouped by follow-up issue. Keep new entries as
 narrow upstream node-id substrings where practical, and avoid broad module
 xfails unless the category is intentionally deferred here.
 
-### Inspection Metadata: #1799
-
-The 2025.12 suite expects namespace inspection hooks such as
-`__array_namespace_info__` and version metadata. cuPyNumeric's current Array
-API entry point is limited to `ndarray.__array_namespace__`, so the inspection
-module is ignored at collection time and related name/signature checks are
-xfailed here.
-
 ### Standard Wrappers And Docs: #1800
 
 The upstream suite uses Array API spelling and signatures. This group tracks
@@ -132,7 +119,7 @@ guards native aborts observed while auditing object-level tests such as
 
 ### Remaining Unsupported Behavior
 
-Any xfail that does not fit the first three follow-up issues belongs here with
+Any xfail that does not fit the named follow-up issues belongs here with
 a comment describing the current unsupported behavior. This is intentionally a
 short-term holding area; prefer filing a narrower follow-up issue when a stable
 root cause emerges.

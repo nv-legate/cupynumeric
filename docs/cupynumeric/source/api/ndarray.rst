@@ -262,6 +262,7 @@ Basic customization:
 
    ndarray.__new__
    ndarray.__array__
+   ndarray.__array_namespace__
    .. ndarray.__array_wrap__
 
 Container customization: (see Indexing)

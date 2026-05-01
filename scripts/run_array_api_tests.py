@@ -30,7 +30,6 @@ ARRAY_API_TESTS_TAG = "2026.02.26"
 ARRAY_API_TESTS_SHA = "41379d15d26d67a1e66c840e775d41a8a7fb1516"
 ARRAY_API_VERSION = "2025.12"
 DEFAULT_DISABLED_EXTENSIONS = ("linalg", "fft")
-DEFAULT_IGNORES = ("array_api_tests/test_inspection_functions.py",)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CHECKOUT = ROOT / ".tmp" / "array-api-tests" / ARRAY_API_TESTS_TAG
@@ -223,14 +222,6 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--include-inspection-tests",
-        action="store_true",
-        help=(
-            "include inspection-function tests. By default they are ignored "
-            "because they require __array_namespace_info__ at collection time."
-        ),
-    )
-    parser.add_argument(
         "--run-expected-failures",
         action="store_true",
         help=(
@@ -314,9 +305,6 @@ def main() -> int:
                 *DEFAULT_DISABLED_EXTENSIONS,
             ]
         )
-    if not args.include_inspection_tests:
-        for ignored_test in DEFAULT_IGNORES:
-            pytest_args.extend(["--ignore", ignored_test])
     if args.max_examples is not None:
         pytest_args.extend(["--max-examples", str(args.max_examples)])
     if args.run_expected_failures:

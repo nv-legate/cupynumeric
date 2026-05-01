@@ -28,6 +28,11 @@ from __future__ import annotations
 
 from . import linalg, random, fft  # noqa: F401
 from ._array.array import ndarray  # noqa: F401
+from ._array_api import (  # noqa: F401
+    ArrayNamespaceInfo,
+    __array_api_version__,
+    __array_namespace_info__,
+)
 from ._dlpack import from_dlpack  # noqa: F401
 from ._module import *  # noqa: F403
 from ._ufunc import *  # noqa: F403

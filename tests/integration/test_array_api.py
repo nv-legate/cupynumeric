@@ -15,8 +15,12 @@
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
+
+from legate.core import LEGATE_MAX_DIM
 
 import cupynumeric as num
 
@@ -54,12 +58,28 @@ def test_array_namespace_default() -> None:
     assert xp is num
 
 
-def test_array_namespace_rejects_api_version() -> None:
+def test_array_api_version() -> None:
+    assert num.__array_api_version__ == "2025.12"
+
+
+def test_array_namespace_accepts_supported_api_version() -> None:
+    arr = num.asarray([1.0, 2.0, 3.0])
+
+    xp = arr.__array_namespace__(api_version="2025.12")
+
+    assert xp is num
+
+
+def test_array_namespace_rejects_unsupported_api_version() -> None:
     arr = num.asarray([1.0, 2.0, 3.0])
 
     with pytest.raises(
         NotImplementedError,
-        match="versioned Array API negotiation is not implemented yet",
+        match=(
+            "currently only implements the "
+            f"{re.escape(num.__array_api_version__)} Array API namespace, "
+            "got api_version='2024.12'"
+        ),
     ):
         arr.__array_namespace__(api_version="2024.12")
 
@@ -108,6 +128,114 @@ def test_array_api_compat_namespace_dispatch() -> None:
     xp = array_api_compat.array_namespace(arr)
 
     assert xp is num
+
+
+def test_array_namespace_info_capabilities() -> None:
+    info = num.__array_namespace_info__()
+
+    assert isinstance(info, num.ArrayNamespaceInfo)
+    assert info.capabilities() == {
+        "boolean indexing": False,
+        "data-dependent shapes": False,
+        "max dimensions": LEGATE_MAX_DIM,
+    }
+
+
+def test_array_namespace_info_devices() -> None:
+    info = num.__array_namespace_info__()
+
+    assert info.default_device() is None
+    assert info.devices() == (None,)
+
+
+def test_array_namespace_info_default_dtypes() -> None:
+    info = num.__array_namespace_info__()
+
+    assert info.default_dtypes() == {
+        "real floating": np.float64,
+        "complex floating": np.complex128,
+        "integral": np.int64,
+        "indexing": np.int64,
+    }
+    assert info.default_dtypes(device=None)["indexing"] is np.int64
+
+
+def test_array_namespace_info_dtypes() -> None:
+    info = num.__array_namespace_info__()
+
+    assert info.dtypes() == {
+        "bool": np.bool_,
+        "int8": np.int8,
+        "int16": np.int16,
+        "int32": np.int32,
+        "int64": np.int64,
+        "uint8": np.uint8,
+        "uint16": np.uint16,
+        "uint32": np.uint32,
+        "uint64": np.uint64,
+        "float32": np.float32,
+        "float64": np.float64,
+        "complex64": np.complex64,
+        "complex128": np.complex128,
+    }
+    assert info.dtypes(kind="bool") == {"bool": np.bool_}
+    assert info.dtypes(kind="integral") == {
+        "int8": np.int8,
+        "int16": np.int16,
+        "int32": np.int32,
+        "int64": np.int64,
+        "uint8": np.uint8,
+        "uint16": np.uint16,
+        "uint32": np.uint32,
+        "uint64": np.uint64,
+    }
+    assert info.dtypes(kind=("real floating", "complex floating")) == {
+        "float32": np.float32,
+        "float64": np.float64,
+        "complex64": np.complex64,
+        "complex128": np.complex128,
+    }
+    assert info.dtypes(kind="numeric") == {
+        "int8": np.int8,
+        "int16": np.int16,
+        "int32": np.int32,
+        "int64": np.int64,
+        "uint8": np.uint8,
+        "uint16": np.uint16,
+        "uint32": np.uint32,
+        "uint64": np.uint64,
+        "float32": np.float32,
+        "float64": np.float64,
+        "complex64": np.complex64,
+        "complex128": np.complex128,
+    }
+
+    with pytest.raises(ValueError, match="unrecognized Array API dtype kind"):
+        info.dtypes(kind="invalid")
+
+
+def test_array_api_empty_accepts_default_device() -> None:
+    arr = num.empty(1, dtype=np.int64, device=None)
+
+    assert isinstance(arr, num.ndarray)
+    assert arr.dtype == np.dtype(np.int64)
+
+
+def test_array_api_rejects_non_default_device() -> None:
+    info = num.__array_namespace_info__()
+
+    with pytest.raises(
+        ValueError, match="only supports device=None, got device='gpu'"
+    ):
+        info.default_dtypes(device="gpu")
+    with pytest.raises(
+        ValueError, match="only supports device=None, got device='gpu'"
+    ):
+        info.dtypes(device="gpu")
+    with pytest.raises(
+        ValueError, match="only supports device=None, got device='gpu'"
+    ):
+        num.empty(1, device="gpu")
 
 
 if __name__ == "__main__":

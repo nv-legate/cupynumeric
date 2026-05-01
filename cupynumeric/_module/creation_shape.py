@@ -128,9 +128,14 @@ def _uninitialized_like(
     return ndarray._from_inputs(shape, dtype=dtype, inputs=(a,))
 
 
-def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
+def empty(
+    shape: NdShapeLike,
+    dtype: npt.DTypeLike = np.float64,
+    *,
+    device: Any | None = None,
+) -> ndarray:
     """
-    empty(shape, dtype=float)
+    empty(shape, dtype=float, *, device=None)
 
     Return a new array of given shape and type, without initializing entries.
 
@@ -141,6 +146,9 @@ def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     dtype : data-type, optional
         Desired output data-type for the array. Default is
         ``cupynumeric.float64``.
+    device : None, optional
+        Array API device selector. cuPyNumeric currently supports only
+        ``None``.
 
     Returns
     -------
@@ -155,6 +163,11 @@ def empty(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     --------
     Multiple GPUs, Multiple CPUs
     """
+    if device is not None:
+        raise ValueError(
+            "cuPyNumeric's Array API namespace currently only supports "
+            f"device=None, got device={device!r}"
+        )
     arr = _uninitialized(shape=shape, dtype=dtype)
     # FIXME: we need to initialize this to 0 temporarily until
     # we can check if LogicalStore is initialized

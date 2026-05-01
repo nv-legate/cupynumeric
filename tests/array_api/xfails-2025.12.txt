@@ -4,12 +4,6 @@
 # --xfails-file option. Keep them grouped by follow-up issue and as narrow as
 # practical.
 
-# #1799: inspection metadata is not implemented yet. The runner ignores
-# test_inspection_functions.py because it imports __array_namespace_info__()
-# at collection time, before xfail markers can apply.
-array_api_tests/test_has_names.py::test_has_names[info-__array_namespace_info__]
-array_api_tests/test_signatures.py::test_info_func_signature
-
 # #1801: array-object hooks and properties are not complete enough for the
 # upstream object-method suite. The current baseline can abort before pytest
 # reports an xfail while running object-level tests such as test_getitem, so
