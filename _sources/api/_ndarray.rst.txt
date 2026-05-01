@@ -12,6 +12,7 @@ cupynumeric.ndarray
    .. autosummary::
 
       ~ndarray.__init__
+      ~ndarray.__array_namespace__
       ~ndarray.__index__
       ~ndarray.all
       ~ndarray.any

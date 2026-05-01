@@ -125,3 +125,18 @@ There are also options to get more verbose or color-coded terminal output:
 
 
 for full details see the output of ``test.py --help``.
+
+Array API baseline
+------------------
+
+The upstream ``data-apis/array-api-tests`` suite is available as a local,
+opt-in baseline for Array API development:
+
+.. code-block:: sh
+
+   python scripts/run_array_api_tests.py --max-examples 5
+
+This is not a conformance claim and does not gate CI.
+
+See ``tests/array_api/README.md`` for setup details, dependency constraints,
+the pinned upstream suite checkout, and the expected-failure taxonomy.

@@ -1,0 +1,6 @@
+﻿cupynumeric.\_\_array\_namespace\_info\_\_
+==========================================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: __array_namespace_info__

@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.\_\_array\_namespace\_\_
+============================================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.__array_namespace__
