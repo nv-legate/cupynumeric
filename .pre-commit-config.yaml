@@ -2,14 +2,14 @@
 exclude: 'examples/15_Step_12\.ipynb'
 repos:
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         types: [yaml]
         args: ['-c', './scripts/pre-commit/yamllint.yml']
         exclude: 'meta\.yaml$'
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-json  # checks that all json files have proper syntax
       - id: check-toml  # checks that all toml files have proper syntax
@@ -28,13 +28,13 @@ repos:
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.4
+    rev: v0.15.12
     hooks:
       - id: ruff-format
       - id: ruff
         args: ["--config=./pyproject.toml", "--fix"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 'v16.0.6'  # Use the sha / tag you want to point at
+    rev: 'v22.1.4'  # Use the sha / tag you want to point at
     hooks:
       - id: clang-format
         files: \.(cu|cuh|h|cc|inl)$
