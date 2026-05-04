@@ -20,8 +20,8 @@ Tests ONLY indexing paths that are already optimized (avoid gather/scatter):
 1. putmask path: Scalar assignment to boolean mask (a[mask] = scalar)
    - Uses putmask() operation directly
 
-2. einsum path: Row-axis integer array GET for 2D+ arrays (a[indices, :])
-   - Converts to einsum tensor contraction (cuTENSOR)
+2. TAKE task path: Row-axis integer array GET for 2D+ arrays (a[indices, :])
+   - Uses TAKE task (no gather/scatter)
 
 3. boolean GET (1D): a[bool_mask] — ADVANCED_INDEXING task, no gather
    - Single boolean array at position 0; result returned directly
@@ -29,10 +29,10 @@ Tests ONLY indexing paths that are already optimized (avoid gather/scatter):
 4. boolean GET (2D): a[mask_2d] — ADVANCED_INDEXING task, no gather
    - Full-array boolean mask; same path as 1D case
 
-5. row selection (2D): a[row_indices] — einsum path (mask_axis=0, ndim=2)
+5. row selection (2D): a[row_indices] — TAKE task path (mask_axis=0, ndim=2)
    - Single integer array with implicit trailing slice(None)
 
-6. column GET (2D): a[:, indices] — einsum path (mask_axis=1, ndim=2)
+6. column GET (2D): a[:, indices] — TAKE task path (mask_axis=1, ndim=2)
    - Single integer array on non-leading axis
 
 These optimizations bypass gather/scatter entirely.
@@ -68,7 +68,7 @@ from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
 #
 #   _BPE_8  — tests that allocate only the source array; index/output arrays
 #             are bounded by num_indices (≤1000 elements) and are negligible:
-#             einsum_2d, row_select_2d, array_get_col_2d
+#             take_2d, row_select_2d, array_get_col_2d
 #
 #   _BPE_9  — putmask_scalar: source array (×8) + bool mask (×1); write is
 #             in-place so no output allocation.
@@ -102,11 +102,11 @@ def putmask_scalar(np, size, runs, warmup, *, timer):
     return timed_loop(operation, timer, runs, warmup) / runs
 
 
-def einsum_2d(np, n, num_indices, runs, warmup, *, timer):
+def take_2d(np, n, num_indices, runs, warmup, *, timer):
     """
-    Test einsum optimization for integer array indexing (2D case).
+    Test TAKE task optimization for integer array indexing (2D case).
     Path: a[integer_indices, :]
-    Optimization: Converts to einsum tensor contraction (uses cuTENSOR)
+    Optimization: Uses TAKE task (no gather)
     """
     a = np.random.random((n, n))
     indices = np.random.randint(0, n, num_indices)
@@ -148,8 +148,8 @@ def boolean_get_2d(np, n, runs, warmup, *, timer):
 def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
     """
     2D row selection: a[row_indices].
-    Path: computed_key=(row_indices,) → einsum check passes (1 array, ndim=2<5)
-          → einsum path, no gather.
+    Path: computed_key=(row_indices,) → TAKE task check passes (1 array, ndim=2<5)
+          → TAKE task path, no gather.
     """
     a = np.random.random((n, n))
     row_indices = np.random.randint(0, n, num_rows)
@@ -163,8 +163,8 @@ def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
 def array_get_col_2d(np, n, num_indices, runs, warmup, *, timer):
     """
     Column-wise integer array GET: a[:, indices].
-    Path: computed_key=(slice(None), indices) → einsum check passes (mask_axis=1, ndim=2<5)
-          → einsum path, no gather.
+    Path: computed_key=(slice(None), indices) → TAKE task check passes (mask_axis=1, ndim=2<5)
+          → TAKE task path, no gather.
     """
     a = np.random.random((n, n))
     indices = np.random.randint(0, n, num_indices)
@@ -222,16 +222,14 @@ def run_benchmarks(suite, size_request):
     # putmask: a[bool_mask] = scalar  — 9 B/el (a + bool mask, in-place write)
     suite.run_timed(putmask_scalar, np, sizes_9, runs, warmup, timer=timer)
 
-    # einsum path: a[indices, :] (2D row GET)  — 8 B/el (output is ≤1000 rows)
-    suite.run_timed_with_generator(
-        None, einsum_2d, arg_gen_2d_8(), timer=timer
-    )
+    # TAKE task path: a[indices, :] (2D row GET)  — 8 B/el (output is ≤1000 rows)
+    suite.run_timed_with_generator(None, take_2d, arg_gen_2d_8(), timer=timer)
 
     # boolean GET: AdvancedIndexingTask uses 3 same-size buffers  — 24 B/el
     suite.run_timed(boolean_get_1d, np, sizes_24, runs, warmup, timer=timer)
     suite.run_timed(boolean_get_2d, np, ns_24, runs, warmup, timer=timer)
 
-    # einsum-routed integer GET  — 8 B/el (output is ≤1000 rows/cols)
+    # TAKE task integer GET  — 8 B/el (output is ≤1000 rows/cols)
     suite.run_timed_with_generator(
         None, row_select_2d, arg_gen_2d_8(), timer=timer
     )

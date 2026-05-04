@@ -51,11 +51,20 @@ from __future__ import annotations
 import math
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, clamp, resolve_linear_suite_size
+from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 
 
-# Model float64 data array plus int64 index structures.
-_TAKE_PUT_BYTES_PER_ELEMENT = 12
+# PUT binding test (put_along_axis): a (n²×8) + idx (n²×0.8) + values (n²×0.8)
+# + two arange coord arrays (n²×0.8 each) + ZIP Point<2> output (n²×1.6)
+# = n²×12.8 bytes, with num_indices = n // 10.
+_PUT_BPE = 13
+
+# TAKE tests use TakeTask, which maps the *full* source array as a single instance
+# on one GPU (no distribution across GPUs).  The source must fit in one GPU's
+# framebuffer.  With fbmem ≈ 150 GB: max source = 150 GB → max size = 18.75B
+# elements.  BPE = 20 keeps size × 8 ≤ ~110 GB for targets up to 256 GiB,
+# leaving ~30% headroom.
+_TAKE_BPE = 20
 
 
 def _describe_size(size: int) -> list[str]:
@@ -147,37 +156,48 @@ def run_benchmarks(suite, size_request):
     timer = suite.timer
     runs = suite.runs
     warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request,
-        bytes_per_element=_TAKE_PUT_BYTES_PER_ELEMENT,
-        describe_size=_describe_size,
+    sizes_take, resolutions_take = resolve_linear_suite_size(
+        size_request, bytes_per_element=_TAKE_BPE, describe_size=_describe_size
     )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
+    sizes_put, resolutions_put = resolve_linear_suite_size(
+        size_request, bytes_per_element=_PUT_BPE, describe_size=_describe_size
+    )
+    if resolutions_take is not None:
+        suite.print_size_resolution(resolutions_take)
+    if resolutions_put is not None:
+        suite.print_size_resolution(resolutions_put)
 
     def arg_gen_1d():
-        for size in sizes:
+        for size in sizes_take:
             n = max(1, math.isqrt(size))
-            num_indices = clamp(n // 10, 1, 1000)
+            num_indices = max(1, n // 10)
             yield (np, size, num_indices, runs, warmup)
 
-    def arg_gen_2d():
-        for size in sizes:
+    def arg_gen_2d_take():
+        for size in sizes_take:
             n = max(1, math.isqrt(size))
-            num_indices = clamp(n // 10, 1, 1000)
+            num_indices = max(1, n // 10)
+            yield (np, n, num_indices, runs, warmup)
+
+    def arg_gen_2d_put():
+        for size in sizes_put:
+            n = max(1, math.isqrt(size))
+            num_indices = max(1, n // 10)
             yield (np, n, num_indices, runs, warmup)
 
     # TAKE task (no gather)
     suite.run_timed_with_generator(None, take_1d, arg_gen_1d(), timer=timer)
-    suite.run_timed_with_generator(None, take_2d, arg_gen_2d(), timer=timer)
     suite.run_timed_with_generator(
-        None, take_along_axis, arg_gen_2d(), timer=timer
+        None, take_2d, arg_gen_2d_take(), timer=timer
+    )
+    suite.run_timed_with_generator(
+        None, take_along_axis, arg_gen_2d_take(), timer=timer
     )
 
     # Put operations (scatter path)
-    suite.run_timed_with_generator(None, np_put, arg_gen_2d(), timer=timer)
+    suite.run_timed_with_generator(None, np_put, arg_gen_2d_put(), timer=timer)
     suite.run_timed_with_generator(
-        None, put_along_axis, arg_gen_2d(), timer=timer
+        None, put_along_axis, arg_gen_2d_put(), timer=timer
     )
 
 

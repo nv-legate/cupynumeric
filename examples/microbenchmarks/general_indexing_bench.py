@@ -31,14 +31,14 @@ Operations tested (all use gather/scatter):
 9.  Column-wise integer SET (2D): a[:, indices] = v - ZIP + scatter
 10. Boolean mask on non-first dim: a[:, bool_mask] - nonzero + ZIP + gather
 11. newaxis GET: a[indices, np.newaxis] - newaxis key type forces ZIP path
-12. Ellipsis GET (2D): a[..., indices] - Ellipsis key type, tests normalization vs einsum routing
+12. Ellipsis GET (2D): a[..., indices] - Ellipsis key type, tests normalization vs TAKE task routing
 13. Non-contiguous GET: a.T[indices] - F-contiguous source requires copy before gather
 14. Scalar RHS + integer array SET: a[indices] = scalar - scatter path, no putmask
 
 For np.take, np.take_along_axis, np.put and np.put_along_axis, see take_put_bench.py.
 
 For boolean GET without gather/scatter (ADVANCED_INDEXING task only), and
-other optimized paths (putmask, einsum), see fast_advanced_indexing_bench.py
+other optimized paths (putmask, TAKE task), see fast_advanced_indexing_bench.py
 
 Usage:
     Run via main.py:
@@ -62,8 +62,10 @@ from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 # =============================================================================
 
 
-# Model float64 data plus int64/boolean index structures across the suite.
-_GENERAL_INDEXING_BYTES_PER_ELEMENT = 48
+# Binding test: noncontiguous_get — a (n²×8) + contiguous copy (n²×8) +
+# output (n²×8) + ZIP Point<2> (n²×16) with num_indices = n → n²×40 bytes.
+# 1D tests use num_indices = sqrt(size), so their intermediates are negligible.
+_GENERAL_INDEXING_BYTES_PER_ELEMENT = 40
 
 
 def _describe_size(size: int) -> list[str]:
@@ -184,7 +186,7 @@ def newaxis_int_get(np, size, num_indices, runs, warmup, *, timer):
     """
     Integer array GET with trailing newaxis: a[indices, np.newaxis].
     Covers key type: newaxis; key composition: int array + newaxis (mixed).
-    Path: newaxis in key prevents einsum routing → ZIP + gather.
+    Path: newaxis in key prevents TAKE task routing → ZIP + gather.
     """
     a = np.random.random(size)
     indices = np.random.randint(0, size, num_indices)
@@ -200,7 +202,7 @@ def ellipsis_int_get(np, n, num_indices, runs, warmup, *, timer):
     Integer array GET with Ellipsis on leading axes: a[..., indices] (2D).
     Covers key type: Ellipsis; key composition: Ellipsis + int array (mixed).
     Semantically equivalent to a[:, indices] but tests whether Ellipsis
-    normalization routes to einsum or falls back to ZIP + gather.
+    normalization routes to TAKE task or falls back to ZIP + gather.
     """
     a = np.random.random((n, n))
     indices = np.random.randint(0, n, num_indices)
@@ -280,8 +282,8 @@ def run_benchmarks(suite, size_request):
 
     def arg_gen_1d():
         for size in sizes:
-            num_row_idx = size
-            yield (np, size, num_row_idx, runs, warmup)
+            num_indices = max(1, math.isqrt(size))
+            yield (np, size, num_indices, runs, warmup)
 
     def arg_gen_2d():
         for size in sizes:
@@ -346,7 +348,7 @@ def run_benchmarks(suite, size_request):
         None, newaxis_int_get, arg_gen_1d(), timer=timer
     )
 
-    # 12. Ellipsis key type: a[..., indices] — tests normalization vs einsum routing
+    # 12. Ellipsis key type: a[..., indices] — tests normalization vs TAKE task routing
     suite.run_timed_with_generator(
         None, ellipsis_int_get, arg_gen_2d(), timer=timer
     )

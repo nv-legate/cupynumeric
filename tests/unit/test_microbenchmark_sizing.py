@@ -532,7 +532,7 @@ def test_fast_advanced_indexing_uses_square_size_for_2d_cases() -> None:
 
     call_map = {name: args for name, args in suite.calls}
     assert call_map["putmask_scalar"][1] == [10_000]
-    for name in ("einsum_2d",):
+    for name in ("take_2d",):
         assert call_map[name][1] == 100
 
 
@@ -547,7 +547,7 @@ def test_fast_advanced_indexing_clamps_small_targets_to_nonzero_indices() -> (
     )
 
     call_map = {name: args for name, args in suite.calls}
-    for name in ("einsum_2d",):
+    for name in ("take_2d",):
         assert call_map[name][2] > 0
 
 
