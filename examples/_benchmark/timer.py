@@ -57,21 +57,27 @@ class Timer(Protocol):
 class CuPyNumericTimer(Timer):
     _start_time: Any | None
 
-    def __init__(self) -> None:
+    def __init__(self, *, blocking: bool = False) -> None:
         self._start_time = None
+        self._blocking = blocking
 
     def start(self) -> None:
         from legate.timing import time
 
-        self._start_time = time("us")
+        s = time("us")
+
+        # casting to int blocks until the task computing `t` is complete,
+        # guaranteeing we record a time before subsequent tasks are launched
+        self._start_time = int(s) if self._blocking else s
 
     def stop(self) -> float:
         from legate.timing import time
 
         assert self._start_time is not None, NO_START_ERR_MSG
 
-        end_future = time("us")
-        return float((end_future - self._start_time) / 1000.0)
+        e = time("us")
+        _end_time = int(e) if self._blocking else e
+        return float((_end_time - self._start_time) / 1000.0)
 
     def sync(self, sync_mode: SyncMode) -> None:
         if sync_mode != "none":
@@ -86,14 +92,20 @@ class CuPyTimer(Timer):
     # TODO(tisaac): Add correct annotation when cupy provides stubs
     _start_event: Any
 
-    def __init__(self) -> None:
+    def __init__(self, *, blocking: bool = False) -> None:
         self._start_event = None
+        self._blocking = blocking
 
     def start(self) -> None:
         from cupy import cuda  # type: ignore[import-untyped]
 
         self._start_event = cuda.Event()
         self._start_event.record()
+        if self._blocking:
+            # this thread blocks until the event is recorded,
+            # guaranteeing that it records a time before all
+            # subsequent kernel launches.
+            self._start_event.synchronize()
 
     def stop(self) -> float:
         from cupy import cuda  # type: ignore[import-untyped]
@@ -112,6 +124,10 @@ class CuPyTimer(Timer):
         if sync_mode == "block":
             from cupy import cuda  # type: ignore[import-untyped]
 
+            # while an event can be created with cuda.Event(block=true), this
+            # controls whether the calling CPU thread is blocked with a
+            # busy-wait: the blocking semantics of the Timer() protocol
+            # are enforced by the call to .synchronize()
             sync_event = cuda.Event()
             sync_event.record()
             sync_event.synchronize()
@@ -140,20 +156,33 @@ class NumPyTimer(Timer):
         pass
 
 
-def get_timer(np: ModuleType) -> Timer:
+def get_timer(np: ModuleType, *, blocking: bool = False) -> Timer:
     """Get a timer appropriate for an array package.
 
-    The timer as :py:meth:`Timer.start` and :py:meth:`Timer.stop`.  ``stop()``
+    The timer has :py:meth:`Timer.start` and :py:meth:`Timer.stop`.  ``stop()``
     waits for the completion of work initiated by the array package since
     ``start()`` before returning.
+
+    Parameters
+    ----------
+    np: ModuleType
+        The array package that needs a timer
+    blocking: bool=False
+        Whether the timer should time _execution time_ (its ``.start()`` time
+        is before subsequent operations _execute_, but not necessarily before
+        they are scheduled by the host thread) or _wall time_ (its
+        ``.start()`` time is before subsequent operations are scheduled by the
+        host thread, so that the time between ``.start()`` and ``.stop()`` will
+        also include the delay between the scheduling and execution of the
+        first operation after ``.start()``).
     """
     match np.__name__:
         case "numpy":
             return NumPyTimer()
         case "cupy":
-            return CuPyTimer()
+            return CuPyTimer(blocking=blocking)
         case "cupynumeric":
-            return CuPyNumericTimer()
+            return CuPyNumericTimer(blocking=blocking)
         case _:
             raise RuntimeError(f"Unsupported array module {np.__name__}")
 

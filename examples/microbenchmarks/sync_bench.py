@@ -16,7 +16,9 @@
 from __future__ import annotations
 
 from _benchmark import MicrobenchmarkSuite, timed_loop
+from _benchmark.harness import TimerMode
 from _benchmark.sizing import SizeRequest
+from _benchmark.timer import Timer
 
 """
 Sync microbenchmark suite.
@@ -26,7 +28,22 @@ benchmarks.
 """
 
 
-def sync(np, mode, runs, warmup, *, timer):
+def sync(
+    np,
+    mode,
+    start_mode: TimerMode,
+    runs,
+    warmup,
+    *,
+    execution_timer: Timer,
+    wall_timer: Timer,
+):
+    timer: Timer
+    match start_mode:
+        case TimerMode.EXECUTION:
+            timer = execution_timer
+        case TimerMode.WALL:
+            timer = wall_timer
     return timed_loop(lambda: None, timer, runs, warmup, sync_mode=mode) / runs
 
 
@@ -38,7 +55,9 @@ class SyncSuite(MicrobenchmarkSuite):
             sync,
             self.np,
             ["none", "fence", "block"],
+            list(TimerMode),
             self.runs,
             self.warmup,
-            timer=self.timer,
+            execution_timer=self.execution_timer,
+            wall_timer=self.wall_timer,
         )

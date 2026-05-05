@@ -68,6 +68,11 @@ class SummarizeFlush(StrEnum):
     NEVER = auto()
 
 
+class TimerMode(StrEnum):
+    EXECUTION = auto()
+    WALL = auto()
+
+
 @dataclass
 class BenchmarkHarnessConfig:
     """Configuration object for :py:class:`BenchmarkHarness`."""
@@ -80,6 +85,7 @@ class BenchmarkHarnessConfig:
     log_metadata_extra: dict[str, Any]
     summarize: Summarize | None
     summarize_flush: SummarizeFlush
+    timer_mode: TimerMode
 
     @classmethod
     def add_parser_group(cls, parser: ArgumentParser, name: str) -> Any:
@@ -128,6 +134,10 @@ class BenchmarkHarnessConfig:
         --summarize-flush: 'run', 'exit', or 'never' (default: 'run')
             When to display summary statistics: after each run, when
             exiting a context manager, or never.
+
+        --timer-mode: 'execution' or 'wall' (default: 'execution')
+            Whether the default timer for the harness should measure
+            execution time or wall time.
         """
 
         def metadata_tuple(arg: str) -> tuple[str, str]:
@@ -200,6 +210,15 @@ class BenchmarkHarnessConfig:
             default=[],
             help="additional strings to add to benchmark log metadata",
         )
+        group.add_argument(
+            "--timer-mode",
+            dest="__cpn_timer_mode",
+            metavar="MODE",
+            type=TimerMode,
+            choices=list(TimerMode),
+            default=TimerMode.EXECUTION,
+            help="what the default timer should measure",
+        )
         return group
 
     @classmethod
@@ -224,6 +243,7 @@ class BenchmarkHarnessConfig:
             log_metadata_extra=dict(vargs["__cpn_metadata_extra"]),
             summarize=summarize,
             summarize_flush=vargs["__cpn_summarize_flush"],
+            timer_mode=vargs["__cpn_timer_mode"],
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -329,8 +349,11 @@ class BenchmarkHarness:
     #: array package of this harness
     np: ModuleType
 
-    #: synchronizing timer with :py:meth:`start` and :py:meth:`stop` methods.
-    timer: Timer
+    #: timer for execution time
+    execution_timer: Timer
+
+    #: timer for wall time
+    wall_timer: Timer
 
     metadata: dict[str, Any]
 
@@ -404,7 +427,8 @@ class BenchmarkHarness:
                 import cupynumeric
 
                 self.np = cupynumeric
-        self.timer = get_timer(self.np)
+        self.execution_timer = get_timer(self.np, blocking=False)
+        self.wall_timer = get_timer(self.np, blocking=True)
 
     @property
     def repeat(self) -> int:
@@ -428,6 +452,18 @@ class BenchmarkHarness:
     @property
     def summarize_flush(self) -> SummarizeFlush:
         return self._config.summarize_flush
+
+    @property
+    def timer_mode(self) -> TimerMode:
+        return self._config.timer_mode
+
+    @property
+    def timer(self) -> Timer:
+        match self.timer_mode:
+            case TimerMode.EXECUTION:
+                return self.execution_timer
+            case TimerMode.WALL:
+                return self.wall_timer
 
     def _run(
         self,
