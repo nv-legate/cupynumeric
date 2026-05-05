@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.to\_device
+==============================
+
+.. currentmodule:: cupynumeric
+
+.. automethod:: ndarray.to_device

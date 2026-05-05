@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cupynumeric.ndarray &#8212; NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77)</title>
+    <title>cupynumeric.ndarray &#8212; NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=d89a99bd"></script>
+    <script src="../_static/documentation_options.js?v=3ab7ce90"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -139,11 +139,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4)</p>
   
 </a></div>
     
@@ -250,11 +250,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+117.ge6035e77)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.05.00.dev+122.g79759cf4)</p>
   
 </a>
 
@@ -369,6 +369,8 @@
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.ctypes.html">cupynumeric.ndarray.ctypes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dtype.html">cupynumeric.ndarray.dtype</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.T.html">cupynumeric.ndarray.T</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.mT.html">cupynumeric.ndarray.mT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.device.html">cupynumeric.ndarray.device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.real.html">cupynumeric.ndarray.real</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.imag.html">cupynumeric.ndarray.imag</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.flat.html">cupynumeric.ndarray.flat</a></li>
@@ -381,6 +383,7 @@
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.dumps.html">cupynumeric.ndarray.dumps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.astype.html">cupynumeric.ndarray.astype</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.copy.html">cupynumeric.ndarray.copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.to_device.html">cupynumeric.ndarray.to_device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.view.html">cupynumeric.ndarray.view</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.getfield.html">cupynumeric.ndarray.getfield</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/cupynumeric.ndarray.setfield.html">cupynumeric.ndarray.setfield</a></li>
@@ -1121,22 +1124,25 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tobytes.html#cupynumeric.ndarray.tobytes" title="cupynumeric.ndarray.tobytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tobytes</span></code></a>([order])</p></td>
 <td><p>Construct Python bytes containing the raw data bytes in the array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tofile.html#cupynumeric.ndarray.tofile" title="cupynumeric.ndarray.tofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tofile</span></code></a>(fid[, sep, format])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.to_device.html#cupynumeric.ndarray.to_device" title="cupynumeric.ndarray.to_device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_device</span></code></a>(device, /, *[, stream])</p></td>
+<td><p>Return this array on the requested Array API device.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tofile.html#cupynumeric.ndarray.tofile" title="cupynumeric.ndarray.tofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tofile</span></code></a>(fid[, sep, format])</p></td>
 <td><p>Write array to a file as text or binary (default).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tolist.html#cupynumeric.ndarray.tolist" title="cupynumeric.ndarray.tolist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tolist</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tolist.html#cupynumeric.ndarray.tolist" title="cupynumeric.ndarray.tolist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tolist</span></code></a>()</p></td>
 <td><p>Return the array as an <code class="docutils literal notranslate"><span class="pre">a.ndim</span></code>-levels deep nested list of Python scalars.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tostring.html#cupynumeric.ndarray.tostring" title="cupynumeric.ndarray.tostring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tostring</span></code></a>([order])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.tostring.html#cupynumeric.ndarray.tostring" title="cupynumeric.ndarray.tostring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tostring</span></code></a>([order])</p></td>
 <td><p>A compatibility alias for <cite>tobytes</cite>, with exactly the same behavior.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.transpose.html#cupynumeric.ndarray.transpose" title="cupynumeric.ndarray.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>([axes])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.transpose.html#cupynumeric.ndarray.transpose" title="cupynumeric.ndarray.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>([axes])</p></td>
 <td><p>Returns a view of the array with axes transposed.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.unique.html#cupynumeric.ndarray.unique" title="cupynumeric.ndarray.unique"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unique</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.unique.html#cupynumeric.ndarray.unique" title="cupynumeric.ndarray.unique"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unique</span></code></a>()</p></td>
 <td><p>Find the unique elements of an array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.view.html#cupynumeric.ndarray.view" title="cupynumeric.ndarray.view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>([dtype, type])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.view.html#cupynumeric.ndarray.view" title="cupynumeric.ndarray.view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>([dtype, type])</p></td>
 <td><p>New view of array with the same data.</p></td>
 </tr>
 </tbody>
@@ -1157,20 +1163,26 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.data.html#cupynumeric.ndarray.data" title="cupynumeric.ndarray.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a></p></td>
 <td><p>Python buffer object pointing to the start of the array's data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.dtype.html#cupynumeric.ndarray.dtype" title="cupynumeric.ndarray.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.device.html#cupynumeric.ndarray.device" title="cupynumeric.ndarray.device"><code class="xref py py-obj docutils literal notranslate"><span class="pre">device</span></code></a></p></td>
+<td><p>Array API device token for this array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.dtype.html#cupynumeric.ndarray.dtype" title="cupynumeric.ndarray.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a></p></td>
 <td><p>Data-type of the array's elements.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.flags.html#cupynumeric.ndarray.flags" title="cupynumeric.ndarray.flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flags</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.flags.html#cupynumeric.ndarray.flags" title="cupynumeric.ndarray.flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flags</span></code></a></p></td>
 <td><p>Information about the memory layout of the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.flat.html#cupynumeric.ndarray.flat" title="cupynumeric.ndarray.flat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flat</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.flat.html#cupynumeric.ndarray.flat" title="cupynumeric.ndarray.flat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flat</span></code></a></p></td>
 <td><p>A 1-D iterator over the array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.imag.html#cupynumeric.ndarray.imag" title="cupynumeric.ndarray.imag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">imag</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.imag.html#cupynumeric.ndarray.imag" title="cupynumeric.ndarray.imag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">imag</span></code></a></p></td>
 <td><p>The imaginary part of the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.itemsize.html#cupynumeric.ndarray.itemsize" title="cupynumeric.ndarray.itemsize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemsize</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.itemsize.html#cupynumeric.ndarray.itemsize" title="cupynumeric.ndarray.itemsize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemsize</span></code></a></p></td>
 <td><p>The element size of this data-type object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.mT.html#cupynumeric.ndarray.mT" title="cupynumeric.ndarray.mT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mT</span></code></a></p></td>
+<td><p>Transpose the last two array dimensions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/cupynumeric.ndarray.nbytes.html#cupynumeric.ndarray.nbytes" title="cupynumeric.ndarray.nbytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nbytes</span></code></a></p></td>
 <td><p>Total bytes consumed by the elements of the array.</p></td>

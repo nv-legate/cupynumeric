@@ -6,6 +6,11 @@ Array API support
 cuPyNumeric exposes the Array API namespace dispatch and inspection hooks used
 by Array API consumers.
 
+cuPyNumeric currently exposes ``None`` as its only Array API device token.
+``None`` here means Legate-managed placement, not CPU placement. Concrete
+device strings such as ``"cpu"`` or ``"cuda:0"`` are rejected by the Array API
+hooks.
+
 .. data:: __array_api_version__
 
    The Array API standard version implemented by cuPyNumeric's Array API

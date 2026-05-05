@@ -55,6 +55,7 @@ cupynumeric.ndarray
       ~ndarray.swapaxes
       ~ndarray.take
       ~ndarray.tobytes
+      ~ndarray.to_device
       ~ndarray.tofile
       ~ndarray.tolist
       ~ndarray.tostring
@@ -71,11 +72,13 @@ cupynumeric.ndarray
       ~ndarray.base
       ~ndarray.ctypes
       ~ndarray.data
+      ~ndarray.device
       ~ndarray.dtype
       ~ndarray.flags
       ~ndarray.flat
       ~ndarray.imag
       ~ndarray.itemsize
+      ~ndarray.mT
       ~ndarray.nbytes
       ~ndarray.ndim
       ~ndarray.real

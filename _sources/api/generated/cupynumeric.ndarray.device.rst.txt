@@ -1,0 +1,6 @@
+﻿cupynumeric.ndarray.device
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autoproperty:: ndarray.device

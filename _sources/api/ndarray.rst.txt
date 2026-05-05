@@ -67,6 +67,8 @@ Other Attributes
    :toctree: generated/
 
    ndarray.T
+   ndarray.mT
+   ndarray.device
    ndarray.real
    ndarray.imag
    ndarray.flat
@@ -95,6 +97,7 @@ Array conversion
    ndarray.astype
    .. ndarray.byteswap
    ndarray.copy
+   ndarray.to_device
    ndarray.view
    ndarray.getfield
    .. TODO: this is not in the numpy page
