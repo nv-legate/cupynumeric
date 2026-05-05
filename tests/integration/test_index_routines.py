@@ -688,6 +688,17 @@ def test_ix_(seqs):
     assert all(np.array_equal(*elts) for elts in zip(a, an))
 
 
+def test_ix_cupynumeric_ndarray_input() -> None:
+    seq_a = np.array([0, 1])
+    seq_b = np.array([2, 4, 5])
+
+    a = num.ix_(num.array(seq_a), num.array(seq_b))
+    an = np.ix_(seq_a, seq_b)
+
+    assert all(isinstance(elt, num.ndarray) for elt in a)
+    assert all(np.array_equal(*elts) for elts in zip(a, an))
+
+
 def test_ix_bool() -> None:
     a = num.ix_([0, 1], [True])
     an = np.ix_([0, 1], [True])

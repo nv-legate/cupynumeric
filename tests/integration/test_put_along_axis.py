@@ -47,6 +47,87 @@ def test_axis_None():
     assert np.array_equal(x_num, x)
 
 
+def test_axis_none_empty_indices_nonempty_array() -> None:
+    np_arr = mk_seq_array(np, (10,))
+    num_arr = mk_seq_array(num, (10,))
+
+    indices = np.array([], dtype=int)
+    num_indices = num.array(indices)
+
+    np.put_along_axis(np_arr, indices, 99, None)
+    num.put_along_axis(num_arr, num_indices, 99, None)
+    assert np.array_equal(np_arr, num_arr)
+
+
+def test_axis_none_numpy24_empty_values_noop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    np_arr = mk_seq_array(np, (4,))
+    num_arr = mk_seq_array(num, (4,))
+
+    indices = np.array([0, 2], dtype=int)
+    num_indices = num.array(indices)
+    values = num.array([], dtype=int)
+
+    def fake_broadcast_shapes(*_shapes: tuple[int, ...]) -> tuple[int, ...]:
+        return indices.shape
+
+    monkeypatch.setattr(np, "__version__", "2.4.0")
+    monkeypatch.setattr(np, "broadcast_shapes", fake_broadcast_shapes)
+
+    num.put_along_axis(num_arr, num_indices, values, None)
+    assert np.array_equal(np_arr, num_arr)
+
+
+def test_axis_none_numpy24_matching_values_shape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    np_arr = mk_seq_array(np, (5,))
+    num_arr = mk_seq_array(num, (5,))
+
+    indices = np.array([4, 3, 2, 1, 0], dtype=int)
+    num_indices = num.array(indices)
+    values = np.array([10, 20, 30, 40, 50])
+    num_values = num.array(values)
+
+    np.put_along_axis(np_arr, indices, values, None)
+
+    monkeypatch.setattr(np, "__version__", "2.4.0")
+    num.put_along_axis(num_arr, num_indices, num_values, None)
+    assert np.array_equal(np_arr, num_arr)
+
+
+def test_axis_none_numpy23_empty_values_noop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    np_arr = mk_seq_array(np, (4,))
+    num_arr = mk_seq_array(num, (4,))
+
+    indices = np.array([0, 2], dtype=int)
+    num_indices = num.array(indices)
+    values = num.array([], dtype=int)
+
+    monkeypatch.setattr(np, "__version__", "2.3.0")
+    num.put_along_axis(num_arr, num_indices, values, None)
+    assert np.array_equal(np_arr, num_arr)
+
+
+def test_axis_none_numpy23_repeats_short_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    num_arr = mk_seq_array(num, (5,))
+
+    indices = np.array([0, 1, 2, 3, 4], dtype=int)
+    num_indices = num.array(indices)
+    values = num.array([10, 20], dtype=int)
+
+    monkeypatch.setattr(np, "__version__", "2.3.0")
+    num.put_along_axis(num_arr, num_indices, values, None)
+
+    expected = np.array([10, 20, 10, 20, 10])
+    assert np.array_equal(expected, num_arr)
+
+
 N = 10
 
 
