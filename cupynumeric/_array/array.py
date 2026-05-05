@@ -27,7 +27,11 @@ from legate.core.utils import OrderedSet
 from numpy.exceptions import AxisError
 
 from .. import _ufunc
-from .._array_api import __array_api_version__
+from .._array_api import (
+    __array_api_version__,
+    _SUPPORTED_DEVICE,
+    _check_device,
+)
 from .._utils.array import max_identity, min_identity, to_core_type
 from .._utils.linalg import dot_modes
 from ..config import (
@@ -277,6 +281,49 @@ class ndarray:
 
         return cn
 
+    @property
+    def device(self) -> None:
+        """
+        Array API device token for this array.
+
+        cuPyNumeric always returns ``None`` because Legate manages placement
+        across the available machine resources.
+        """
+        return _SUPPORTED_DEVICE
+
+    def to_device(
+        self, device: Any, /, *, stream: Any | None = None
+    ) -> ndarray:
+        """
+        Return this array on the requested Array API device.
+
+        cuPyNumeric currently supports only ``None`` for both ``device`` and
+        ``stream``.
+
+        Parameters
+        ----------
+        device : None
+            Array API device token.
+        stream : None, optional
+            Stream token.
+
+        Returns
+        -------
+        out : ndarray
+            The same array, unchanged.
+
+        Raises
+        ------
+        ValueError
+            If ``device`` is not ``None``.
+        NotImplementedError
+            If ``stream`` is not ``None``.
+        """
+        _check_device(device)
+        if stream is not None:
+            raise NotImplementedError("stream argument is not supported")
+        return self
+
     # Properties for ndarray
 
     # Disable these since they seem to cause problems
@@ -381,6 +428,25 @@ class ndarray:
 
         """
         return self.transpose()
+
+    @property
+    def mT(self) -> ndarray:
+        """
+        Transpose the last two array dimensions.
+
+        See Also
+        --------
+        ndarray.T
+        ndarray.transpose
+        """
+        if self.ndim < 2:
+            raise ValueError(
+                "matrix transpose is only defined for arrays with at least "
+                "two dimensions"
+            )
+        axes = tuple(range(self.ndim))
+        # Use transpose instead of swapaxes so view writeability is preserved.
+        return self.transpose(axes[:-2] + (axes[-1], axes[-2]))
 
     @property
     def base(self) -> npt.NDArray[Any] | None:

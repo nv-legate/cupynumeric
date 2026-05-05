@@ -221,6 +221,28 @@ def test_array_api_empty_accepts_default_device() -> None:
     assert arr.dtype == np.dtype(np.int64)
 
 
+def test_array_api_device_is_none() -> None:
+    arr = num.asarray([1, 2, 3])
+
+    assert arr.device is None
+
+
+def test_array_api_to_device_returns_self() -> None:
+    arr = num.asarray([1, 2, 3])
+
+    assert arr.to_device(None) is arr
+    assert arr.to_device(arr.device) is arr
+    assert arr.to_device(None, stream=None) is arr
+
+
+@pytest.mark.parametrize("stream", (0, 1, "stream-0"))
+def test_array_api_to_device_rejects_stream(stream: object) -> None:
+    arr = num.asarray([1, 2, 3])
+
+    with pytest.raises(NotImplementedError, match="stream argument"):
+        arr.to_device(None, stream=stream)
+
+
 def test_array_api_rejects_non_default_device() -> None:
     info = num.__array_namespace_info__()
 
@@ -236,6 +258,51 @@ def test_array_api_rejects_non_default_device() -> None:
         ValueError, match="only supports device=None, got device='gpu'"
     ):
         num.empty(1, device="gpu")
+
+
+def test_array_api_to_device_rejects_non_default_device() -> None:
+    arr = num.asarray([1, 2, 3])
+
+    with pytest.raises(
+        ValueError, match="only supports device=None, got device='gpu'"
+    ):
+        arr.to_device("gpu")
+
+
+@pytest.mark.parametrize(
+    "shape", ((3, 4), (2, 3, 4), (2, 3, 4, 5), (0, 5), (2, 0, 3), (2, 3, 0))
+)
+def test_array_api_mT_swaps_last_two_axes(shape: tuple[int, ...]) -> None:
+    arr_np = np.arange(int(np.prod(shape))).reshape(shape)
+    arr = num.asarray(arr_np)
+
+    result = arr.mT
+
+    expected = np.swapaxes(arr_np, -1, -2)
+    assert isinstance(result, num.ndarray)
+    assert result.shape == expected.shape
+    assert np.array_equal(result.__array__(), expected)
+
+    round_trip = result.mT
+    assert round_trip.shape == arr.shape
+    assert np.array_equal(round_trip.__array__(), arr.__array__())
+
+
+def test_array_api_mT_preserves_writeability() -> None:
+    arr = num.asarray(np.arange(24).reshape(2, 3, 4))
+    arr.flags["W"] = False
+
+    result = arr.mT
+
+    assert not result.flags["W"]
+
+
+@pytest.mark.parametrize("obj", (1, [1, 2, 3]))
+def test_array_api_mT_rejects_less_than_two_dimensions(obj: object) -> None:
+    arr = num.asarray(obj)
+
+    with pytest.raises(ValueError, match="at least two dimensions"):
+        arr.mT
 
 
 if __name__ == "__main__":

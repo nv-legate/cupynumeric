@@ -112,9 +112,9 @@ aborts in `test_matmul` while Hypothesis materializes array inputs.
 ### Array Object Hooks: #1801
 
 Array object tests cover standard properties, methods, and operators beyond the
-current namespace-dispatch smoke tests. This group tracks missing object hooks
-and object-level signature mismatches. The broad object-suite entry also
-guards native aborts observed while auditing object-level tests such as
+current namespace-dispatch smoke tests. Direct name and signature checks for
+`device`, `to_device`, and `mT` are expected to pass. The broad object-suite
+entry guards native aborts observed while auditing object-level tests such as
 `test_getitem`.
 
 ### Remaining Unsupported Behavior

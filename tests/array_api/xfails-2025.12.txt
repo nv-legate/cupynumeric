@@ -4,15 +4,10 @@
 # --xfails-file option. Keep them grouped by follow-up issue and as narrow as
 # practical.
 
-# #1801: array-object hooks and properties are not complete enough for the
-# upstream object-method suite. The current baseline can abort before pytest
+# #1801: the broad upstream object-method suite can still abort before pytest
 # reports an xfail while running object-level tests such as test_getitem, so
 # the module is skipped through this file by default.
 array_api_tests/test_array_object.py
-array_api_tests/test_has_names.py::test_has_names[array_method-to_device]
-array_api_tests/test_has_names.py::test_has_names[array_attribute-device]
-array_api_tests/test_has_names.py::test_has_names[array_attribute-mT]
-array_api_tests/test_signatures.py::test_array_method_signature[to_device]
 
 # #1800: Array API namespace wrappers, standard names, and signatures that are
 # missing or still expose NumPy-compatible call shapes.

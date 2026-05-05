@@ -22,6 +22,7 @@ import numpy as np
 
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
+from .._array_api import _check_device
 from ..types import NdShapeLike
 
 if TYPE_CHECKING:
@@ -163,11 +164,7 @@ def empty(
     --------
     Multiple GPUs, Multiple CPUs
     """
-    if device is not None:
-        raise ValueError(
-            "cuPyNumeric's Array API namespace currently only supports "
-            f"device=None, got device={device!r}"
-        )
+    _check_device(device)
     arr = _uninitialized(shape=shape, dtype=dtype)
     # FIXME: we need to initialize this to 0 temporarily until
     # we can check if LogicalStore is initialized
