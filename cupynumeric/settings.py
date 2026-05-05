@@ -323,5 +323,16 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
+    use_nccl_scatter: PrioritizedSetting[bool] = PrioritizedSetting(
+        "use_nccl_scatter",
+        "CUPYNUMERIC_USE_NCCL_SCATTER",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Enable distributed scatter via the NCCL all-to-all implementation when
+        multiple GPUs are available.
+        """,
+    )
+
 
 settings = CupynumericRuntimeSettings()

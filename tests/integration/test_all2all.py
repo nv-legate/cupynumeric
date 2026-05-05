@@ -47,7 +47,9 @@ def _run_all2all_stores(source_store, index_store, output_store):
     legate_runtime = get_legate_runtime()
     library = cpn_runtime.library
 
-    task = legate_runtime.create_auto_task(library, CuPyNumericOpCode.ALL2ALL)
+    task = legate_runtime.create_auto_task(
+        library, CuPyNumericOpCode.ALL2ALL_GATHER
+    )
     task.add_input(source_store)
     task.add_input(index_store)
     task.add_output(output_store)

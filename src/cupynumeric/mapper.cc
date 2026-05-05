@@ -267,7 +267,8 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       }
       return mappings;
     }
-    case CUPYNUMERIC_ALL2ALL: {
+    case CUPYNUMERIC_ALL2ALL_GATHER:
+    case CUPYNUMERIC_ALL2ALL_SCATTER: {
       std::vector<StoreMapping> mappings;
       auto inputs  = task.inputs();
       auto outputs = task.outputs();
@@ -678,12 +679,13 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       }
       return std::nullopt;
     }
-    case CUPYNUMERIC_ALL2ALL: {
+    case CUPYNUMERIC_ALL2ALL_GATHER:
+    case CUPYNUMERIC_ALL2ALL_SCATTER: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
-        // Multi-rank all2all reserves a few small per-rank metadata buffers in
-        // pinned host memory:
-        //   - source_rects             : num_ranks rects (gathered via NCCL)
-        //   - input_rect_device        : 1 rect (this rank's local domain)
+        // Multi-rank shuffle reserves a few small per-rank metadata buffers in
+        // pinned host memory (identical layout for both gather and scatter):
+        //   - partition_rects          : num_ranks rects (gathered via NCCL)
+        //   - local_rect_device        : 1 rect (this rank's local domain)
         //   - send_counts_per_rank     : num_ranks uint64 (CUB histogram output)
         //   - receive_counts_per_rank  : num_ranks uint64 (NCCL recv target)
         //   - send_offsets_per_rank    : num_ranks uint64 (prefix-sum output)

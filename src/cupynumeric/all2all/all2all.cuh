@@ -14,42 +14,34 @@
  *
  */
 
-#include "cupynumeric/all2all/all2all.h"
-#include "cupynumeric/index/gather_template.inl"
-#include "cupynumeric/pitches.h"
-#include "cupynumeric/utilities/thrust_util.h"
-#include "cupynumeric/cuda_help.h"
+#pragma once
 
-#include <cuda_runtime.h>
-
-#include <cstddef>
-#include <cstring>
-#include <numeric>
-#include <type_traits>
-#include <cub/device/device_histogram.cuh>
-
-#include <thrust/execution_policy.h>
-
-#include <vector>
-
-namespace cupynumeric {
-
-// Distributed gather via all-to-all shuffle (NCCL)
+// Shared helpers for the NCCL all-to-all shuffle pipeline. Layout mirrors
+// cupynumeric/sort/cub_sort.cuh: everything lives in cupynumeric::detail.
+// See all2all_gather.cu and all2all_scatter.cu for the orchestrators that
+// drive these helpers.
 //
-// Implements:  output[p] = source[index[p]] for all points in the index array
+// Distributed gather and scatter via all-to-all shuffle (NCCL)
 //
-// The source array is partitioned across N ranks.  Each rank holds a local
-// slice of the index array whose points may refer to data owned by *any*
-// rank.  The algorithm moves requests to the owning rank, gathers the data,
-// and returns results to the requester in several steps:
+// Two operations share the same 5-step pipeline. Only Step 4 (NCCL direction)
+// and Step 5 (which side performs the indirect write) differ.
+//
+//   All2AllTask        (gather):  output[p]        = source[index[p]]
+//   All2AllScatterTask (scatter): output[index[p]] = source[p]
+//
+// In both cases one of the arrays is partitioned across N ranks. For gather
+// it is `source` (the read-from array); for scatter it is `output` (the
+// write-into array). The "partitioned array" below refers to whichever of
+// the two is sharded.
 //
 // Step 1: Discover partition layout (AllGather)
 //   Each rank AllGathers its local partition Rect<DIM> so every rank knows
-//   which rank owns which region of the source array.
+//   which rank owns which region of the partitioned array.
 //
 // Step 2: Classify requests & build ShuffleDescriptor
-//   a) assign_target_ranks_kernel  — For each local index point, determine
-//      which rank owns it by testing containment in the global rects.
+//   a) assign_target_ranks_kernel — For each local index point, determine
+//      which rank owns the corresponding cell of the partitioned array by
+//      testing containment in the gathered rects.
 //   b) cub::DeviceHistogram::HistogramEven — Count how many requests go
 //      to each rank (send_counts_per_rank) directly from the unsorted target ranks.
 //   c) Group request indices into per-rank buckets (pack_indices_by_rank_warp)
@@ -64,22 +56,45 @@ namespace cupynumeric {
 //      flat offset relative to the target rank's rect.  This reduces the
 //      per-element payload from sizeof(Point<DIM>) (e.g. 24 bytes for 3D)
 //      to 8 bytes.
-//   b) Exchange the flat offsets via NCCL pairwise send/recv.  After this,
-//      each rank knows which elements other ranks need from its local data.
+//   b) Exchange the flat offsets via NCCL pairwise send/recv (requester →
+//      owner). After this, each owning rank knows which elements its local
+//      partition is referenced from.
 //
-// Step 4: Gather local data & exchange values
-//   a) gather_data_by_offset_kernel — Each rank gathers from its own local
-//      source data at the flat offsets received in Phase 3.
-//   b) Exchange gathered values via NCCL (direction reversed from Phase 3:
-//      data flows from owner back to requester).
+// Step 4: Pack local values & exchange them
+//   gather:  Owner reads its local source at recv_flat_offsets, then
+//            ncclSend's the values back to the requester (owner → requester).
+//   scatter: Requester reads its local source at request_positions, then
+//            ncclSend's the values to the owner (requester → owner).
+//   Both paths share gather_data_by_offset_kernel (a "permuted gather" that
+//   turns a local store + permutation array into a packed staging buffer)
+//   and the same NCCL group send/recv code; only the direction and which
+//   counts/offsets gate each side differ.
 //
-// Step 5: Unpack recv into output
-//   unpack_recv_data_kernel — Place the received values into the output
-//   array at the original request positions (tracked since Phase 2b).
+// Step 5: Indirect-write received values into the local output
+//   gather:  Requester writes recv_staging into its local output at
+//            request_positions.
+//   scatter: Owner writes recv_data into its local output at recv_flat_offsets.
+//   Both share unpack_recv_data_kernel.
+
+#include "cupynumeric/cuda_help.h"
+#include "cupynumeric/pitches.h"
+#include "cupynumeric/utilities/thrust_util.h"
+
+#include <cuda_runtime.h>
+
+#include <cstddef>
+#include <cstring>
+#include <numeric>
+#include <type_traits>
+#include <vector>
+
+#include <cub/device/device_histogram.cuh>
+#include <thrust/execution_policy.h>
+
+namespace cupynumeric {
+namespace detail {
 
 using namespace legate;
-
-namespace {
 
 // ============================================================================
 // Utilities
@@ -178,11 +193,11 @@ template <int DIM_input>
   return d_rect_infos;
 }
 
-void compute_histogram(const int* samples,
-                       size_t num_samples,
-                       unsigned long long* histogram,
-                       int num_bins,
-                       cudaStream_t stream)
+inline void compute_histogram(const int* samples,
+                              size_t num_samples,
+                              unsigned long long* histogram,
+                              int num_bins,
+                              cudaStream_t stream)
 {
   size_t temp_bytes = 0;
 
@@ -210,7 +225,7 @@ void compute_histogram(const int* samples,
 // `dtype` to every peer (data destined for rank j at sendbuf + j*count) and
 // receives `count` elements from every peer (data from rank i at recvbuf +
 // i*count). We use the pairwise send/recv form rather than ncclAlltoAll so we
-// don't take a hard dependency on NCCL >= 2.28 — the user's NCCL version is
+// don't take a hard dependency on NCCL >= 2.28 - the user's NCCL version is
 // not guaranteed. Caller is responsible for any surrounding Legate
 // concurrent_task_barrier coordination.
 template <typename T>
@@ -248,7 +263,7 @@ struct ShuffleDescriptor {
 
   // Caller must ensure the GPU writes that populate the Z_COPY count buffers
   // (CUB histogram, NCCL recv) have completed on the host before invoking
-  // this constructor — typically via cudaStreamSynchronize.
+  // this constructor - typically via cudaStreamSynchronize.
   ShuffleDescriptor(const unsigned long long* z_send_counts_per_rank,
                     const unsigned long long* z_send_offsets_per_rank,
                     const unsigned long long* z_receive_counts_per_rank,
@@ -274,37 +289,40 @@ struct ShuffleDescriptor {
 };
 
 // ============================================================================
-// Step 1 — AllGather partition rects
+// Step 1 - AllGather partition rects
 // ============================================================================
 
-template <int DIM_input>
-Buffer<int8_t> allgather_source_rects(TaskContext& context,
-                                      const legate::Rect<DIM_input>& input_rect,
-                                      ncclComm_t* nccl_comm,
-                                      cudaStream_t stream)
+// Used by both gather (partition_rect = local source rect) and scatter
+// (partition_rect = local output rect). The returned Z_COPY buffer holds an
+// array of `num_ranks` Rect<DIM_partition> values, one per rank, in rank order.
+template <int DIM_partition>
+Buffer<int8_t> allgather_partition_rects(TaskContext& context,
+                                         const legate::Rect<DIM_partition>& partition_rect,
+                                         ncclComm_t* nccl_comm,
+                                         cudaStream_t stream)
 {
   const size_t num_ranks     = context.get_launch_domain().get_volume();
-  constexpr size_t rect_size = sizeof(legate::Rect<DIM_input>);
+  constexpr size_t rect_size = sizeof(legate::Rect<DIM_partition>);
   // Both buffers are tiny (num_ranks rects total) and each is touched only by a single
   // NCCL operation, so put them in pinned host memory rather than burning FB-resident
   // allocations and a H<->D copy on each.
-  auto source_rects      = create_buffer<int8_t>(num_ranks * rect_size, Memory::Kind::Z_COPY_MEM);
-  auto input_rect_device = create_buffer<int8_t>(rect_size, Memory::Kind::Z_COPY_MEM);
+  auto partition_rects   = create_buffer<int8_t>(num_ranks * rect_size, Memory::Kind::Z_COPY_MEM);
+  auto local_rect_device = create_buffer<int8_t>(rect_size, Memory::Kind::Z_COPY_MEM);
 
-  std::memcpy(input_rect_device.ptr(0), &input_rect, rect_size);
-  std::memset(source_rects.ptr(0), 0, num_ranks * rect_size);
+  std::memcpy(local_rect_device.ptr(0), &partition_rect, rect_size);
+  std::memset(partition_rects.ptr(0), 0, num_ranks * rect_size);
 
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclAllGather(
-    input_rect_device.ptr(0), source_rects.ptr(0), rect_size, ncclInt8, *nccl_comm, stream));
+    local_rect_device.ptr(0), partition_rects.ptr(0), rect_size, ncclInt8, *nccl_comm, stream));
   context.concurrent_task_barrier();
   CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
 
-  return source_rects;
+  return partition_rects;
 }
 
 // ============================================================================
-// Step 2 — Classify requests & build ShuffleDescriptor
+// Step 2 - Classify requests & build ShuffleDescriptor
 // ============================================================================
 
 template <typename PointLoader, int DIM_input>
@@ -411,10 +429,13 @@ void classify_index_points(
 }
 
 // Group request indices into per-rank buckets.
-__global__ void pack_indices_by_rank_warp(const int* target_ranks,
-                                          size_t count,
-                                          unsigned long long* next_slot,
-                                          uint64_t* packed_positions)
+// `static` so each TU that includes this header gets its own copy (this is a
+// non-template __global__ kernel, so we cannot share a single symbol across
+// TUs without risking ODR violations). Launches only from within this header.
+static __global__ void pack_indices_by_rank_warp(const int* target_ranks,
+                                                 size_t count,
+                                                 unsigned long long* next_slot,
+                                                 uint64_t* packed_positions)
 {
   const size_t idx = global_tid_1d();
 
@@ -513,7 +534,7 @@ template <int DIM_input, int DIM_output>
 }
 
 // ============================================================================
-// Step 3 — Linearize & exchange offsets
+// Step 3 - Linearize & exchange offsets
 // ============================================================================
 
 template <typename PointLoader, int DIM_input>
@@ -628,14 +649,18 @@ template <int DIM_input, int DIM_output>
 }
 
 // ============================================================================
-// Step 4 — Gather local data & exchange values
+// Step 4 - Pack local values & exchange them
 // ============================================================================
 
-template <typename DataType, int DIM_input>
-__global__ void gather_data_by_offset_kernel(AccessorRO<DataType, DIM_input> input_acc,
-                                             Pitches<DIM_input - 1> input_pitches,
-                                             legate::Point<DIM_input> input_lo,
-                                             const uint64_t* offsets,
+// Permuted gather kernel: out[idx] = src[permutation[idx]] where the
+// permutation entries are flat offsets into the source store. Reused by both
+// gather (owner side, permutation = recv_flat_offsets) and scatter (requester
+// side, permutation = request_positions).
+template <typename DataType, int DIM>
+__global__ void gather_data_by_offset_kernel(AccessorRO<DataType, DIM> src_acc,
+                                             Pitches<DIM - 1> src_pitches,
+                                             legate::Point<DIM> src_lo,
+                                             const uint64_t* permutation,
                                              size_t count,
                                              DataType* out)
 {
@@ -645,13 +670,14 @@ __global__ void gather_data_by_offset_kernel(AccessorRO<DataType, DIM_input> inp
     return;
   }
 
-  const auto p = input_pitches.unflatten(offsets[idx], input_lo);
+  const auto p = src_pitches.unflatten(permutation[idx], src_lo);
 
-  out[idx] = input_acc[p];
+  out[idx] = src_acc[p];
 }
 
-__global__ void gather_data_by_offset_kernel_dense(
-  const char* input_ptr, const uint64_t* offsets, size_t count, size_t elem_size, char* out)
+// `static` for the same ODR reason as pack_indices_by_rank_warp.
+static __global__ void gather_data_by_offset_kernel_dense(
+  const char* src_ptr, const uint64_t* permutation, size_t count, size_t elem_size, char* out)
 {
   const size_t idx = global_tid_1d();
 
@@ -659,62 +685,73 @@ __global__ void gather_data_by_offset_kernel_dense(
     return;
   }
 
-  memcpy(out + idx * elem_size, input_ptr + offsets[idx] * elem_size, elem_size);
+  memcpy(out + idx * elem_size, src_ptr + permutation[idx] * elem_size, elem_size);
 }
 
-template <Type::Code CODE, int DIM_input>
-void local_gather_and_exchange(TaskContext& context,
-                               const StoreView<AccessMode::Read, type_of<CODE>, DIM_input>& input,
-                               const uint64_t* recv_flat_offsets,
-                               size_t elem_size,
-                               const ShuffleDescriptor& plan,
-                               int8_t* recv_staging_buffer,
-                               ncclComm_t* nccl_comm,
-                               cudaStream_t stream)
+// Pack `count` values from `source` (a local read-only store) into a packed
+// staging buffer using `permutation` as flat offsets into `source`. The
+// staging buffer lives in caller-provided GPU_FB memory.
+template <Type::Code CODE, int DIM>
+void pack_values_into_buffer(const StoreView<AccessMode::Read, type_of<CODE>, DIM>& source,
+                             const uint64_t* permutation,
+                             size_t count,
+                             size_t elem_size,
+                             int8_t* out_buf,
+                             cudaStream_t stream)
 {
-  using VAL           = type_of<CODE>;
-  const int num_ranks = static_cast<int>(context.get_launch_domain().get_volume());
-  auto send_staging_buffer =
-    create_buffer<int8_t>(plan.total_incoming * elem_size, Memory::Kind::GPU_FB_MEM);
+  using VAL = type_of<CODE>;
 
-  // gather the data from the local source into the send_data buffer for sending
-  if (plan.total_incoming > 0) {
-    const size_t grid = (plan.total_incoming + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-
-    if (input.is_dense()) {
-      gather_data_by_offset_kernel_dense<<<grid, THREADS_PER_BLOCK, 0, stream>>>(
-        reinterpret_cast<const char*>(input.dense_ptr),
-        recv_flat_offsets,
-        plan.total_incoming,
-        elem_size,
-        reinterpret_cast<char*>(send_staging_buffer.ptr(0)));
-    } else {
-      gather_data_by_offset_kernel<VAL, DIM_input><<<grid, THREADS_PER_BLOCK, 0, stream>>>(
-        input.acc,
-        input.pitches,
-        input.lo,
-        recv_flat_offsets,
-        plan.total_incoming,
-        reinterpret_cast<VAL*>(send_staging_buffer.ptr(0)));
-    }
+  if (count == 0) {
+    return;
   }
 
-  // do the NCCL exchages of the gathered data, after this, each rank has the data
-  // it needs from other ranks
+  const size_t grid = (count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+
+  if (source.is_dense()) {
+    gather_data_by_offset_kernel_dense<<<grid, THREADS_PER_BLOCK, 0, stream>>>(
+      reinterpret_cast<const char*>(source.dense_ptr),
+      permutation,
+      count,
+      elem_size,
+      reinterpret_cast<char*>(out_buf));
+  } else {
+    gather_data_by_offset_kernel<VAL, DIM><<<grid, THREADS_PER_BLOCK, 0, stream>>>(
+      source.acc, source.pitches, source.lo, permutation, count, reinterpret_cast<VAL*>(out_buf));
+  }
+}
+
+// Step 4 value exchange - gather direction (owner -> requester).
+//
+// Each owner has previously gathered values from its local source at the
+// flat offsets requested by every other rank, contiguously in `sendbuf` in
+// peer order driven by receive_*. Every rank sends those slices back to the
+// peers that asked for them and receives, in send_* order, the values it
+// originally requested from each peer.
+//
+//   sendbuf size = plan.total_incoming               (owner side)
+//   recvbuf size = sum(plan.h_send_counts_per_rank)  (requester side)
+inline void exchange_values_owner_to_requester(TaskContext& context,
+                                               const int8_t* sendbuf,
+                                               int8_t* recvbuf,
+                                               size_t elem_size,
+                                               const ShuffleDescriptor& plan,
+                                               int num_ranks,
+                                               ncclComm_t* nccl_comm,
+                                               cudaStream_t stream)
+{
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (int i = 0; i < num_ranks; ++i) {
     if (plan.h_receive_counts_per_rank[i] > 0) {
-      CHECK_NCCL(
-        ncclSend(send_staging_buffer.ptr(0) + plan.h_receive_offsets_per_rank[i] * elem_size,
-                 plan.h_receive_counts_per_rank[i] * elem_size,
-                 ncclInt8,
-                 i,
-                 *nccl_comm,
-                 stream));
+      CHECK_NCCL(ncclSend(sendbuf + plan.h_receive_offsets_per_rank[i] * elem_size,
+                          plan.h_receive_counts_per_rank[i] * elem_size,
+                          ncclInt8,
+                          i,
+                          *nccl_comm,
+                          stream));
     }
     if (plan.h_send_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclRecv(recv_staging_buffer + plan.h_send_offsets_per_rank[i] * elem_size,
+      CHECK_NCCL(ncclRecv(recvbuf + plan.h_send_offsets_per_rank[i] * elem_size,
                           plan.h_send_counts_per_rank[i] * elem_size,
                           ncclInt8,
                           i,
@@ -726,8 +763,50 @@ void local_gather_and_exchange(TaskContext& context,
   context.concurrent_task_barrier();
 }
 
+// Step 4 value exchange - scatter direction (requester -> owner).
+//
+// Each requester has packed its local source values into `sendbuf` in peer
+// order driven by send_*. Every rank ships those slices to the peers that
+// own the targets and receives, in receive_* order, the values that other
+// ranks intend to write into its local output.
+//
+//   sendbuf size = sum(plan.h_send_counts_per_rank)  (requester side)
+//   recvbuf size = plan.total_incoming               (owner side)
+inline void exchange_values_requester_to_owner(TaskContext& context,
+                                               const int8_t* sendbuf,
+                                               int8_t* recvbuf,
+                                               size_t elem_size,
+                                               const ShuffleDescriptor& plan,
+                                               int num_ranks,
+                                               ncclComm_t* nccl_comm,
+                                               cudaStream_t stream)
+{
+  context.concurrent_task_barrier();
+  CHECK_NCCL(ncclGroupStart());
+  for (int i = 0; i < num_ranks; ++i) {
+    if (plan.h_send_counts_per_rank[i] > 0) {
+      CHECK_NCCL(ncclSend(sendbuf + plan.h_send_offsets_per_rank[i] * elem_size,
+                          plan.h_send_counts_per_rank[i] * elem_size,
+                          ncclInt8,
+                          i,
+                          *nccl_comm,
+                          stream));
+    }
+    if (plan.h_receive_counts_per_rank[i] > 0) {
+      CHECK_NCCL(ncclRecv(recvbuf + plan.h_receive_offsets_per_rank[i] * elem_size,
+                          plan.h_receive_counts_per_rank[i] * elem_size,
+                          ncclInt8,
+                          i,
+                          *nccl_comm,
+                          stream));
+    }
+  }
+  CHECK_NCCL(ncclGroupEnd());
+  context.concurrent_task_barrier();
+}
+
 // ============================================================================
-// Step 5 — Unpack received values into output
+// Step 5 - Unpack received values into output
 // ============================================================================
 
 template <typename DataType, int DIM_output>
@@ -749,11 +828,12 @@ __global__ void unpack_recv_data_kernel(AccessorRW<DataType, DIM_output> output_
   output_acc[p] = recv_data[idx];
 }
 
-__global__ void unpack_recv_data_kernel_dense(char* __restrict__ output_ptr,
-                                              const uint64_t* request_indices,
-                                              size_t count,
-                                              size_t elem_size,
-                                              const char* recv_data)
+// `static` for the same ODR reason as pack_indices_by_rank_warp.
+static __global__ void unpack_recv_data_kernel_dense(char* __restrict__ output_ptr,
+                                                     const uint64_t* request_indices,
+                                                     size_t count,
+                                                     size_t elem_size,
+                                                     const char* recv_data)
 {
   const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -795,182 +875,5 @@ void unpack_recv_into_output(const StoreView<AccessMode::Write, type_of<CODE>, D
   }
 }
 
-// ============================================================================
-// Runs steps 1-5
-// ============================================================================
-
-template <Type::Code CODE, int DIM_input, int DIM_output>
-void global_all2all(TaskContext& context,
-                    AccessorRO<type_of<CODE>, DIM_input> input_acc,
-                    AccessorRO<legate::Point<DIM_input>, DIM_output> index_acc,
-                    AccessorRW<type_of<CODE>, DIM_output> output_acc,
-                    const legate::Rect<DIM_input>& input_rect,
-                    const legate::Rect<DIM_output>& index_rect,
-                    const legate::Rect<DIM_output>& output_rect,
-                    size_t local_index_count,
-                    ncclComm_t* nccl_comm,
-                    cudaStream_t stream)
-{
-  using VAL           = type_of<CODE>;
-  using INDEX_VAL     = legate::Point<DIM_input>;
-  const int num_ranks = static_cast<int>(context.get_launch_domain().get_volume());
-
-  StoreView<AccessMode::Read, INDEX_VAL, DIM_output> index_view(index_acc, index_rect);
-  StoreView<AccessMode::Read, VAL, DIM_input> input_view(input_acc, input_rect);
-  StoreView<AccessMode::Write, VAL, DIM_output> output_view(output_acc, output_rect);
-
-  auto source_rects = allgather_source_rects<DIM_input>(context, input_rect, nccl_comm, stream);
-  auto source_rect_infos = build_linearized_rect_infos<DIM_input>(source_rects, num_ranks, stream);
-
-  auto request_positions = create_buffer<uint64_t>(local_index_count, Memory::Kind::GPU_FB_MEM);
-  auto target_ranks      = create_buffer<int>(local_index_count, Memory::Kind::GPU_FB_MEM);
-  auto send_offsets_per_rank =
-    create_buffer<unsigned long long>(num_ranks, Memory::Kind::Z_COPY_MEM);
-  auto recv_staging_buffer =
-    create_buffer<int8_t>(local_index_count * sizeof(VAL), Memory::Kind::GPU_FB_MEM);
-
-  if (local_index_count > 0) {
-    // cudaMemsetAsync uses the low byte of `value` as the fill pattern; -1 (=0xFF)
-    CUPYNUMERIC_CHECK_CUDA(
-      cudaMemsetAsync(target_ranks.ptr(0), -1, local_index_count * sizeof(int), stream));
-    CUPYNUMERIC_CHECK_CUDA(
-      cudaMemsetAsync(recv_staging_buffer.ptr(0), 0, local_index_count * sizeof(VAL), stream));
-  }
-
-  auto plan = create_shuffle_information<DIM_input, DIM_output>(context,
-                                                                index_view,
-                                                                local_index_count,
-                                                                source_rects.ptr(0),
-                                                                request_positions.ptr(0),
-                                                                target_ranks.ptr(0),
-                                                                send_offsets_per_rank.ptr(0),
-                                                                nccl_comm,
-                                                                stream);
-
-  auto recv_flat_offsets =
-    linearize_and_exchange_offsets<DIM_input, DIM_output>(context,
-                                                          index_view,
-                                                          local_index_count,
-                                                          request_positions.ptr(0),
-                                                          send_offsets_per_rank.ptr(0),
-                                                          source_rect_infos.ptr(0),
-                                                          plan,
-                                                          nccl_comm,
-                                                          stream);
-
-  local_gather_and_exchange<CODE, DIM_input>(context,
-                                             input_view,
-                                             recv_flat_offsets.ptr(0),
-                                             sizeof(VAL),
-                                             plan,
-                                             recv_staging_buffer.ptr(0),
-                                             nccl_comm,
-                                             stream);
-
-  unpack_recv_into_output<CODE, DIM_output>(
-    output_view, request_positions.ptr(0), local_index_count, recv_staging_buffer.ptr(0), stream);
-}
-
-// ============================================================================
-// Legate task dispatch
-// ============================================================================
-
-template <Type::Code CODE, int32_t DIM_input, int32_t DIM_output>
-struct All2AllGPUBody {
-  using VAL       = type_of<CODE>;
-  using INDEX_VAL = legate::Point<DIM_input>;
-
-  void operator()(TaskContext& context,
-                  const legate::PhysicalStore& input_array,
-                  const legate::PhysicalStore& index_array,
-                  const legate::PhysicalStore& output_array)
-  {
-    const auto stream      = context.get_task_stream();
-    const auto input_rect  = input_array.shape<DIM_input>();
-    const auto index_rect  = index_array.shape<DIM_output>();
-    const auto output_rect = output_array.shape<DIM_output>();
-
-    const auto input               = input_array.read_accessor<VAL, DIM_input>(input_rect);
-    const auto index               = index_array.read_accessor<INDEX_VAL, DIM_output>(index_rect);
-    const auto output              = output_array.read_write_accessor<VAL, DIM_output>(output_rect);
-    const size_t local_index_count = index_rect.volume();
-
-    global_all2all<CODE, DIM_input, DIM_output>(context,
-                                                input,
-                                                index,
-                                                output,
-                                                input_rect,
-                                                index_rect,
-                                                output_rect,
-                                                local_index_count,
-                                                context.communicators()[0].get<ncclComm_t*>(),
-                                                stream);
-
-    CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
-  }
-};
-
-template <int DIM_input, int DIM_output>
-struct All2AllImpl_type {
-  template <Type::Code CODE>
-  void operator()(TaskContext& context,
-                  const legate::PhysicalStore& input,
-                  const legate::PhysicalStore& index_array,
-                  const legate::PhysicalStore& output) const
-  {
-    All2AllGPUBody<CODE, DIM_input, DIM_output>()(context, input, index_array, output);
-  }
-};
-
-struct All2AllImpl {
-  template <int DIM_input, int DIM_output>
-  void operator()(TaskContext& context,
-                  const legate::PhysicalStore& input,
-                  const legate::PhysicalStore& index_array,
-                  const legate::PhysicalStore& output) const
-  {
-    type_dispatch(
-      input.code(), All2AllImpl_type<DIM_input, DIM_output>{}, context, input, index_array, output);
-  }
-};
-
-void all2all_gpu(TaskContext& context)
-{
-  const auto input       = context.input(0);
-  const auto index_array = context.input(1);
-  auto output            = context.output(0);
-
-  const auto domain         = context.get_launch_domain();
-  const size_t num_ranks    = domain.get_volume();
-  const bool is_index_space = !context.is_single_task() && context.communicators().size() > 0;
-
-  assert(is_index_space || num_ranks == 1);
-
-  if (is_index_space) {
-    const auto dim_input  = std::max(input.dim(), 1);
-    const auto dim_output = std::max(output.dim(), 1);
-
-    legate::double_dispatch(
-      dim_input, dim_output, All2AllImpl{}, context, input, index_array, output);
-  } else {
-    const auto stream = context.get_task_stream();
-
-    type_dispatch(
-      input.type().code(),
-      GatherTypeDispatch<decltype(DEFAULT_POLICY.on(stream))>{DEFAULT_POLICY.on(stream)},
-      output,
-      input,
-      index_array);
-  }
-}
-
-const auto cupynumeric_reg_task_ = []() -> char {
-  All2AllTask::register_variants();
-  return 0;
-}();
-
-}  // namespace
-
-/*static*/ void All2AllTask::gpu_variant(TaskContext context) { all2all_gpu(context); }
-
+}  // namespace detail
 }  // namespace cupynumeric

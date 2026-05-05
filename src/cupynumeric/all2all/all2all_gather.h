@@ -25,7 +25,7 @@ using namespace legate;
 class All2AllTask : public CuPyNumericTask<All2AllTask> {
  public:
   static inline const auto TASK_CONFIG =
-    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_ALL2ALL}};
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_ALL2ALL_GATHER}};
 
   static constexpr auto GPU_VARIANT_OPTIONS =
     legate::VariantOptions{}.with_concurrent(true).with_has_allocations(true);

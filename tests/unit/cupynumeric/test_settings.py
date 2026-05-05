@@ -39,6 +39,7 @@ _expected_settings = (
     "take_default",
     "test",
     "use_nccl_gather",
+    "use_nccl_scatter",
     "warn",
 )
 
@@ -147,6 +148,7 @@ class TestSettings:
         assert m.settings.doctor_traceback.convert_type == 'bool ("0" or "1")'
         assert m.settings.preload_cudalibs.convert_type == 'bool ("0" or "1")'
         assert m.settings.use_nccl_gather.convert_type == 'bool ("0" or "1")'
+        assert m.settings.use_nccl_scatter.convert_type == 'bool ("0" or "1")'
         assert m.settings.warn.convert_type == 'bool ("0" or "1")'
         assert (
             m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
@@ -175,6 +177,9 @@ class TestDefaults:
 
     def test_use_nccl_gather(self) -> None:
         assert m.settings.use_nccl_gather.default is False
+
+    def test_use_nccl_scatter(self) -> None:
+        assert m.settings.use_nccl_scatter.default is False
 
     def test_warn(self) -> None:
         assert m.settings.warn.default is False

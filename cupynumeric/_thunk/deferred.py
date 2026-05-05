@@ -1138,7 +1138,7 @@ class DeferredArray:
             and source.ndim > 0
             and index_array.ndim > 0
         ):
-            self._nccl_all2all(source, index_array, result)
+            self._nccl_all2all_gather(source, index_array, result)
         else:
             legate_runtime.issue_gather(result, source, index_array)
 
@@ -1191,10 +1191,18 @@ class DeferredArray:
         ):
             # use faster, single-GPU scatter task if possible
             self._issue_scatter_task(result, index_array, source)
+        elif (
+            settings.use_nccl_scatter()
+            and runtime.num_gpus > 1
+            and result.ndim > 0
+            and source.ndim > 0
+            and index_array.ndim > 0
+        ):
+            self._all2all_scatter(source, index_array, result)
         else:
             legate_runtime.issue_scatter(result, index_array, source)
 
-    def _nccl_all2all(
+    def _nccl_all2all_gather(
         self,
         source: LogicalStore,
         index_array: LogicalStore,
@@ -1206,12 +1214,39 @@ class DeferredArray:
         Source is partitioned across ranks; indices may reference any rank's data.
         """
         task = legate_runtime.create_auto_task(
-            self.library, CuPyNumericOpCode.ALL2ALL
+            self.library, CuPyNumericOpCode.ALL2ALL_GATHER
         )
         task.add_input(source)
         task.add_input(index_array)
         task.add_output(result)
         task.add_alignment(result, index_array)
+        task.add_nccl_communicator()
+        task.execute()
+
+    def _all2all_scatter(
+        self,
+        source: LogicalStore,
+        index_array: LogicalStore,
+        result: LogicalStore,
+    ) -> None:
+        """
+        Distributed scatter via NCCL all-to-all.
+        Semantics: result[index_array[p]] = source[p] for all p.
+        Result is partitioned across ranks; indices may reference any rank's data.
+
+        Duplicate target indices race (last-writer-wins is undefined), matching
+        the single-GPU CUPYNUMERIC_SCATTER task semantics.
+        """
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.ALL2ALL_SCATTER
+        )
+        task.add_input(source)
+        task.add_input(index_array)
+        task.add_output(result)
+        # Ensure cells of `result` that are not written by this scatter retain
+        # their existing values (mirrors `_issue_scatter_task`).
+        task.add_input(result)
+        task.add_alignment(source, index_array)
         task.add_nccl_communicator()
         task.execute()
 
@@ -1268,8 +1303,20 @@ class DeferredArray:
             and transformed_rhs.ndim > 0
             and task_compatible_indices
         )
+        can_use_nccl_scatter = (
+            is_set
+            and set_value is not None
+            and settings.use_nccl_scatter()
+            and runtime.num_gpus > 1
+            and transformed_rhs.ndim > 0
+            and set_value.ndim > 0
+            and task_compatible_indices
+        )
         return (
-            can_use_scatter_task or can_use_gather_task or can_use_nccl_gather
+            can_use_scatter_task
+            or can_use_gather_task
+            or can_use_nccl_gather
+            or can_use_nccl_scatter
         )
 
     def _create_indexing_array(

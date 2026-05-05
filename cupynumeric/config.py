@@ -35,7 +35,7 @@ class _ReductionOpIds:
 
 class _CupynumericSharedLib:
     CUPYNUMERIC_ADVANCED_INDEXING: int
-    CUPYNUMERIC_ALL2ALL: int
+    CUPYNUMERIC_ALL2ALL_GATHER: int
     CUPYNUMERIC_ARANGE: int
     CUPYNUMERIC_ARGWHERE: int
     CUPYNUMERIC_BINARY_OP: int
@@ -182,6 +182,7 @@ class _CupynumericSharedLib:
     CUPYNUMERIC_MP_POTRF: int
     CUPYNUMERIC_MP_QR: int
     CUPYNUMERIC_MP_SOLVE: int
+    CUPYNUMERIC_ALL2ALL_SCATTER: int
     CUPYNUMERIC_NONZERO: int
     CUPYNUMERIC_PACKBITS: int
     CUPYNUMERIC_PAD: int
@@ -377,7 +378,7 @@ _cupynumeric = cupynumeric_lib.shared_object
 @unique
 class CuPyNumericOpCode(IntEnum):
     ADVANCED_INDEXING = _cupynumeric.CUPYNUMERIC_ADVANCED_INDEXING
-    ALL2ALL = _cupynumeric.CUPYNUMERIC_ALL2ALL
+    ALL2ALL_GATHER = _cupynumeric.CUPYNUMERIC_ALL2ALL_GATHER
     ARANGE = _cupynumeric.CUPYNUMERIC_ARANGE
     ARGWHERE = _cupynumeric.CUPYNUMERIC_ARGWHERE
     BINARY_OP = _cupynumeric.CUPYNUMERIC_BINARY_OP
@@ -407,6 +408,7 @@ class CuPyNumericOpCode(IntEnum):
     MP_POTRF = _cupynumeric.CUPYNUMERIC_MP_POTRF
     MP_QR = _cupynumeric.CUPYNUMERIC_MP_QR
     MP_SOLVE = _cupynumeric.CUPYNUMERIC_MP_SOLVE
+    ALL2ALL_SCATTER = _cupynumeric.CUPYNUMERIC_ALL2ALL_SCATTER
     NONZERO = _cupynumeric.CUPYNUMERIC_NONZERO
     PACKBITS = _cupynumeric.CUPYNUMERIC_PACKBITS
     PAD = _cupynumeric.CUPYNUMERIC_PAD
