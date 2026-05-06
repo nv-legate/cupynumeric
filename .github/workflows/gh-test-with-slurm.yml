@@ -55,7 +55,7 @@ jobs:
       LEGATE_CUDA_VERSION: ${{ inputs.cuda-version }}
     steps:
       - name: Checkout legate-gh-ci
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "nv-legate/legate-gh-ci"
           ref: ${{ inputs.legate-gh-ci-tag }}
@@ -96,7 +96,7 @@ jobs:
           | tee -a "${GITHUB_OUTPUT}"
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACTS_DIR }}
@@ -200,7 +200,7 @@ jobs:
 
       - if: steps.output-artifacts-exist.outputs.output-artifacts-exist == 'true'
         name: Upload output artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.OUTPUT_ARTIFACT_NAME }}
           path: ${{ env.OUTPUT_ARTIFACTS_DIR }}
