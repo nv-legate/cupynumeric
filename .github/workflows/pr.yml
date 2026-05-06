@@ -32,8 +32,8 @@ jobs:
       - name: Get the Legate SHA
         id: legate-sha
         run: |
-          sha=$(jq .packages.legate.git_tag cmake/versions.json)
-          echo "sha=$sha" >> $GITHUB_OUTPUT
+          sha=$(jq -r .packages.legate.git_tag cmake/versions.json)
+          echo "sha=${sha}" >> $GITHUB_OUTPUT
   wheels-build:
     needs: [legate-sha, telemetry-setup]
     secrets: inherit

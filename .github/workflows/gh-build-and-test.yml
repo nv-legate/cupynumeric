@@ -219,6 +219,29 @@ jobs:
       cuda-version: ${{ inputs.cuda-version }}
     secrets: inherit
 
+  slurm-test:
+    # Prepare SLURM shared storage (artifacts + repo clone), then run Slurm test matrix.
+    if: >-
+      ${{ inputs.platform == 'linux'
+      && inputs.target-device == 'gpu'
+      && inputs.build-has-tests == true }}
+    needs:
+      - build
+    uses:
+      ./.github/workflows/gh-test-with-slurm.yml
+    with:
+      build-has-tests: ${{ inputs.build-has-tests }}
+      build-mode: ""
+      build-type: ${{ inputs.build-type }}
+      client-repo: ${{ github.event.repository.name }}
+      client-ref: ${{ inputs.ref-sha }}
+      legate-gh-ci-tag: "slurm"
+      platform: ${{ inputs.platform }}
+      python-version: ${{ inputs.python-version }}
+      target-device: ${{ inputs.target-device }}
+      cuda-version: ${{ inputs.cuda-version }}
+    secrets: inherit
+
   upload:
     needs: test
     # The use of always() below, ensures the step will run even on failure of the tests

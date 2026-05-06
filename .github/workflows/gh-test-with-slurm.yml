@@ -1,0 +1,206 @@
+---
+name: Test on Slurm
+
+on:
+  workflow_call:
+    inputs:
+      client-repo:
+        required: true
+        type: string
+      client-ref:
+        required: false
+        type: string
+        default: ""
+      build-has-tests:
+        required: true
+        type: boolean
+      build-type:
+        required: true
+        type: string
+      target-device:
+        required: true
+        type: string
+      platform:
+        required: true
+        type: string
+      legate-gh-ci-tag:
+        required: true
+        type: string
+      build-mode:
+        required: true
+        type: string
+      python-version:
+        required: false
+        type: string
+        default: "3.12"
+      cuda-version:
+        required: false
+        type: string
+      test-name:
+        description: "Passed to legate setup when preparing the shared directory."
+        required: false
+        type: string
+        default: "prepare-slurm-shared"
+
+jobs:
+  create-slurm-shared-dir:
+    if: github.repository_owner == 'nv-legate'
+    name: Create Slurm shared directory
+    runs-on: legate-slurm
+    outputs:
+      cupynumeric_source_dir: ${{ steps.clone-cupynumeric.outputs.cupynumeric_source_dir }}
+      legate_gh_ci_dir: ${{ steps.copy-legate-gh-ci.outputs.legate_gh_ci_dir }}
+      moved_artifacts_dir: ${{ steps.move-artifacts.outputs.moved_artifacts_dir }}
+    env:
+      LEGATE_CUDA_VERSION: ${{ inputs.cuda-version }}
+    steps:
+      - name: Checkout legate-gh-ci
+        uses: actions/checkout@v5
+        with:
+          repository: "nv-legate/legate-gh-ci"
+          ref: ${{ inputs.legate-gh-ci-tag }}
+          token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+          fetch-depth: 0
+          path: legate-gh-ci
+
+      - name: Recent commits on legate-gh-ci
+        run: git -C legate-gh-ci log -3 --format='%H %s'
+
+      - name: Setup
+        uses: ./legate-gh-ci/.github/actions/setup
+        with:
+          client-repo: ${{ inputs.client-repo }}
+          client-ref: ${{ inputs.client-ref }}
+          build-type: ${{ inputs.build-type }}
+          target-device: "${{ inputs.target-device }}"
+          test-name: ${{ inputs.test-name }}
+          platform: ${{ inputs.platform }}
+          legate-gh-ci-tag: ${{ inputs.legate-gh-ci-tag }}
+          build-mode: ${{ inputs.build-mode }}
+          python-version: ${{ inputs.python-version }}
+          network: "ucx"
+          build-has-tests: ${{ inputs.build-has-tests }}
+
+      - name: Create unique directory on the slurm shared directory
+        id: unique_dir
+        run: |
+          UNIQUE_DIR="${SLURM_SHARED_DIR:?}/${GITHUB_JOB}-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "${UNIQUE_DIR}"
+          echo "path=${UNIQUE_DIR}" | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Copy legate-gh-ci to the shared directory
+        id: copy-legate-gh-ci
+        run: |
+          cp -a legate-gh-ci "${{ steps.unique_dir.outputs.path }}/legate-gh-ci"
+          echo "legate_gh_ci_dir=${{ steps.unique_dir.outputs.path }}/legate-gh-ci" \
+          | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACTS_DIR }}
+
+      - name: Move build artifacts to Slurm shared directory (matrix subdir)
+        id: move-artifacts
+        run: |
+          PY="${{ inputs.python-version }}"
+          CUDA="${{ inputs.cuda-version }}"
+          MATRIX_SLUG="py_${PY}__cuda_${CUDA}"
+          ARTIFACTS_SHARED="${{ steps.unique_dir.outputs.path }}/matrix/${MATRIX_SLUG}"
+          mkdir -p "${ARTIFACTS_SHARED}"
+          # cp and then rm to avoid "Device or resource busy"
+          cp -a "${ARTIFACTS_DIR}" "${ARTIFACTS_SHARED}/"
+          rm -rf "${ARTIFACTS_DIR}"
+          echo "moved_artifacts_dir=${ARTIFACTS_SHARED}/artifacts" >> "${GITHUB_OUTPUT}"
+
+      - name: Copy repository from the runner workspace to the slurm shared directory
+        id: clone-cupynumeric
+        working-directory: ${{ steps.unique_dir.outputs.path }}
+        run: |
+          git -C "${GITHUB_WORKSPACE:?}"/cupynumeric.internal/ log -n 1
+
+          git -c advice.detachedHead=false clone \
+          -q --tags \
+          "${GITHUB_WORKSPACE:?}"/cupynumeric.internal/ cupynumeric-source
+
+          git -C cupynumeric-source log -n 1
+
+          echo "cupynumeric_source_dir=${{ steps.unique_dir.outputs.path }}/cupynumeric-source" \
+          | tee -a "${GITHUB_OUTPUT}"
+
+  slurm-test:
+    needs: create-slurm-shared-dir
+    if: github.repository_owner == 'nv-legate'
+    name: Slurm Test (${{ matrix.test_name }} ${{ inputs.python-version }} ${{ inputs.cuda-version }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: legate-slurm
+            test_name: GEMM 2-node 4-GPU
+            test_sbatch: scripts/slurm/gemm_2nodes_4gpu.sbatch
+            test_options: ""
+
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 50
+    env:
+      LEGATE_CUDA_VERSION: ${{ inputs.cuda-version }}
+
+    defaults:
+      run:
+        shell: bash --noprofile --norc -xeuo pipefail {0}
+
+    steps:
+      - name: Setup
+        uses: ./legate-gh-ci/.github/actions/setup
+        with:
+          client-repo: ${{ inputs.client-repo }}
+          client-ref: ${{ inputs.client-ref }}
+          build-type: ${{ inputs.build-type }}
+          target-device: "${{ inputs.target-device }}"
+          test-name: ${{ inputs.test-name }}
+          platform: ${{ inputs.platform }}
+          legate-gh-ci-tag: ${{ inputs.legate-gh-ci-tag }}
+          build-mode: ${{ inputs.build-mode }}
+          python-version: ${{ inputs.python-version }}
+          network: "ucx"
+          build-has-tests: ${{ inputs.build-has-tests }}
+
+      - name: Run test
+        env:
+          REPO_DIR: ${{ needs.create-slurm-shared-dir.outputs.cupynumeric_source_dir }}
+          LEGATE_GH_CI_DIR: ${{ needs.create-slurm-shared-dir.outputs.legate_gh_ci_dir }}
+          ARTIFACTS_DIR: ${{ needs.create-slurm-shared-dir.outputs.moved_artifacts_dir }}
+        run: |
+          source "${{ env.REPO_DIR }}/scripts/slurm/common-slurm.sh"
+
+          submit_job \
+          --chdir="${{ env.REPO_DIR }}" \
+          "${{ env.REPO_DIR }}/${{ matrix.test_sbatch }}" \
+          "${{ env.LEGATE_GH_CI_DIR }}/scripts/entrypoint" \
+          "${{ env.REPO_DIR }}/continuous_integration/scripts/test" \
+          ${{ matrix.test_options }}
+
+      - name: Display structure of output artifacts dir
+        id: output-artifacts-exist
+        run: |
+          if [[ -d "${OUTPUT_ARTIFACTS_DIR:-}" && -n "$(ls -A "${OUTPUT_ARTIFACTS_DIR}")" ]]; then
+            echo "output-artifacts-exist=true" >> "${GITHUB_OUTPUT}"
+            echo "::group::Output artifacts file tree"
+            ls -lahR "${OUTPUT_ARTIFACTS_DIR}"
+            echo "::endgroup::"
+          else
+            echo "output-artifacts-exist=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Dump output variables
+        run: echo "${{ steps.output-artifacts-exist.outputs.output-artifacts-exist }}"
+
+      - if: steps.output-artifacts-exist.outputs.output-artifacts-exist == 'true'
+        name: Upload output artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.OUTPUT_ARTIFACT_NAME }}
+          path: ${{ env.OUTPUT_ARTIFACTS_DIR }}

@@ -10,8 +10,14 @@ setup_env() {
     export DEBIAN_FRONTEND=non-interactive
 
     # Run package updates and install packages
-    apt-get update
-    apt-get install -y numactl make
+    if [[ -z "${SLURM_JOB_ID:-}" ]]; then
+        apt-get update
+        apt-get install -y numactl make
+    else
+        # Set unlimited locked memory for UCX/GPU operations
+        # Must be set here otherwise legate-issue will fail
+        ulimit -l unlimited
+    fi
 
     legate-conda-retry search --override-channels -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" --info cupynumeric
 
@@ -72,6 +78,20 @@ test_cupynumeric() {
     fi
 
     case "$1" in
+        sbatch)
+            echo "Executing sbatch tests..."
+            shift;
+            CUPY_REQUIRED_FOR_TESTS=0
+            if [[ " $* " == *" --use cuda "* ]]; then
+                CUPY_REQUIRED_FOR_TESTS=1
+            fi
+            setup_test_env;
+            run_legate_issue;
+            # when sourced, we just return
+            if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+                return 0
+            fi
+            ;;
         "test")
             echo "Executing tests..."
             shift;
@@ -123,4 +143,6 @@ test_cupynumeric() {
     esac
 }
 
-(test_cupynumeric "$@");
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    (test_cupynumeric "$@");
+fi
