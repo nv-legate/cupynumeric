@@ -17,6 +17,10 @@ _GIT_URL_RE = re.compile(
 )
 _VERSION_RE = re.compile(r"^\d+(?:\.\d+){1,3}(?:\.dev)?$")
 _VERSION_PATH = "VERSION"
+_WHEEL_PACKAGE_DEPS = (
+    ("cupynumeric", "legate"),
+    ("cupynumeric-cu12", "legate-cu12"),
+)
 
 
 def _repo_root() -> Path:
@@ -113,17 +117,21 @@ def _update_versions_json(
     return True
 
 
-def _update_pyproject(path: Path, *, legate_version: str) -> bool:
+def _update_pyproject(
+    path: Path, *, package: str, legate_version: str
+) -> bool:
     if not path.is_file():
         raise FileNotFoundError(path)
     contents = path.read_text(encoding="utf-8")
     new_version = _pyproject_version(legate_version)
-    pattern = re.compile(r"legate==(?P<version>\d+\.\d+)\.\*,>=0\.0\.0a0")
+    pattern = re.compile(
+        rf"{re.escape(package)}==(?P<version>\d+\.\d+)\.\*,>=0\.0\.0a0"
+    )
     if not pattern.search(contents):
         raise ValueError(
-            "Failed to locate legate dependency pin in pyproject.toml"
+            f"Failed to locate {package} dependency pin in {path}"
         )
-    replacement = f"legate=={new_version}.*,>=0.0.0a0"
+    replacement = f"{package}=={new_version}.*,>=0.0.0a0"
     new_contents = pattern.sub(replacement, contents, count=1)
     if new_contents == contents:
         return False
@@ -164,15 +172,20 @@ def main() -> int:
             legate_version=legate_version,
         )
 
-        pyproject = (
-            root
-            / "scripts"
-            / "build"
-            / "python"
-            / "cupynumeric"
-            / "pyproject.toml"
-        )
-        _update_pyproject(pyproject, legate_version=legate_version)
+        for wheel_package, dependency_package in _WHEEL_PACKAGE_DEPS:
+            pyproject = (
+                root
+                / "scripts"
+                / "build"
+                / "python"
+                / wheel_package
+                / "pyproject.toml"
+            )
+            _update_pyproject(
+                pyproject,
+                package=dependency_package,
+                legate_version=legate_version,
+            )
     except (FileNotFoundError, ValueError) as exc:
         sys.stderr.write(f"ERROR: {exc}\n")
         return 2

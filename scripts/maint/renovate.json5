@@ -146,7 +146,11 @@
                 commands: [
                     "python3 scripts/maint/renovate_update_legate_version.py --new-version {{{newVersion}}}",
                 ],
-                fileFilters: ["cmake/versions.json"],
+                fileFilters: [
+                    "cmake/versions.json",
+                    "scripts/build/python/cupynumeric/pyproject.toml",
+                    "scripts/build/python/cupynumeric-cu12/pyproject.toml",
+                ],
             },
         },
         {

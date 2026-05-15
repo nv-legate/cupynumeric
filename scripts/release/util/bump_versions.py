@@ -4,10 +4,18 @@
 from __future__ import annotations
 
 import json
+import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .context import Context
+
+
+_WHEEL_PACKAGE_DEPS = (
+    ("cupynumeric", "legate"),
+    ("cupynumeric-cu12", "legate-cu12"),
+)
 
 
 def bump_version_file(ctx: Context) -> None:
@@ -35,6 +43,34 @@ def _pyproject_version(version: str) -> str:
     except ValueError as exc:
         raise ValueError(f"Invalid numeric version {version}") from exc
     return f"{major_int}.{minor_int}"
+
+
+def _update_pyproject_dependency(
+    path: Path, *, package: str, version: str, dry_run: bool = False
+) -> bool:
+    if not path.is_file():
+        raise FileNotFoundError(path)
+
+    contents = path.read_text()
+    pattern = re.compile(
+        rf'"{re.escape(package)}==(?P<version>\d+\.\d+)\.\*,>=0\.0\.0a0"'
+    )
+    if not pattern.search(contents):
+        raise ValueError(
+            f"Failed to locate {package} dependency pin in {path}"
+        )
+
+    new_contents = pattern.sub(
+        f'"{package}=={version}.*,>=0.0.0a0"', contents, count=1
+    )
+    if new_contents == contents:
+        return False
+
+    if dry_run:
+        return True
+
+    path.write_text(new_contents)
+    return True
 
 
 def bump_cross_repo_dependencies(ctx: Context) -> None:
@@ -83,45 +119,28 @@ def bump_cross_repo_dependencies(ctx: Context) -> None:
 
 
 def bump_pyproject_dependency(ctx: Context) -> None:
-    pyproject = (
-        ctx.cupynumeric_dir
-        / "scripts"
-        / "build"
-        / "python"
-        / "cupynumeric"
-        / "pyproject.toml"
-    )
-    ctx.vprint(f"Opening {pyproject}")
-    if not pyproject.is_file():
-        raise FileNotFoundError(pyproject)
-
-    contents = pyproject.read_text()
     new_version = _pyproject_version(ctx.version_after_this)
-    needle = '"legate=='
-    start = contents.find(needle)
-    if start == -1:
-        raise ValueError(
-            "Failed to find legate dependency pin in pyproject.toml"
+
+    for wheel_package, dependency_package in _WHEEL_PACKAGE_DEPS:
+        pyproject = (
+            ctx.cupynumeric_dir
+            / "scripts"
+            / "build"
+            / "python"
+            / wheel_package
+            / "pyproject.toml"
+        )
+        ctx.vprint(f"Opening {pyproject}")
+
+        updated = _update_pyproject_dependency(
+            pyproject,
+            package=dependency_package,
+            version=new_version,
+            dry_run=ctx.dry_run,
         )
 
-    end = contents.find(',>=0.0.0a0"', start)
-    if end == -1:
-        raise ValueError(
-            "Failed to locate legate dependency suffix in pyproject.toml"
-        )
-
-    new_contents = (
-        contents[: start + len(needle)]
-        + f'{new_version}.*,>=0.0.0a0"'
-        + contents[end + len(',>=0.0.0a0"') :]
-    )
-
-    if new_contents == contents:
-        ctx.vprint("pyproject.toml already up to date")
-        return
-
-    if ctx.dry_run:
-        return
-
-    pyproject.write_text(new_contents)
-    ctx.vprint(f"Updated {pyproject}")
+        if updated:
+            action = "Would update" if ctx.dry_run else "Updated"
+            ctx.vprint(f"{action} {pyproject}")
+        else:
+            ctx.vprint(f"{pyproject} already up to date")
