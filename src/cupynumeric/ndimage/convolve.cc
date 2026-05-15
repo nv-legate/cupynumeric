@@ -31,6 +31,7 @@ struct NdimageConvolveImplBody<VariantKind::CPU, VAL, DIM> {
                   AccessorRO<VAL, DIM>,
                   const Rect<DIM>&,
                   const Rect<DIM>&,
+                  const Rect<DIM>&,
                   CuPyNumericNdimageConvolveMode,
                   VAL,
                   Point<DIM>) const

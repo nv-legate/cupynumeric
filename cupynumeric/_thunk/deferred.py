@@ -2268,20 +2268,49 @@ class DeferredArray:
             self.library, CuPyNumericOpCode.NDIMAGE_CONVOLVE
         )
 
+        # We would like the input to be aligned to the output, but also
+        # have bloated tiles so that convolutions at tile boundaries are correct.
+        # As a result, add the input again with a new partition that is bloated.
         p_out = task.add_output(self.base)
-        p_input = task.add_input(input.base)
         p_weights = task.add_input(weights.base)
+        p_input = task.add_input(input.base)
+        p_halo = task.declare_partition()
+        task.add_input(input.base, p_halo)
 
         task.add_scalar_arg(mode.value, ty.int32)
         task.add_scalar_arg(cval, self.base.type)
         for origin in origins:
             task.add_scalar_arg(origin, ty.int64)
 
-        # TODO(dinodeep): Implement multi-GPU NDIMAGE_CONVOLVE
-        # using alignment instead of broadcast on input/output
-        task.add_constraint(broadcast(p_out, p_input))
+        centers = tuple(
+            extent // 2 + origin
+            for extent, origin in zip(weights.shape, origins, strict=True)
+        )
+        lower_offsets = tuple(
+            extent - 1 - center
+            for extent, center in zip(weights.shape, centers, strict=True)
+        )
+        upper_offsets = centers
 
         task.add_constraint(broadcast(p_weights))
+
+        # TODO(dinodeep): need to incorporate minimum tile size for inputs instead of just
+        # checking if the tile is potentially too small
+        tile_too_small = any(
+            input_dim > 1 and input_dim // runtime.num_gpus < weights_dim
+            for input_dim, weights_dim in zip(input.shape, weights.shape)
+        )
+
+        if mode == NdimageConvolveModeCode.WRAP or tile_too_small:
+            # We can't tile across the input with WRAP mode because the boundary
+            # elements would need to access inputs from other tiles.
+            # This isn't supported, so just broadcast the input.
+            task.add_constraint(broadcast(p_out, p_input, p_halo))
+        else:
+            task.add_constraint(align(p_out, p_input))
+            task.add_constraint(
+                bloat(p_out, p_halo, lower_offsets, upper_offsets)
+            )
 
         task.execute()
 

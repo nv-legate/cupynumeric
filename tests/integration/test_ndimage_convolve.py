@@ -98,7 +98,12 @@ def _check_convolve(
 
 @pytest.mark.parametrize(
     "input_shape, weights_shape",
-    [((7,), (3,)), ((4, 5), (2, 3)), ((3, 4, 5), (2, 3, 2))],
+    [
+        ((7,), (3,)),
+        ((4, 6), (2, 3)),
+        ((3, 4, 5), (2, 3, 2)),
+        ((6, 10, 6), (2, 3, 3)),
+    ],
     ids=str,
 )
 @pytest.mark.parametrize("use_output", (False, True), ids=("return", "output"))
@@ -136,15 +141,33 @@ def test_modes(
 @pytest.mark.parametrize("cval", (-3.5, 0.0, 2.25))
 def test_constant_cval(cval: float) -> None:
     _check_convolve(
-        _make_input((4, 5)), _make_weights((3, 2)), mode="constant", cval=cval
+        _make_input((10, 8)), _make_weights((3, 2)), mode="constant", cval=cval
     )
 
 
-@pytest.mark.parametrize("origin", [0, -1, (0, 1), (-1, 0)], ids=str)
-def test_origin(origin: int | tuple[int, ...]) -> None:
+@pytest.mark.parametrize(
+    "input_shape, weights_shape, origin",
+    [
+        ((8, 10), (2, 3), 0),
+        ((8, 10), (2, 3), -1),
+        ((8, 10), (2, 3), (0, 1)),
+        ((8, 10), (2, 3), (-1, 0)),
+        ((8, 10), (3, 3), 0),
+        ((8, 10), (3, 3), (-1, 1)),
+        ((8, 10), (4, 2), (1, 0)),
+        ((8, 10), (5, 4), (2, -1)),
+        ((32, 16), (7, 3), (3, 1)),
+    ],
+    ids=str,
+)
+def test_origin(
+    input_shape: tuple[int, ...],
+    weights_shape: tuple[int, ...],
+    origin: int | tuple[int, ...],
+) -> None:
     _check_convolve(
-        _make_input((4, 5)),
-        _make_weights((2, 3)),
+        _make_input(input_shape),
+        _make_weights(weights_shape),
         mode="nearest",
         origin=origin,
     )

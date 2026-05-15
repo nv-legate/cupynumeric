@@ -26,8 +26,14 @@ using namespace legate;
 
 __device__ int32_t get_boundary_index(const int32_t idx,
                                       const int32_t size,
-                                      const CuPyNumericNdimageConvolveMode mode)
+                                      const CuPyNumericNdimageConvolveMode mode,
+                                      bool* use_constant)
 {
+  const bool has_input_value = 0 <= idx && idx < size;
+  if (has_input_value) {
+    return idx;
+  }
+
   switch (mode) {
     case CUPYNUMERIC_NDIMAGE_CONVOLVE_REFLECT: {
       int32_t out = idx;
@@ -53,14 +59,21 @@ __device__ int32_t get_boundary_index(const int32_t idx,
       const int32_t out = idx % size;
       return out < 0 ? out + size : out;
     }
-    case CUPYNUMERIC_NDIMAGE_CONVOLVE_CONSTANT: return (idx < 0 || idx >= size) ? -1 : idx;
-    default: return idx;
+    case CUPYNUMERIC_NDIMAGE_CONVOLVE_CONSTANT: {
+      *use_constant = true;
+      return -1;
+    }
+    default: {
+      LEGATE_ABORT("Invalid convolution mode, %d", mode);
+      return idx;
+    }
   }
 }
 
 template <int DIM_IDX, int DIM, typename VAL>
 struct FilterLoop {
   __device__ static void run(const Point<DIM> output_point,
+                             const Rect<DIM> output_rect,
                              const VAL* input,
                              const Point<DIM> input_strides,
                              const Rect<DIM> input_rect,
@@ -81,17 +94,20 @@ struct FilterLoop {
       correlate ? weights_base : weights_base + (w_size_dim - 1) * weights_strides[DIM_IDX];
     int32_t traversal_dir = correlate ? 1 : -1;
 
-    const int32_t center_dim = w_size_dim / 2 + origins[DIM_IDX];
-    for (int32_t iw = 0, curr_idx_dim = output_point[DIM_IDX] + center_dim - w_size_dim + 1;
-         iw < w_size_dim;
+    const int32_t center_dim   = w_size_dim / 2 + origins[DIM_IDX];
+    const int32_t input_offset = output_point[DIM_IDX] - input_rect.lo[DIM_IDX];
+    for (int32_t iw = 0, curr_idx_dim = input_offset + center_dim - w_size_dim + 1; iw < w_size_dim;
          iw++, curr_idx_dim++, weights_ptr += traversal_dir * weights_strides[DIM_IDX]) {
-      const int32_t actual_idx_dim = get_boundary_index(curr_idx_dim, input_size_dim, mode);
+      bool iter_use_constant = false;
+      const int32_t actual_idx_dim =
+        get_boundary_index(curr_idx_dim, input_size_dim, mode, &iter_use_constant);
 
-      const bool next_use_cval = use_cval || (actual_idx_dim < 0);
+      const bool next_use_cval = use_cval || iter_use_constant;
       const VAL* next_input =
         next_use_cval ? input : (input + input_strides[DIM_IDX] * actual_idx_dim);
 
       FilterLoop<DIM_IDX + 1, DIM, VAL>::run(output_point,
+                                             output_rect,
                                              next_input,
                                              input_strides,
                                              input_rect,
@@ -111,6 +127,7 @@ struct FilterLoop {
 template <int DIM, typename VAL>
 struct FilterLoop<DIM, DIM, VAL> {
   __device__ static void run(const Point<DIM>,
+                             const Rect<DIM>,
                              const VAL* input,
                              const Point<DIM>,
                              const Rect<DIM>,
@@ -132,6 +149,7 @@ struct FilterLoop<DIM, DIM, VAL> {
 template <typename VAL, int DIM>
 static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   convolve_kernel(AccessorWO<VAL, DIM> out,
+                  const Rect<DIM> output_rect,
                   const Pitches<DIM - 1> out_pitches,
                   const size_t output_volume,
                   const Point<DIM> output_lo,
@@ -159,6 +177,7 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   VAL acc = 0;
 
   FilterLoop<0, DIM, VAL>::run(output_point,
+                               output_rect,
                                input,
                                input_strides,
                                input_rect,
@@ -183,33 +202,36 @@ struct NdimageConvolveImplBody<VariantKind::GPU, VAL, DIM> {
   void operator()(AccessorWO<VAL, DIM> out,
                   AccessorRO<VAL, DIM> input,
                   AccessorRO<VAL, DIM> weights,
-                  const Rect<DIM>& io_rect,
+                  const Rect<DIM>& input_rect,
+                  const Rect<DIM>& output_rect,
                   const Rect<DIM>& weights_rect,
                   CuPyNumericNdimageConvolveMode mode,
                   VAL cval,
                   Point<DIM> origins) const
   {
-    // get pointers and strides to input and weights
+    // Get the input pionter with respect to the output rect because
+    // we would like to get the pointer to be aligned to the output rect.
+    // Offset indexing in convolve_kernel will handle indexing into the bloated regions.
     size_t input_strides[DIM];
-    const auto input_ptr = input.ptr(io_rect, input_strides);
+    const auto input_ptr = input.ptr(input_rect, input_strides);
 
     size_t weights_strides[DIM];
     const auto weights_ptr = weights.ptr(weights_rect, weights_strides);
 
-    // get output pitches
     Pitches<DIM - 1> output_pitches;
-    const size_t output_volume = output_pitches.flatten(io_rect);
+    const size_t output_volume = output_pitches.flatten(output_rect);
 
     const size_t num_blocks = (output_volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     const auto stream       = context.get_task_stream();
 
     convolve_kernel<<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(out,
+                                                                  output_rect,
                                                                   output_pitches,
                                                                   output_volume,
-                                                                  io_rect.lo,
+                                                                  output_rect.lo,
                                                                   input_ptr,
                                                                   Point<DIM>(input_strides),
-                                                                  io_rect,
+                                                                  input_rect,
                                                                   weights_ptr,
                                                                   Point<DIM>(weights_strides),
                                                                   weights_rect,

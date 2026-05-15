@@ -45,10 +45,17 @@ struct NdimageConvolveDispatch {
     auto input_rect   = input_store.shape<DIM>();
     auto weights_rect = weights_store.shape<DIM>();
 
-    assert(input_rect == out_rect);
+    // Because the input may span multiple tiles across GPUs,
+    // we need to ensure the weights aren't larger than the input tile
+    // so that we can satisfy certain boundary modes.
+    if (!context.is_single_task()) {
+      for (int dim = 0; dim < DIM; ++dim) {
+        int32_t weight_dim_size = weights_rect.hi[dim] - weights_rect.lo[dim] + 1;
+        int32_t output_dim_size = out_rect.hi[dim] - out_rect.lo[dim] + 1;
 
-    assert(context.is_single_task());  // TODO(dinodeep): support MGMN non-batched convolutions,
-                                       // then remove this assert
+        assert(weight_dim_size <= output_dim_size);
+      }
+    }
 
     if (out_rect.empty()) {
       return;
@@ -64,7 +71,7 @@ struct NdimageConvolveDispatch {
     }
 
     NdimageConvolveImplBody<KIND, VAL, DIM>{context}(
-      output, input, weights, input_rect, weights_rect, args.mode, fill_value, origins);
+      output, input, weights, input_rect, out_rect, weights_rect, args.mode, fill_value, origins);
   }
 };
 
@@ -81,8 +88,8 @@ static void ndimage_convolve_template(TaskContext& context)
 
   NdimageConvolveArgs args{
     context.output(0),
+    context.input(2),
     context.input(0),
-    context.input(1),
     static_cast<CuPyNumericNdimageConvolveMode>(context.scalar(0).value<std::int32_t>()),
     context.scalar(1),
     std::move(origins),

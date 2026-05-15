@@ -62,16 +62,16 @@ def _normalize_origin(
         One validated origin value per input dimension.
     """
     if isinstance(origin, tuple):
-        origins = tuple(int(o) for o in origin)
-        if len(origins) != ndim:
+        origin = tuple(int(o) for o in origin)
+        if len(origin) != ndim:
             raise ValueError(
                 "`origin` must have one entry per input dimension"
             )
     else:
-        origins = (int(origin),) * ndim
+        origin = (int(origin),) * ndim
 
     for axis, (current_origin, filter_size) in enumerate(
-        zip(origins, weights_shape, strict=True)
+        zip(origin, weights_shape, strict=True)
     ):
         center = filter_size // 2
         if (
@@ -82,7 +82,7 @@ def _normalize_origin(
                 f"invalid origin {current_origin} for axis {axis} with filter size {filter_size}"
             )
 
-    return origins
+    return origin
 
 
 @add_boilerplate("input", "weights")
@@ -154,7 +154,7 @@ def convolve(
     if input.ndim != weights.ndim:
         raise ValueError("input and weights must have the same dimensions")
 
-    origins = _normalize_origin(origin, input.ndim, weights.shape)
+    origin = _normalize_origin(origin, input.ndim, weights.shape)
 
     # check output array if given, otherwise, create a new array
     if output is not None:
@@ -176,7 +176,7 @@ def convolve(
         weights = weights.astype(input.dtype)
 
     output._thunk.ndimage_convolve(
-        input._thunk, weights._thunk, _MODE_MAP[mode], cval, origins
+        input._thunk, weights._thunk, _MODE_MAP[mode], cval, origin
     )
 
     return output
