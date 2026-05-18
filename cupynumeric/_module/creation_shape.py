@@ -49,6 +49,7 @@ class _MGridClass:
     def __init__(self) -> None:
         return
 
+    @add_boilerplate()
     def __getitem__(self, key: slice | Sequence[slice]) -> ndarray:
         """
         Parameters
@@ -129,6 +130,7 @@ def _uninitialized_like(
     return ndarray._from_inputs(shape, dtype=dtype, inputs=(a,))
 
 
+@add_boilerplate()
 def empty(
     shape: NdShapeLike,
     dtype: npt.DTypeLike = np.float64,
@@ -216,6 +218,7 @@ def empty_like(
     return arr
 
 
+@add_boilerplate()
 def eye(
     N: int,
     M: int | None = None,
@@ -273,6 +276,7 @@ def eye(
     return result
 
 
+@add_boilerplate()
 def identity(n: int, dtype: npt.DTypeLike = float) -> ndarray:
     """
 
@@ -305,6 +309,7 @@ def identity(n: int, dtype: npt.DTypeLike = float) -> ndarray:
     return eye(N=n, M=n, dtype=dtype)
 
 
+@add_boilerplate()
 def ones(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     """
 
@@ -333,6 +338,7 @@ def ones(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     return full(shape, 1, dtype=dtype)
 
 
+@add_boilerplate("a")
 def ones_like(
     a: ndarray,
     dtype: npt.DTypeLike | None = None,
@@ -371,6 +377,7 @@ def ones_like(
     return full_like(a, 1, dtype=usedtype, shape=shape)
 
 
+@add_boilerplate()
 def zeros(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     """
     zeros(shape, dtype=float)
@@ -402,6 +409,7 @@ def zeros(shape: NdShapeLike, dtype: npt.DTypeLike = np.float64) -> ndarray:
     return full(shape, 0, dtype=dtype)
 
 
+@add_boilerplate("a")
 def zeros_like(
     a: ndarray,
     dtype: npt.DTypeLike | None = None,
@@ -440,6 +448,7 @@ def zeros_like(
     return full_like(a, 0, dtype=usedtype, shape=shape)
 
 
+@add_boilerplate()
 def full(
     shape: NdShapeLike, value: Any, dtype: npt.DTypeLike | None = None
 ) -> ndarray:
@@ -482,6 +491,7 @@ def full(
     return result
 
 
+@add_boilerplate("a")
 def full_like(
     a: ndarray,
     value: int | float,

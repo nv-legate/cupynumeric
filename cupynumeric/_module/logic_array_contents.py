@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .._array.util import convert_to_cupynumeric_ndarray
+from .._array.util import add_boilerplate
 from .._ufunc.comparison import logical_and
 from .._ufunc.floating import isinf, signbit
 
@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from .._array.array import ndarray
 
 
+@add_boilerplate("x")
 def isneginf(x: ndarray, out: ndarray | None = None) -> ndarray:
     """
 
@@ -61,14 +62,12 @@ def isneginf(x: ndarray, out: ndarray | None = None) -> ndarray:
     Multiple GPUs, Multiple CPUs
 
     """
-    x = convert_to_cupynumeric_ndarray(x)
-    if out is not None:
-        out = convert_to_cupynumeric_ndarray(out, share=True)
     rhs1 = isinf(x)
     rhs2 = signbit(x)
     return logical_and(rhs1, rhs2, out=out)
 
 
+@add_boilerplate("x")
 def isposinf(x: ndarray, out: ndarray | None = None) -> ndarray:
     """
 
@@ -106,9 +105,6 @@ def isposinf(x: ndarray, out: ndarray | None = None) -> ndarray:
     Multiple GPUs, Multiple CPUs
 
     """
-    x = convert_to_cupynumeric_ndarray(x)
-    if out is not None:
-        out = convert_to_cupynumeric_ndarray(out, share=True)
     rhs1 = isinf(x)
     rhs2 = ~signbit(x)
     return logical_and(rhs1, rhs2, out=out)

@@ -51,6 +51,7 @@ def _atleast_nd(ndim: int, arys: Sequence[ndarray]) -> list[ndarray] | ndarray:
     return result
 
 
+@add_boilerplate()
 def atleast_1d(*arys: ndarray) -> list[ndarray] | ndarray:
     """
 
@@ -80,6 +81,7 @@ def atleast_1d(*arys: ndarray) -> list[ndarray] | ndarray:
     return _atleast_nd(1, arys)
 
 
+@add_boilerplate()
 def atleast_2d(*arys: ndarray) -> list[ndarray] | ndarray:
     """
 
@@ -110,6 +112,7 @@ def atleast_2d(*arys: ndarray) -> list[ndarray] | ndarray:
     return _atleast_nd(2, arys)
 
 
+@add_boilerplate()
 def atleast_3d(*arys: ndarray) -> list[ndarray] | ndarray:
     """
 
@@ -185,6 +188,7 @@ def squeeze(
     return a.squeeze(axis=axis)
 
 
+@add_boilerplate()
 def broadcast_shapes(*args: NdShapeLike | Sequence[NdShapeLike]) -> NdShape:
     """
 
@@ -283,6 +287,7 @@ def _broadcast_arrays(
     return arrays
 
 
+@add_boilerplate()
 def broadcast_arrays(*args: Any, subok: bool = False) -> list[ndarray]:
     """
 

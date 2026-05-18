@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ._bitgenerator import XORWOW, BitGenerator
+from .._array.util import add_boilerplate
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
 
 
 class Generator:
+    @add_boilerplate()
     def __init__(self, bit_generator: BitGenerator) -> None:
         """
         Generator(bit_generator)
@@ -63,6 +65,7 @@ class Generator:
         """
         self.bit_generator = bit_generator
 
+    @add_boilerplate(prefix="random")
     def beta(
         self,
         a: float,
@@ -72,6 +75,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.beta(a=a, b=b, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def binomial(
         self,
         ntrials: int,
@@ -83,9 +87,11 @@ class Generator:
             ntrials=ntrials, p=p, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def bytes(self, length: int | tuple[int, ...]) -> ndarray:
         return self.bit_generator.bytes(length=length)
 
+    @add_boilerplate(prefix="random")
     def cauchy(
         self,
         x0: float,
@@ -97,6 +103,7 @@ class Generator:
             x0=x0, gamma=gamma, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def chisquare(
         self,
         df: float,
@@ -107,6 +114,7 @@ class Generator:
             df=df, nonc=0.0, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def exponential(
         self,
         scale: float = 1.0,
@@ -117,6 +125,7 @@ class Generator:
             scale=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def f(
         self,
         dfnum: float,
@@ -128,6 +137,7 @@ class Generator:
             dfnum=dfnum, dfden=dfden, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def gamma(
         self,
         shape: float,
@@ -139,6 +149,7 @@ class Generator:
             k=shape, theta=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def geometric(
         self,
         p: float,
@@ -147,6 +158,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.geometric(p=p, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def gumbel(
         self,
         loc: float = 0.0,
@@ -158,6 +170,7 @@ class Generator:
             mu=loc, beta=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def hypergeometric(
         self,
         ngood: int,
@@ -170,6 +183,7 @@ class Generator:
             ngood=ngood, nbad=nbad, nsample=nsample, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def integers(
         self,
         low: int,
@@ -180,6 +194,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.integers(low, high, size, dtype, endpoint)
 
+    @add_boilerplate(prefix="random")
     def laplace(
         self,
         loc: float = 0.0,
@@ -191,6 +206,7 @@ class Generator:
             mu=loc, beta=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def logistic(
         self,
         loc: float = 0.0,
@@ -202,6 +218,7 @@ class Generator:
             mu=loc, beta=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def lognormal(
         self,
         mean: float = 0.0,
@@ -211,6 +228,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.lognormal(mean, sigma, size, dtype)
 
+    @add_boilerplate(prefix="random")
     def logseries(
         self,
         p: float,
@@ -219,6 +237,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.logseries(p=p, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def negative_binomial(
         self,
         ntrials: int,
@@ -230,6 +249,7 @@ class Generator:
             ntrials, p, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def noncentral_chisquare(
         self,
         df: float,
@@ -241,6 +261,7 @@ class Generator:
             df=df, nonc=nonc, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def noncentral_f(
         self,
         dfnum: float,
@@ -253,6 +274,7 @@ class Generator:
             dfnum=dfnum, dfden=dfden, nonc=nonc, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def normal(
         self,
         loc: float = 0.0,
@@ -264,6 +286,7 @@ class Generator:
             mean=loc, sigma=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def pareto(
         self,
         a: float,
@@ -272,11 +295,13 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.pareto(alpha=a, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def poisson(
         self, lam: float = 1.0, size: NdShapeLike | None = None
     ) -> ndarray:
         return self.bit_generator.poisson(lam, size)
 
+    @add_boilerplate(prefix="random")
     def power(
         self,
         a: float,
@@ -285,6 +310,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.power(alpha=a, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def random(
         self,
         size: NdShapeLike | None = None,
@@ -303,6 +329,7 @@ class Generator:
                 )
         return self.bit_generator.random(size, dtype, out)
 
+    @add_boilerplate(prefix="random")
     def rayleigh(
         self,
         scale: float,
@@ -313,6 +340,7 @@ class Generator:
             sigma=scale, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def standard_cauchy(
         self,
         size: NdShapeLike | None = None,
@@ -320,6 +348,7 @@ class Generator:
     ) -> ndarray:
         return self.cauchy(0.0, 1.0, size, dtype)
 
+    @add_boilerplate(prefix="random")
     def standard_exponential(
         self,
         size: NdShapeLike | None = None,
@@ -327,6 +356,7 @@ class Generator:
     ) -> ndarray:
         return self.exponential(1.0, size, dtype)
 
+    @add_boilerplate(prefix="random")
     def standard_gamma(
         self,
         shape: float,
@@ -335,6 +365,7 @@ class Generator:
     ) -> ndarray:
         return self.gamma(shape=shape, scale=1.0, size=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def standard_t(
         self,
         df: float,
@@ -343,6 +374,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.standard_t(df=df, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def triangular(
         self,
         left: float,
@@ -355,6 +387,7 @@ class Generator:
             a=left, b=right, c=mode, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def uniform(
         self,
         low: float = 0.0,
@@ -364,6 +397,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.uniform(low, high, size, dtype)
 
+    @add_boilerplate(prefix="random")
     def vonmises(
         self,
         mu: float,
@@ -375,6 +409,7 @@ class Generator:
             mu=mu, kappa=kappa, shape=size, dtype=dtype
         )
 
+    @add_boilerplate(prefix="random")
     def wald(
         self,
         mean: float,
@@ -384,6 +419,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.wald(mean, scale, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def weibull(
         self,
         a: float,
@@ -392,6 +428,7 @@ class Generator:
     ) -> ndarray:
         return self.bit_generator.weibull(lam=1, k=a, shape=size, dtype=dtype)
 
+    @add_boilerplate(prefix="random")
     def zipf(
         self,
         a: float,
@@ -401,6 +438,7 @@ class Generator:
         return self.bit_generator.zipf(alpha=a, shape=size, dtype=dtype)
 
 
+@add_boilerplate()
 def default_rng(
     seed: int | BitGenerator | Generator | None = None,
 ) -> Generator:

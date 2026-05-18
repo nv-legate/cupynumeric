@@ -748,6 +748,7 @@ class ndarray:
 
     # Methods for ndarray
 
+    @add_boilerplate()
     def __abs__(self) -> ndarray:
         """a.__abs__(/)
 
@@ -761,6 +762,7 @@ class ndarray:
         # Handle the nice case of it being unsigned
         return convert_to_cupynumeric_ndarray(self._thunk._absolute())
 
+    @add_boilerplate()
     def __add__(self, rhs: Any) -> ndarray:
         """a.__add__(value, /)
 
@@ -773,6 +775,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._add(rhs))
 
+    @add_boilerplate()
     def __and__(self, rhs: Any) -> ndarray:
         """a.__and__(value, /)
 
@@ -828,6 +831,7 @@ class ndarray:
         self._check_is_convertible_to_scalar()
         return complex(self.__array__())
 
+    @add_boilerplate()
     def __contains__(self, item: Any) -> ndarray:
         """a.__contains__(key, /)
 
@@ -852,6 +856,7 @@ class ndarray:
             args=(Scalar(args[0].squeeze()[()], core_dtype),),
         )
 
+    @add_boilerplate()
     def __copy__(self) -> ndarray:
         """a.__copy__()
 
@@ -869,6 +874,7 @@ class ndarray:
         result._thunk.copy(self._thunk, deep=False)
         return result
 
+    @add_boilerplate()
     def __deepcopy__(self, memo: Any | None = None) -> ndarray:
         """a.__deepcopy__(memo, /)
 
@@ -885,6 +891,7 @@ class ndarray:
         result._thunk.copy(self._thunk, deep=True)
         return result
 
+    @add_boilerplate()
     def __div__(self, rhs: Any) -> ndarray:
         """a.__div__(value, /)
 
@@ -897,6 +904,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self.__truediv__(rhs))
 
+    @add_boilerplate()
     def __divmod__(self, rhs: Any) -> ndarray:
         """a.__divmod__(value, /)
 
@@ -911,6 +919,7 @@ class ndarray:
             "cupynumeric.ndarray doesn't support __divmod__ yet"
         )
 
+    @add_boilerplate()
     def __eq__(self, rhs: object) -> ndarray:  # type: ignore [override]
         """a.__eq__(value, /)
 
@@ -932,6 +941,7 @@ class ndarray:
         self._check_is_convertible_to_scalar()
         return float(self.__array__())
 
+    @add_boilerplate()
     def __floordiv__(self, rhs: Any) -> ndarray:
         """a.__floordiv__(value, /)
 
@@ -947,6 +957,7 @@ class ndarray:
     def __format__(self, *args: Any, **kwargs: Any) -> str:
         return self.__array__().__format__(*args, **kwargs)
 
+    @add_boilerplate()
     def __ge__(self, rhs: Any) -> ndarray:
         """a.__ge__(value, /)
 
@@ -999,6 +1010,7 @@ class ndarray:
         key = self._convert_key(key)
         return ndarray._from_thunk(self._thunk.get_item(key))
 
+    @add_boilerplate()
     def __gt__(self, rhs: Any) -> ndarray:
         """a.__gt__(value, /)
 
@@ -1014,6 +1026,7 @@ class ndarray:
     def __hash__(self) -> int:
         raise TypeError("unhashable type: cupynumeric.ndarray")
 
+    @add_boilerplate()
     def __iadd__(self, rhs: Any) -> ndarray:
         """a.__iadd__(value, /)
 
@@ -1026,6 +1039,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._add(rhs, out=self))
 
+    @add_boilerplate()
     def __iand__(self, rhs: Any) -> ndarray:
         """a.__iand__(value, /)
 
@@ -1040,6 +1054,7 @@ class ndarray:
             self._thunk._bitwise_and(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __idiv__(self, rhs: Any) -> ndarray:
         """a.__idiv__(value, /)
 
@@ -1052,6 +1067,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self.__itruediv__(rhs))
 
+    @add_boilerplate()
     def __ifloordiv__(self, rhs: Any) -> ndarray:
         """a.__ifloordiv__(value, /)
 
@@ -1066,6 +1082,7 @@ class ndarray:
             self._thunk._floor_divide(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __ilshift__(self, rhs: Any) -> ndarray:
         """a.__ilshift__(value, /)
 
@@ -1080,6 +1097,7 @@ class ndarray:
             self._thunk._left_shift(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __imatmul__(self, rhs: Any) -> ndarray:
         """a.__imatmul__(value, /)
 
@@ -1094,6 +1112,7 @@ class ndarray:
             self._thunk._matmul(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __imod__(self, rhs: Any) -> ndarray:
         """a.__imod__(value, /)
 
@@ -1108,6 +1127,7 @@ class ndarray:
             self._thunk._remainder(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __imul__(self, rhs: Any) -> ndarray:
         """a.__imul__(value, /)
 
@@ -1134,6 +1154,7 @@ class ndarray:
         self._check_is_convertible_to_scalar()
         return int(self.__array__())
 
+    @add_boilerplate()
     def __invert__(self) -> ndarray:
         """a.__invert__(/)
 
@@ -1150,6 +1171,7 @@ class ndarray:
         else:
             return convert_to_cupynumeric_ndarray(self._thunk._invert())
 
+    @add_boilerplate()
     def __ior__(self, rhs: Any) -> ndarray:
         """a.__ior__(/)
 
@@ -1164,6 +1186,7 @@ class ndarray:
             self._thunk._bitwise_or(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __ipow__(self, rhs: float) -> ndarray:
         """a.__ipow__(/)
 
@@ -1178,6 +1201,7 @@ class ndarray:
             self._thunk._power(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __irshift__(self, rhs: Any) -> ndarray:
         """a.__irshift__(/)
 
@@ -1203,6 +1227,7 @@ class ndarray:
 
         return iter_array(self)
 
+    @add_boilerplate()
     def __isub__(self, rhs: Any) -> ndarray:
         """a.__isub__(/)
 
@@ -1217,6 +1242,7 @@ class ndarray:
             self._thunk._subtract(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __itruediv__(self, rhs: Any) -> ndarray:
         """a.__itruediv__(/)
 
@@ -1231,6 +1257,7 @@ class ndarray:
             self._thunk._true_divide(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __ixor__(self, rhs: Any) -> ndarray:
         """a.__ixor__(/)
 
@@ -1245,6 +1272,7 @@ class ndarray:
             self._thunk._bitwise_xor(rhs, out=self)
         )
 
+    @add_boilerplate()
     def __le__(self, rhs: Any) -> ndarray:
         """a.__le__(value, /)
 
@@ -1265,6 +1293,7 @@ class ndarray:
         """
         return self.shape[0]
 
+    @add_boilerplate()
     def __lshift__(self, rhs: Any) -> ndarray:
         """a.__lshift__(value, /)
 
@@ -1277,6 +1306,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._left_shift(rhs))
 
+    @add_boilerplate()
     def __lt__(self, rhs: Any) -> ndarray:
         """a.__lt__(value, /)
 
@@ -1289,6 +1319,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._less(rhs))
 
+    @add_boilerplate()
     def __matmul__(self, value: Any) -> ndarray:
         """a.__matmul__(value, /)
 
@@ -1301,6 +1332,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._matmul(value))
 
+    @add_boilerplate()
     def __mod__(self, rhs: Any) -> ndarray:
         """a.__mod__(value, /)
 
@@ -1313,6 +1345,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._remainder(rhs))
 
+    @add_boilerplate()
     def __mul__(self, rhs: Any) -> ndarray:
         """a.__mul__(value, /)
 
@@ -1325,6 +1358,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._multiply(rhs))
 
+    @add_boilerplate()
     def __ne__(self, rhs: object) -> ndarray:  # type: ignore [override]
         """a.__ne__(value, /)
 
@@ -1337,6 +1371,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._not_equal(rhs))
 
+    @add_boilerplate()
     def __neg__(self) -> ndarray:
         """a.__neg__(value, /)
 
@@ -1371,6 +1406,7 @@ class ndarray:
         thunks = self._thunk.nonzero()
         return tuple(ndarray._from_thunk(thunk) for thunk in thunks)
 
+    @add_boilerplate()
     def __or__(self, rhs: Any) -> ndarray:
         """a.__or__(value, /)
 
@@ -1383,6 +1419,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._bitwise_or(rhs))
 
+    @add_boilerplate()
     def __pos__(self) -> ndarray:
         """a.__pos__(value, /)
 
@@ -1396,6 +1433,7 @@ class ndarray:
         # the positive opeartor is equivalent to copy
         return convert_to_cupynumeric_ndarray(self._thunk._positive())
 
+    @add_boilerplate()
     def __pow__(self, rhs: float) -> ndarray:
         """a.__pow__(value, /)
 
@@ -1408,6 +1446,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._power(rhs))
 
+    @add_boilerplate()
     def __radd__(self, lhs: Any) -> ndarray:
         """a.__radd__(value, /)
 
@@ -1421,6 +1460,7 @@ class ndarray:
         # order doesn't matter for add
         return convert_to_cupynumeric_ndarray(self._thunk._add(lhs))
 
+    @add_boilerplate()
     def __rand__(self, lhs: Any) -> ndarray:
         """a.__rand__(value, /)
 
@@ -1434,6 +1474,7 @@ class ndarray:
         # order doesn't matter for bitwise_and
         return convert_to_cupynumeric_ndarray(self._thunk._bitwise_and(lhs))
 
+    @add_boilerplate()
     def __rdiv__(self, lhs: Any) -> ndarray:
         """a.__rdiv__(value, /)
 
@@ -1450,6 +1491,7 @@ class ndarray:
             )
         return _ufunc.true_divide(lhs, self)
 
+    @add_boilerplate()
     def __rdivmod__(self, lhs: Any) -> ndarray:
         """a.__rdivmod__(value, /)
 
@@ -1477,6 +1519,7 @@ class ndarray:
     ) -> str | tuple[str, ...]:
         return self.__array__().__reduce_ex__(*args, **kwargs)
 
+    @add_boilerplate()
     def __repr__(self) -> str:
         """a.__repr__(/)
 
@@ -1489,6 +1532,7 @@ class ndarray:
         """
         return repr(self.__array__())
 
+    @add_boilerplate()
     def __rfloordiv__(self, lhs: Any) -> ndarray:
         """a.__rfloordiv__(value, /)
 
@@ -1505,6 +1549,7 @@ class ndarray:
             )
         return _ufunc.floor_divide(lhs, self)
 
+    @add_boilerplate()
     def __rmatmul__(self, lhs: Any) -> ndarray:
         """a.__rmatmul__(value, /)
 
@@ -1521,6 +1566,7 @@ class ndarray:
             return convert_to_cupynumeric_ndarray(lhs._thunk._matmul(self))
         return convert_to_cupynumeric_ndarray(matmul(lhs, self))
 
+    @add_boilerplate()
     def __rmod__(self, lhs: Any) -> ndarray:
         """a.__rmod__(value, /)
 
@@ -1535,6 +1581,7 @@ class ndarray:
             return convert_to_cupynumeric_ndarray(lhs._thunk._remainder(self))
         return _ufunc.remainder(lhs, self)
 
+    @add_boilerplate()
     def __rmul__(self, lhs: Any) -> ndarray:
         """a.__rmul__(value, /)
 
@@ -1549,6 +1596,7 @@ class ndarray:
             return convert_to_cupynumeric_ndarray(lhs._thunk._multiply(self))
         return convert_to_cupynumeric_ndarray(self._thunk._multiply(lhs))
 
+    @add_boilerplate()
     def __ror__(self, lhs: Any) -> ndarray:
         """a.__ror__(value, /)
 
@@ -1562,6 +1610,7 @@ class ndarray:
         # order doesn't matter here
         return convert_to_cupynumeric_ndarray(self._thunk._bitwise_or(lhs))
 
+    @add_boilerplate()
     def __rpow__(self, lhs: Any) -> ndarray:
         """__rpow__(value, /)
 
@@ -1576,6 +1625,7 @@ class ndarray:
             return convert_to_cupynumeric_ndarray(lhs._thunk._power(self))
         return _ufunc.power(lhs, self)
 
+    @add_boilerplate()
     def __rshift__(self, rhs: Any) -> ndarray:
         """a.__rshift__(value, /)
 
@@ -1588,6 +1638,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._right_shift(rhs))
 
+    @add_boilerplate()
     def __rsub__(self, lhs: Any) -> ndarray:
         """a.__rsub__(value, /)
 
@@ -1602,6 +1653,7 @@ class ndarray:
             return convert_to_cupynumeric_ndarray(lhs._thunk._subtract(self))
         return _ufunc.subtract(lhs, self)
 
+    @add_boilerplate()
     def __rtruediv__(self, lhs: Any) -> ndarray:
         """a.__rtruediv__(value, /)
 
@@ -1618,6 +1670,7 @@ class ndarray:
             )
         return _ufunc.true_divide(lhs, self)
 
+    @add_boilerplate()
     def __rxor__(self, lhs: Any) -> ndarray:
         """a.__rxor__(value, /)
 
@@ -1689,6 +1742,7 @@ class ndarray:
     def __sizeof__(self, *args: Any, **kwargs: Any) -> int:
         return self.__array__().__sizeof__(*args, **kwargs)
 
+    @add_boilerplate()
     def __sub__(self, rhs: Any) -> ndarray:
         """a.__sub__(value, /)
 
@@ -1701,6 +1755,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._subtract(rhs))
 
+    @add_boilerplate()
     def __str__(self) -> str:
         """a.__str__(/)
 
@@ -1713,6 +1768,7 @@ class ndarray:
         """
         return str(self.__array__())
 
+    @add_boilerplate()
     def __truediv__(self, rhs: Any) -> ndarray:
         """a.__truediv__(value, /)
 
@@ -1725,6 +1781,7 @@ class ndarray:
         """
         return convert_to_cupynumeric_ndarray(self._thunk._true_divide(rhs))
 
+    @add_boilerplate()
     def __xor__(self, rhs: Any) -> ndarray:
         """a.__xor__(value, /)
 
@@ -1879,6 +1936,7 @@ class ndarray:
             UnaryRedCode.ARGMIN, self, axis=axis, out=out, keepdims=keepdims
         )
 
+    @add_boilerplate()
     def astype(
         self,
         dtype: npt.DTypeLike,
@@ -2305,6 +2363,7 @@ class ndarray:
             UnaryOpCode.ROUND, self, out=out, extra_args=extra_args
         )
 
+    @add_boilerplate()
     def conj(self) -> ndarray:
         """a.conj()
 
@@ -2326,6 +2385,7 @@ class ndarray:
         else:
             return self
 
+    @add_boilerplate()
     def conjugate(self) -> ndarray:
         """a.conjugate()
 
@@ -2344,6 +2404,7 @@ class ndarray:
         """
         return self.conj()
 
+    @add_boilerplate()
     def copy(self, order: OrderType = "C") -> ndarray:
         """copy()
 
@@ -2546,6 +2607,7 @@ class ndarray:
 
         return res
 
+    @add_boilerplate()
     def diagonal(
         self,
         offset: int = 0,
@@ -2726,6 +2788,7 @@ class ndarray:
             casting="unsafe",
         )
 
+    @add_boilerplate()
     def dump(self, file: str | Path) -> None:
         """a.dump(file)
 
@@ -2745,6 +2808,7 @@ class ndarray:
         """
         self.__array__().dump(file=file)
 
+    @add_boilerplate()
     def dumps(self) -> bytes:
         """a.dumps()
 
@@ -2787,6 +2851,7 @@ class ndarray:
                 fft_s[ax] = s[idx]
         return np.asarray(fft_axes), np.asarray(fft_s)
 
+    @add_boilerplate()
     def fft(
         self,
         s: Any,
@@ -2894,6 +2959,7 @@ class ndarray:
 
         return out
 
+    @add_boilerplate()
     def fill(self, value: float) -> None:
         """a.fill(value)
 
@@ -2913,6 +2979,7 @@ class ndarray:
         val = np.array(value, dtype=self.dtype)
         self._thunk.fill(val)
 
+    @add_boilerplate()
     def flatten(self, order: OrderType = "C") -> ndarray:
         """a.flatten(order='C')
 
@@ -2979,6 +3046,7 @@ class ndarray:
             )
         return args
 
+    @add_boilerplate()
     def item(self, *args: Any) -> Any:
         """a.item(*args)
 
@@ -3442,6 +3510,7 @@ class ndarray:
             where=where,
         )
 
+    @add_boilerplate()
     def ravel(self, order: OrderType = "C") -> ndarray:
         """a.ravel(order="C")
 
@@ -3461,6 +3530,7 @@ class ndarray:
         """
         return self.reshape(-1, order=order)
 
+    @add_boilerplate()
     def reshape(self, *args: Any, order: OrderType = "C") -> ndarray:
         """a.reshape(shape, order='C')
 
@@ -3538,6 +3608,7 @@ class ndarray:
             "for ndarray.setfield"
         )
 
+    @add_boilerplate()
     def setflags(
         self,
         write: bool | None = None,
@@ -3676,6 +3747,7 @@ class ndarray:
         result._thunk.searchsorted(a._thunk, v_ndarray._thunk, side)
         return result
 
+    @add_boilerplate()
     def sort(
         self,
         axis: Any = -1,
@@ -3700,6 +3772,7 @@ class ndarray:
         check_writeable(self)
         self._thunk.sort(rhs=self._thunk, axis=axis, kind=kind, order=order)
 
+    @add_boilerplate()
     def argsort(
         self,
         axis: Any = -1,
@@ -3727,6 +3800,7 @@ class ndarray:
         )
         return result
 
+    @add_boilerplate()
     def squeeze(self, axis: Any = None) -> ndarray:
         """a.squeeze(axis=None)
 
@@ -3822,6 +3896,7 @@ class ndarray:
             where=where,
         )
 
+    @add_boilerplate()
     def swapaxes(self, axis1: Any, axis2: Any) -> ndarray:
         """a.swapaxes(axis1, axis2)
 
@@ -3848,6 +3923,7 @@ class ndarray:
             )
         return ndarray._from_thunk(self._thunk.swapaxes(axis1, axis2))
 
+    @add_boilerplate()
     def tofile(self, fid: Any, sep: str = "", format: str = "%s") -> None:
         """a.tofile(fid, sep="", format="%s")
 
@@ -3892,6 +3968,7 @@ class ndarray:
         """
         return self.__array__().tofile(fid, sep=sep, format=format)
 
+    @add_boilerplate()
     def tobytes(self, order: OrderType = "C") -> bytes:
         """a.tobytes(order='C')
 
@@ -3921,6 +3998,7 @@ class ndarray:
         """
         return self.__array__().tobytes(order=order)
 
+    @add_boilerplate()
     def tolist(self) -> Any:
         """a.tolist()
 
@@ -3956,6 +4034,7 @@ class ndarray:
         """
         return self.__array__().tolist()
 
+    @add_boilerplate()
     def tostring(self, order: OrderType = "C") -> bytes:
         """a.tostring(order='C')
 
@@ -3969,6 +4048,7 @@ class ndarray:
         """
         return self.__array__().tobytes(order=order)
 
+    @add_boilerplate()
     def transpose(self, axes: Any = None) -> ndarray:
         """a.transpose(axes=None)
 
@@ -4028,6 +4108,7 @@ class ndarray:
             self._thunk.transpose(axes), writeable=self._writeable
         )
 
+    @add_boilerplate()
     def flip(self, axis: Any = None) -> ndarray:
         """
         Reverse the order of elements in an array along the given axis.
@@ -4061,6 +4142,7 @@ class ndarray:
         result._thunk.flip(self._thunk, axis)
         return result
 
+    @add_boilerplate()
     def view(
         self, dtype: npt.DTypeLike | None = None, type: type | None = None
     ) -> ndarray:
@@ -4104,6 +4186,7 @@ class ndarray:
             )
         return ndarray._from_thunk(self._thunk, writeable=self._writeable)
 
+    @add_boilerplate()
     def unique(self) -> ndarray:
         """a.unique()
 
@@ -4142,6 +4225,7 @@ class ndarray:
         out._thunk._wrap(src=self._thunk, new_len=new_len)
         return out
 
+    @add_boilerplate()
     def stencil_hint(
         self, low_offsets: tuple[int, ...], high_offsets: tuple[int, ...]
     ) -> None:

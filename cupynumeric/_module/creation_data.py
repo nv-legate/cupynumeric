@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from ..types import OrderType
 
 
+@add_boilerplate()
 def array(
     obj: Any,
     dtype: np.dtype[Any] | None = None,
@@ -121,6 +122,7 @@ def array(
     return result
 
 
+@add_boilerplate()
 def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
     """
     Convert the input to an array.

@@ -18,18 +18,15 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from functools import reduce, wraps
-from inspect import signature
+from functools import reduce
 from itertools import chain
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     Literal,
-    ParamSpec,
     Sequence,
     TypeAlias,
-    TypeVar,
     cast,
 )
 
@@ -119,9 +116,6 @@ def _prod(tpl: Sequence[int]) -> int:
     return reduce(lambda a, b: a * b, tpl, 1)
 
 
-R = TypeVar("R")
-P = ParamSpec("P")
-
 # Type alias for NumPy-style indexing keys
 # An indexing key can be:
 # - int: integer index
@@ -165,50 +159,6 @@ class BooleanIndexingContext:
 
 
 legate_runtime = get_legate_runtime()
-
-
-def auto_convert(
-    *thunk_params: str,
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """
-    Converts all named parameters to DeferredArrays.
-
-    This function makes an immutable copy of any parameter that wasn't already
-    a DeferredArray.
-    """
-    keys = OrderedSet(thunk_params)
-    assert len(keys) == len(thunk_params)
-
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        assert not hasattr(func, "__wrapped__"), (
-            "this decorator must be the innermost"
-        )
-
-        # For each parameter specified by name, also consider the case where
-        # it's passed as a positional parameter.
-        params = signature(func).parameters
-        extra = keys - OrderedSet(params)
-        assert len(extra) == 0, f"unknown parameter(s): {extra}"
-        indices = {idx for (idx, param) in enumerate(params) if param in keys}
-
-        @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> R:
-            # Convert relevant arguments to DeferredArrays
-            args = tuple(
-                runtime.to_deferred_array(arg, read_only=True)
-                if idx in indices and arg is not None
-                else arg
-                for (idx, arg) in enumerate(args)
-            )
-            for k, v in kwargs.items():
-                if k in keys and v is not None:
-                    kwargs[k] = runtime.to_deferred_array(v, read_only=True)
-
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
 
 
 _UNARY_RED_TO_REDUCTION_OPS: dict[int, int] = {
@@ -706,7 +656,6 @@ class DeferredArray:
         return result
 
     # Copy source array to the destination array
-    @auto_convert("rhs")
     def copy(self, rhs: DeferredArray, deep: bool = False) -> None:
         if self.scalar and rhs.scalar:
             legate_runtime.issue_fill(self.base, rhs.base)
@@ -1813,7 +1762,6 @@ class DeferredArray:
 
         return result
 
-    @auto_convert("value")
     def set_item(self, key: IndexKey, value: Any) -> None:
         assert self.dtype == value.dtype
 
@@ -2186,7 +2134,6 @@ class DeferredArray:
         return DeferredArray(result)
 
     # Convert the source array to the destination array
-    @auto_convert("rhs")
     def convert(
         self,
         rhs: Any,
@@ -2221,7 +2168,6 @@ class DeferredArray:
 
         task.execute()
 
-    @auto_convert("input", "filter")
     def convolve(
         self,
         input: Any,
@@ -2255,7 +2201,6 @@ class DeferredArray:
 
         task.execute()
 
-    @auto_convert("input", "weights")
     def ndimage_convolve(
         self,
         input: Any,
@@ -2314,7 +2259,6 @@ class DeferredArray:
 
         task.execute()
 
-    @auto_convert("rhs")
     def fft(
         self,
         rhs: Any,
@@ -2695,7 +2639,6 @@ class DeferredArray:
             indices, axis, out=out, mode=mode, along_axis=True
         )
 
-    @auto_convert("rhs1_thunk", "rhs2_thunk")
     def contract(
         self,
         lhs_modes: list[str],
@@ -3115,7 +3058,6 @@ class DeferredArray:
         task.execute()
 
     # Create or extract a diagonal from a matrix
-    @auto_convert("rhs")
     def _diag_helper(
         self,
         rhs: DeferredArray,
@@ -3186,7 +3128,6 @@ class DeferredArray:
 
         task.execute()
 
-    @auto_convert("indices", "values")
     def put(
         self, indices: DeferredArray, values: DeferredArray, check_bounds: bool
     ) -> None:
@@ -3239,7 +3180,6 @@ class DeferredArray:
         if self_tmp is not self:
             self.copy(self_tmp, deep=True)
 
-    @auto_convert("mask", "values")
     def putmask(self, mask: DeferredArray, values: DeferredArray) -> None:
         assert self.shape == mask.shape
         values = values._copy_if_partially_overlapping(self)
@@ -3317,7 +3257,6 @@ class DeferredArray:
         task.execute()
 
     # Tile the src array onto the destination array
-    @auto_convert("rhs")
     def tile(self, rhs: DeferredArray, reps: int | Sequence[int]) -> None:
         src_array = rhs
         dst_array = self
@@ -3346,7 +3285,6 @@ class DeferredArray:
         result = self.base.transpose(computed_axes)
         return DeferredArray(result)
 
-    @auto_convert("rhs")
     def trilu(self, rhs: DeferredArray, k: int, lower: bool) -> None:
         lhs = self.base
         rhs_store = rhs._broadcast(lhs.shape)
@@ -3571,7 +3509,6 @@ class DeferredArray:
 
         task.execute()
 
-    @auto_convert("rhs")
     def flip(
         self, rhs: DeferredArray, axes: int | tuple[int, ...] | None
     ) -> None:
@@ -3596,7 +3533,6 @@ class DeferredArray:
         task.execute()
 
     # Perform a bin count operation on the array
-    @auto_convert("rhs", "weights")
     def bincount(
         self, rhs: DeferredArray, weights: DeferredArray | None = None
     ) -> None:
@@ -4771,7 +4707,6 @@ class DeferredArray:
     _rad2deg = _make_deferred_unary_ufunc(_ufunc.rad2deg)
 
     # Perform the unary operation and put the result in the array
-    @auto_convert("rhs")
     def unary_op(
         self,
         op: UnaryOpCode,
@@ -4941,7 +4876,6 @@ class DeferredArray:
         assert lhs_array.size == tmp_lhs.size
 
     # Perform a unary reduction from one set of dimensions down to fewer
-    @auto_convert("rhs", "where")
     def unary_reduction(
         self,
         op: UnaryRedCode,
@@ -5010,7 +4944,6 @@ class DeferredArray:
         self.binary_op(BinaryOpCode.ISCLOSE, rhs1, rhs2, True, args)
 
     # Perform the binary operation and put the result in the lhs array
-    @auto_convert("rhs1", "rhs2")
     def binary_op(
         self,
         op: BinaryOpCode,
@@ -5042,7 +4975,6 @@ class DeferredArray:
 
             task.execute()
 
-    @auto_convert("rhs1", "rhs2")
     def binary_reduction(
         self,
         op: BinaryOpCode,
@@ -5082,7 +5014,6 @@ class DeferredArray:
 
         task.execute()
 
-    @auto_convert("rhs1", "rhs2", "rhs3")
     def where(
         self, rhs1: DeferredArray, rhs2: DeferredArray, rhs3: DeferredArray
     ) -> None:
@@ -5131,39 +5062,30 @@ class DeferredArray:
             stride *= dim
         return result
 
-    @auto_convert("src")
     def cholesky(self, src: DeferredArray, lower: bool, zeroout: bool) -> None:
         cholesky_deferred(self, src, lower, zeroout)
 
-    @auto_convert("ew", "ev")
     def eig(self, ew: DeferredArray, ev: DeferredArray) -> None:
         eig_deferred(self, ew, ev)
 
-    @auto_convert("ew")
     def eigvals(self, ew: DeferredArray) -> None:
         eig_deferred(self, ew)
 
-    @auto_convert("ew", "ev")
     def eigh(self, ew: DeferredArray, ev: DeferredArray, uplo_l: bool) -> None:
         eigh_deferred(self, uplo_l, ew, ev)
 
-    @auto_convert("ew")
     def eigvalsh(self, ew: DeferredArray, uplo_l: bool) -> None:
         eigh_deferred(self, uplo_l, ew)
 
-    @auto_convert("q", "r")
     def qr(self, q: DeferredArray, r: DeferredArray) -> None:
         qr_deferred(self, q, r)
 
-    @auto_convert("a", "b")
     def solve(self, a: DeferredArray, b: DeferredArray) -> None:
         solve_deferred(self, a, b)
 
-    @auto_convert("c")
     def cho_solve(self, c: DeferredArray, lower: bool) -> None:
         cho_solve_deferred(self, c, lower)
 
-    @auto_convert("a", "b")
     def solve_triangular(
         self,
         a: DeferredArray,
@@ -5174,13 +5096,11 @@ class DeferredArray:
     ) -> None:
         solve_triangular_deferred(self, a, b, trans, lower, unit_diagonal)
 
-    @auto_convert("u", "s", "vh")
     def svd(
         self, u: DeferredArray, s: DeferredArray, vh: DeferredArray
     ) -> None:
         svd_deferred(self, u, s, vh)
 
-    @auto_convert("rhs")
     def scan(
         self,
         op: int,
@@ -5263,7 +5183,6 @@ class DeferredArray:
 
         return result
 
-    @auto_convert("ar2")
     def in1d(
         self,
         ar2: DeferredArray,
@@ -5292,7 +5211,6 @@ class DeferredArray:
 
         return result
 
-    @auto_convert("rhs", "v")
     def searchsorted(
         self, rhs: DeferredArray, v: DeferredArray, side: SortSide = "left"
     ) -> None:
@@ -5321,7 +5239,6 @@ class DeferredArray:
         task.add_scalar_arg(rhs.size, ty.int64)
         task.execute()
 
-    @auto_convert("rhs")
     def sort(
         self,
         rhs: DeferredArray,
@@ -5345,7 +5262,6 @@ class DeferredArray:
 
         sort_deferred(self, rhs, argsort, axis, stable)
 
-    @auto_convert("rhs")
     def partition(
         self,
         rhs: DeferredArray,
@@ -5377,7 +5293,6 @@ class DeferredArray:
             task.add_scalar_arg(arg, ty.float64)
         task.execute()
 
-    @auto_convert("src")
     def packbits(
         self, src: DeferredArray, axis: int | None, bitorder: BitOrder
     ) -> None:
@@ -5395,7 +5310,6 @@ class DeferredArray:
         task.add_constraint(scale(factors, p_out, p_in))
         task.execute()
 
-    @auto_convert("src")
     def unpackbits(
         self, src: DeferredArray, axis: int | None, bitorder: BitOrder
     ) -> None:
@@ -5413,7 +5327,6 @@ class DeferredArray:
         task.add_constraint(scale(factors, p_in, p_out))
         task.execute()
 
-    @auto_convert("src")
     def _wrap(self, src: DeferredArray, new_len: int) -> None:
         if src.base.has_scalar_storage or src.base.transformed:
             change_shape = src.base.has_scalar_storage
@@ -5440,7 +5353,6 @@ class DeferredArray:
         self._perform_gather(self.base, src.base, indirect.base)
 
     # Perform a histogram operation on the array
-    @auto_convert("src", "bins", "weights")
     def histogram(
         self, src: DeferredArray, bins: DeferredArray, weights: DeferredArray
     ) -> None:
@@ -5473,7 +5385,6 @@ class DeferredArray:
         task.execute()
 
     # Perform a multi-dimensional histogram operation on the array
-    @auto_convert("coords", "weights")
     def histogramdd(
         self,
         coords: DeferredArray,

@@ -19,12 +19,13 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from .._array.array import ndarray
-from .._array.util import convert_to_cupynumeric_ndarray
+from .._array.util import convert_to_cupynumeric_ndarray, add_boilerplate
 
 if TYPE_CHECKING:
     import numpy.typing as npt
 
 
+@add_boilerplate("a")
 def split(a: ndarray, indices: int | ndarray, axis: int = 0) -> list[ndarray]:
     """
 
@@ -74,6 +75,7 @@ def split(a: ndarray, indices: int | ndarray, axis: int = 0) -> list[ndarray]:
     return array_split(a, indices, axis, equal=True)
 
 
+@add_boilerplate("a")
 def array_split(
     a: ndarray,
     indices: int | tuple[int] | ndarray | npt.NDArray[Any],
@@ -186,6 +188,7 @@ def array_split(
     return result
 
 
+@add_boilerplate("a")
 def dsplit(a: ndarray, indices: int | ndarray) -> list[ndarray]:
     """
 
@@ -206,6 +209,7 @@ def dsplit(a: ndarray, indices: int | ndarray) -> list[ndarray]:
     return split(a, indices, axis=2)
 
 
+@add_boilerplate("a")
 def hsplit(a: ndarray, indices: int | ndarray) -> list[ndarray]:
     """
 
@@ -226,6 +230,7 @@ def hsplit(a: ndarray, indices: int | ndarray) -> list[ndarray]:
     return split(a, indices, axis=1)
 
 
+@add_boilerplate("a")
 def vsplit(a: ndarray, indices: int | ndarray) -> list[ndarray]:
     """
 

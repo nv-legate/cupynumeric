@@ -23,6 +23,7 @@ import numpy as np
 from .._array.array import ndarray
 from ..config import BitGeneratorType
 from ..runtime import runtime
+from .._array.util import add_boilerplate
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
 
 
 class BitGenerator:
+    @add_boilerplate()
     def __init__(
         self, seed: int | None = None, forceBuild: bool = False
     ) -> None:

@@ -30,6 +30,8 @@ from .._array.util import (
 from ..config import BinaryOpCode, UnaryOpCode, UnaryRedCode
 from ..types import NdShape
 
+from .._utils.profiling import profiling_wrapper
+
 if TYPE_CHECKING:
     from typing import Any, Callable, Sequence, TypeAlias
     import numpy.typing as npt
@@ -395,6 +397,10 @@ class ufunc(Generic[T]):
         return f"<ufunc {self._name}>"
 
 
+def _ufunc_profile_name(func: ufunc[Any], *_args: Any, **_kwargs: Any) -> str:
+    return f"cupynumeric.{func._name}"
+
+
 class unary_ufunc(ufunc[UnaryOpCode]):
     _nin = 1
     _nout = 1
@@ -451,7 +457,7 @@ class unary_ufunc(ufunc[UnaryOpCode]):
             self._types[to_dtype.char]
         )
 
-    def __call__(
+    def _call_impl(
         self,
         *args: Any,
         out: ndarray | None = None,
@@ -467,10 +473,14 @@ class unary_ufunc(ufunc[UnaryOpCode]):
                     "cannot specify 'out' as both a positional and keyword argument"
                 )
             out = args[self.nin]
+
         result = getattr(x._thunk, f"_{self._name}")(
             out=out, where=where, casting=casting, order=order, dtype=dtype
         )
+
         return convert_to_cupynumeric_ndarray(result)
+
+    __call__ = profiling_wrapper(_call_impl, _ufunc_profile_name)
 
     def _call_full(
         self,
@@ -566,7 +576,7 @@ class multiout_unary_ufunc(ufunc[UnaryOpCode]):
             self._types[to_dtype.char]
         )
 
-    def __call__(
+    def _call_impl(
         self,
         *args: Any,
         out: ndarray | tuple[ndarray, ...] | None = None,
@@ -608,6 +618,8 @@ class multiout_unary_ufunc(ufunc[UnaryOpCode]):
             self._maybe_cast_output(out, result)
             for out, result in zip(outs, results)
         )
+
+    __call__ = profiling_wrapper(_call_impl, _ufunc_profile_name)
 
 
 class binary_ufunc(ufunc[BinaryOpCode]):
@@ -766,24 +778,6 @@ class binary_ufunc(ufunc[BinaryOpCode]):
 
         return arrs, np.dtype(self._types[chosen])
 
-    def __call__(
-        self,
-        *args: Any,
-        out: ndarray | None = None,
-        where: bool = True,
-        casting: CastingKind = "same_kind",
-        order: str = "K",
-        dtype: np.dtype[Any] | None = None,
-    ) -> ndarray:
-        return self._call_full(
-            *args,
-            out=out,
-            where=where,
-            casting=casting,
-            order=order,
-            dtype=dtype,
-        )
-
     def _call_full(
         self,
         *args: Any,
@@ -830,6 +824,8 @@ class binary_ufunc(ufunc[BinaryOpCode]):
         result._thunk.binary_op(op_code, x1._thunk, x2._thunk, where, ())
 
         return self._maybe_cast_output(out, result)
+
+    __call__ = profiling_wrapper(_call_full, _ufunc_profile_name)
 
     @add_boilerplate("array")
     def reduce(

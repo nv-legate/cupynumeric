@@ -42,6 +42,7 @@ else:
 _builtin_max = max
 
 
+@add_boilerplate()
 def arange(
     start: int | float = 0,
     stop: int | float | None = None,

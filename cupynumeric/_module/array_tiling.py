@@ -125,6 +125,7 @@ def tile(
     return result
 
 
+@add_boilerplate()
 def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
     """
     Repeat elements of an array.

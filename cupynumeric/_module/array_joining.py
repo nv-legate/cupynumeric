@@ -261,6 +261,7 @@ def _concatenate(
     return out_array
 
 
+@add_boilerplate("arr", "values")
 def append(arr: ndarray, values: ndarray, axis: int | None = None) -> ndarray:
     """
 
@@ -297,6 +298,7 @@ def append(arr: ndarray, values: ndarray, axis: int | None = None) -> ndarray:
     return concatenate(inputs, axis)
 
 
+@add_boilerplate()
 def block(arrays: Sequence[Any]) -> ndarray:
     """
     Assemble an nd-array from nested lists of blocks.
@@ -358,6 +360,7 @@ def block(arrays: Sequence[Any]) -> ndarray:
     return result
 
 
+@add_boilerplate()
 def concatenate(
     inputs: Sequence[ndarray],
     axis: int | None = 0,
@@ -435,6 +438,7 @@ def concatenate(
     )
 
 
+@add_boilerplate()
 def stack(
     arrays: Sequence[ndarray], axis: int = 0, out: ndarray | None = None
 ) -> ndarray:
@@ -489,6 +493,7 @@ def stack(
     return _concatenate(arrays, common_info, axis, out=out)
 
 
+@add_boilerplate()
 def vstack(tup: Sequence[ndarray]) -> ndarray:
     """
 
@@ -537,6 +542,7 @@ def vstack(tup: Sequence[ndarray]) -> ndarray:
     return _concatenate(tup, common_info, axis=0, dtype=common_info.dtype)
 
 
+@add_boilerplate()
 def hstack(tup: Sequence[ndarray]) -> ndarray:
     """
 
@@ -593,6 +599,7 @@ def hstack(tup: Sequence[ndarray]) -> ndarray:
     )
 
 
+@add_boilerplate()
 def dstack(tup: Sequence[ndarray]) -> ndarray:
     """
 
@@ -638,6 +645,7 @@ def dstack(tup: Sequence[ndarray]) -> ndarray:
     return _concatenate(tup, common_info, axis=2, dtype=common_info.dtype)
 
 
+@add_boilerplate()
 def column_stack(tup: Sequence[ndarray]) -> ndarray:
     """
 

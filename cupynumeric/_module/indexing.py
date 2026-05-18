@@ -111,6 +111,7 @@ def place(arr: ndarray, mask: ndarray, vals: ndarray) -> None:
 
 
 # Indexing-like operations
+@add_boilerplate()
 def indices(
     dimensions: Sequence[int], dtype: npt.DTypeLike = int, sparse: bool = False
 ) -> ndarray | tuple[ndarray, ...]:
@@ -180,6 +181,7 @@ def indices(
         return res_array
 
 
+@add_boilerplate()
 def mask_indices(
     n: int, mask_func: Callable[[ndarray, int], ndarray], k: int = 0
 ) -> tuple[ndarray, ...]:
@@ -299,6 +301,7 @@ def unravel_index(
     return unraveled_coords
 
 
+@add_boilerplate()
 def diag_indices(n: int, ndim: int = 2) -> tuple[ndarray, ...]:
     """
     Return the indices to access the main diagonal of an array.
@@ -360,6 +363,7 @@ def diag_indices_from(arr: ndarray) -> tuple[ndarray, ...]:
     return diag_indices(arr.shape[0], arr.ndim)
 
 
+@add_boilerplate()
 def tril_indices(
     n: int, k: int = 0, m: int | None = None
 ) -> tuple[ndarray, ...]:
@@ -439,6 +443,7 @@ def tril_indices_from(arr: ndarray, k: int = 0) -> tuple[ndarray, ...]:
     return tril_indices(arr.shape[-2], k=k, m=arr.shape[-1])
 
 
+@add_boilerplate()
 def triu_indices(
     n: int, k: int = 0, m: int | None = None
 ) -> tuple[ndarray, ...]:
@@ -573,6 +578,7 @@ def take(
     return a.take(indices=indices, axis=axis, out=out, mode=mode)
 
 
+@add_boilerplate()
 def ix_(*args: Any) -> tuple[ndarray, ...]:
     """
     Construct an open mesh from multiple sequences.
@@ -930,6 +936,7 @@ def choose(
     return a.choose(choices=choices, out=out, mode=mode)
 
 
+@add_boilerplate()
 def select(
     condlist: Sequence[npt.ArrayLike | ndarray],
     choicelist: Sequence[npt.ArrayLike | ndarray],

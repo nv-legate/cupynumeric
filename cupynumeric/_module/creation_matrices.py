@@ -71,6 +71,7 @@ def diag(v: ndarray, k: int = 0) -> ndarray:
         raise ValueError("diag requires 1- or 2-D array, use diagonal instead")
 
 
+@add_boilerplate()
 def tri(
     N: int,
     M: int | None = None,
@@ -166,6 +167,7 @@ def trilu(m: ndarray, k: int, lower: bool) -> ndarray:
     return result
 
 
+@add_boilerplate("m")
 def tril(m: ndarray, k: int = 0) -> ndarray:
     """
 
@@ -197,6 +199,7 @@ def tril(m: ndarray, k: int = 0) -> ndarray:
     return trilu(m, k, True)
 
 
+@add_boilerplate("m")
 def triu(m: ndarray, k: int = 0) -> ndarray:
     """
 

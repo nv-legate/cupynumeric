@@ -639,6 +639,7 @@ def _contract(
     return c
 
 
+@add_boilerplate()
 def einsum(
     expr: str,
     *operands: ndarray,
@@ -761,6 +762,7 @@ def einsum(
     return convert_to_cupynumeric_ndarray(computed_operands[0])
 
 
+@add_boilerplate()
 def einsum_path(
     expr: str,
     *operands: ndarray,

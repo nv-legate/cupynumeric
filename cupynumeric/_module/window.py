@@ -21,6 +21,7 @@ import numpy as np
 from .._array.array import ndarray
 from ..config import WindowOpCode
 from .creation_shape import empty, ones
+from .._array.util import add_boilerplate
 
 
 def _create_window(M: int, op_code: WindowOpCode, *args: Any) -> ndarray:
@@ -34,6 +35,7 @@ def _create_window(M: int, op_code: WindowOpCode, *args: Any) -> ndarray:
     return out
 
 
+@add_boilerplate()
 def bartlett(M: int) -> ndarray:
     """
 
@@ -69,6 +71,7 @@ def bartlett(M: int) -> ndarray:
     return _create_window(M, WindowOpCode.BARLETT)
 
 
+@add_boilerplate()
 def blackman(M: int) -> ndarray:
     """
 
@@ -103,6 +106,7 @@ def blackman(M: int) -> ndarray:
     return _create_window(M, WindowOpCode.BLACKMAN)
 
 
+@add_boilerplate()
 def hamming(M: int) -> ndarray:
     """
 
@@ -135,6 +139,7 @@ def hamming(M: int) -> ndarray:
     return _create_window(M, WindowOpCode.HAMMING)
 
 
+@add_boilerplate()
 def hanning(M: int) -> ndarray:
     """
 
@@ -166,6 +171,7 @@ def hanning(M: int) -> ndarray:
     return _create_window(M, WindowOpCode.HANNING)
 
 
+@add_boilerplate()
 def kaiser(M: int, beta: float) -> ndarray:
     """
 

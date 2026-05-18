@@ -21,6 +21,7 @@ import numpy as np
 from .._array.array import ndarray
 from ..runtime import runtime
 from ._generator import default_rng, get_static_generator  # NOQA
+from .._array.util import add_boilerplate
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
     from ..types import NdShapeLike
 
 
+@add_boilerplate()
 def seed(init: int | None = None) -> None:
     """
     Reseed the legacy random number generator.
@@ -54,6 +56,7 @@ def seed(init: int | None = None) -> None:
     runtime.set_next_random_epoch(init)
 
 
+@add_boilerplate()
 def beta(
     a: float,
     b: float,
@@ -106,6 +109,7 @@ def beta(
     return get_static_generator().beta(a, b, size, dtype)
 
 
+@add_boilerplate()
 def binomial(
     ntrials: int,
     p: float,
@@ -151,6 +155,7 @@ def binomial(
     return get_static_generator().binomial(ntrials, p, size, dtype)
 
 
+@add_boilerplate()
 def bytes(length: int) -> ndarray:
     """
     bytes(length)
@@ -178,6 +183,7 @@ def bytes(length: int) -> ndarray:
     return get_static_generator().bytes(length)
 
 
+@add_boilerplate()
 def chisquare(
     df: float,
     size: NdShapeLike | None = None,
@@ -224,6 +230,7 @@ def chisquare(
     return get_static_generator().chisquare(df, size, dtype)
 
 
+@add_boilerplate()
 def exponential(
     scale: float = 1.0,
     size: NdShapeLike | None = None,
@@ -284,6 +291,7 @@ def exponential(
     return get_static_generator().exponential(scale, size, dtype)
 
 
+@add_boilerplate()
 def f(
     dfnum: float,
     dfden: float,
@@ -332,6 +340,7 @@ def f(
     return get_static_generator().f(dfnum, dfden, size, dtype)
 
 
+@add_boilerplate()
 def gamma(
     shape: float,
     scale: float = 1.0,
@@ -375,6 +384,7 @@ def gamma(
     return get_static_generator().gamma(shape, scale, size, dtype)
 
 
+@add_boilerplate()
 def geometric(
     p: float, size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.uint32
 ) -> ndarray:
@@ -420,6 +430,7 @@ def geometric(
     return get_static_generator().geometric(p, size, dtype)
 
 
+@add_boilerplate()
 def gumbel(
     loc: float = 0.0,
     scale: float = 1.0,
@@ -462,6 +473,7 @@ def gumbel(
     return get_static_generator().gumbel(loc, scale, size, dtype)
 
 
+@add_boilerplate()
 def hypergeometric(
     ngood: int,
     nbad: int,
@@ -514,6 +526,7 @@ def hypergeometric(
     )
 
 
+@add_boilerplate()
 def laplace(
     loc: float = 0.0,
     scale: float = 1.0,
@@ -559,6 +572,7 @@ def laplace(
     return get_static_generator().laplace(loc, scale, size, dtype)
 
 
+@add_boilerplate()
 def logistic(
     loc: float = 0.0,
     scale: float = 1.0,
@@ -601,6 +615,7 @@ def logistic(
     return get_static_generator().logistic(loc, scale, size, dtype)
 
 
+@add_boilerplate()
 def lognormal(
     mean: float = 0.0,
     sigma: float = 1.0,
@@ -645,6 +660,7 @@ def lognormal(
     return get_static_generator().lognormal(mean, sigma, size, dtype)
 
 
+@add_boilerplate()
 def logseries(
     p: float, size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.uint32
 ) -> ndarray:
@@ -681,6 +697,7 @@ def logseries(
     return get_static_generator().logseries(p, size, dtype)
 
 
+@add_boilerplate()
 def negative_binomial(
     n: int,
     p: float,
@@ -725,6 +742,7 @@ def negative_binomial(
     return get_static_generator().negative_binomial(n, p, size, dtype)
 
 
+@add_boilerplate()
 def noncentral_chisquare(
     df: float,
     nonc: float,
@@ -767,6 +785,7 @@ def noncentral_chisquare(
     return get_static_generator().noncentral_chisquare(df, nonc, size, dtype)
 
 
+@add_boilerplate()
 def noncentral_f(
     dfnum: float,
     dfden: float,
@@ -814,6 +833,7 @@ def noncentral_f(
     return get_static_generator().noncentral_f(dfnum, dfden, nonc, size, dtype)
 
 
+@add_boilerplate()
 def normal(
     loc: float = 0.0,
     scale: float = 1.0,
@@ -869,6 +889,7 @@ def normal(
     return get_static_generator().normal(loc, scale, size, dtype)
 
 
+@add_boilerplate()
 def pareto(
     a: float,
     size: NdShapeLike | None = None,
@@ -922,6 +943,7 @@ def pareto(
     return get_static_generator().pareto(a, size, dtype)
 
 
+@add_boilerplate()
 def poisson(lam: float = 1.0, size: NdShapeLike | None = None) -> ndarray:
     """
     poisson(lam=1.0, size=None)
@@ -958,6 +980,7 @@ def poisson(lam: float = 1.0, size: NdShapeLike | None = None) -> ndarray:
     return get_static_generator().poisson(lam, size)
 
 
+@add_boilerplate()
 def power(
     a: float,
     size: NdShapeLike | None = None,
@@ -1001,6 +1024,7 @@ def power(
     return get_static_generator().power(a, size, dtype)
 
 
+@add_boilerplate()
 def rand(*shapeargs: int) -> float | ndarray:
     """
     rand(d0, d1, ..., dn)
@@ -1033,6 +1057,7 @@ def rand(*shapeargs: int) -> float | ndarray:
     return uniform(0.0, 1.0, size=shapeargs, dtype=np.float64)
 
 
+@add_boilerplate()
 def randint(
     low: int,
     high: int | None = None,
@@ -1094,6 +1119,7 @@ def randint(
     return get_static_generator().integers(low, high, size, dtype)
 
 
+@add_boilerplate()
 def randn(*shapeargs: int) -> float | ndarray:
     """
     randn(d0, d1, ..., dn)
@@ -1130,6 +1156,7 @@ def randn(*shapeargs: int) -> float | ndarray:
     return normal(0.0, 1.0, shapeargs)
 
 
+@add_boilerplate()
 def random(size: NdShapeLike | None = None) -> float | ndarray:
     """
     random(size=None)
@@ -1149,6 +1176,7 @@ def random(size: NdShapeLike | None = None) -> float | ndarray:
 
 
 # deprecated in numpy from version 1.11.0
+@add_boilerplate()
 def random_integers(
     low: int,
     high: int | None = None,
@@ -1202,6 +1230,7 @@ def random_integers(
     return randint(low, high + 1, size, dtype)
 
 
+@add_boilerplate()
 def random_sample(
     size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.float64
 ) -> float | ndarray:
@@ -1243,6 +1272,7 @@ def random_sample(
 ranf = random_sample
 
 
+@add_boilerplate()
 def rayleigh(
     scale: float = 1.0,
     size: NdShapeLike | None = None,
@@ -1284,6 +1314,7 @@ def rayleigh(
 sample = random_sample
 
 
+@add_boilerplate()
 def standard_cauchy(
     size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.float64
 ) -> ndarray:
@@ -1317,6 +1348,7 @@ def standard_cauchy(
     return get_static_generator().standard_cauchy(size, dtype)
 
 
+@add_boilerplate()
 def standard_exponential(
     size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.float64
 ) -> ndarray:
@@ -1351,6 +1383,7 @@ def standard_exponential(
     return get_static_generator().standard_exponential(size, dtype)
 
 
+@add_boilerplate()
 def standard_gamma(
     shape: float,
     size: NdShapeLike | None = None,
@@ -1389,6 +1422,7 @@ def standard_gamma(
     return get_static_generator().standard_gamma(shape, size, dtype)
 
 
+@add_boilerplate()
 def standard_t(
     df: float,
     size: NdShapeLike | None = None,
@@ -1429,6 +1463,7 @@ def standard_t(
     return get_static_generator().standard_t(df, size, dtype)
 
 
+@add_boilerplate()
 def triangular(
     left: float,
     mode: float,
@@ -1477,6 +1512,7 @@ def triangular(
     return get_static_generator().triangular(left, mode, right, size, dtype)
 
 
+@add_boilerplate()
 def uniform(
     low: float = 0.0,
     high: float = 1.0,
@@ -1525,6 +1561,7 @@ def uniform(
     return get_static_generator().uniform(low, high, size, dtype)
 
 
+@add_boilerplate()
 def vonmises(
     mu: float,
     kappa: float,
@@ -1571,6 +1608,7 @@ def vonmises(
     return get_static_generator().vonmises(mu, kappa, size, dtype)
 
 
+@add_boilerplate()
 def wald(
     mean: float,
     scale: float,
@@ -1618,6 +1656,7 @@ def wald(
     return get_static_generator().wald(mean, scale, size, dtype)
 
 
+@add_boilerplate()
 def weibull(
     a: float,
     size: NdShapeLike | None = None,
@@ -1663,6 +1702,7 @@ def weibull(
     return get_static_generator().weibull(a, size, dtype)
 
 
+@add_boilerplate()
 def zipf(
     a: float, size: NdShapeLike | None = None, dtype: npt.DTypeLike = np.uint32
 ) -> ndarray:

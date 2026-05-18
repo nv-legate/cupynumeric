@@ -19,13 +19,14 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from .._array.array import ndarray
-from .._array.util import convert_to_cupynumeric_ndarray
+from .._array.util import add_boilerplate
 from .creation_shape import full
 
 if TYPE_CHECKING:
     import numpy.typing as npt
 
 
+@add_boilerplate("x")
 def iscomplex(x: ndarray | npt.NDArray[Any]) -> ndarray:
     """
 
@@ -53,13 +54,13 @@ def iscomplex(x: ndarray | npt.NDArray[Any]) -> ndarray:
     Multiple GPUs, Multiple CPUs
 
     """
-    x = convert_to_cupynumeric_ndarray(x)
     if x.dtype.kind != "c":
         return full(x.shape, False, dtype=bool)
     else:
         return x.imag != 0
 
 
+@add_boilerplate()
 def iscomplexobj(x: ndarray | npt.NDArray[Any]) -> bool:
     """
 
@@ -93,6 +94,7 @@ def iscomplexobj(x: ndarray | npt.NDArray[Any]) -> bool:
         return np.iscomplexobj(x)
 
 
+@add_boilerplate("x")
 def isreal(x: ndarray | npt.NDArray[Any]) -> ndarray:
     """
 
@@ -121,13 +123,13 @@ def isreal(x: ndarray | npt.NDArray[Any]) -> ndarray:
     Multiple GPUs, Multiple CPUs
 
     """
-    x = convert_to_cupynumeric_ndarray(x)
     if x.dtype.kind != "c":
         return full(x.shape, True, dtype=bool)
     else:
         return x.imag == 0
 
 
+@add_boilerplate("x")
 def isrealobj(x: ndarray) -> bool:
     """
 
@@ -158,6 +160,7 @@ def isrealobj(x: ndarray) -> bool:
     return not iscomplexobj(x)
 
 
+@add_boilerplate()
 def isscalar(x: ndarray | npt.NDArray[Any]) -> bool:
     """
 

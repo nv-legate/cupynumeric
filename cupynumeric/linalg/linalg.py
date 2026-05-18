@@ -620,6 +620,7 @@ def cholesky_solve(
     return _thunk_cho_solve(c, b, lower, overwrite_b, check_finite)
 
 
+@add_boilerplate("b")
 def cho_solve(
     c_and_lower: tuple[ndarray, bool],
     b: ndarray,
@@ -901,6 +902,7 @@ def matrix_power(a: ndarray, n: int) -> ndarray:
 
 
 # This implementation is adapted closely from NumPy
+@add_boilerplate()
 def multi_dot(
     arrays: Sequence[ndarray], *, out: ndarray | None = None
 ) -> ndarray:

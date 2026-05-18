@@ -24,8 +24,10 @@ if TYPE_CHECKING:
 import numpy as np
 
 from .creation_data import array
+from .._array.util import add_boilerplate
 
 
+@add_boilerplate()
 def load(
     file: str | bytes | PathLike[Any] | BinaryIO,
     *,

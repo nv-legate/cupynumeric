@@ -29,6 +29,7 @@ from typing import (
 
 import numpy as np
 
+from .._utils.profiling import profiling_wrapper
 from ..runtime import runtime
 from ..settings import settings
 from ..types import NdShape
@@ -47,7 +48,7 @@ P = ParamSpec("P")
 
 def _compute_param_indices(
     func: Callable[P, R], to_convert: set[str]
-) -> tuple[set[int], int]:
+) -> tuple[tuple[int, ...], int]:
     # compute the positional index for all of the user-provided argument
     # names, specifically noting the index of an "out" param, if present
     params = signature(func).parameters
@@ -55,32 +56,38 @@ def _compute_param_indices(
     assert len(extra) == 0, f"unknown parameter(s): {extra}"
 
     out_index = -1
-    indices = set()
+    indices = []
     for idx, param in enumerate(params):
         if param == "out":
             out_index = idx
         if param in to_convert:
-            indices.add(idx)
+            indices.append(idx)
 
-    return indices, out_index
+    return tuple(indices), out_index
 
 
 def _convert_args(
-    args: tuple[Any, ...], indices: set[int], out_idx: int
+    args: tuple[Any, ...], indices: tuple[int, ...], out_idx: int
 ) -> tuple[Any, ...]:
     # convert specified non-None positional arguments, making sure
     # that any out-parameters are appropriately writeable
-    converted = []
-    for idx, arg in enumerate(args):
-        if idx in indices and arg is not None:
-            if idx == out_idx:
-                arg = convert_to_cupynumeric_ndarray(arg, share=True)
-                if not arg.flags.writeable:
-                    raise ValueError("out is not writeable")
-            else:
-                arg = convert_to_cupynumeric_ndarray(arg)
-        converted.append(arg)
-    return tuple(converted)
+    converted: list[Any] | None = None
+    for idx in indices:
+        if idx >= len(args):
+            continue
+        arg = args[idx]
+        if arg is None:
+            continue
+        if idx == out_idx:
+            arg = convert_to_cupynumeric_ndarray(arg, share=True)
+            if not arg.flags.writeable:
+                raise ValueError("out is not writeable")
+        else:
+            arg = convert_to_cupynumeric_ndarray(arg)
+        if converted is None:
+            converted = list(args)
+        converted[idx] = arg
+    return args if converted is None else tuple(converted)
 
 
 def _convert_kwargs(
@@ -88,20 +95,25 @@ def _convert_kwargs(
 ) -> dict[str, Any]:
     # convert specified non-None keyword arguments, making sure
     # that any out-parameters are appropriately writeable
-    converted = dict(kwargs)
-    for k, v in kwargs.items():
-        if k in to_convert and v is not None:
-            if k == "out":
-                converted[k] = convert_to_cupynumeric_ndarray(v, share=True)
-                if not converted[k].flags.writeable:
-                    raise ValueError("out is not writeable")
-            else:
-                converted[k] = convert_to_cupynumeric_ndarray(v)
-    return converted
+    converted: dict[str, Any] | None = None
+    for k in to_convert:
+        v = kwargs.get(k)
+        if v is None:
+            continue
+        if k == "out":
+            v = convert_to_cupynumeric_ndarray(v, share=True)
+            if not v.flags.writeable:
+                raise ValueError("out is not writeable")
+        else:
+            v = convert_to_cupynumeric_ndarray(v)
+        if converted is None:
+            converted = dict(kwargs)
+        converted[k] = v
+    return kwargs if converted is None else converted
 
 
 def add_boilerplate(
-    *array_params: str,
+    *array_params: str, name: str | None = None, prefix: str | None = None
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Adds required boilerplate to the wrapped cupynumeric.ndarray or
@@ -114,7 +126,18 @@ def add_boilerplate(
     Parameters
     ----------
     *array_params : str
-        Names of parameters to convert to cuPyNumeric ndarrays
+        Names of parameters to convert to cuPyNumeric ndarrays.
+    name : str, optional
+        Full profile label, e.g. ``"cupynumeric.random.Generator.beta"``.
+        Overrides the auto-derived label entirely. Use when the function's
+        ``__qualname__`` doesn't capture the user-facing path (e.g. methods
+        defined in a private module ``_foo.py`` but exposed as
+        ``cupynumeric.foo.Bar.method``).
+    prefix : str, optional
+        Segment inserted between ``cupynumeric.`` and ``__qualname__`` in
+        the auto-derived label. For ``Generator.beta`` defined in
+        ``cupynumeric/random/_generator.py``, ``prefix="random"`` produces
+        ``cupynumeric.random.Generator.beta``. Ignored if ``name`` is set.
     """
     to_convert = set(array_params)
     assert len(to_convert) == len(array_params)
@@ -138,7 +161,23 @@ def add_boilerplate(
 
             return func(*args, **kwargs)
 
-        return wrapper
+        # Build the profile label. __qualname__ gives "Class.method" for
+        # methods and just the function name for free functions — that's
+        # usually what we want. `prefix` is for cases where the module path
+        # carries meaningful context not visible in __qualname__ (private
+        # module name vs. public namespace). `name` is a full override.
+        qualname = getattr(
+            func, "__qualname__", getattr(func, "__name__", "unknown")
+        )
+        if name is not None:
+            label = name
+        elif prefix is not None:
+            label = f"cupynumeric.{prefix}.{qualname}"
+        else:
+            label = f"cupynumeric.{qualname}"
+        profiled_wrapper = profiling_wrapper(wrapper, label)
+
+        return profiled_wrapper
 
     return decorator
 
