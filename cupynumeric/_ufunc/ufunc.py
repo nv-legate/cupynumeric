@@ -218,6 +218,9 @@ def _check_where(where: Any) -> None:
         raise NotImplementedError("the 'where' keyword is not yet supported")
 
 
+_MISSING = object()
+
+
 def _default_post_resolution_check(
     arr_x: ndarray,
     arr_y: ndarray,
@@ -337,28 +340,52 @@ class ufunc(Generic[T]):
             return convert_to_cupynumeric_ndarray(out, share=True)
         raise TypeError("return arrays must be of ArrayType")
 
-    def _prepare_operands(
-        self, *args: Any, out: ndarray | tuple[ndarray, ...] | None
-    ) -> tuple[Sequence[ndarray], Sequence[ndarray | None], tuple[int, ...]]:
-        max_nargs = self.nin + self.nout
-        if len(args) < self.nin or len(args) > max_nargs:
-            raise TypeError(
-                f"{self._name}() takes from {self.nin} to {max_nargs} "
-                f"positional arguments but {len(args)} were given"
-            )
-
-        inputs = tuple(
-            convert_to_cupynumeric_ndarray(arr) for arr in args[: self.nin]
-        )
-
-        if len(args) > self.nin:
+    def _prepare_single_output(
+        self,
+        positional_out: Any = _MISSING,
+        *,
+        out: ndarray | npt.NDArray[Any] | tuple[Any, ...] | None,
+    ) -> ndarray | None:
+        if positional_out is not _MISSING:
             if out is not None:
                 raise TypeError(
-                    "cannot specify 'out' as both a positional and keyword argument"
+                    "cannot specify 'out' as both a positional and keyword "
+                    "argument"
                 )
-            computed_out = args[self.nin :]
-            # Missing outputs are treated as Nones
-            computed_out += (None,) * (self.nout - len(computed_out))
+            computed_out = positional_out
+        else:
+            computed_out = out
+
+        if isinstance(computed_out, tuple):
+            outputs = tuple(
+                self._maybe_convert_output_to_cupynumeric_ndarray(arr)
+                for arr in computed_out
+            )
+            if len(outputs) != 1:
+                raise ValueError(
+                    "The 'out' tuple must have exactly one entry per ufunc "
+                    "output"
+                )
+            return outputs[0]
+
+        return self._maybe_convert_output_to_cupynumeric_ndarray(computed_out)
+
+    def _prepare_multiout_outputs(
+        self,
+        positional_outs: tuple[Any, ...],
+        *,
+        out: ndarray | npt.NDArray[Any] | tuple[Any, ...] | None,
+    ) -> tuple[ndarray | None, ...]:
+        if len(positional_outs) > 0:
+            if out is not None:
+                raise TypeError(
+                    "cannot specify 'out' as both a positional and keyword "
+                    "argument"
+                )
+            # Missing outputs are treated as Nones.
+            computed_out = positional_outs + (
+                (None,) * (self.nout - len(positional_outs))
+            )
         elif out is None:
             computed_out = (None,) * self.nout
         elif not isinstance(out, tuple):
@@ -370,28 +397,99 @@ class ufunc(Generic[T]):
             self._maybe_convert_output_to_cupynumeric_ndarray(arr)
             for arr in computed_out
         )
-
-        if self.nout != len(outputs):
+        if len(outputs) != self.nout:
             raise ValueError(
                 "The 'out' tuple must have exactly one entry per ufunc output"
             )
+        return outputs
 
-        shapes = [arr.shape for arr in inputs]
-        shapes.extend(arr.shape for arr in outputs if arr is not None)
+    @staticmethod
+    def _validate_output(
+        out: ndarray | None, out_shape: tuple[int, ...]
+    ) -> None:
+        if out is not None and out.shape != out_shape:
+            raise ValueError(
+                f"non-broadcastable output operand with shape "
+                f"{out.shape} doesn't match the broadcast shape "
+                f"{out_shape}"
+            )
+        check_writeable(out)
 
-        # Check if the broadcasting is possible
-        out_shape = np.broadcast_shapes(*shapes)
+    def _prepare_unary_operands(
+        self,
+        args: tuple[Any, ...],
+        out: ndarray | npt.NDArray[Any] | tuple[Any, ...] | None,
+    ) -> tuple[ndarray, ndarray | None, tuple[int, ...]]:
+        max_nargs = self.nin + self.nout
+        if len(args) < self.nin or len(args) > max_nargs:
+            raise TypeError(
+                f"{self._name}() takes from {self.nin} to {max_nargs} "
+                f"positional arguments but {len(args)} were given"
+            )
 
-        for out in outputs:
-            if out is not None and out.shape != out_shape:
-                raise ValueError(
-                    f"non-broadcastable output operand with shape "
-                    f"{out.shape} doesn't match the broadcast shape "
-                    f"{out_shape}"
-                )
-            check_writeable(out)
+        x = convert_to_cupynumeric_ndarray(args[0])
 
-        return inputs, outputs, out_shape
+        output = self._prepare_single_output(
+            args[1] if len(args) == 2 else _MISSING, out=out
+        )
+        out_shape = (
+            x.shape
+            if output is None
+            else np.broadcast_shapes(x.shape, output.shape)
+        )
+        self._validate_output(output, out_shape)
+        return x, output, out_shape
+
+    def _prepare_binary_operands(
+        self,
+        args: tuple[Any, ...],
+        out: ndarray | npt.NDArray[Any] | tuple[Any, ...] | None,
+    ) -> tuple[tuple[ndarray, ndarray], ndarray | None, tuple[int, ...]]:
+        max_nargs = self.nin + self.nout
+        if len(args) < self.nin or len(args) > max_nargs:
+            raise TypeError(
+                f"{self._name}() takes from {self.nin} to {max_nargs} "
+                f"positional arguments but {len(args)} were given"
+            )
+
+        x1 = convert_to_cupynumeric_ndarray(args[0])
+        x2 = convert_to_cupynumeric_ndarray(args[1])
+
+        output = self._prepare_single_output(
+            args[2] if len(args) == 3 else _MISSING, out=out
+        )
+        out_shape = (
+            np.broadcast_shapes(x1.shape, x2.shape)
+            if output is None
+            else np.broadcast_shapes(x1.shape, x2.shape, output.shape)
+        )
+        self._validate_output(output, out_shape)
+        return (x1, x2), output, out_shape
+
+    def _prepare_multiout_unary_operands(
+        self,
+        args: tuple[Any, ...],
+        out: ndarray | npt.NDArray[Any] | tuple[Any, ...] | None,
+    ) -> tuple[ndarray, tuple[ndarray | None, ...], tuple[int, ...]]:
+        max_nargs = self.nin + self.nout
+        if len(args) < self.nin or len(args) > max_nargs:
+            raise TypeError(
+                f"{self._name}() takes from {self.nin} to {max_nargs} "
+                f"positional arguments but {len(args)} were given"
+            )
+
+        x = convert_to_cupynumeric_ndarray(args[0])
+        outputs = self._prepare_multiout_outputs(args[1:], out=out)
+
+        out_shape = x.shape
+        for output in outputs:
+            if output is not None:
+                out_shape = np.broadcast_shapes(out_shape, output.shape)
+
+        for output in outputs:
+            self._validate_output(output, out_shape)
+
+        return x, outputs, out_shape
 
     def __repr__(self) -> str:
         return f"<ufunc {self._name}>"
@@ -493,7 +591,7 @@ class unary_ufunc(ufunc[UnaryOpCode]):
     ) -> ndarray:
         _check_where(where)
 
-        (x,), (out,), out_shape = self._prepare_operands(*args, out=out)
+        x, out, out_shape = self._prepare_unary_operands(args, out)
 
         # If no dtype is given to prescribe the accuracy, we use the dtype
         # of the input
@@ -588,7 +686,7 @@ class multiout_unary_ufunc(ufunc[UnaryOpCode]):
     ) -> tuple[ndarray, ...]:
         _check_where(where)
 
-        (x,), outs, out_shape = self._prepare_operands(*args, out=out)
+        x, outs, out_shape = self._prepare_multiout_unary_operands(args, out)
 
         # If no dtype is given to prescribe the accuracy, we use the dtype
         # of the input
@@ -789,7 +887,8 @@ class binary_ufunc(ufunc[BinaryOpCode]):
     ) -> ndarray:
         _check_where(where)
 
-        arrs, (out,), out_shape = self._prepare_operands(*args, out=out)
+        arrs, out, out_shape = self._prepare_binary_operands(args, out)
+        resolved_arrs: Sequence[ndarray] = arrs
 
         orig_args = args[: self.nin]
 
@@ -800,20 +899,21 @@ class binary_ufunc(ufunc[BinaryOpCode]):
             # If a dtype is given, that determines the precision
             # of the computation.
             precision_fixed = True
-            arrs = [
-                self._maybe_cast_input(arr, dtype, casting) for arr in arrs
+            resolved_arrs = [
+                self._maybe_cast_input(arr, dtype, casting)
+                for arr in resolved_arrs
             ]
 
         # Resolve the dtype to use for the computation and cast the input
         # if necessary. If the dtype is already fixed by the caller,
         # the dtype must be one of the dtypes supported by this operation.
-        arrs, res_dtype = self._resolve_dtype(
-            arrs, orig_args, casting, precision_fixed
+        resolved_arrs, res_dtype = self._resolve_dtype(
+            resolved_arrs, orig_args, casting, precision_fixed
         )
 
         # Check python integers operands.  For comparisons, this may return
         # new values and op_code when the integer is out-of-bounds.
-        x1, x2 = arrs
+        x1, x2 = resolved_arrs
         x1, x2, op_code = self._post_resolution_check(
             x1, x2, orig_args[0], orig_args[1], self._op_code
         )

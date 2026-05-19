@@ -116,6 +116,51 @@ class TestUfuncPrepareOperandsErrors:
         with pytest.raises(ValueError, match=msg):
             num.add(a, b, out=out)
 
+    def test_out_not_writeable(self) -> None:
+        a_np = np.array([1, 2, 3], dtype=np.int32)
+        b_np = np.array([4, 5, 6], dtype=np.int32)
+        a = num.array(a_np)
+        b = num.array(b_np)
+        out = num.empty_like(a)
+        out.flags.writeable = False
+
+        with pytest.raises(ValueError, match=r"array is not writeable"):
+            num.add(a, b, out=out)
+
+    def test_binary_out_variants(self) -> None:
+        a_np = np.array([1, 2, 3], dtype=np.int32)
+        b_np = np.array([4, 5, 6], dtype=np.int32)
+        a = num.array(a_np)
+        b = num.array(b_np)
+        expected = np.add(a_np, b_np)
+
+        out_pos = num.empty_like(a)
+        result_pos = num.add(a, b, out_pos)
+        assert result_pos is out_pos
+        assert np.array_equal(np.asarray(out_pos), expected)
+
+        out_kw = num.empty_like(a)
+        result_kw = num.add(a, b, out=out_kw)
+        assert result_kw is out_kw
+        assert np.array_equal(np.asarray(out_kw), expected)
+
+        out_np = np.empty_like(a_np)
+        result_np = num.add(a, b, out=out_np)
+        assert np.array_equal(np.asarray(result_np), expected)
+        assert np.array_equal(out_np, expected)
+
+    def test_binary_broadcasted_output(self) -> None:
+        a_np = np.array([[1, 2, 3]], dtype=np.int32)
+        b_np = np.array([[10], [20]], dtype=np.int32)
+        a = num.array(a_np)
+        b = num.array(b_np)
+        expected = np.add(a_np, b_np)
+
+        out = num.empty(expected.shape, dtype=expected.dtype)
+        result = num.add(a, b, out=out)
+        assert result is out
+        assert np.array_equal(np.asarray(out), expected)
+
 
 class TestUfuncCastingBehavior:
     def test_binary_dtype_equal_fixed_precision(self) -> None:
@@ -193,6 +238,26 @@ class TestUfuncUnaryAndMultiout:
         with pytest.raises(TypeError, match=msg):
             num.negative(x, out1, out=out2)
 
+    def test_unary_out_variants(self) -> None:
+        x_np = np.array([1, 2, 3], dtype=np.int32)
+        x = num.array(x_np)
+        expected = np.negative(x_np)
+
+        out_pos = num.empty_like(x)
+        result_pos = num.negative(x, out_pos)
+        assert result_pos is out_pos
+        assert np.array_equal(np.asarray(out_pos), expected)
+
+        out_kw = num.empty_like(x)
+        result_kw = num.negative(x, out=out_kw)
+        assert result_kw is out_kw
+        assert np.array_equal(np.asarray(out_kw), expected)
+
+        out_np = np.empty_like(x_np)
+        result_np = num.negative(x, out=out_np)
+        assert np.array_equal(np.asarray(result_np), expected)
+        assert np.array_equal(out_np, expected)
+
     def test_multiout_resolve_dtype_no_match(self) -> None:
         x_np = np.array([1 + 2j], dtype=np.complex64)
         x = num.array(x_np)
@@ -215,6 +280,44 @@ class TestUfuncUnaryAndMultiout:
 
         assert np.array_equal(np.asarray(exp_num), exp_np)
         assert np.allclose(np.asarray(mant_num), mant_np)
+
+    def test_multiout_out_variants(self) -> None:
+        x_np = np.array([1.25, 2.5], dtype=np.float32)
+        x = num.array(x_np)
+        expected_mant, expected_exp = np.frexp(x_np)
+
+        mant_out = num.empty_like(x)
+        exp_out = num.empty(x.shape, dtype=np.int32)
+        mant, exp = num.frexp(x, out=(mant_out, exp_out))
+        assert mant is mant_out
+        assert exp is exp_out
+        assert np.allclose(np.asarray(mant), expected_mant)
+        assert np.array_equal(np.asarray(exp), expected_exp)
+
+        mant_partial = num.empty_like(x)
+        mant, exp = num.frexp(x, out=(mant_partial, None))
+        assert mant is mant_partial
+        assert np.allclose(np.asarray(mant), expected_mant)
+        assert np.array_equal(np.asarray(exp), expected_exp)
+
+        mant_pos = num.empty_like(x)
+        exp_pos = num.empty(x.shape, dtype=np.int32)
+        mant, exp = num.frexp(x, mant_pos, exp_pos)
+        assert mant is mant_pos
+        assert exp is exp_pos
+        assert np.allclose(np.asarray(mant), expected_mant)
+        assert np.array_equal(np.asarray(exp), expected_exp)
+
+    def test_multiout_wrong_out_tuple_len(self) -> None:
+        x_np = np.array([1.25, 2.5], dtype=np.float32)
+        x = num.array(x_np)
+        mant_out = num.empty_like(x)
+
+        with pytest.raises(
+            ValueError,
+            match=r"The 'out' tuple must have exactly one entry per ufunc output",
+        ):
+            num.frexp(x, out=(mant_out,))
 
 
 class TestUfuncBinaryResolution:
