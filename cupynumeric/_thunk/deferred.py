@@ -45,6 +45,7 @@ from legate.core import (
     dimension,
     get_legate_runtime,
     get_machine,
+    min_extents,
     scale,
     TaskTarget,
 )
@@ -3352,116 +3353,33 @@ class DeferredArray:
         self,
         pad_width: tuple[tuple[int, int], ...],
         mode: str,
-        constant_value_thunk: Any = ...,
+        constant_value_thunk: DeferredArray | None = None,
         constant_rows: int = 0,
         constant_cols: int = 0,
     ) -> None:
         # Map mode strings to integers
         mode_map = {"constant": 0, "edge": 1}
 
-        if mode not in mode_map:
+        if (mode_int := mode_map.get(mode)) is None:
             raise ValueError(
                 f"Mode '{mode}' not supported in C++ implementation"
             )
 
-        mode_int = mode_map[mode]
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.PAD
+        )
 
-        task: Any
+        # Output is updated in-place
+        p_self = task.add_output(self.base)
+        task.add_input(self.base)
 
         if mode == "edge":
-            # Use manual task with smart tiling to guarantee center access
-            from legate.core import dimension
-
-            import math
-
-            min_tile_sizes: list[int] = []
-            max_tiles_per_dim: list[int] = []
-            for dim in range(self.ndim):
-                left_pad, right_pad = pad_width[dim]
-
-                # Minimum tile must contain all padding plus at least one center element
-                min_tile = left_pad + right_pad + 1
-                min_tile = min(min_tile, self.shape[dim])
-                min_tile_sizes.append(min_tile)
-
-                max_tiles = max(1, self.shape[dim] // min_tile)
-                max_tiles_per_dim.append(max_tiles)
-
-            max_possible_tiles = (
-                math.prod(max_tiles_per_dim) if max_tiles_per_dim else 1
-            )
-            target_tiles = min(runtime.num_procs, max_possible_tiles)
-            if target_tiles < 1:
-                target_tiles = 1
-
-            # Start from a single tile per dimension and expand while keeping
-            # the total number of tiles close to the available processors.
-            color_shape_list: list[int] = [1 for _ in range(self.ndim)]
-            remaining = target_tiles
-            dims_order = sorted(
-                range(self.ndim),
-                key=lambda dim: max_tiles_per_dim[dim],
-                reverse=True,
-            )
-
-            for index, dim in enumerate(dims_order):
-                max_tiles = max_tiles_per_dim[dim]
-                if index == len(dims_order) - 1:
-                    color_shape_list[dim] = min(max_tiles, remaining)
-                    break
-
-                best = 1
-                upper = min(max_tiles, remaining)
-                for candidate in range(upper, 0, -1):
-                    if remaining % candidate == 0:
-                        best = candidate
-                        break
-                color_shape_list[dim] = best
-                remaining = max(1, remaining // best)
-
-            total_tiles = (
-                math.prod(color_shape_list) if color_shape_list else 1
-            )
-            if total_tiles < target_tiles:
-                for dim in dims_order:
-                    if color_shape_list[dim] == 0:
-                        continue
-                    while color_shape_list[dim] < max_tiles_per_dim[dim]:
-                        new_total = (
-                            total_tiles
-                            // color_shape_list[dim]
-                            * (color_shape_list[dim] + 1)
-                        )
-                        if new_total > target_tiles:
-                            break
-                        color_shape_list[dim] += 1
-                        total_tiles = new_total
-                    if total_tiles == target_tiles:
-                        break
-
-            color_shape = tuple(max(1, count) for count in color_shape_list)
-
-            # Create manual task with calculated color shape
-            task = legate_runtime.create_manual_task(
-                self.library, CuPyNumericOpCode.PAD, color_shape
-            )
-
-            # Partition specification: each dimension independently
-            partition = tuple(dimension(i) for i in range(self.ndim))
-
-            # The task operates on self (in-place: reads center, writes padding)
-            task.add_input(self.base, partition)
-            task.add_output(self.base, partition)
-
-        else:
-            # Other modes can rely on auto task partitioning
-            task = legate_runtime.create_auto_task(
-                self.library, CuPyNumericOpCode.PAD
-            )
-
-            # Output is updated in-place
-            task.add_output(self.base)
-            task.add_input(self.base)
+            # When we do the edge mode, the tasks need at least one element
+            # from the input store in their sub-stores so they can replicate
+            # the original value. We use the minimum-extent constraint here to
+            # guarantee that.
+            minimum_extents = tuple(lw + rw + 1 for (lw, rw) in pad_width)
+            task.add_constraint([min_extents(p_self, minimum_extents)])
 
         # Add mode
         task.add_scalar_arg(mode_int, ty.int32)
@@ -3483,29 +3401,13 @@ class DeferredArray:
         task.add_scalar_arg(constant_cols, ty.int64)
 
         if mode == "constant":
-            if constant_value_thunk is ...:
+            if constant_value_thunk is None:
                 raise ValueError(
                     "constant mode requires a constant value thunk"
                 )
 
-            if hasattr(constant_value_thunk, "to_deferred_array"):
-                const_deferred = constant_value_thunk.to_deferred_array(
-                    read_only=True
-                )
-            else:
-                const_deferred = constant_value_thunk
-
-            if (
-                const_deferred.base.has_scalar_storage
-                or const_deferred.base.ndim == 0
-            ):
-                const_deferred = const_deferred._convert_future_to_regionfield(
-                    True
-                )
-
-            const_store = const_deferred.base
-            p_const = task.add_input(const_store)  # type: ignore[assignment]
-            task.add_constraint(broadcast(p_const))  # type: ignore[attr-defined]
+            p_const = task.add_input(constant_value_thunk.base)
+            task.add_constraint(broadcast(p_const))
 
         task.execute()
 
