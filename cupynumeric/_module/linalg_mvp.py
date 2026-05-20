@@ -598,9 +598,7 @@ def _contract(
         if out is not None and out_dtype == c_dtype and out_shape == c_shape:
             c = out
         else:
-            c = ndarray._from_inputs(
-                shape=c_shape, dtype=c_dtype, inputs=(a, b)
-            )
+            c = ndarray._from_inputs(shape=c_shape, dtype=c_dtype)
         # Perform operation
         c._thunk.contract(
             c_modes, a._thunk, a_modes, b._thunk, b_modes, mode2extent

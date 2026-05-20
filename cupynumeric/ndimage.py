@@ -168,9 +168,7 @@ def convolve(
                 f"output array dtype {output.dtype} does not match input array dtype {input.dtype}"
             )
     else:
-        output = ndarray._from_inputs(
-            shape=input.shape, dtype=input.dtype, inputs=(input, weights)
-        )
+        output = ndarray._from_inputs(shape=input.shape, dtype=input.dtype)
 
     if input.dtype != weights.dtype:
         weights = weights.astype(input.dtype)

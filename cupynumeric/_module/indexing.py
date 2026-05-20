@@ -998,7 +998,7 @@ def select(
     out_shape = np.broadcast_shapes(
         *(c.shape for c in condlist_), *(c.shape for c in choicelist_)
     )
-    out = ndarray._from_inputs(shape=out_shape, dtype=common_type, inputs=args)
+    out = ndarray._from_inputs(shape=out_shape, dtype=common_type)
     out._thunk.select(
         tuple(c._thunk for c in condlist_),
         tuple(c._thunk for c in choicelist_),

@@ -127,7 +127,7 @@ def _uninitialized_like(
 ) -> ndarray:
     shape = a.shape if shape is None else shape
     dtype = a.dtype if dtype is None else np.dtype(dtype)
-    return ndarray._from_inputs(shape, dtype=dtype, inputs=(a,))
+    return ndarray._from_inputs(shape, dtype=dtype)
 
 
 @add_boilerplate()

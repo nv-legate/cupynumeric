@@ -118,14 +118,10 @@ def bincount(
     else:
         # Normal case of bincount
         if weights is None:
-            out = ndarray._from_inputs(
-                (minlength,), dtype=np.dtype(np.int64), inputs=(x, weights)
-            )
+            out = ndarray._from_inputs((minlength,), dtype=np.dtype(np.int64))
             out._thunk.bincount(x._thunk)
         else:
-            out = ndarray._from_inputs(
-                (minlength,), dtype=weights.dtype, inputs=(x, weights)
-            )
+            out = ndarray._from_inputs((minlength,), dtype=weights.dtype)
             out._thunk.bincount(x._thunk, weights=weights._thunk)
     return out
 
@@ -263,11 +259,7 @@ def histogram(
             bins_array.astype(bins_orig_type),
         )
 
-    hist = ndarray._from_inputs(
-        (num_intervals,),
-        dtype=weights_array.dtype,
-        inputs=(x, bins_array, weights_array),
-    )
+    hist = ndarray._from_inputs((num_intervals,), dtype=weights_array.dtype)
     hist._thunk.histogram(
         x._thunk, bins_array._thunk, weights=weights_array._thunk
     )
@@ -532,7 +524,6 @@ def histogramdd(
     box_shape = tuple(bin.size - 1 for bin in bins_set)
     num_boxes = int(np.prod(box_shape))
 
-    histdd_inputs: tuple[Any, ...]
     if weights is not None:
         if weights.size != num_coords:
             raise ValueError(
@@ -543,18 +534,14 @@ def histogramdd(
         if weights.ndim != 1:
             weights = weights.flatten()
         weights_thunk = weights._thunk
-        histdd_inputs = (coords, weights, bins_set)
     else:
         result_type = np.dtype(np.float64)
         weights_thunk = None
-        histdd_inputs = (coords, bins_set)
 
     # numpy always casts the output of histogramdd to float
     result_type = np.dtype(np.float64)
 
-    histdd = ndarray._from_inputs(
-        (num_boxes,), dtype=result_type, inputs=histdd_inputs
-    )
+    histdd = ndarray._from_inputs((num_boxes,), dtype=result_type)
 
     histdd._thunk.histogramdd(
         coords._thunk,

@@ -120,7 +120,7 @@ def tile(
     for dim in range(A.ndim):
         out_shape += (A.shape[dim] * computed_reps[offset + dim],)
     assert len(out_shape) == out_dims
-    result = ndarray._from_inputs(out_shape, dtype=A.dtype, inputs=(A,))
+    result = ndarray._from_inputs(out_shape, dtype=A.dtype)
     result._thunk.tile(A._thunk, computed_reps)
     return result
 

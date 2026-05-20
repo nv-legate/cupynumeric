@@ -1315,9 +1315,7 @@ def _thunk_cholesky(
     if overwrite_a:
         output = input
     else:
-        output = ndarray._from_inputs(
-            shape=input.shape, dtype=input.dtype, inputs=(input,)
-        )
+        output = ndarray._from_inputs(shape=input.shape, dtype=input.dtype)
 
     output._thunk.cholesky(input._thunk, lower=lower, zeroout=zeroout)
 
@@ -1346,12 +1344,8 @@ def _thunk_eig(a: ndarray) -> tuple[ndarray, ...]:
             "Please use a newer CUDA toolkit version with cuSOLVER geev support."
         )
     else:
-        out_ew = ndarray._from_inputs(
-            shape=a.shape[:-1], dtype=complex_dtype, inputs=(a,)
-        )
-        out_ev = ndarray._from_inputs(
-            shape=a.shape, dtype=complex_dtype, inputs=(a,)
-        )
+        out_ew = ndarray._from_inputs(shape=a.shape[:-1], dtype=complex_dtype)
+        out_ev = ndarray._from_inputs(shape=a.shape, dtype=complex_dtype)
 
     if a.shape[-1] > 0:
         a._thunk.eig(out_ew._thunk, out_ev._thunk)
@@ -1377,9 +1371,7 @@ def _thunk_eigvals(a: ndarray) -> ndarray:
             "Please use a newer CUDA toolkit version with cuSOLVER geev support."
         )
     else:
-        out_ew = ndarray._from_inputs(
-            shape=a.shape[:-1], dtype=complex_dtype, inputs=(a,)
-        )
+        out_ew = ndarray._from_inputs(shape=a.shape[:-1], dtype=complex_dtype)
 
     if a.shape[-1] > 0:
         a._thunk.eigvals(out_ew._thunk)
@@ -1399,10 +1391,8 @@ def _thunk_eigh(a: ndarray, uplo_l: bool) -> tuple[ndarray, ...]:
     else:
         raise TypeError("Eigh input not supported (missing a conversion?)")
 
-    out_ew = ndarray._from_inputs(
-        shape=a.shape[:-1], dtype=real_dtype, inputs=(a,)
-    )
-    out_ev = ndarray._from_inputs(shape=a.shape, dtype=a.dtype, inputs=(a,))
+    out_ew = ndarray._from_inputs(shape=a.shape[:-1], dtype=real_dtype)
+    out_ev = ndarray._from_inputs(shape=a.shape, dtype=a.dtype)
 
     if a.shape[-1] > 0:
         a._thunk.eigh(out_ew._thunk, out_ev._thunk, uplo_l)
@@ -1422,9 +1412,7 @@ def _thunk_eigvalsh(a: ndarray, uplo_l: bool) -> ndarray:
     else:
         raise TypeError("Eigvalsh input not supported (missing a conversion?)")
 
-    out_ew = ndarray._from_inputs(
-        shape=a.shape[:-1], dtype=real_dtype, inputs=(a,)
-    )
+    out_ew = ndarray._from_inputs(shape=a.shape[:-1], dtype=real_dtype)
 
     if a.shape[-1] > 0:
         a._thunk.eigvalsh(out_ew._thunk, uplo_l)
@@ -1437,12 +1425,8 @@ def _thunk_qr(a: ndarray) -> tuple[ndarray, ...]:
 
     k = min(a.shape[0], a.shape[1])
 
-    out_q = ndarray._from_inputs(
-        shape=(a.shape[0], k), dtype=a.dtype, inputs=(a,)
-    )
-    out_r = ndarray._from_inputs(
-        shape=(k, a.shape[1]), dtype=a.dtype, inputs=(a,)
-    )
+    out_q = ndarray._from_inputs(shape=(a.shape[0], k), dtype=a.dtype)
+    out_r = ndarray._from_inputs(shape=(k, a.shape[1]), dtype=a.dtype)
 
     a._thunk.qr(out_q._thunk, out_r._thunk)
     return out_q, out_r
@@ -1477,7 +1461,7 @@ def _thunk_solve(
     if output is not None:
         out = output.reshape(b.shape)
     else:
-        out = ndarray._from_inputs(shape=b.shape, dtype=b.dtype, inputs=(a, b))
+        out = ndarray._from_inputs(shape=b.shape, dtype=b.dtype)
 
     out._thunk.solve(a._thunk, b._thunk)
 
@@ -1564,7 +1548,7 @@ def _thunk_solve_triangular(
     if overwrite_b:
         out = b
     else:
-        out = ndarray._from_inputs(shape=b.shape, dtype=b.dtype, inputs=(a, b))
+        out = ndarray._from_inputs(shape=b.shape, dtype=b.dtype)
 
     out._thunk.solve_triangular(
         a._thunk, b._thunk, trans, lower, unit_diagonal
@@ -1586,18 +1570,14 @@ def _thunk_svd(a: ndarray, full_matrices: bool) -> tuple[ndarray, ...]:
     k = min(a.shape[0], a.shape[1])
 
     out_u = ndarray._from_inputs(
-        shape=(a.shape[0], a.shape[0] if full_matrices else k),
-        dtype=a.dtype,
-        inputs=(a,),
+        shape=(a.shape[0], a.shape[0] if full_matrices else k), dtype=a.dtype
     )
 
     real_dtype = a.dtype.type(0).real.dtype
 
-    out_s = ndarray._from_inputs(shape=(k,), dtype=real_dtype, inputs=(a,))
+    out_s = ndarray._from_inputs(shape=(k,), dtype=real_dtype)
     out_vh = ndarray._from_inputs(
-        shape=(a.shape[1] if full_matrices else k, a.shape[1]),
-        dtype=a.dtype,
-        inputs=(a,),
+        shape=(a.shape[1] if full_matrices else k, a.shape[1]), dtype=a.dtype
     )
 
     a._thunk.svd(out_u._thunk, out_s._thunk, out_vh._thunk)

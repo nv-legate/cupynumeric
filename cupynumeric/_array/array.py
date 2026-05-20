@@ -134,7 +134,7 @@ class ndarray:
 
         else:
             self._init_from_inputs(
-                shape=shape, dtype=dtype, inputs=(), writeable=writeable
+                shape=shape, dtype=dtype, writeable=writeable
             )
 
     @staticmethod
@@ -172,12 +172,11 @@ class ndarray:
     def _from_inputs(
         shape: NdShapeLike,
         dtype: npt.DTypeLike = np.float64,
-        inputs: Sequence[Any] = (),
         *,
         writeable: bool = True,
     ) -> ndarray:
         array: ndarray = object.__new__(ndarray)
-        array._init_from_inputs(shape, dtype, inputs, writeable=writeable)
+        array._init_from_inputs(shape, dtype, writeable=writeable)
         return array
 
     def _init_from_thunk(
@@ -215,20 +214,10 @@ class ndarray:
         self,
         shape: NdShapeLike,
         dtype: npt.DTypeLike,
-        inputs: Sequence[Any],
         *,
         writeable: bool = True,
     ) -> None:
-        from .._thunk.deferred import DeferredArray
-
         shape_tuple = sanitize_shape(shape)
-
-        filtered_inputs: list[DeferredArray] = []
-        for inp in inputs:
-            if isinstance(inp, ndarray):
-                filtered_inputs.append(inp._thunk)
-            elif isinstance(inp, DeferredArray):
-                filtered_inputs.append(inp)
 
         core_dtype = to_core_type(np.dtype(dtype))
         thunk = runtime.create_deferred_thunk(shape_tuple, core_dtype)
@@ -870,7 +859,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        result = ndarray._from_inputs(self.shape, self.dtype, inputs=(self,))
+        result = ndarray._from_inputs(self.shape, self.dtype)
         result._thunk.copy(self._thunk, deep=False)
         return result
 
@@ -887,7 +876,7 @@ class ndarray:
         Multiple GPUs, Multiple CPUs
 
         """
-        result = ndarray._from_inputs(self.shape, self.dtype, inputs=(self,))
+        result = ndarray._from_inputs(self.shape, self.dtype)
         result._thunk.copy(self._thunk, deep=True)
         return result
 
@@ -1698,9 +1687,7 @@ class ndarray:
         check_writeable(self)
 
         if value.dtype != self.dtype:
-            temp = ndarray._from_inputs(
-                value.shape, dtype=self.dtype, inputs=(value,)
-            )
+            temp = ndarray._from_inputs(value.shape, dtype=self.dtype)
             temp._thunk.convert(value._thunk)
             value = temp
 
@@ -2030,7 +2017,7 @@ class ndarray:
                 f"from '{self.dtype}' to '{dtype}' "
                 f"to the rule '{casting}'"
             )
-        result = ndarray._from_inputs(self.shape, dtype=dtype, inputs=(self,))
+        result = ndarray._from_inputs(self.shape, dtype=dtype)
         result._thunk.convert(self._thunk, warn=False, temporary=temporary)
         return result
 
@@ -2112,10 +2099,7 @@ class ndarray:
 
         if np.prod(out_shape) == 0:
             if out is None:
-                inputs = (self,) if is_scalar else (self, ind)
-                out = ndarray._from_inputs(
-                    shape=out_shape, dtype=self.dtype, inputs=inputs
-                )
+                out = ndarray._from_inputs(shape=out_shape, dtype=self.dtype)
             return out
 
         result_thunk = self._thunk.take(
@@ -2213,9 +2197,7 @@ class ndarray:
 
         else:
             # no output, create one
-            out_arr = ndarray._from_inputs(
-                shape=out_shape, dtype=ch_dtype, inputs=(a, choices)
-            )
+            out_arr = ndarray._from_inputs(shape=out_shape, dtype=ch_dtype)
 
         ch = tuple(c._thunk for c in choices)
         out_arr._thunk.choose(a._thunk, *ch)
@@ -2511,9 +2493,7 @@ class ndarray:
                     "Axes shouldn't be specified when getting diagonal for 1D array"
                 )
             m = self.shape[0] + np.abs(offset)
-            res = ndarray._from_inputs(
-                (m, m), dtype=self.dtype, inputs=(self,)
-            )
+            res = ndarray._from_inputs((m, m), dtype=self.dtype)
             diag_size = self.shape[0]
             res._thunk._diag_helper(
                 self._thunk, offset=offset, naxes=0, extract=False, trace=False
@@ -2594,9 +2574,7 @@ class ndarray:
             if out is not None and out.dtype == out_dtype:
                 res = out
             else:
-                res = ndarray._from_inputs(
-                    shape=out_shape, dtype=out_dtype, inputs=(self,)
-                )
+                res = ndarray._from_inputs(shape=out_shape, dtype=out_dtype)
 
             res._thunk._diag_helper(
                 a._thunk, offset=offset, naxes=N, extract=extract, trace=trace
@@ -3560,9 +3538,7 @@ class ndarray:
             new_size = prod(shape)
             if new_size > 0:
                 raise ValueError("new shape has bigger size than original")
-            result = ndarray._from_inputs(
-                shape=shape, dtype=self.dtype, inputs=(self,)
-            )
+            result = ndarray._from_inputs(shape=shape, dtype=self.dtype)
             result.fill(0)
             return result
 
@@ -3740,9 +3716,7 @@ class ndarray:
                 )
             a = a.take(sorter).copy()
 
-        result = ndarray._from_inputs(
-            v_ndarray.shape, np.int64, inputs=(a, v_ndarray, sorter)
-        )
+        result = ndarray._from_inputs(v_ndarray.shape, np.int64)
 
         result._thunk.searchsorted(a._thunk, v_ndarray._thunk, side)
         return result
@@ -4136,9 +4110,7 @@ class ndarray:
         Single GPU, Single CPU
 
         """
-        result = ndarray._from_inputs(
-            shape=self.shape, dtype=self.dtype, inputs=(self,)
-        )
+        result = ndarray._from_inputs(shape=self.shape, dtype=self.dtype)
         result._thunk.flip(self._thunk, axis)
         return result
 
@@ -4208,9 +4180,7 @@ class ndarray:
     def _maybe_convert(self, dtype: np.dtype[Any], hints: Any) -> ndarray:
         if self.dtype == dtype:
             return self
-        copy = ndarray._from_inputs(
-            shape=self.shape, dtype=dtype, inputs=hints
-        )
+        copy = ndarray._from_inputs(shape=self.shape, dtype=dtype)
         copy._thunk.convert(self._thunk)
         return copy
 
@@ -4219,9 +4189,7 @@ class ndarray:
             idxs = tuple(0 for i in range(self.ndim))
             return self[idxs]
 
-        out = ndarray._from_inputs(
-            shape=(new_len,), dtype=self.dtype, inputs=(self,)
-        )
+        out = ndarray._from_inputs(shape=(new_len,), dtype=self.dtype)
         out._thunk._wrap(src=self._thunk, new_len=new_len)
         return out
 

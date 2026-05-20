@@ -203,7 +203,7 @@ def _block_collect_slices(
 def _block_slicing(arrays: Sequence[ndarray], depth: int) -> ndarray:
     # collects the final slices of input arrays and assign them at once
     arrays, out_shape, slices = _block_collect_slices(arrays, 1, depth)
-    out_array = ndarray._from_inputs(shape=out_shape, inputs=arrays)
+    out_array = ndarray._from_inputs(shape=out_shape)
 
     for dest, inp in zip(slices, arrays):
         out_array[(Ellipsis,) + tuple(dest)] = inp
@@ -245,7 +245,7 @@ def _concatenate(
 
     if out is None:
         out_array = ndarray._from_inputs(
-            shape=out_shape, dtype=common_info.dtype, inputs=inputs
+            shape=out_shape, dtype=common_info.dtype
         )
     else:
         out_array = convert_to_cupynumeric_ndarray(out)

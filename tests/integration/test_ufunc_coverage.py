@@ -173,6 +173,28 @@ class TestUfuncCastingBehavior:
         out = num.add(a, b, dtype=np.float32)
         assert np.array_equal(np.asarray(out), out_np)
 
+    def test_binary_same_dtype_arrays_preserve_dtype(self) -> None:
+        a_np = np.array([1, 2, 3], dtype=np.int32)
+        b_np = np.array([4, 5, 6], dtype=np.int32)
+        a = num.array(a_np)
+        b = num.array(b_np)
+
+        out_np = np.add(a_np, b_np)
+        out = num.add(a, b)
+
+        assert np.asarray(out).dtype == out_np.dtype
+        assert np.array_equal(np.asarray(out), out_np)
+
+    def test_binary_array_scalar_promotion(self) -> None:
+        a_np = np.array([1, 2, 3], dtype=np.int32)
+        a = num.array(a_np)
+
+        out_np = np.add(a_np, 2.0)
+        out = num.add(a, 2.0)
+
+        assert np.asarray(out).dtype == out_np.dtype
+        assert np.array_equal(np.asarray(out), out_np)
+
     def test_binary_can_cast_input(self) -> None:
         a_np = np.array([1, 2, 3], dtype=np.int32)
         b_np = np.array([4, 5, 6], dtype=np.int32)

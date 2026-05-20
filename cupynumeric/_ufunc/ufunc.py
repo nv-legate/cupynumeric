@@ -17,7 +17,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 import numpy as np
-from legate.core.utils import OrderedSet
 
 from cupynumeric._utils import is_np2_1
 
@@ -298,14 +297,11 @@ class ufunc(Generic[T]):
         out_shape: NdShape,
         res_dtype: np.dtype[Any],
         casting: CastingKind,
-        inputs: tuple[ndarray, ...],
     ) -> ndarray:
         from .._array.array import ndarray
 
         if out is None:
-            return ndarray._from_inputs(
-                shape=out_shape, dtype=res_dtype, inputs=inputs
-            )
+            return ndarray._from_inputs(out_shape, res_dtype)
         elif out.dtype != res_dtype:
             if not np.can_cast(res_dtype, out.dtype, casting=casting):
                 raise TypeError(
@@ -313,9 +309,7 @@ class ufunc(Generic[T]):
                     f"{res_dtype} to {out.dtype} with casting rule "
                     f"'{casting}'"
                 )
-            return ndarray._from_inputs(
-                shape=out.shape, dtype=res_dtype, inputs=inputs
-            )
+            return ndarray._from_inputs(out.shape, res_dtype)
         else:
             return out
 
@@ -520,6 +514,9 @@ class unary_ufunc(ufunc[UnaryOpCode]):
         assert len(in_ty) == self.nin
         assert len(out_ty) == self.nout
 
+        self._result_dtypes = {
+            in_ty: np.dtype(out_ty) for in_ty, out_ty in self._types.items()
+        }
         self._resolution_cache: dict[np.dtype[Any], np.dtype[Any]] = {}
         self._overrides = overrides
 
@@ -527,13 +524,13 @@ class unary_ufunc(ufunc[UnaryOpCode]):
         self, arr: ndarray, precision_fixed: bool
     ) -> tuple[ndarray, np.dtype[Any]]:
         if arr.dtype.char in self._types:
-            return arr, np.dtype(self._types[arr.dtype.char])
+            return arr, self._result_dtypes[arr.dtype.char]
 
         if not precision_fixed:
             if arr.dtype in self._resolution_cache:
                 to_dtype = self._resolution_cache[arr.dtype]
                 arr = arr._astype(to_dtype, temporary=True)
-                return arr, np.dtype(self._types[to_dtype.char])
+                return arr, self._result_dtypes[to_dtype.char]
 
         chosen = None
         if not precision_fixed:
@@ -551,9 +548,9 @@ class unary_ufunc(ufunc[UnaryOpCode]):
         to_dtype = np.dtype(chosen)
         self._resolution_cache[arr.dtype] = to_dtype
 
-        return arr._astype(to_dtype, temporary=True), np.dtype(
-            self._types[to_dtype.char]
-        )
+        return arr._astype(to_dtype, temporary=True), self._result_dtypes[
+            to_dtype.char
+        ]
 
     def _call_impl(
         self,
@@ -615,9 +612,7 @@ class unary_ufunc(ufunc[UnaryOpCode]):
         # the dtype must be one of the dtypes supported by this operation.
         x, res_dtype = self._resolve_dtype(x, precision_fixed)
 
-        result = self._maybe_create_result(
-            out, out_shape, res_dtype, casting, (x,)
-        )
+        result = self._maybe_create_result(out, out_shape, res_dtype, casting)
 
         op_code = self._overrides.get(x.dtype.char, self._op_code)
         result._thunk.unary_op(op_code, x._thunk, where)
@@ -640,19 +635,22 @@ class multiout_unary_ufunc(ufunc[UnaryOpCode]):
         self._nout = len(out_ty)
         assert len(in_ty) == self.nin
 
+        self._result_dtypes = {
+            in_ty: to_dtypes(out_ty) for in_ty, out_ty in self._types.items()
+        }
         self._resolution_cache: dict[np.dtype[Any], np.dtype[Any]] = {}
 
     def _resolve_dtype(
         self, arr: ndarray, precision_fixed: bool
     ) -> tuple[ndarray, tuple[np.dtype[Any], ...]]:
         if arr.dtype.char in self._types:
-            return arr, to_dtypes(self._types[arr.dtype.char])
+            return arr, self._result_dtypes[arr.dtype.char]
 
         if not precision_fixed:
             if arr.dtype in self._resolution_cache:
                 to_dtype = self._resolution_cache[arr.dtype]
                 arr = arr._astype(to_dtype, temporary=True)
-                return arr, to_dtypes(self._types[to_dtype.char])
+                return arr, self._result_dtypes[to_dtype.char]
 
         chosen = None
         if not precision_fixed:
@@ -670,9 +668,9 @@ class multiout_unary_ufunc(ufunc[UnaryOpCode]):
         to_dtype = np.dtype(chosen)
         self._resolution_cache[arr.dtype] = to_dtype
 
-        return arr._astype(to_dtype, temporary=True), to_dtypes(
-            self._types[to_dtype.char]
-        )
+        return arr._astype(to_dtype, temporary=True), self._result_dtypes[
+            to_dtype.char
+        ]
 
     def _call_impl(
         self,
@@ -703,7 +701,7 @@ class multiout_unary_ufunc(ufunc[UnaryOpCode]):
         x, res_dtypes = self._resolve_dtype(x, precision_fixed)
 
         results = tuple(
-            self._maybe_create_result(out, out_shape, res_dtype, casting, (x,))
+            self._maybe_create_result(out, out_shape, res_dtype, casting)
             for out, res_dtype in zip(outs, res_dtypes)
         )
 
@@ -744,8 +742,11 @@ class binary_ufunc(ufunc[BinaryOpCode]):
         assert len(in_ty) == self.nin
         assert len(out_ty) == self.nout
 
+        self._result_dtypes = {
+            in_ty: np.dtype(out_ty) for in_ty, out_ty in self._types.items()
+        }
         self._resolution_cache: dict[
-            tuple[str | type, ...], tuple[np.dtype[Any], ...]
+            tuple[str | type, str | type], tuple[str, str]
         ] = {}
         self._red_code = red_code
         self._use_common_type = use_common_type
@@ -760,22 +761,36 @@ class binary_ufunc(ufunc[BinaryOpCode]):
     ) -> np.dtype[Any]:
         from .._array.array import ndarray
 
-        all_ndarray = all(isinstance(arg, ndarray) for arg in orig_args)
-        unique_dtypes = OrderedSet(arr.dtype for arr in arrs)
-        # If all operands are ndarrays and they all have the same dtype,
-        # we already know the common dtype
-        if len(unique_dtypes) == 1 and all_ndarray:
-            return arrs[0].dtype
+        x1, x2 = arrs
+        orig_arg1, orig_arg2 = orig_args
+        orig_arg1_is_scalar = type(orig_arg1) in (int, float, complex)
+        orig_arg2_is_scalar = type(orig_arg2) in (int, float, complex)
 
-        scalar_types = []
-        array_types = []
-        for arr, orig_arg in zip(arrs, orig_args):
-            if type(orig_arg) in (int, float, complex):
-                scalar_types.append(orig_arg)
-            else:
-                array_types.append(arr.dtype)
+        if not orig_arg1_is_scalar and not orig_arg2_is_scalar:
+            if (
+                isinstance(orig_arg1, ndarray)
+                and isinstance(orig_arg2, ndarray)
+                and x1.dtype == x2.dtype
+            ):
+                return x1.dtype
+            return np.result_type(x1.dtype, x2.dtype)
+        if orig_arg1_is_scalar and orig_arg2_is_scalar:
+            return np.result_type(orig_arg1, orig_arg2)
+        if orig_arg1_is_scalar:
+            return np.result_type(x2.dtype, orig_arg1)
+        return np.result_type(x1.dtype, orig_arg2)
 
-        return np.result_type(*array_types, *scalar_types)
+    @staticmethod
+    def _maybe_cast_binary_inputs(
+        arrs: Sequence[ndarray], to_dtypes: tuple[npt.DTypeLike, npt.DTypeLike]
+    ) -> tuple[ndarray, ndarray]:
+        x1, x2 = arrs
+        to_dtype1, to_dtype2 = to_dtypes
+        if x1.dtype != to_dtype1:
+            x1 = x1._astype(to_dtype1, temporary=True)
+        if x2.dtype != to_dtype2:
+            x2 = x2._astype(to_dtype2, temporary=True)
+        return x1, x2
 
     def _resolve_dtype(
         self,
@@ -784,43 +799,46 @@ class binary_ufunc(ufunc[BinaryOpCode]):
         casting: CastingKind,
         precision_fixed: bool,
     ) -> tuple[Sequence[ndarray], np.dtype[Any]]:
-        to_dtypes: tuple[np.dtype[Any], ...]
-        key: tuple[str | type, ...]
+        to_dtypes: tuple[npt.DTypeLike, npt.DTypeLike]
+        key: tuple[str | type, str | type]
         if self._use_common_type:
             common_dtype = self._find_common_type(arrs, orig_args)
             to_dtypes = (common_dtype, common_dtype)
             key = (common_dtype.char, common_dtype.char)
         else:
-            to_dtypes = tuple(arr.dtype for arr in arrs)
-            key = tuple(
-                arr.dtype.char
-                if type(orig) not in (int, float, complex)
-                else type(orig)
-                for orig, arr in zip(orig_args, arrs)
+            x1, x2 = arrs
+            orig_arg1, orig_arg2 = orig_args
+            to_dtypes = (x1.dtype, x2.dtype)
+            weak_key: tuple[str | type, str | type] = (
+                type(orig_arg1)
+                if type(orig_arg1) in (int, float, complex)
+                else x1.dtype.char,
+                type(orig_arg2)
+                if type(orig_arg2) in (int, float, complex)
+                else x2.dtype.char,
             )
             # When all inputs are scalars, cannot use weak logic below.
             # (Using arr.dtype.char may be off for huge integers that map to
             # an unsigned int.  But NumPy should mostly do the same currently.)
-            if not _check_should_use_weak_scalar(key):
-                key = tuple(arr.dtype.char for arr in arrs)
+            key = (
+                weak_key
+                if _check_should_use_weak_scalar(weak_key)
+                else (x1.dtype.char, x2.dtype.char)
+            )
 
-        if key in self._types:
-            arrs = [
-                arr._astype(to_dtype, temporary=True)
-                for arr, to_dtype in zip(arrs, to_dtypes)
-            ]
-            return arrs, np.dtype(self._types[key])
+        if isinstance(key[0], str) and isinstance(key[1], str):
+            signature_key = (key[0], key[1])
+            if signature_key in self._types:
+                arrs = self._maybe_cast_binary_inputs(arrs, to_dtypes)
+                return arrs, self._result_dtypes[signature_key]
 
         if not precision_fixed:
             if key in self._resolution_cache:
-                to_dtypes = self._resolution_cache[key]
-                arrs = [
-                    arr._astype(to_dtype, temporary=True)
-                    for arr, to_dtype in zip(arrs, to_dtypes)
-                ]
-                return arrs, np.dtype(self._types[to_dtypes])
+                signature_key = self._resolution_cache[key]
+                arrs = self._maybe_cast_binary_inputs(arrs, signature_key)
+                return arrs, self._result_dtypes[signature_key]
 
-        chosen = None
+        chosen: tuple[str, str] | None = None
         if not precision_fixed:
             for in_dtypes in self._types.keys():
                 for in_t, to_dtype in zip(key, in_dtypes):
@@ -869,12 +887,9 @@ class binary_ufunc(ufunc[BinaryOpCode]):
             )
 
         self._resolution_cache[key] = chosen
-        arrs = [
-            arr._astype(to_dtype, temporary=True)
-            for arr, to_dtype in zip(arrs, chosen)
-        ]
+        arrs = self._maybe_cast_binary_inputs(arrs, chosen)
 
-        return arrs, np.dtype(self._types[chosen])
+        return arrs, self._result_dtypes[chosen]
 
     def _call_full(
         self,
@@ -918,9 +933,7 @@ class binary_ufunc(ufunc[BinaryOpCode]):
             x1, x2, orig_args[0], orig_args[1], self._op_code
         )
 
-        result = self._maybe_create_result(
-            out, out_shape, res_dtype, casting, (x1, x2)
-        )
+        result = self._maybe_create_result(out, out_shape, res_dtype, casting)
         result._thunk.binary_op(op_code, x1._thunk, x2._thunk, where, ())
 
         return self._maybe_cast_output(out, result)
