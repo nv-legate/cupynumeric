@@ -137,7 +137,7 @@ def convolve(
 
     Availability
     ------------
-    Single GPU
+    Single GPU, Multi GPU
 
     See Also
     --------
@@ -175,6 +175,100 @@ def convolve(
 
     output._thunk.ndimage_convolve(
         input._thunk, weights._thunk, _MODE_MAP[mode], cval, origin
+    )
+
+    return output
+
+
+@add_boilerplate("input", "weights")
+def batched_convolve(
+    input: ndarray,
+    weights: ndarray,
+    output: ndarray | None = None,
+    mode: NdimageConvolveMode = "reflect",
+    cval: Any = 0.0,
+    origin: int | tuple[int, ...] = 0,
+) -> ndarray:
+    """
+    Batched multidimensional convolution.
+
+    Treats axis 0 of ``input`` as an image batch and axis 0 of ``weights`` as
+    an independent filter batch. The remaining axes are spatial convolution
+    axes. If ``input`` has shape ``(N, *spatial_shape)`` and ``weights`` has
+    shape ``(M, *filter_shape)``, then the result has shape
+    ``(N, M, *spatial_shape)``. Each output slice ``result[n, m]`` is the
+    convolution of ``input[n]`` with ``weights[m]`` using the same boundary and
+    origin semantics as :func:`convolve`.
+
+    Parameters
+    ----------
+    input : array_like
+        Batched input array. Must have at least two dimensions: one image batch
+        dimension followed by one or more spatial dimensions.
+    weights : array_like
+        Batched convolution filters. Must have the same number of dimensions as
+        ``input``. Axis 0 indexes filters; the remaining axes define the filter
+        extent for the corresponding input spatial axes. If its dtype does not
+        match ``input``, it is cast to ``input.dtype`` before execution.
+    output : ndarray, numpy.ndarray, dtype, or None, optional
+        Destination for the result. If an array is provided, it must be
+        writable and have shape ``(input.shape[0], weights.shape[0],
+        *input.shape[1:])`` and dtype ``input.dtype``. If ``None``, a new array
+        with that shape and dtype is returned.
+    mode : {"reflect", "constant", "nearest", "mirror", "wrap", \
+            "grid-mirror", "grid-constant", "grid-wrap"}, optional
+        Boundary handling mode used when a filter overlaps points outside the
+        input spatial domain.
+    cval : scalar, optional
+        Fill value used for points outside ``input`` when ``mode`` is
+        ``"constant"`` or ``"grid-constant"``.
+    origin : int or tuple[int, ...], optional
+        Placement of each filter center relative to each input element. A scalar
+        applies to every spatial axis; a tuple must contain one value per
+        spatial axis and does not include the batch axis. All filters will have the
+        same origin placement.
+
+    Returns
+    -------
+    ndarray
+        The batched convolution result with shape ``(N, M, *spatial_shape)``.
+        This is ``output`` when an output array is provided; otherwise it is a
+        newly allocated array.
+
+    Availability
+    ------------
+    Single GPU, Multi GPU
+    """
+    if mode not in _MODE_MAP:
+        raise ValueError(f"mode must be one of {set(_MODE_MAP.keys())}")
+    if input.ndim < 2 or weights.ndim < 2:
+        raise ValueError(
+            "input and weights must include batch and spatial dimensions"
+        )
+    if input.ndim != weights.ndim:
+        raise ValueError("input and weights must have the same dimensions")
+
+    origins = _normalize_origin(origin, input.ndim - 1, weights.shape[1:])
+    output_shape = (input.shape[0], weights.shape[0], *input.shape[1:])
+
+    if output is not None:
+        check_writeable(output)
+        if output.shape != output_shape:
+            raise ValueError(
+                f"output array shape {output.shape} does not match expected shape {output_shape}"
+            )
+        if output.dtype != input.dtype:
+            raise ValueError(
+                f"output array dtype {output.dtype} does not match input array dtype {input.dtype}"
+            )
+    else:
+        output = ndarray._from_inputs(shape=output_shape, dtype=input.dtype)
+
+    if input.dtype != weights.dtype:
+        weights = weights.astype(input.dtype)
+
+    output._thunk.ndimage_batched_convolve(
+        input._thunk, weights._thunk, _MODE_MAP[mode], cval, origins
     )
 
     return output

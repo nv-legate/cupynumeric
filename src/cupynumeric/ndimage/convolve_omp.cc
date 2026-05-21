@@ -21,8 +21,10 @@ namespace cupynumeric {
 
 using namespace legate;
 
-template <typename VAL, int DIM>
-struct NdimageConvolveImplBody<VariantKind::OMP, VAL, DIM> {
+template <typename VAL, int DIM, bool BATCHED>
+struct NdimageConvolveImplBody<VariantKind::OMP, VAL, DIM, BATCHED> {
+  static_assert(!BATCHED || DIM > 2, "ndimage.batched_convolve requires DIM > 2");
+
   TaskContext context;
   explicit NdimageConvolveImplBody(TaskContext context) : context(context) {}
 

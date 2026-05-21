@@ -2225,18 +2225,12 @@ class DeferredArray:
 
         task.add_scalar_arg(mode.value, ty.int32)
         task.add_scalar_arg(cval, self.base.type)
+
+        # not batched
+        task.add_scalar_arg(False, ty.bool_)
+
         for origin in origins:
             task.add_scalar_arg(origin, ty.int64)
-
-        centers = tuple(
-            extent // 2 + origin
-            for extent, origin in zip(weights.shape, origins, strict=True)
-        )
-        lower_offsets = tuple(
-            extent - 1 - center
-            for extent, center in zip(weights.shape, centers, strict=True)
-        )
-        upper_offsets = centers
 
         task.add_constraint(broadcast(p_weights))
 
@@ -2253,6 +2247,84 @@ class DeferredArray:
             # This isn't supported, so just broadcast the input.
             task.add_constraint(broadcast(p_out, p_input, p_halo))
         else:
+            centers = tuple(
+                extent // 2 + origin
+                for extent, origin in zip(weights.shape, origins, strict=True)
+            )
+            lower_offsets = tuple(
+                extent - 1 - center
+                for extent, center in zip(weights.shape, centers, strict=True)
+            )
+            upper_offsets = centers
+
+            task.add_constraint(align(p_out, p_input))
+            task.add_constraint(
+                bloat(p_out, p_halo, lower_offsets, upper_offsets)
+            )
+
+        task.execute()
+
+    def ndimage_batched_convolve(
+        self,
+        input: Any,
+        weights: Any,
+        mode: NdimageConvolveModeCode,
+        cval: Any,
+        origins: tuple[int, ...],
+    ) -> None:
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.NDIMAGE_CONVOLVE
+        )
+
+        # In order to ensure alignment of input and output stores,
+        # promote the inputs and weights to the same dimensions
+        # as the output store
+        input_store = input.base.promote(1, weights.shape[0])
+        weights_store = weights.base.promote(0, input.shape[0])
+
+        p_out = task.add_output(self.base)
+        p_weights = task.add_input(weights_store)
+        p_input = task.add_input(input_store)
+        p_halo = task.declare_partition()
+        task.add_input(input_store, p_halo)
+
+        task.add_scalar_arg(mode.value, ty.int32)
+        task.add_scalar_arg(cval, self.base.type)
+
+        # batched
+        task.add_scalar_arg(True, ty.bool_)
+
+        for origin in origins:
+            task.add_scalar_arg(origin, ty.int64)
+
+        task.add_constraint(broadcast(p_weights))
+
+        tile_too_small = any(
+            input_dim > 1 and input_dim // runtime.num_gpus < weights_dim
+            for input_dim, weights_dim in zip(
+                input.shape[1:], weights.shape[1:]
+            )
+        )
+
+        if mode == NdimageConvolveModeCode.WRAP or tile_too_small:
+            task.add_constraint(broadcast(p_out, p_input, p_halo))
+        else:
+            # Only need to bloat the spatial dimensions
+            # Note weights hold their original shape, not promoted shape
+            centers = (0, 0) + tuple(
+                extent // 2 + origin
+                for extent, origin in zip(
+                    weights.shape[1:], origins, strict=True
+                )
+            )
+            lower_offsets = (0, 0) + tuple(
+                extent - 1 - center
+                for extent, center in zip(
+                    weights.shape[1:], centers[2:], strict=True
+                )
+            )
+            upper_offsets = centers
+
             task.add_constraint(align(p_out, p_input))
             task.add_constraint(
                 bloat(p_out, p_halo, lower_offsets, upper_offsets)

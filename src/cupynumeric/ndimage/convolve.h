@@ -30,6 +30,7 @@ struct NdimageConvolveArgs {
   legate::PhysicalStore weights{nullptr};
   CuPyNumericNdimageConvolveMode mode;
   legate::Scalar fill_value;
+  bool batched{false};
   std::vector<int64_t> origins;
 };
 
