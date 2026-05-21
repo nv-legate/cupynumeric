@@ -50,10 +50,10 @@
         "version": "26.03"
     },
     {
-        "name": "26.05",
+        "name": "26.06",
         "preferred": true,
-        "url": "https://docs.nvidia.com/cupynumeric/26.05/",
-        "version": "26.05"
+        "url": "https://docs.nvidia.com/cupynumeric/26.06/",
+        "version": "26.06"
     },
     {
         "name": "dev",
