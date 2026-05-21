@@ -86,14 +86,8 @@ function(find_legate)
 
   message(STATUS "Found legate@${version}")
 
-  # Workaround for https://github.com/NVIDIA/cccl/issues/5002
   if(Legion_USE_OpenMP)
     rapids_find_package(OpenMP GLOBAL_TARGETS OpenMP::OpenMP_CXX)
-    get_target_property(opts OpenMP::OpenMP_CXX INTERFACE_COMPILE_OPTIONS)
-    message(STATUS "openmp interface options ${opts}")
-    string(REPLACE [[-Xcompiler=SHELL:]] [[SHELL:-Xcompiler=]] opts "${opts}")
-    message(STATUS "openmp interface options after ${opts}")
-    set_target_properties(OpenMP::OpenMP_CXX PROPERTIES INTERFACE_COMPILE_OPTIONS "${opts}")
   endif()
 
   set(Legion_USE_CUDA ${Legion_USE_CUDA} PARENT_SCOPE)
