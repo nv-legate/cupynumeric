@@ -1,107 +1,99 @@
 #=============================================================================
-# Copyright 2024 NVIDIA Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #=============================================================================
 
-function(validate_cupynumeric_nccl_version)
+include_guard(GLOBAL)
 
-    if(NOT cupynumeric_nccl_include_dir)
-        get_target_property(nccl_include_dirs NCCL::NCCL INTERFACE_INCLUDE_DIRECTORIES)
-
-        set(candidate_incdirs)
-        foreach(potential_dir IN LISTS nccl_include_dirs)
-            string(GENEX_STRIP "${potential_dir}" stripped_dir)
-            list(APPEND candidate_incdirs "${stripped_dir}")
-        endforeach()
-
-        find_path(cupynumeric_nccl_include_dir
-            NAMES nccl.h
-            PATH_SUFFIXES nccl
-            HINTS ${candidate_incdirs}
-            DOC "Path containing nccl.h"
-        )
+function(get_nccl_version ver_var)
+  if(NOT NCCL_INCLUDE_DIRS)
+    if(NCCL_INCLUDE_DIR)
+      set(NCCL_INCLUDE_DIRS ${NCCL_INCLUDE_DIR})
+    else()
+      get_target_property(NCCL_INCLUDE_DIRS NCCL::NCCL INTERFACE_INCLUDE_DIRECTORIES)
     endif()
+  endif()
 
-    if(NOT cupynumeric_nccl_include_dir)
-        message(FATAL_ERROR
-            "Could not find nccl.h in any include directory for "
-            "NCCL version validation. Searched: ${candidate_incdirs}"
-        )
-    endif()
+  find_file(
+    NCCL_INCLUDE_PATH
+    NAMES nccl.h
+    PATHS ${NCCL_INCLUDE_DIRS}
+    REQUIRED
+    NO_DEFAULT_PATH
+  )
+  file(
+    STRINGS "${NCCL_INCLUDE_PATH}"
+    file_ver
+    LIMIT_COUNT 1
+    REGEX [=[^#define[ \t]+NCCL_VERSION_CODE[ \t]+[0-9]+]=]
+  )
+  if(NOT file_ver)
+    message(FATAL_ERROR "Could not read NCCL version from ${NCCL_INCLUDE_PATH}")
+  endif()
+  string(REGEX MATCH [=[[0-9]+]=] file_ver "${file_ver}")
 
-    set(nccl_header_path "${cupynumeric_nccl_include_dir}/nccl.h")
-
-    file(STRINGS "${nccl_header_path}" maj_line
-        LIMIT_COUNT 1
-        REGEX [=[^#define[ \t]+NCCL_MAJOR[ \t]+[0-9]+]=]
+  # The following version number parsing is taken directly from nccl.h
+  string(LENGTH "${file_ver}" ver_len)
+  if(ver_len EQUAL 4)
+    math(EXPR ver_major "${file_ver}/1000")
+    math(EXPR ver_minor "(${file_ver}%1000)/100")
+  elseif(ver_len EQUAL 5)
+    math(EXPR ver_major "${file_ver}/10000")
+    math(EXPR ver_minor "(${file_ver}%10000)/100")
+  else()
+    message(
+      FATAL_ERROR
+      "Could not parse NCCL version ${file_ver} from ${NCCL_INCLUDE_PATH}"
     )
-    file(STRINGS "${nccl_header_path}" min_line
-        LIMIT_COUNT 1
-        REGEX [=[^#define[ \t]+NCCL_MINOR[ \t]+[0-9]+]=]
-    )
+  endif()
+  math(EXPR ver_patch "${file_ver}%100")
+  set(${ver_var} "${ver_major}.${ver_minor}.${ver_patch}" PARENT_SCOPE)
+endfunction()
 
-    string(REGEX MATCH [=[[0-9]+]=] nccl_major "${maj_line}")
-    string(REGEX MATCH [=[[0-9]+]=] nccl_minor "${min_line}")
+function(validate_nccl_version ver)
+  # NCCL >=2.28 is required for ncclAlltoAll. If you bump these, also bump
+  # the dependency lists.
+  # ver_max is an *exclusive* upper bound
+  set(ver_min 2.28)
+  set(ver_max 2.30)
 
-    if(nccl_major STREQUAL "" OR nccl_minor STREQUAL "")
-        message(FATAL_ERROR "Could not read NCCL version from ${nccl_header_path}")
-    endif()
-
-    set(nccl_version "${nccl_major}.${nccl_minor}")
-    # NCCL >=2.28 is required for ncclAlltoAll. If you bump these, also bump
-    # the dependency lists.
-    set(minimum_nccl_version 2.28)
-    set(unsupported_nccl_version 2.30)
-
-    if("${nccl_version}" VERSION_LESS "${minimum_nccl_version}")
-        message(FATAL_ERROR
-            "Detected NCCL version ${nccl_version}, but "
-            "version ${minimum_nccl_version} or newer is required."
-        )
-    endif()
-
-    if("${nccl_version}" VERSION_GREATER_EQUAL "${unsupported_nccl_version}")
-        message(FATAL_ERROR
-            "Detected NCCL version ${nccl_version}, but "
-            "version ${unsupported_nccl_version} or newer is not supported."
-        )
-    endif()
-
-    message(STATUS
-        "NCCL version ${nccl_version} meets requirement "
-        ">= ${minimum_nccl_version}, < ${unsupported_nccl_version}"
-    )
-
+  if(ver VERSION_LESS ver_min)
+    message(FATAL_ERROR "Detected NCCL version ${ver}, but >= ${ver_min} is required")
+  endif()
+  if(ver VERSION_GREATER_EQUAL ver_max)
+    message(FATAL_ERROR "Detected NCCL version ${ver}, but < ${ver_max} is required")
+  endif()
+  message(STATUS "NCCL version ${ver} meets requirement >= ${ver_min}, < ${ver_max}")
 endfunction()
 
 function(find_or_configure_nccl)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "nccl")
 
-    if(TARGET NCCL::NCCL)
-        validate_cupynumeric_nccl_version()
-        return()
+  if(NOT TARGET NCCL::NCCL)
+    # Workaround from #921 where find may fail when mixing conda and system deps
+    if(
+      CMAKE_SYSTEM_NAME STREQUAL "Linux"
+      AND NOT CMAKE_LIBRARY_ARCHITECTURE
+      AND EXISTS "/usr/lib/${CMAKE_SYSTEM_PROCESSOR}-linux-gnu"
+    )
+      message(
+        VERBOSE
+        "linux system detected\n"
+        "CMAKE_LIBRARY_ARCHITECTURE is unset, attempting to deduce it"
+      )
+      set(CMAKE_LIBRARY_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}-linux-gnu")
     endif()
 
-    rapids_find_generate_module(NCCL
-        HEADER_NAMES  nccl.h
-        LIBRARY_NAMES nccl
-    )
-
-    # Currently NCCL has no CMake build-system so we require
-    # it built and installed on the machine already
+    rapids_find_generate_module(NCCL HEADER_NAMES nccl.h LIBRARY_NAMES nccl)
     rapids_find_package(NCCL REQUIRED)
-    validate_cupynumeric_nccl_version()
-
+  endif()
+  if(TARGET NCCL::nccl AND NOT TARGET NCCL::NCCL)
+    add_library(NCCL::NCCL ALIAS NCCL::nccl)
+  endif()
+  if(NOT NCCL_VERSION)
+    get_nccl_version(NCCL_VERSION)
+  endif()
+  validate_nccl_version(${NCCL_VERSION})
 endfunction()
 
 find_or_configure_nccl()
