@@ -99,6 +99,12 @@ The upstream suite uses Array API spelling and signatures. This group tracks
 missing or incompatible standard namespace wrappers, keyword-only behavior,
 and documented standard exports that are not yet provided under the Array API
 names.
+The first `#1800` wrapper slice removes direct name-check xfails for
+`matrix_transpose`, `astype`, `isdtype`, `atan2`, `bitwise_left_shift`,
+`bitwise_invert`, `bitwise_right_shift`, and `pow`. The broader function
+modules remain grouped until those implementations can be audited beyond
+simple name availability.
+
 The primary Hypothesis function modules are currently grouped at module
 granularity because upstream value generation and comparison paths exercise
 scalar conversion and truthiness hooks before individual wrapper gaps can be

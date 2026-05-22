@@ -44,6 +44,11 @@ else:
         ("atanh", "arctanh"),
         ("concat", "concatenate"),
         ("permute_dims", "transpose"),
+        ("atan2", "arctan2"),
+        ("bitwise_left_shift", "left_shift"),
+        ("bitwise_invert", "invert"),
+        ("bitwise_right_shift", "right_shift"),
+        ("pow", "power"),
     ),
 )
 def test_array_api_alias_exports(alias: str, target: str) -> None:
@@ -303,6 +308,89 @@ def test_array_api_mT_rejects_less_than_two_dimensions(obj: object) -> None:
 
     with pytest.raises(ValueError, match="at least two dimensions"):
         arr.mT
+
+
+def test_array_api_matrix_transpose() -> None:
+    arr_np = np.arange(24).reshape(2, 3, 4)
+    arr = num.asarray(arr_np)
+
+    result = num.matrix_transpose(arr)
+
+    assert isinstance(result, num.ndarray)
+    assert result.shape == (2, 4, 3)
+    assert np.array_equal(result.__array__(), np.swapaxes(arr_np, -1, -2))
+
+
+def test_array_api_astype_changes_dtype() -> None:
+    arr = num.asarray([1, 2, 3])
+
+    result = num.astype(arr, np.float64)
+
+    assert isinstance(result, num.ndarray)
+    assert result.dtype == np.dtype(np.float64)
+    assert np.array_equal(result.__array__(), np.asarray([1.0, 2.0, 3.0]))
+
+
+def test_array_api_astype_rejects_complex_to_non_complex() -> None:
+    arr = num.asarray([1 + 2j], dtype=np.complex128)
+
+    with pytest.raises(TypeError, match="complex floating arrays"):
+        num.astype(arr, np.float64)
+
+
+def test_array_api_astype_copy_policy() -> None:
+    arr = num.asarray([1, 2, 3], dtype=np.int64)
+
+    copy_result = num.astype(arr, np.int64)
+    no_copy_result = num.astype(arr, np.int64, copy=False)
+    cast_result = num.astype(arr, np.float64, copy=False)
+
+    assert copy_result is not arr
+    assert no_copy_result is arr
+    assert cast_result is not arr
+    assert cast_result.dtype == np.dtype(np.float64)
+    assert np.array_equal(copy_result.__array__(), arr.__array__())
+    assert np.array_equal(cast_result.__array__(), np.asarray([1.0, 2.0, 3.0]))
+
+
+def test_array_api_astype_accepts_default_device() -> None:
+    arr = num.asarray([1, 2, 3])
+
+    result = num.astype(arr, np.float64, device=None)
+
+    assert result.dtype == np.dtype(np.float64)
+
+
+def test_array_api_astype_rejects_non_default_device() -> None:
+    arr = num.asarray([1, 2, 3])
+
+    with pytest.raises(
+        ValueError, match="only supports device=None, got device='gpu'"
+    ):
+        num.astype(arr, np.float64, device="gpu")
+
+
+def test_array_api_isdtype_atomic_kinds() -> None:
+    assert num.isdtype(np.bool_, "bool")
+    assert num.isdtype(np.int64, "integral")
+    assert num.isdtype(np.uint64, "unsigned integer")
+    assert num.isdtype(np.float64, "real floating")
+    assert num.isdtype(np.complex128, "complex floating")
+    assert not num.isdtype(np.bool_, "numeric")
+
+
+def test_array_api_isdtype_dtype_objects() -> None:
+    assert num.isdtype(np.dtype(np.float64), np.float64)
+    assert num.isdtype(np.float64, (np.int64, np.float64))
+    assert num.isdtype(np.int64, ("real floating", "integral"))
+    assert not num.isdtype(np.float64, np.int64)
+
+
+def test_array_api_isdtype_rejects_unknown_kind() -> None:
+    with pytest.raises(ValueError, match="unrecognized Array API dtype kind"):
+        num.isdtype(np.float64, "invalid")
+    with pytest.raises(ValueError, match="unrecognized Array API dtype kind"):
+        num.isdtype(np.float64, ("real floating", "invalid"))
 
 
 if __name__ == "__main__":

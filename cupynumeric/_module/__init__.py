@@ -137,6 +137,10 @@ from .stats_histograms import *  # Histograms
 
 from .window import *  # Various windows
 
+# --- Array API standard spellings
+
+from .array_api import *
+
 # --- numpy.test (disabled)
 
 
