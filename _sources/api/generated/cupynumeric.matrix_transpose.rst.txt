@@ -1,0 +1,6 @@
+﻿cupynumeric.matrix\_transpose
+=============================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: matrix_transpose

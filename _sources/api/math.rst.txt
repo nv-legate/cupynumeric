@@ -15,11 +15,12 @@ Trigonometric functions
    asin
    acos
    atan
+   atan2
    arcsin
    arccos
    arctan
-   hypot
    arctan2
+   hypot
    degrees
    radians
    deg2rad
@@ -127,6 +128,7 @@ Arithmetic operations
    negative
    multiply
    divide
+   pow
    power
    subtract
    true_divide

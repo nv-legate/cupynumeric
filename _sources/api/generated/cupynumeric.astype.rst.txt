@@ -1,0 +1,6 @@
+﻿cupynumeric.astype
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: astype

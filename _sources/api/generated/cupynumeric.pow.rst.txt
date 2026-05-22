@@ -1,0 +1,6 @@
+﻿cupynumeric.pow
+===============
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: pow

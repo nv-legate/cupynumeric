@@ -1,0 +1,6 @@
+﻿cupynumeric.bitwise\_left\_shift
+================================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: bitwise_left_shift

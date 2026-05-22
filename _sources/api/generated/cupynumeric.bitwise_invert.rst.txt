@@ -1,0 +1,6 @@
+﻿cupynumeric.bitwise\_invert
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. autodata:: bitwise_invert

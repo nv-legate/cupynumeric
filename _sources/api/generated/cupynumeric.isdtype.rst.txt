@@ -1,0 +1,6 @@
+﻿cupynumeric.isdtype
+===================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: isdtype
