@@ -26,6 +26,15 @@ from legate.util.settings import (
 
 __all__ = ("settings",)
 
+
+def convert_float(value: str | float) -> float:
+    """Coerce ``value`` (possibly an env var string) to ``float``."""
+    return float(value)
+
+
+convert_float.type = "float"  # type: ignore [attr-defined]
+
+
 DoctorFormat = Literal["plain", "json", "csv"]
 
 BoundsCheckOperation = Literal["indexing", "take", "take_along_axis", "put"]
@@ -331,6 +340,23 @@ class CupynumericRuntimeSettings(Settings):
         help="""
         Enable distributed scatter via the NCCL all-to-all implementation when
         multiple GPUs are available.
+        """,
+    )
+
+    all2all_staging_factor: PrioritizedSetting[float] = PrioritizedSetting(
+        "all2all_staging_factor",
+        "CUPYNUMERIC_ALL2ALL_STAGING_FACTOR",
+        default=2.0,
+        convert=convert_float,
+        help="""
+        Per-buffer staging budget for the NCCL all-to-all gather/scatter
+        tasks, expressed as a multiple of the average per-rank request
+        count: byte budget = ``factor * (global_index_volume / num_ranks)
+        * elem_size``. The exchange runs in roughly
+        ``ceil(num_ranks / factor)`` NCCL group rounds. Lower values
+        bound FB memory at the cost of more rounds; higher values favor
+        throughput. Recommended: ``0.5``-``1.0`` if FB is tight,
+        ``>= num_ranks`` for a single-round shuffle.
         """,
     )
 

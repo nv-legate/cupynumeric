@@ -60,6 +60,7 @@ void global_all2all_scatter(TaskContext& context,
                             const legate::Rect<DIM_local>& index_rect,
                             const legate::Rect<DIM_partition>& output_rect,
                             size_t num_requests,
+                            size_t max_staging_bytes,
                             ncclComm_t* nccl_comm,
                             cudaStream_t stream)
 {
@@ -88,61 +89,70 @@ void global_all2all_scatter(TaskContext& context,
       cudaMemsetAsync(target_ranks.ptr(0), -1, num_requests * sizeof(int), stream));
   }
 
-  // Step 2: Classify index points by destination (output) rank, exchange counts,
-  // and produce the request_positions permutation.
+  // Step 2: classify index points by destination (output)
+  // rank and NCCL-exchange counts. `request_positions` is filled
+  // separately, in peer-major layout using `send_offsets_per_rank`.
   auto plan = create_shuffle_information<DIM_partition, DIM_local>(context,
                                                                    index_view,
                                                                    num_requests,
                                                                    partition_rects.ptr(0),
-                                                                   request_positions.ptr(0),
                                                                    target_ranks.ptr(0),
                                                                    send_offsets_per_rank.ptr(0),
                                                                    nccl_comm,
                                                                    stream);
 
-  // Step 3: Linearize index points into flat offsets within each owner's
-  // output rect and ship them requester -> owner. recv_flat_offsets contains,
-  // for every value other ranks have asked us to write, the flat offset
-  // within our local output partition.
-  auto recv_flat_offsets =
-    linearize_and_exchange_offsets<DIM_partition, DIM_local>(context,
-                                                             index_view,
-                                                             num_requests,
-                                                             request_positions.ptr(0),
-                                                             send_offsets_per_rank.ptr(0),
-                                                             partition_rect_infos.ptr(0),
-                                                             plan,
-                                                             nccl_comm,
-                                                             stream);
+  // K is derived from a single ncclAllReduce(max, uint64) over per-pair
+  // counts, so all ranks issue the same number of grouped collectives.
+  //
+  // Data direction (set inside `local_gather_and_exchange` via
+  // IS_GATHER=false): requester -> owner. The schedule is built with the
+  // requester-side counts directly (h_send_counts = how many data points
+  // I send to peer i).
+  const unsigned long long global_max =
+    allreduce_global_max_pair_count(context,
+                                    plan.h_send_counts_per_rank,
+                                    plan.h_receive_counts_per_rank,
+                                    num_ranks,
+                                    nccl_comm,
+                                    stream);
 
-  // Step 4: Requester gathers values from local source at request_positions,
-  // then ships them to the owner (requester -> owner).
-  auto send_staging_buffer =
-    create_buffer<int8_t>(num_requests * sizeof(VAL), Memory::Kind::GPU_FB_MEM);
-  auto recv_data_buf =
-    create_buffer<int8_t>(plan.total_incoming * sizeof(VAL), Memory::Kind::GPU_FB_MEM);
+  if (global_max == 0) {
+    return;
+  }
 
-  pack_values_into_buffer<CODE, DIM_local>(source_view,
-                                           request_positions.ptr(0),
-                                           num_requests,
-                                           sizeof(VAL),
-                                           send_staging_buffer.ptr(0),
-                                           stream);
+  plan.max_elems_per_peer =
+    compute_max_elems_per_peer(max_staging_bytes, sizeof(VAL), num_ranks, global_max);
+  plan.num_rounds =
+    (static_cast<size_t>(global_max) + plan.max_elems_per_peer - 1) / plan.max_elems_per_peer;
 
-  exchange_values_requester_to_owner(context,
-                                     send_staging_buffer.ptr(0),
-                                     recv_data_buf.ptr(0),
-                                     sizeof(VAL),
-                                     plan,
-                                     num_ranks,
-                                     nccl_comm,
-                                     stream);
+  // Step 2e: pack request_positions in peer-major layout (see all2all.cuh).
+  pack_request_positions(target_ranks.ptr(0),
+                         num_requests,
+                         send_offsets_per_rank.ptr(0),
+                         num_ranks,
+                         request_positions.ptr(0),
+                         stream);
 
-  // Step 5: Owner writes received values into the local output partition at
-  // recv_flat_offsets. Duplicate target indices race; this matches the
-  // single-GPU ScatterTask semantics.
-  unpack_recv_into_output<CODE, DIM_partition>(
-    output_view, recv_flat_offsets.ptr(0), plan.total_incoming, recv_data_buf.ptr(0), stream);
+  // Step 3 + 4 + 5: Chunked linearize / offset-exchange / pack / data-
+  // exchange / unpack. Every offset and staging buffer used here is
+  // round-local and sized by `max_elems_per_peer`, so per-buffer FB memory
+  // is bounded by `max_staging_bytes` (set via
+  // CUPYNUMERIC_ALL2ALL_STAGING_FACTOR).
+  local_gather_and_exchange<CODE,
+                            DIM_partition,
+                            DIM_local,
+                            DIM_local,
+                            DIM_partition,
+                            /*IS_GATHER=*/false>(context,
+                                                 index_view,
+                                                 request_positions.ptr(0),
+                                                 plan,
+                                                 partition_rect_infos.ptr(0),
+                                                 source_view,
+                                                 output_view,
+                                                 sizeof(VAL),
+                                                 nccl_comm,
+                                                 stream);
 }
 
 // ============================================================================
@@ -157,7 +167,8 @@ struct All2AllScatterGPUBody {
   void operator()(TaskContext& context,
                   const legate::PhysicalStore& source_array,
                   const legate::PhysicalStore& index_array,
-                  const legate::PhysicalStore& output_array)
+                  const legate::PhysicalStore& output_array,
+                  size_t max_staging_bytes)
   {
     const auto stream      = context.get_task_stream();
     const auto source_rect = source_array.shape<DIM_local>();
@@ -178,6 +189,7 @@ struct All2AllScatterGPUBody {
       index_rect,
       output_rect,
       num_requests,
+      max_staging_bytes,
       context.communicators()[0].get<ncclComm_t*>(),
       stream);
 
@@ -191,9 +203,11 @@ struct All2AllScatterImpl_type {
   void operator()(TaskContext& context,
                   const legate::PhysicalStore& source,
                   const legate::PhysicalStore& index_array,
-                  const legate::PhysicalStore& output) const
+                  const legate::PhysicalStore& output,
+                  size_t max_staging_bytes) const
   {
-    All2AllScatterGPUBody<CODE, DIM_partition, DIM_local>()(context, source, index_array, output);
+    All2AllScatterGPUBody<CODE, DIM_partition, DIM_local>()(
+      context, source, index_array, output, max_staging_bytes);
   }
 };
 
@@ -202,14 +216,16 @@ struct All2AllScatterImpl {
   void operator()(TaskContext& context,
                   const legate::PhysicalStore& source,
                   const legate::PhysicalStore& index_array,
-                  const legate::PhysicalStore& output) const
+                  const legate::PhysicalStore& output,
+                  size_t max_staging_bytes) const
   {
     type_dispatch(source.code(),
                   All2AllScatterImpl_type<DIM_partition, DIM_local>{},
                   context,
                   source,
                   index_array,
-                  output);
+                  output,
+                  max_staging_bytes);
   }
 };
 
@@ -226,11 +242,23 @@ void all2all_scatter_gpu(TaskContext& context)
   assert(is_index_space || num_ranks == 1);
 
   if (is_index_space) {
-    const auto dim_partition = std::max(output.dim(), 1);
-    const auto dim_local     = std::max(source.dim(), 1);
+    const auto dim_partition  = std::max(output.dim(), 1);
+    const auto dim_local      = std::max(source.dim(), 1);
+    const auto staging_factor = context.scalar(0).value<double>();
+    const auto global_index   = context.scalar(1).value<uint64_t>();
+    const auto num_ranks      = static_cast<int>(domain.get_volume());
+    const auto elem_size      = source.type().size();
+    const auto max_staging_bytes =
+      detail::compute_max_staging_bytes(staging_factor, global_index, elem_size, num_ranks);
 
-    legate::double_dispatch(
-      dim_partition, dim_local, All2AllScatterImpl{}, context, source, index_array, output);
+    legate::double_dispatch(dim_partition,
+                            dim_local,
+                            All2AllScatterImpl{},
+                            context,
+                            source,
+                            index_array,
+                            output,
+                            max_staging_bytes);
   } else {
     // Single-rank fallback: dispatch to the same scatter kernels used by
     // CUPYNUMERIC_SCATTER. Python normally routes single-rank scatter to

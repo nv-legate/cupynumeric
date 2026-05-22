@@ -23,6 +23,7 @@ from legate.util.settings import EnvOnlySetting, PrioritizedSetting
 import cupynumeric.settings as m
 
 _expected_settings = (
+    "all2all_staging_factor",
     "disable_bounds_checking",
     "doctor_filename",
     "doctor_format",
@@ -154,6 +155,7 @@ class TestSettings:
             m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
         )
         assert m.settings.numpy_compat.convert_type == 'bool ("0" or "1")'
+        assert m.settings.all2all_staging_factor.convert_type == "float"
 
 
 class TestDefaults:
@@ -180,6 +182,9 @@ class TestDefaults:
 
     def test_use_nccl_scatter(self) -> None:
         assert m.settings.use_nccl_scatter.default is False
+
+    def test_all2all_staging_factor(self) -> None:
+        assert m.settings.all2all_staging_factor.default == 2.0
 
     def test_warn(self) -> None:
         assert m.settings.warn.default is False

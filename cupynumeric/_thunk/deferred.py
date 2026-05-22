@@ -1374,6 +1374,14 @@ class DeferredArray:
         task.add_output(result)
         task.add_alignment(result, index_array)
         task.add_nccl_communicator()
+        # Staging budget basis:
+        #   staging_factor * (global_index_volume / num_ranks) * elem_size.
+        # Passing the global volume here (rather than the per-rank local count,
+        # which the task itself already knows) lets every task instance derive
+        # an identical max_staging_bytes even under skewed partitioning --
+        # needed so all ranks pick the same K.
+        task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
+        task.add_scalar_arg(index_array.volume, ty.uint64)
         task.execute()
 
     def _all2all_scatter(
@@ -1401,6 +1409,11 @@ class DeferredArray:
         task.add_input(result)
         task.add_alignment(source, index_array)
         task.add_nccl_communicator()
+        # See _nccl_all2all_gather for the rationale on these two scalars. For
+        # scatter the index_array volume equals the source volume (they're
+        # aligned), so the same average-per-rank basis applies.
+        task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
+        task.add_scalar_arg(index_array.volume, ty.uint64)
         task.execute()
 
     def _advanced_indexing_using_take(

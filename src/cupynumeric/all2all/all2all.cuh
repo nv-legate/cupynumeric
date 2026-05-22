@@ -51,37 +51,47 @@
 //        receive_counts_per_rank[r] = how many requests rank r sends to me
 //   e) Prefix-sum the histograms to get send_offsets_per_rank and receive_offsets_per_rank.
 //
-// Step 3: Linearize & exchange offsets
-//   a) linearize_offsets_kernel — Convert each Point<DIM> into a uint64
-//      flat offset relative to the target rank's rect.  This reduces the
-//      per-element payload from sizeof(Point<DIM>) (e.g. 24 bytes for 3D)
-//      to 8 bytes.
-//   b) Exchange the flat offsets via NCCL pairwise send/recv (requester →
-//      owner). After this, each owning rank knows which elements its local
-//      partition is referenced from.
+// Step 3+4+5: Linearize / exchange / pack / exchange / unpack
+//             (`local_gather_and_exchange`)
+//   To bound peak FB memory, all per-element scratch (offset buffers AND
+//   data staging buffers) lives in round-local FB allocations sized
+//   `num_ranks * max_elems_per_peer * sizeof(...)`. The exchange runs in K rounds,
+//   where K comes from a single ncclAllReduce(max, uint64) over per-pair
+//   element counts. Per-round per-peer chunk sizes are derived locally
+//   and are symmetric on both sides of every pair (because by construction
+//   plan_A.h_recv_counts[B] == plan_B.h_send_counts[A]), so no extra
+//   coordination traffic is needed.
 //
-// Step 4: Pack local values & exchange them
-//   gather:  Owner reads its local source at recv_flat_offsets, then
-//            ncclSend's the values back to the requester (owner → requester).
-//   scatter: Requester reads its local source at request_positions, then
-//            ncclSend's the values to the owner (requester → owner).
-//   Both paths share gather_data_by_offset_kernel (a "permuted gather" that
-//   turns a local store + permutation array into a packed staging buffer)
-//   and the same NCCL group send/recv code; only the direction and which
-//   counts/offsets gate each side differ.
+//   Each round runs:
+//     1) linearize_offsets_kernel — convert this round's chunk
+//        of Point<DIM> requests (per peer) into uint64 flat offsets,
+//        written into round_send_offsets at strided peer slots.
+//     2) ncclGroupStart/End — pairwise send/recv of the offsets,
+//        requester → owner. Result lands in round_recv_offsets.
+//     3) pack_data_by_offset_kernel — read source data into
+//        send_staging.
+//     4) ncclGroupStart/End — pairwise send/recv of the data, in the
+//        direction dictated by gather (owner → requester) or scatter
+//        (requester → owner).
+//     5) unpack_recv_data_kernel — write recv_staging into the
+//        local output.
 //
-// Step 5: Indirect-write received values into the local output
-//   gather:  Requester writes recv_staging into its local output at
-//            request_positions.
-//   scatter: Owner writes recv_data into its local output at recv_flat_offsets.
-//   Both share unpack_recv_data_kernel.
+//   gather:  Owner reads its local source at the offsets it just received
+//            in step 2, ncclSend's the values back to the requester, which
+//            writes them into output at request_positions.
+//   scatter: Requester reads its local source at request_positions,
+//            ncclSend's the values to the owner, which writes them into
+//            output at the offsets it just received in step 2.
 
 #include "cupynumeric/cuda_help.h"
 #include "cupynumeric/pitches.h"
 #include "cupynumeric/utilities/thrust_util.h"
 
+#include "legate/utilities/abort.h"
+
 #include <cuda_runtime.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <numeric>
@@ -125,7 +135,7 @@ struct StoreView {
 #endif
   }
 
-  bool is_dense() const { return dense_ptr != nullptr; }
+  [[nodiscard]] bool is_dense() const { return dense_ptr != nullptr; }
 };
 
 // Device functors that abstract the accessor-vs-dense point loading.
@@ -260,6 +270,12 @@ struct ShuffleDescriptor {
   std::vector<unsigned long long> h_receive_offsets_per_rank;
   // Total number of requests this rank will receive from all other ranks.
   size_t total_incoming;
+  // Scalars populated by the caller after the post-counts NCCL allreduce
+  // and the per-buffer staging budget have been resolved. Bundling them
+  // here lets `local_gather_and_exchange` accept a single plan object.
+  int num_ranks             = 0;
+  size_t max_elems_per_peer = 0;
+  size_t num_rounds         = 0;
 
   // Caller must ensure the GPU writes that populate the Z_COPY count buffers
   // (CUB histogram, NCCL recv) have completed on the host before invoking
@@ -272,7 +288,8 @@ struct ShuffleDescriptor {
       h_send_offsets_per_rank(z_send_offsets_per_rank),
       h_receive_counts_per_rank(z_receive_counts_per_rank),
       h_receive_offsets_per_rank(num_ranks),
-      total_incoming(0)
+      total_incoming(0),
+      num_ranks(num_ranks)
   {
     std::exclusive_scan(h_receive_counts_per_rank,
                         h_receive_counts_per_rank + num_ranks,
@@ -296,10 +313,11 @@ struct ShuffleDescriptor {
 // (partition_rect = local output rect). The returned Z_COPY buffer holds an
 // array of `num_ranks` Rect<DIM_partition> values, one per rank, in rank order.
 template <int DIM_partition>
-Buffer<int8_t> allgather_partition_rects(TaskContext& context,
-                                         const legate::Rect<DIM_partition>& partition_rect,
-                                         ncclComm_t* nccl_comm,
-                                         cudaStream_t stream)
+[[nodiscard]] Buffer<int8_t> allgather_partition_rects(
+  TaskContext& context,
+  const legate::Rect<DIM_partition>& partition_rect,
+  ncclComm_t* nccl_comm,
+  cudaStream_t stream)
 {
   const size_t num_ranks     = context.get_launch_domain().get_volume();
   constexpr size_t rect_size = sizeof(legate::Rect<DIM_partition>);
@@ -383,7 +401,7 @@ void classify_index_points(
   using DnsLoader = DensePointLoader<DIM_input>;
 
   const auto& properties = get_device_properties();
-  const size_t grid      = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  const size_t blocks    = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
   const size_t max_smem = [&]() -> size_t {
     if (properties.sharedMemPerBlock < properties.sharedMemPerBlockOptin) {
@@ -410,15 +428,15 @@ void classify_index_points(
 
   if (index.is_dense()) {
     assign_target_ranks_kernel<DnsLoader, DIM_input>
-      <<<grid, THREADS_PER_BLOCK, smem_size, stream>>>(DnsLoader{index.dense_ptr},
-                                                       local_index_count,
-                                                       target_ranks,
-                                                       source_rects_ptr,
-                                                       num_ranks,
-                                                       tile_size);
+      <<<blocks, THREADS_PER_BLOCK, smem_size, stream>>>(DnsLoader{index.dense_ptr},
+                                                         local_index_count,
+                                                         target_ranks,
+                                                         source_rects_ptr,
+                                                         num_ranks,
+                                                         tile_size);
   } else {
     assign_target_ranks_kernel<AccLoader, DIM_input>
-      <<<grid, THREADS_PER_BLOCK, smem_size, stream>>>(
+      <<<blocks, THREADS_PER_BLOCK, smem_size, stream>>>(
         AccLoader{index.acc, index.pitches, index.lo},
         local_index_count,
         target_ranks,
@@ -428,13 +446,24 @@ void classify_index_points(
   }
 }
 
-// Group request indices into per-rank buckets.
+// Group request indices into peer-major layout slots.
+//
+// `next_slot[r]` starts at 0 and is atomically advanced by each warp-grouped
+// run of same-rank threads; the returned `j` is this thread's intra-peer
+// counter (0-based). The slot is the closed-form expression
+//   slot = send_offsets_per_rank[r] + j
+// so peer p's requests land contiguously at
+// `[send_offsets_per_rank[p], send_offsets_per_rank[p] + h_send_counts[p])`.
+// Round chunks of this list are derived on demand each round (see
+// `fill_round_schedule` and `gather_round_request_positions`).
+//
 // `static` so each TU that includes this header gets its own copy (this is a
 // non-template __global__ kernel, so we cannot share a single symbol across
 // TUs without risking ODR violations). Launches only from within this header.
 static __global__ void pack_indices_by_rank_warp(const int* target_ranks,
                                                  size_t count,
                                                  unsigned long long* next_slot,
+                                                 const unsigned long long* send_offsets_per_rank,
                                                  uint64_t* packed_positions)
 {
   const size_t idx = global_tid_1d();
@@ -450,24 +479,31 @@ static __global__ void pack_indices_by_rank_warp(const int* target_ranks,
   const int leader     = __ffs(peers) - 1;
   const int group_size = __popc(peers);
 
-  const unsigned long long base = __shfl_sync(
+  const unsigned long long base_j = __shfl_sync(
     peers,
     (lane == leader) ? atomicAdd(&next_slot[r], static_cast<unsigned long long>(group_size)) : 0ULL,
     leader);
 
-  const int intra_offset = __popc(peers & ((1u << lane) - 1));
+  const int intra_offset     = __popc(peers & ((1u << lane) - 1));
+  const unsigned long long j = base_j + static_cast<unsigned long long>(intra_offset);
 
-  packed_positions[base + intra_offset] = static_cast<uint64_t>(idx);
+  packed_positions[send_offsets_per_rank[r] + j] = static_cast<uint64_t>(idx);
 }
 
-// Classify requests & build ShuffleDescriptor
+// Classify requests, exchange counts, build ShuffleDescriptor.
+//
+// Step 2a..2d only: classify each local index point's target rank,
+// histogram into send_counts_per_rank, NCCL-exchange into
+// receive_counts_per_rank, and host-prefix-sum into send_offsets_per_rank.
+// `request_positions` is filled in a separate pass
+// (`pack_request_positions`) once `send_offsets_per_rank`
+// is known, so the warp pack can write directly into peer-major slots.
 template <int DIM_input, int DIM_output>
 [[nodiscard]] ShuffleDescriptor create_shuffle_information(
   TaskContext& context,
   const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_output>& index,
   size_t local_index_count,
   const void* source_rects,
-  uint64_t* request_positions,
   int* target_ranks,
   unsigned long long* send_offsets_per_rank,
   ncclComm_t* nccl_comm,
@@ -513,156 +549,250 @@ template <int DIM_input, int DIM_output>
   std::exclusive_scan(
     send_counts_per_rank_ptr, send_counts_per_rank_ptr + num_ranks, send_offsets_per_rank, 0ULL);
 
-  // pack request indices into per-rank buckets.
-  if (local_index_count > 0) {
-    auto next_slot = create_buffer<unsigned long long>(num_ranks, Memory::Kind::GPU_FB_MEM);
-
-    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(next_slot.ptr(0),
-                                           send_offsets_per_rank,
-                                           num_ranks * sizeof(unsigned long long),
-                                           cudaMemcpyDefault,
-                                           stream));
-
-    const size_t grid = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-
-    pack_indices_by_rank_warp<<<grid, THREADS_PER_BLOCK, 0, stream>>>(
-      target_ranks, local_index_count, next_slot.ptr(0), request_positions);
-  }
-
   return ShuffleDescriptor(
     send_counts_per_rank_ptr, send_offsets_per_rank, receive_counts_per_rank_ptr, num_ranks);
 }
 
-// ============================================================================
-// Step 3 - Linearize & exchange offsets
-// ============================================================================
-
-template <typename PointLoader, int DIM_input>
-__global__ void linearize_offsets_kernel(PointLoader loader,
-                                         const uint64_t* request_positions,
-                                         const unsigned long long* send_offsets_per_rank,
-                                         int num_ranks,
-                                         const LinearizedRectInfo<DIM_input>* rect_infos,
-                                         uint64_t* offsets_out,
-                                         size_t count)
+// Step 2e: pack target_ranks into `request_positions` arranged by peer.
+//
+// Each peer-grouped warp atomically advances `next_slot[r]` (zero-based
+// peer-local counter) and writes into the closed-form slot
+// `send_offsets_per_rank[r] + j`. Result: peer p's full request list lives
+// contiguously at
+// `request_positions[send_offsets_per_rank[p]
+//                  : send_offsets_per_rank[p] + h_send_counts[p])`.
+inline void pack_request_positions(const int* target_ranks,
+                                   size_t local_index_count,
+                                   const unsigned long long* send_offsets_per_rank,
+                                   int num_ranks,
+                                   uint64_t* request_positions,
+                                   cudaStream_t stream)
 {
-  const size_t idx = global_tid_1d();
-
-  if (idx >= count) {
+  if (local_index_count == 0) {
     return;
   }
 
+  auto next_slot = create_buffer<unsigned long long>(num_ranks, Memory::Kind::GPU_FB_MEM);
+  CUPYNUMERIC_CHECK_CUDA(
+    cudaMemsetAsync(next_slot.ptr(0), 0, num_ranks * sizeof(unsigned long long), stream));
+
+  const size_t blocks = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+
+  pack_indices_by_rank_warp<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+    target_ranks, local_index_count, next_slot.ptr(0), send_offsets_per_rank, request_positions);
+}
+
+// ============================================================================
+// Step 3 - Linearize & exchange offsets (chunked, fused into the K-round loop)
+// ============================================================================
+
+// Returns the peer index p such that
+//   round_send_prefix[p] <= idx < round_send_prefix[p+1].
+// Preconditions: `idx < total_round_send` (caller has already early-returned
+// otherwise) and `round_send_prefix[0] == 0` (it's a prefix scan that starts
+// at zero). Together these guarantee the first comparison advances `lo` to at
+// least 1, so the returned peer is always >= 0.
+__device__ inline int find_peer_for_offset(const unsigned long long* round_send_prefix,
+                                           int num_ranks,
+                                           size_t idx)
+{
   int lo = 0;
   int hi = num_ranks;
-  // binary search to find the rank that owns the request
   while (lo < hi) {
     const int mid = (lo + hi) / 2;
-
-    if (send_offsets_per_rank[mid] <= idx) {
+    if (round_send_prefix[mid] <= idx) {
       lo = mid + 1;
     } else {
       hi = mid;
     }
   }
-
-  const int target_rank = lo - 1;
-
-  assert(target_rank >= 0);
-
-  const legate::Point<DIM_input> point           = loader(request_positions[idx]);
-  const LinearizedRectInfo<DIM_input>& rect_info = rect_infos[target_rank];
-
-  offsets_out[idx] = rect_info.linearize(point);
+  return lo - 1;
 }
 
-template <int DIM_input, int DIM_output>
-[[nodiscard]] Buffer<uint64_t> linearize_and_exchange_offsets(
+// Materialize the round-contiguous slice of `request_positions` from the
+// persistent peer-major buffer.
+//
+// `request_positions_peer_major[send_offsets_per_rank[p] + j]` holds peer
+// p's j-th request (j in [0, h_send_counts[p])). Round r's chunk for peer p
+// lives at `[peer_src_offsets[p], peer_src_offsets[p] + chunk_send_counts[p])`
+// (with `peer_src_offsets[p] = send_offsets_per_rank[p] + r*max_elems_per_peer`).
+//
+// Each thread `idx` finds its peer via a binary search over
+// `round_send_prefix` (same layout as the round_offset_buf consumers) and
+// copies one slot.
+static __global__ void gather_round_request_positions_kernel(
+  const uint64_t* request_positions_peer_major,
+  const unsigned long long* peer_src_offsets,
+  const unsigned long long* round_send_prefix,
+  int num_ranks,
+  uint64_t* round_request_positions,
+  size_t total_round_send)
+{
+  const size_t idx = global_tid_1d();
+
+  if (idx >= total_round_send) {
+    return;
+  }
+
+  const int peer = find_peer_for_offset(round_send_prefix, num_ranks, idx);
+
+  const unsigned long long within_peer = idx - round_send_prefix[peer];
+  round_request_positions[idx] = request_positions_peer_major[peer_src_offsets[peer] + within_peer];
+}
+
+inline void gather_round_request_positions(const uint64_t* request_positions_peer_major,
+                                           const unsigned long long* peer_src_offsets,
+                                           const unsigned long long* round_send_prefix,
+                                           int num_ranks,
+                                           uint64_t* round_request_positions,
+                                           size_t total_round_send,
+                                           cudaStream_t stream)
+{
+  if (total_round_send == 0) {
+    return;
+  }
+  const size_t blocks = (total_round_send + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  gather_round_request_positions_kernel<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+    request_positions_peer_major,
+    peer_src_offsets,
+    round_send_prefix,
+    num_ranks,
+    round_request_positions,
+    total_round_send);
+}
+
+// Round-local linearize: `request_positions` here is the per-round slice
+// materialized by `gather_round_request_positions` (peer i lives at
+// `[round_send_prefix[i], round_send_prefix[i+1])` within this slice).
+// Thread `idx` reads `request_positions[idx]` directly; the binary search
+// over `round_send_prefix` recovers the peer only to pick `rect_infos[peer]`
+// for the Point<DIM> -> flat-offset conversion.
+template <typename PointLoader, int DIM_input>
+__global__ void linearize_offsets_kernel(PointLoader loader,
+                                         const uint64_t* request_positions,
+                                         const unsigned long long* round_send_prefix,
+                                         int num_ranks,
+                                         const LinearizedRectInfo<DIM_input>* rect_infos,
+                                         uint64_t* round_send_offsets,
+                                         size_t total_round_send)
+{
+  const size_t idx = global_tid_1d();
+
+  if (idx >= total_round_send) {
+    return;
+  }
+
+  const int peer = find_peer_for_offset(round_send_prefix, num_ranks, idx);
+
+  const legate::Point<DIM_input> point           = loader(request_positions[idx]);
+  const LinearizedRectInfo<DIM_input>& rect_info = rect_infos[peer];
+
+  round_send_offsets[idx] = rect_info.linearize(point);
+}
+
+template <int DIM_input, int DIM_index_outer>
+inline void linearize_and_exchange_offsets(
   TaskContext& context,
-  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_output>& index,
-  size_t local_index_count,
-  const uint64_t* request_positions,
-  const unsigned long long* send_offsets_per_rank,
+  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_index_outer>& index,
+  const uint64_t* round_request_positions,
+  const unsigned long long* round_send_counts,
+  const unsigned long long* round_recv_counts,
+  const unsigned long long* round_send_prefix,
+  const unsigned long long* round_recv_prefix,
   const LinearizedRectInfo<DIM_input>* rect_infos,
-  const ShuffleDescriptor& plan,
+  uint64_t* round_send_offsets,
+  uint64_t* round_recv_offsets,
+  unsigned long long total_round_send,
+  int num_ranks,
   ncclComm_t* nccl_comm,
   cudaStream_t stream)
 {
-  const int num_ranks   = static_cast<int>(context.get_launch_domain().get_volume());
-  auto send_offsets_buf = create_buffer<uint64_t>(local_index_count, Memory::Kind::GPU_FB_MEM);
-
-  if (local_index_count > 0) {
-    const size_t grid = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  if (total_round_send > 0) {
+    const size_t blocks =
+      (static_cast<size_t>(total_round_send) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
     if (index.is_dense()) {
       const DensePointLoader<DIM_input> loader{index.dense_ptr};
-
       linearize_offsets_kernel<decltype(loader), DIM_input>
-        <<<grid, THREADS_PER_BLOCK, 0, stream>>>(loader,
-                                                 request_positions,
-                                                 send_offsets_per_rank,
-                                                 num_ranks,
-                                                 rect_infos,
-                                                 send_offsets_buf.ptr(0),
-                                                 local_index_count);
+        <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(loader,
+                                                   round_request_positions,
+                                                   round_send_prefix,
+                                                   num_ranks,
+                                                   rect_infos,
+                                                   round_send_offsets,
+                                                   static_cast<size_t>(total_round_send));
     } else {
-      const AccessorPointLoader<DIM_input, DIM_output> loader{index.acc, index.pitches, index.lo};
-
+      const AccessorPointLoader<DIM_input, DIM_index_outer> loader{
+        index.acc, index.pitches, index.lo};
       linearize_offsets_kernel<decltype(loader), DIM_input>
-        <<<grid, THREADS_PER_BLOCK, 0, stream>>>(loader,
-                                                 request_positions,
-                                                 send_offsets_per_rank,
-                                                 num_ranks,
-                                                 rect_infos,
-                                                 send_offsets_buf.ptr(0),
-                                                 local_index_count);
+        <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(loader,
+                                                   round_request_positions,
+                                                   round_send_prefix,
+                                                   num_ranks,
+                                                   rect_infos,
+                                                   round_send_offsets,
+                                                   static_cast<size_t>(total_round_send));
     }
   }
 
-  auto recv_offsets_buf = create_buffer<uint64_t>(plan.total_incoming, Memory::Kind::GPU_FB_MEM);
-
-  // do the NCCL exchanges of the offsets, after this, each rank knows which
-  // elements other ranks need from its local data
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (int i = 0; i < num_ranks; ++i) {
-    if (plan.h_send_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclSend(send_offsets_buf.ptr(0) + plan.h_send_offsets_per_rank[i],
-                          plan.h_send_counts_per_rank[i],
-                          ncclUint64,
-                          i,
-                          *nccl_comm,
-                          stream));
+    const size_t send_count = round_send_counts[i];
+    const size_t recv_count = round_recv_counts[i];
+    if (send_count > 0) {
+      CHECK_NCCL(ncclSend(
+        round_send_offsets + round_send_prefix[i], send_count, ncclUint64, i, *nccl_comm, stream));
     }
-    if (plan.h_receive_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclRecv(recv_offsets_buf.ptr(0) + plan.h_receive_offsets_per_rank[i],
-                          plan.h_receive_counts_per_rank[i],
-                          ncclUint64,
-                          i,
-                          *nccl_comm,
-                          stream));
+    if (recv_count > 0) {
+      CHECK_NCCL(ncclRecv(
+        round_recv_offsets + round_recv_prefix[i], recv_count, ncclUint64, i, *nccl_comm, stream));
     }
   }
   CHECK_NCCL(ncclGroupEnd());
   context.concurrent_task_barrier();
-
-  return recv_offsets_buf;
 }
 
 // ============================================================================
-// Step 4 - Pack local values & exchange them
+// Step 3+4+5 - Chunked linearize, exchange, pack, exchange, unpack
+//
+// To bound peak FB memory the offset-exchange (Step 3) AND the data-
+// exchange (Step 4+5) both run in K chunked rounds and reuse round-local
+// FB buffers. Each round issues two `ncclGroupStart/End` collectives
+// (one for offsets requester→owner, one for data in the direction
+// dictated by gather vs scatter) and folds the unpack into the same loop
+// so all staging slots can be reused before the next round overwrites
+// them.
+//
+// One implementation drives both the gather direction (data: owner ->
+// requester) and the scatter direction (data: requester -> owner). The
+// the pack / unpack permutations and per-peer count arrays are
+// chosen accordingly. The Step 3 offset exchange is always
+// requester→owner, so its per-peer counts are always
+// `chunk_send_counts` / `chunk_recv_counts` (which are populated from
+// step 2's send_counts / receive_counts for both directions).
+//
+// All ranks compute the same K from a single ncclAllReduce(max, uint64) of
+// `max(local send_count_max, local recv_count_max)`. Per-round chunk sizes
+// are derived locally via `min(remaining, max_elems_per_peer)`, which is symmetric
+// on both sides of every pair (because by construction
+// `plan_A.h_recv_counts[B] == plan_B.h_send_counts[A]`). No extra
+// coordination traffic is needed.
 // ============================================================================
 
-// Permuted gather kernel: out[idx] = src[permutation[idx]] where the
-// permutation entries are flat offsets into the source store. Reused by both
-// gather (owner side, permutation = recv_flat_offsets) and scatter (requester
-// side, permutation = request_positions).
+// Permuted gather: out[idx] = src[permutation[idx]] where the permutation
+// entries are flat offsets into the source store. Reused by both gather
+// (owner side, permutation = round_recv_offsets) and scatter (requester
+// side, permutation = round_request_positions). Identical in shape to
+// main's `gather_data_by_offset_kernel` because the chunked algorithm now
+// hands each round a permutation array sized 1:1 with the staging buffer.
 template <typename DataType, int DIM>
-__global__ void gather_data_by_offset_kernel(AccessorRO<DataType, DIM> src_acc,
-                                             Pitches<DIM - 1> src_pitches,
-                                             legate::Point<DIM> src_lo,
-                                             const uint64_t* permutation,
-                                             size_t count,
-                                             DataType* out)
+__global__ void pack_data_by_offset_kernel(AccessorRO<DataType, DIM> src_acc,
+                                           Pitches<DIM - 1> src_pitches,
+                                           legate::Point<DIM> src_lo,
+                                           const uint64_t* permutation,
+                                           size_t count,
+                                           DataType* out)
 {
   const size_t idx = global_tid_1d();
 
@@ -675,8 +805,8 @@ __global__ void gather_data_by_offset_kernel(AccessorRO<DataType, DIM> src_acc,
   out[idx] = src_acc[p];
 }
 
-// `static` for the same ODR reason as pack_indices_by_rank_warp.
-static __global__ void gather_data_by_offset_kernel_dense(
+// `static` to avoid ODR collisions across TUs that include this header.
+static __global__ void pack_data_by_offset_kernel_dense(
   const char* src_ptr, const uint64_t* permutation, size_t count, size_t elem_size, char* out)
 {
   const size_t idx = global_tid_1d();
@@ -685,19 +815,16 @@ static __global__ void gather_data_by_offset_kernel_dense(
     return;
   }
 
-  memcpy(out + idx * elem_size, src_ptr + permutation[idx] * elem_size, elem_size);
+  copy_elements(out + idx * elem_size, src_ptr + permutation[idx] * elem_size, elem_size);
 }
 
-// Pack `count` values from `source` (a local read-only store) into a packed
-// staging buffer using `permutation` as flat offsets into `source`. The
-// staging buffer lives in caller-provided GPU_FB memory.
 template <Type::Code CODE, int DIM>
-void pack_values_into_buffer(const StoreView<AccessMode::Read, type_of<CODE>, DIM>& source,
-                             const uint64_t* permutation,
-                             size_t count,
-                             size_t elem_size,
-                             int8_t* out_buf,
-                             cudaStream_t stream)
+inline void pack_values_into_buffer(const StoreView<AccessMode::Read, type_of<CODE>, DIM>& source,
+                                    const uint64_t* permutation,
+                                    size_t count,
+                                    size_t elem_size,
+                                    int8_t* out_buf,
+                                    cudaStream_t stream)
 {
   using VAL = type_of<CODE>;
 
@@ -705,36 +832,33 @@ void pack_values_into_buffer(const StoreView<AccessMode::Read, type_of<CODE>, DI
     return;
   }
 
-  const size_t grid = (count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  const size_t blocks = (count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
   if (source.is_dense()) {
-    gather_data_by_offset_kernel_dense<<<grid, THREADS_PER_BLOCK, 0, stream>>>(
+    pack_data_by_offset_kernel_dense<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       reinterpret_cast<const char*>(source.dense_ptr),
       permutation,
       count,
       elem_size,
       reinterpret_cast<char*>(out_buf));
   } else {
-    gather_data_by_offset_kernel<VAL, DIM><<<grid, THREADS_PER_BLOCK, 0, stream>>>(
+    pack_data_by_offset_kernel<VAL, DIM><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       source.acc, source.pitches, source.lo, permutation, count, reinterpret_cast<VAL*>(out_buf));
   }
 }
 
-// Step 4 value exchange - gather direction (owner -> requester).
-//
-// Each owner has previously gathered values from its local source at the
-// flat offsets requested by every other rank, contiguously in `sendbuf` in
-// peer order driven by receive_*. Every rank sends those slices back to the
-// peers that asked for them and receives, in send_* order, the values it
-// originally requested from each peer.
-//
-//   sendbuf size = plan.total_incoming               (owner side)
-//   recvbuf size = sum(plan.h_send_counts_per_rank)  (requester side)
+// Send/recv staging buffers are laid out contiguously per peer for the
+// round, with peer i occupying `[round_*_prefix[i], round_*_prefix[i+1])`.
+// Gather flips the role of `send`/`recv` counts (owner→requester data
+// follows the offsets that were sent requester→owner in step 3).
 inline void exchange_values_owner_to_requester(TaskContext& context,
-                                               const int8_t* sendbuf,
-                                               int8_t* recvbuf,
+                                               const int8_t* send_staging,
+                                               int8_t* recv_staging,
+                                               const unsigned long long* round_send_counts,
+                                               const unsigned long long* round_recv_counts,
+                                               const unsigned long long* round_send_prefix,
+                                               const unsigned long long* round_recv_prefix,
                                                size_t elem_size,
-                                               const ShuffleDescriptor& plan,
                                                int num_ranks,
                                                ncclComm_t* nccl_comm,
                                                cudaStream_t stream)
@@ -742,17 +866,19 @@ inline void exchange_values_owner_to_requester(TaskContext& context,
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (int i = 0; i < num_ranks; ++i) {
-    if (plan.h_receive_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclSend(sendbuf + plan.h_receive_offsets_per_rank[i] * elem_size,
-                          plan.h_receive_counts_per_rank[i] * elem_size,
+    const size_t send_count = round_recv_counts[i];
+    const size_t recv_count = round_send_counts[i];
+    if (send_count > 0) {
+      CHECK_NCCL(ncclSend(send_staging + round_recv_prefix[i] * elem_size,
+                          send_count * elem_size,
                           ncclInt8,
                           i,
                           *nccl_comm,
                           stream));
     }
-    if (plan.h_send_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclRecv(recvbuf + plan.h_send_offsets_per_rank[i] * elem_size,
-                          plan.h_send_counts_per_rank[i] * elem_size,
+    if (recv_count > 0) {
+      CHECK_NCCL(ncclRecv(recv_staging + round_send_prefix[i] * elem_size,
+                          recv_count * elem_size,
                           ncclInt8,
                           i,
                           *nccl_comm,
@@ -763,20 +889,14 @@ inline void exchange_values_owner_to_requester(TaskContext& context,
   context.concurrent_task_barrier();
 }
 
-// Step 4 value exchange - scatter direction (requester -> owner).
-//
-// Each requester has packed its local source values into `sendbuf` in peer
-// order driven by send_*. Every rank ships those slices to the peers that
-// own the targets and receives, in receive_* order, the values that other
-// ranks intend to write into its local output.
-//
-//   sendbuf size = sum(plan.h_send_counts_per_rank)  (requester side)
-//   recvbuf size = plan.total_incoming               (owner side)
 inline void exchange_values_requester_to_owner(TaskContext& context,
-                                               const int8_t* sendbuf,
-                                               int8_t* recvbuf,
+                                               const int8_t* send_staging,
+                                               int8_t* recv_staging,
+                                               const unsigned long long* round_send_counts,
+                                               const unsigned long long* round_recv_counts,
+                                               const unsigned long long* round_send_prefix,
+                                               const unsigned long long* round_recv_prefix,
                                                size_t elem_size,
-                                               const ShuffleDescriptor& plan,
                                                int num_ranks,
                                                ncclComm_t* nccl_comm,
                                                cudaStream_t stream)
@@ -784,17 +904,19 @@ inline void exchange_values_requester_to_owner(TaskContext& context,
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (int i = 0; i < num_ranks; ++i) {
-    if (plan.h_send_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclSend(sendbuf + plan.h_send_offsets_per_rank[i] * elem_size,
-                          plan.h_send_counts_per_rank[i] * elem_size,
+    const size_t send_count = round_send_counts[i];
+    const size_t recv_count = round_recv_counts[i];
+    if (send_count > 0) {
+      CHECK_NCCL(ncclSend(send_staging + round_send_prefix[i] * elem_size,
+                          send_count * elem_size,
                           ncclInt8,
                           i,
                           *nccl_comm,
                           stream));
     }
-    if (plan.h_receive_counts_per_rank[i] > 0) {
-      CHECK_NCCL(ncclRecv(recvbuf + plan.h_receive_offsets_per_rank[i] * elem_size,
-                          plan.h_receive_counts_per_rank[i] * elem_size,
+    if (recv_count > 0) {
+      CHECK_NCCL(ncclRecv(recv_staging + round_recv_prefix[i] * elem_size,
+                          recv_count * elem_size,
                           ncclInt8,
                           i,
                           *nccl_comm,
@@ -805,10 +927,11 @@ inline void exchange_values_requester_to_owner(TaskContext& context,
   context.concurrent_task_barrier();
 }
 
-// ============================================================================
-// Step 5 - Unpack received values into output
-// ============================================================================
-
+// Indirect write: output[request_indices[idx]] = recv_data[idx]. Reused by
+// both gather (requester side, request_indices = round_request_positions)
+// and scatter (owner side, request_indices = round_recv_offsets). Identical
+// in shape to main's `unpack_recv_data_kernel` thanks to the round-layout
+// permutations being 1:1 with the receive buffer.
 template <typename DataType, int DIM_output>
 __global__ void unpack_recv_data_kernel(AccessorRW<DataType, DIM_output> output_acc,
                                         Pitches<DIM_output - 1> output_pitches,
@@ -828,51 +951,419 @@ __global__ void unpack_recv_data_kernel(AccessorRW<DataType, DIM_output> output_
   output_acc[p] = recv_data[idx];
 }
 
-// `static` for the same ODR reason as pack_indices_by_rank_warp.
+// `static` to avoid ODR collisions across TUs that include this header.
 static __global__ void unpack_recv_data_kernel_dense(char* __restrict__ output_ptr,
                                                      const uint64_t* request_indices,
                                                      size_t count,
                                                      size_t elem_size,
                                                      const char* recv_data)
 {
-  const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t idx = global_tid_1d();
 
   if (idx >= count) {
     return;
   }
 
-  memcpy(output_ptr + request_indices[idx] * elem_size, recv_data + idx * elem_size, elem_size);
+  copy_elements(
+    output_ptr + request_indices[idx] * elem_size, recv_data + idx * elem_size, elem_size);
 }
 
 template <Type::Code CODE, int DIM_output>
-void unpack_recv_into_output(const StoreView<AccessMode::Write, type_of<CODE>, DIM_output>& output,
-                             const uint64_t* request_positions,
-                             size_t local_index_count,
-                             const void* recv_data,
-                             cudaStream_t stream)
+inline void unpack_recv_into_output(
+  const StoreView<AccessMode::Write, type_of<CODE>, DIM_output>& output,
+  const uint64_t* request_indices,
+  size_t count,
+  size_t elem_size,
+  const int8_t* recv_data,
+  cudaStream_t stream)
 {
   using VAL = type_of<CODE>;
 
-  if (local_index_count > 0) {
-    const size_t grid = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  if (count == 0) {
+    return;
+  }
 
-    if (output.is_dense()) {
-      unpack_recv_data_kernel_dense<<<grid, THREADS_PER_BLOCK, 0, stream>>>(
-        reinterpret_cast<char*>(output.dense_ptr),
-        request_positions,
-        local_index_count,
-        sizeof(VAL),
-        static_cast<const char*>(recv_data));
-    } else {
-      unpack_recv_data_kernel<VAL, DIM_output>
-        <<<grid, THREADS_PER_BLOCK, 0, stream>>>(output.acc,
+  const size_t blocks = (count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+
+  if (output.is_dense()) {
+    unpack_recv_data_kernel_dense<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+      reinterpret_cast<char*>(output.dense_ptr),
+      request_indices,
+      count,
+      elem_size,
+      reinterpret_cast<const char*>(recv_data));
+  } else {
+    unpack_recv_data_kernel<VAL, DIM_output>
+      <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(output.acc,
                                                  output.pitches,
                                                  output.lo,
-                                                 request_positions,
-                                                 local_index_count,
-                                                 static_cast<const VAL*>(recv_data));
+                                                 request_indices,
+                                                 count,
+                                                 reinterpret_cast<const VAL*>(recv_data));
+  }
+}
+
+// Per-round schedule. N-sized; rebuilt in place each round by
+// `fill_round_schedule` so peak ZCMEM is O(N) regardless of K.
+//
+// `within_round_send_prefix` and `peer_src_offsets` are read by GPU
+// kernels and live in ZCMEM; the other N-sized tables are host-only
+// (NCCL count/offset args) and live in plain std::vector.
+//
+//   chunk_send_counts[p]        - NCCL send count for the current round,
+//                                 peer p (offset exchange and, after the
+//                                 direction swap, data exchange).
+//   chunk_recv_counts[p]        - NCCL recv count for the current round.
+//   within_round_send_prefix[p] - exclusive prefix sum of chunk_send_counts
+//                                 over peers. Gives peer p's starting slot
+//                                 in the round-local `round_send_offsets` /
+//                                 `send_staging` buffers, used both by the
+//                                 kernels' binary search (linearize) and by
+//                                 NCCL slice arithmetic.
+//   within_round_recv_prefix[p] - same for recv side.
+//   peer_src_offsets[p]         - absolute offset into the peer-major
+//                                 `request_positions` for the current
+//                                 round, peer p. Used by the per-round
+//                                 `gather_round_request_positions_kernel`
+//                                 to materialize the round-contiguous
+//                                 permutation; closed form
+//                                 `send_offsets_per_rank[p] + round * max_elems_per_peer`.
+//
+// Per-round scalars (updated by `fill_round_schedule`):
+//   total_round_send - sum of chunk_send_counts.
+//   total_round_recv - sum of chunk_recv_counts.
+struct RoundSchedule {
+  Buffer<unsigned long long> within_round_send_prefix;
+  Buffer<unsigned long long> peer_src_offsets;
+
+  std::vector<unsigned long long> chunk_send_counts;
+  std::vector<unsigned long long> chunk_recv_counts;
+  std::vector<unsigned long long> within_round_recv_prefix;
+
+  unsigned long long total_round_send = 0;
+  unsigned long long total_round_recv = 0;
+
+  size_t num_rounds         = 0;
+  size_t num_ranks          = 0;
+  size_t max_elems_per_peer = 0;
+};
+
+// Allocates the N-sized RoundSchedule buffers once per shuffle. Contents
+// are filled in by `fill_round_schedule` before each round runs.
+[[nodiscard]] inline RoundSchedule build_round_schedule(int num_ranks,
+                                                        size_t max_elems_per_peer,
+                                                        size_t num_rounds)
+{
+  RoundSchedule schedule;
+  schedule.num_rounds         = num_rounds;
+  schedule.num_ranks          = static_cast<size_t>(num_ranks);
+  schedule.max_elems_per_peer = max_elems_per_peer;
+
+  const size_t n = static_cast<size_t>(num_ranks);
+  schedule.within_round_send_prefix =
+    create_buffer<unsigned long long>(n, Memory::Kind::Z_COPY_MEM);
+  schedule.peer_src_offsets = create_buffer<unsigned long long>(n, Memory::Kind::Z_COPY_MEM);
+  schedule.chunk_send_counts.assign(n, 0);
+  schedule.chunk_recv_counts.assign(n, 0);
+  schedule.within_round_recv_prefix.assign(n, 0);
+
+  return schedule;
+}
+
+// Populate `schedule` in place for round `round`. `h_send_counts` /
+// `h_recv_counts` and `send_offsets_per_rank` come from
+// `create_shuffle_information` and are reused across rounds. Pure host work,
+// O(N) per call.
+inline void fill_round_schedule(RoundSchedule& schedule,
+                                const unsigned long long* h_send_counts,
+                                const unsigned long long* h_recv_counts,
+                                const unsigned long long* send_offsets_per_rank,
+                                size_t round)
+{
+  const int num_ranks                = static_cast<int>(schedule.num_ranks);
+  const size_t max_elems_per_peer    = schedule.max_elems_per_peer;
+  const unsigned long long round_off = round * max_elems_per_peer;
+
+  unsigned long long* send_counts = schedule.chunk_send_counts.data();
+  unsigned long long* recv_counts = schedule.chunk_recv_counts.data();
+  unsigned long long* send_prefix = schedule.within_round_send_prefix.ptr(0);
+  unsigned long long* recv_prefix = schedule.within_round_recv_prefix.data();
+  unsigned long long* src_offsets = schedule.peer_src_offsets.ptr(0);
+
+  unsigned long long send_running = 0;
+  unsigned long long recv_running = 0;
+  for (int peer = 0; peer < num_ranks; ++peer) {
+    const unsigned long long send_chunk_count =
+      h_send_counts[peer] > round_off
+        ? std::min<unsigned long long>(h_send_counts[peer] - round_off, max_elems_per_peer)
+        : 0ULL;
+    const unsigned long long recv_chunk_count =
+      h_recv_counts[peer] > round_off
+        ? std::min<unsigned long long>(h_recv_counts[peer] - round_off, max_elems_per_peer)
+        : 0ULL;
+
+    send_counts[peer] = send_chunk_count;
+    recv_counts[peer] = recv_chunk_count;
+    send_prefix[peer] = send_running;
+    recv_prefix[peer] = recv_running;
+    src_offsets[peer] = send_offsets_per_rank[peer] + round_off;
+
+    send_running += send_chunk_count;
+    recv_running += recv_chunk_count;
+  }
+  schedule.total_round_send = send_running;
+  schedule.total_round_recv = recv_running;
+}
+
+// Globally-consistent K via one ncclAllReduce(max, uint64) of this rank's
+// `max(send_count_max, recv_count_max)` across all peers. Required so every
+// rank issues the same number of grouped send/recv collectives.
+[[nodiscard]] inline unsigned long long allreduce_global_max_pair_count(
+  TaskContext& context,
+  const unsigned long long* h_send_counts,
+  const unsigned long long* h_recv_counts,
+  int num_ranks,
+  ncclComm_t* nccl_comm,
+  cudaStream_t stream)
+{
+  unsigned long long local_max = 0;
+  for (int i = 0; i < num_ranks; ++i) {
+    local_max = std::max(local_max, h_send_counts[i]);
+    local_max = std::max(local_max, h_recv_counts[i]);
+  }
+
+  // Use separate send/recv slots in one tiny pinned-host buffer so the
+  // collective is not in-place; the host can then read the result after the
+  // mandatory stream sync.
+  auto buf      = create_buffer<unsigned long long>(2, Memory::Kind::Z_COPY_MEM);
+  buf.ptr(0)[0] = local_max;
+  buf.ptr(0)[1] = 0;
+
+  context.concurrent_task_barrier();
+  CHECK_NCCL(ncclAllReduce(buf.ptr(0), buf.ptr(0) + 1, 1, ncclUint64, ncclMax, *nccl_comm, stream));
+  context.concurrent_task_barrier();
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+
+  return buf.ptr(0)[1];
+}
+
+// Step 3+4+5 orchestration. The `RoundSchedule` is rebuilt in place each
+// round (O(N) host + a small GPU gather) and then each iteration is:
+//   1. linearize_offsets_kernel - fill round_send_offsets (round-local FB,
+//      contiguous per-peer layout via round_send_prefix) from this round's
+//      slice of `request_positions` + rect_infos.
+//   2. ncclGroupStart/End: pairwise send/recv of offsets, requester->owner.
+//      Each peer i's slice lives at `+ round_send_prefix[i]` (send) and
+//      `+ round_recv_prefix[i]` (recv).
+//   3. pack kernel - per-round permutation:
+//        gather:  permutation = round_recv_offsets,         count = total_round_recv
+//        scatter: permutation = round_request_positions,    count = total_round_send
+//   4. ncclGroupStart/End: pairwise send/recv of data. Direction follows
+//      gather (owner->requester) or scatter (requester->owner) by swapping
+//      which count/prefix pair is the "send" vs "recv" side.
+//   5. unpack kernel - per-round permutation:
+//        gather:  permutation = round_request_positions,    count = total_round_send
+//        scatter: permutation = round_recv_offsets,         count = total_round_recv
+//
+// `request_positions` is in peer-major layout (set by
+// `pack_request_positions`): peer p's full request list lives at
+// `[send_offsets_per_rank[p], send_offsets_per_rank[p] + h_send_counts[p])`.
+// Each round we materialize the round-contiguous
+// `round_request_positions` slice via `gather_round_request_positions` so
+// the round-loop kernels still see a flat per-round permutation.
+//
+// All FB scratch buffers (round_request_positions, round_send_offsets,
+// round_recv_offsets, send_staging, recv_staging) are sized
+// `num_ranks * max_elems_per_peer * <bytes>` and reused every round.
+template <Type::Code CODE,
+          int DIM_input,
+          int DIM_index_outer,
+          int PACK_DIM,
+          int UNPACK_DIM,
+          bool IS_GATHER>
+void local_gather_and_exchange(
+  TaskContext& context,
+  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_index_outer>& index,
+  const uint64_t* request_positions,
+  const ShuffleDescriptor& plan,
+  const LinearizedRectInfo<DIM_input>* rect_infos,
+  const StoreView<AccessMode::Read, type_of<CODE>, PACK_DIM>& pack_source,
+  const StoreView<AccessMode::Write, type_of<CODE>, UNPACK_DIM>& unpack_dest,
+  size_t elem_size,
+  ncclComm_t* nccl_comm,
+  cudaStream_t stream)
+{
+  using VAL = type_of<CODE>;
+
+  const int num_ranks             = plan.num_ranks;
+  const size_t max_elems_per_peer = plan.max_elems_per_peer;
+  const size_t num_rounds         = plan.num_rounds;
+
+  if (num_rounds == 0) {
+    return;
+  }
+
+  RoundSchedule schedule = build_round_schedule(num_ranks, max_elems_per_peer, num_rounds);
+
+  // Round-local FB scratch buffers, all sized num_ranks * max_elems_per_peer * <elt>
+  // and reused every round. The contents are laid out contiguously per
+  // peer for each round (peer i at [round_*_prefix[i], round_*_prefix[i+1])),
+  // so the worst case (all peers max out their per-peer budget) is the
+  // same `num_ranks * max_elems_per_peer` total.
+  const size_t total_slots         = static_cast<size_t>(num_ranks) * max_elems_per_peer;
+  auto round_request_positions_buf = create_buffer<uint64_t>(total_slots, Memory::Kind::GPU_FB_MEM);
+  auto round_send_offsets          = create_buffer<uint64_t>(total_slots, Memory::Kind::GPU_FB_MEM);
+  auto round_recv_offsets          = create_buffer<uint64_t>(total_slots, Memory::Kind::GPU_FB_MEM);
+  auto send_staging = create_buffer<int8_t>(total_slots * elem_size, Memory::Kind::GPU_FB_MEM);
+  auto recv_staging = create_buffer<int8_t>(total_slots * elem_size, Memory::Kind::GPU_FB_MEM);
+
+  for (size_t round = 0; round < schedule.num_rounds; ++round) {
+    fill_round_schedule(schedule,
+                        plan.h_send_counts_per_rank,
+                        plan.h_receive_counts_per_rank,
+                        plan.h_send_offsets_per_rank,
+                        round);
+
+    const auto* round_send_counts = schedule.chunk_send_counts.data();
+    const auto* round_recv_counts = schedule.chunk_recv_counts.data();
+    const auto* round_send_prefix = schedule.within_round_send_prefix.ptr(0);
+    const auto* round_recv_prefix = schedule.within_round_recv_prefix.data();
+    const auto total_round_send   = schedule.total_round_send;
+    const auto total_round_recv   = schedule.total_round_recv;
+
+    gather_round_request_positions(request_positions,
+                                   schedule.peer_src_offsets.ptr(0),
+                                   round_send_prefix,
+                                   num_ranks,
+                                   round_request_positions_buf.ptr(0),
+                                   static_cast<size_t>(total_round_send),
+                                   stream);
+    const uint64_t* round_request_positions = round_request_positions_buf.ptr(0);
+
+    linearize_and_exchange_offsets<DIM_input, DIM_index_outer>(context,
+                                                               index,
+                                                               round_request_positions,
+                                                               round_send_counts,
+                                                               round_recv_counts,
+                                                               round_send_prefix,
+                                                               round_recv_prefix,
+                                                               rect_infos,
+                                                               round_send_offsets.ptr(0),
+                                                               round_recv_offsets.ptr(0),
+                                                               total_round_send,
+                                                               num_ranks,
+                                                               nccl_comm,
+                                                               stream);
+
+    // Pack permutation is 1:1 with the staging buffer thanks to the
+    // round-contiguous request_positions and round-local round_recv_offsets.
+    if constexpr (IS_GATHER) {
+      pack_values_into_buffer<CODE, PACK_DIM>(pack_source,
+                                              round_recv_offsets.ptr(0),
+                                              static_cast<size_t>(total_round_recv),
+                                              elem_size,
+                                              send_staging.ptr(0),
+                                              stream);
+    } else {
+      pack_values_into_buffer<CODE, PACK_DIM>(pack_source,
+                                              round_request_positions,
+                                              static_cast<size_t>(total_round_send),
+                                              elem_size,
+                                              send_staging.ptr(0),
+                                              stream);
+    }
+
+    // Data exchange: gather flips send/recv counts vs scatter.
+    //   gather:  send = chunk_recv_counts (owner ships back what it
+    //                                     received offsets for in step 3),
+    //            recv = chunk_send_counts (requester gets back what it
+    //                                     asked for).
+    //   scatter: send = chunk_send_counts (requester ships data to owner),
+    //            recv = chunk_recv_counts (owner ingests data).
+    if constexpr (IS_GATHER) {
+      exchange_values_owner_to_requester(context,
+                                         send_staging.ptr(0),
+                                         recv_staging.ptr(0),
+                                         round_send_counts,
+                                         round_recv_counts,
+                                         round_send_prefix,
+                                         round_recv_prefix,
+                                         elem_size,
+                                         num_ranks,
+                                         nccl_comm,
+                                         stream);
+    } else {
+      exchange_values_requester_to_owner(context,
+                                         send_staging.ptr(0),
+                                         recv_staging.ptr(0),
+                                         round_send_counts,
+                                         round_recv_counts,
+                                         round_send_prefix,
+                                         round_recv_prefix,
+                                         elem_size,
+                                         num_ranks,
+                                         nccl_comm,
+                                         stream);
+    }
+
+    if constexpr (IS_GATHER) {
+      unpack_recv_into_output<CODE, UNPACK_DIM>(unpack_dest,
+                                                round_request_positions,
+                                                static_cast<size_t>(total_round_send),
+                                                elem_size,
+                                                recv_staging.ptr(0),
+                                                stream);
+    } else {
+      unpack_recv_into_output<CODE, UNPACK_DIM>(unpack_dest,
+                                                round_recv_offsets.ptr(0),
+                                                static_cast<size_t>(total_round_recv),
+                                                elem_size,
+                                                recv_staging.ptr(0),
+                                                stream);
     }
   }
+}
+
+// Picks the per-peer element budget given a total per-buffer byte budget
+// and the global maximum per-pair count (from `allreduce_global_max_pair_count`).
+// The result is at least 1, never larger than `global_max` (so small workloads
+// don't over-allocate), and at most `max_staging_bytes / num_ranks / elem_size`.
+[[nodiscard]] inline size_t compute_max_elems_per_peer(size_t max_staging_bytes,
+                                                       size_t elem_size,
+                                                       int num_ranks,
+                                                       unsigned long long global_max)
+{
+  const size_t per_peer_byte_budget =
+    std::max<size_t>(elem_size, max_staging_bytes / static_cast<size_t>(num_ranks));
+  // Callers (global_all2all / global_nccl_scatter) early-return when
+  // global_max == 0, so global_max >= 1 here and `std::clamp`'s
+  // lo <= hi precondition holds.
+  return std::clamp<size_t>(per_peer_byte_budget / elem_size, 1, static_cast<size_t>(global_max));
+}
+
+// Derives the per-buffer staging byte budget from the user-facing
+// `staging_factor` setting using the global index volume passed by the
+// Python launcher. Sized as
+// `staging_factor * (global_index_volume / num_ranks) * elem_size`, i.e.
+// `staging_factor` times the average per-rank request count. Using the
+// global volume (rather than each task's local slice) gives every rank
+// an identical budget regardless of partition skew.
+[[nodiscard]] inline size_t compute_max_staging_bytes(double staging_factor,
+                                                      unsigned long long global_index_volume,
+                                                      size_t elem_size,
+                                                      int num_ranks)
+{
+  if (num_ranks <= 0) {
+    return elem_size;
+  }
+  if (!(staging_factor > 0.0)) {
+    LEGATE_ABORT("CUPYNUMERIC_ALL2ALL_STAGING_FACTOR must be a positive finite value, got ",
+                 staging_factor);
+  }
+  const double avg_local_count =
+    static_cast<double>(global_index_volume) / static_cast<double>(num_ranks);
+  const double bytes = staging_factor * avg_local_count * static_cast<double>(elem_size);
+  return std::max<size_t>(elem_size, static_cast<size_t>(bytes));
 }
 
 }  // namespace detail

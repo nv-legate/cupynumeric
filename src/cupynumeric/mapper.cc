@@ -721,20 +721,101 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     }
     case CUPYNUMERIC_ALL2ALL_GATHER:
     case CUPYNUMERIC_ALL2ALL_SCATTER: {
-      if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
-        // Multi-rank shuffle reserves a few small per-rank metadata buffers in
-        // pinned host memory (identical layout for both gather and scatter):
-        //   - partition_rects          : num_ranks rects (gathered via NCCL)
-        //   - local_rect_device        : 1 rect (this rank's local domain)
-        //   - send_counts_per_rank     : num_ranks uint64 (CUB histogram output)
-        //   - receive_counts_per_rank  : num_ranks uint64 (NCCL recv target)
-        //   - send_offsets_per_rank    : num_ranks uint64 (prefix-sum output)
-        const auto num_ranks      = task.get_launch_domain().get_volume();
-        constexpr auto rect_bytes = sizeof(legate::Rect<LEGATE_MAX_DIM>);
-        return aligned_size(num_ranks * rect_bytes, DEFAULT_ALIGNMENT) +
-               aligned_size(rect_bytes, DEFAULT_ALIGNMENT) +
-               3 * aligned_size(num_ranks * sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+      const auto num_ranks = task.get_launch_domain().get_volume();
+
+      // Single-rank tasks dispatch to the local GatherTask / ScatterTask
+      // kernels, which need no shuffle scratch.
+      if (num_ranks <= 1) {
+        return 0;
       }
+
+      const auto elem_size      = task.input(0).type().size();
+      const auto staging_factor = task.scalar(0).value<double>();
+      const auto global_index   = task.scalar(1).value<std::uint64_t>();
+
+      if (!(staging_factor > 0.0)) {
+        LEGATE_ABORT("CUPYNUMERIC_ALL2ALL_STAGING_FACTOR must be a positive finite value, got ",
+                     staging_factor);
+      }
+
+      // `avg_per_rank_count` is the partitioned-case basis (ceil(V / N));
+      // `local_index_count` is this task's actual slice and equals the
+      // full global volume when the partitioner replicates the indices.
+      const std::size_t avg_per_rank_count =
+        static_cast<std::size_t>((global_index + num_ranks - 1) / num_ranks);
+      const std::size_t local_index_count =
+        static_cast<std::size_t>(task.input(1).domain().get_volume());
+      const std::size_t max_staging_bytes = std::max<std::size_t>(
+        elem_size,
+        static_cast<std::size_t>(staging_factor * static_cast<double>(avg_per_rank_count) *
+                                 static_cast<double>(elem_size)));
+
+      const auto per_rank_u64 = aligned_size(num_ranks * sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+
+      switch (memory_kind) {
+        case legate::mapping::StoreTarget::ZCMEM: {
+          // Partition rects + allreduce buf + three num_ranks-sized
+          // `ShuffleDescriptor` uint64 arrays + the two GPU-visible
+          // num_ranks-sized `RoundSchedule` tables (within_round_send_prefix,
+          // peer_src_offsets). The other RoundSchedule tables are
+          // host-only std::vector and don't consume ZCMEM.
+          constexpr std::size_t rect_bytes_max = sizeof(legate::Rect<LEGATE_MAX_DIM>);
+          const auto partition_rects_bytes =
+            aligned_size(num_ranks * rect_bytes_max, DEFAULT_ALIGNMENT);
+          const auto local_rect_bytes = aligned_size(rect_bytes_max, DEFAULT_ALIGNMENT);
+          const auto allreduce_buf_bytes =
+            aligned_size(2 * sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+          constexpr std::size_t kNumShuffleDescriptorU64Buffers = 3;
+          constexpr std::size_t kNumRoundScheduleZcmemTables    = 2;
+          return partition_rects_bytes + local_rect_bytes +
+                 kNumShuffleDescriptorU64Buffers * per_rank_u64 +
+                 kNumRoundScheduleZcmemTables * per_rank_u64 + allreduce_buf_bytes;
+        }
+        case legate::mapping::StoreTarget::FBMEM: {
+          // Per-rank FBMEM terms include local request buffers, small metadata,
+          // CUB temp, three round-offset buffers, and two staging buffers.
+          //
+          // CUB histogram temp upper bound: each SM keeps a privatized
+          // `num_bins * sizeof(uint32_t)` counters. `num_bins` here is
+          // `num_ranks` (one bin per peer). We cannot query the actual SM
+          // count from the mapper, so use a conservative upper bound.
+          constexpr std::size_t MAX_POSSIBLE_SMS = 4096;
+
+          const auto local_terms =
+            aligned_size(local_index_count * sizeof(std::uint64_t), DEFAULT_ALIGNMENT) +
+            aligned_size(local_index_count * sizeof(int), DEFAULT_ALIGNMENT);
+          const auto staging_per_buffer =
+            aligned_size(std::max(max_staging_bytes, num_ranks * elem_size), DEFAULT_ALIGNMENT);
+          // `round_request_positions` and `round_{send,recv}_offsets` are
+          // laid out as `num_ranks * max_elems_per_peer` slots, so cap by
+          // `min(num_ranks * avg_per_rank_count, max_staging_bytes / elem_size)`.
+          const auto round_offset_buf_bound = aligned_size(
+            std::min<std::size_t>(num_ranks * avg_per_rank_count,
+                                  max_staging_bytes / std::max<std::size_t>(elem_size, 1)) *
+              sizeof(std::uint64_t),
+            DEFAULT_ALIGNMENT);
+          // Overestimate sizeof(LinearizedRectInfo<DIM>) using the
+          // largest-DIM Point + Pitches representable.
+          constexpr std::size_t rect_info_bytes_max =
+            sizeof(legate::Point<LEGATE_MAX_DIM>) + LEGATE_MAX_DIM * sizeof(std::int64_t);
+          const auto cub_temp_budget = num_ranks * sizeof(std::uint32_t) * MAX_POSSIBLE_SMS;
+          const auto small_terms =
+            aligned_size(num_ranks * rect_info_bytes_max, DEFAULT_ALIGNMENT) + per_rank_u64 +
+            cub_temp_budget;
+          // Round-local FB buffers in `local_gather_and_exchange`:
+          //   - 3 uint64 offset buffers sized `num_ranks * max_elems_per_peer`:
+          //     `round_request_positions_buf`, `round_send_offsets`,
+          //     `round_recv_offsets` (each bounded by `round_offset_buf_bound`).
+          //   - 2 byte staging buffers sized `num_ranks * max_elems_per_peer * elem_size`:
+          //     `send_staging`, `recv_staging` (each bounded by `staging_per_buffer`).
+          constexpr std::size_t kNumRoundOffsetBuffers = 3;
+          constexpr std::size_t kNumStagingBuffers     = 2;
+          return local_terms + kNumRoundOffsetBuffers * round_offset_buf_bound +
+                 kNumStagingBuffers * staging_per_buffer + small_terms;
+        }
+      }
+      // SYSMEM / SOCKETMEM are not queried: only the GPU variant sets
+      // `with_has_allocations(true)` (see all2all_gather.h / all2all_scatter.h).
       return std::nullopt;
     }
   }
