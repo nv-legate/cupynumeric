@@ -113,8 +113,8 @@ def get_item(name: str, np_obj: Any, lg_obj: Any) -> ItemDetail:
         single_support, multi_support = parse_gpu_support_from_docstring(
             lg_attr
         )
-        single = single_support.value
-        multi = multi_support.value
+        single = _support_symbol(single_support)
+        multi = _support_symbol(multi_support)
         implemented = True
     else:
         single = multi = ""
