@@ -41,7 +41,7 @@ dependencies = [
     "numpy>=1.24,!=2.1.0,<2.5.0",
     "cffi",
     "opt_einsum",
-    "legate==26.6.*,>=0.0.0a0",
+    "legate==26.7.*,>=0.0.0a0",
     "cutensor-cu13>=2.0,<2.3.0.6; sys_platform == 'linux'",
     "nvidia-cublas; sys_platform == 'linux'",
     "nvidia-cufft; sys_platform == 'linux'",
