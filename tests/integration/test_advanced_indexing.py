@@ -858,7 +858,9 @@ def test():
 
 
 @pytest.mark.parametrize("ndim", ONE_MAX_DIM_RANGE[:-1])
-@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int32, np.int64])
+@pytest.mark.parametrize(
+    "dtype", [np.float16, np.float32, np.float64, np.int32, np.int64]
+)
 def test_einsum_path_different_dimensions(ndim, dtype):
     """Test einsum path for different array dimensions and float dtypes."""
     # Create test array with unique values for verification
@@ -1352,6 +1354,45 @@ def test_newaxis_in_boolean_indexing() -> None:
 
     assert np_result.shape == num_result.shape
     assert np.allclose(np_result, np.array(num_result))
+
+
+def test_newaxis_shifts_bool_to_mismatched_axis() -> None:
+    np_arr = np.arange(6, dtype=np.float32).reshape(2, 3)
+    num_arr = num.array(np_arr)
+    np_mask = np.array([True, False, True])
+    num_mask = num.array(np_mask)
+    np_result = np_arr[-1, np_mask]
+    num_result = num_arr[-1, num_mask]
+    assert np.array_equal(np_result, np.array(num_result))
+
+
+def test_bool_index_with_newaxis_before_bool() -> None:
+    arr = num.arange(6, dtype=np.float32).reshape(2, 3)
+    bool_mask = num.array([True, False, True])
+    with pytest.raises((ValueError, IndexError)):
+        _ = arr[np.newaxis, bool_mask]
+
+
+def test_bool_index_unsupported_type() -> None:
+    arr = num.arange(6, dtype=np.float32).reshape(2, 3)
+    bool_mask = num.array([True, False, True])
+    with pytest.raises(TypeError, match="Unsupported entry type"):
+        _ = arr[(0.5, bool_mask)]
+
+
+def test_bool_shape_mismatch_in_mixed_indexing() -> None:
+    arr = num.arange(12, dtype=np.float32).reshape(3, 4)
+    int_idx = num.array([0, 1], dtype=np.int64)
+    # shape (2,) doesn't match arr.shape[1] = 4
+    wrong_bool = num.array([True, False], dtype=bool)
+    with pytest.raises((ValueError, IndexError)):
+        _ = arr[int_idx, wrong_bool]
+
+
+def test_multiple_ellipses_raises() -> None:
+    arr = num.arange(6).reshape(2, 3)
+    with pytest.raises((ValueError, IndexError)):
+        _ = arr[..., ...]
 
 
 if __name__ == "__main__":

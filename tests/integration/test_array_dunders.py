@@ -121,6 +121,25 @@ def test_array_ufunc_defer():
         assert np.add(arr_num, arr_num, where=ArrayLike()) == "deferred"
 
 
+def test_deferred_array_str() -> None:
+    arr = num.array([1, 2, 3], dtype=np.float32)
+    result = str(arr._thunk)
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_deferred_array_numpy_array_doctor() -> None:
+    import os
+
+    os.environ["CUPYNUMERIC_DOCTOR"] = "1"
+    try:
+        arr = num.array([1.0, 2.0, 3.0])
+        result = np.array(arr)
+        assert np.array_equal(result, [1.0, 2.0, 3.0])
+    finally:
+        os.environ.pop("CUPYNUMERIC_DOCTOR", None)
+
+
 if __name__ == "__main__":
     import sys
 

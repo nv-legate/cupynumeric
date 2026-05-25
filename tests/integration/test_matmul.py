@@ -252,6 +252,15 @@ class TestMatmulErrors:
             num.matmul(A_num, B_num, casting=casting)
 
 
+def test_matmul_unsupported_kwargs() -> None:
+    a = num.array([[1.0, 2.0], [3.0, 4.0]])
+    b = num.array([[5.0, 6.0], [7.0, 8.0]])
+    with pytest.raises(
+        NotImplementedError, match="matmul doesn't support kwargs"
+    ):
+        a._thunk._matmul(b._thunk, unsupported_kwarg=True)
+
+
 if __name__ == "__main__":
     import sys
 

@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+import os
+
 import numpy as np
 import pytest
 from utils.generators import mk_seq_array
@@ -452,6 +454,19 @@ class TestBoundsCheckingSetting:
         expected = np.take(arr_np, indices_np, mode="wrap")
 
         assert np.array_equal(result, expected)
+
+
+def test_take_task_fallback_out_not_none() -> None:
+    os.environ["CUPYNUMERIC_TAKE_DEFAULT"] = "task"
+    try:
+        arr = num.ones((2,) * 6)
+        idx = num.array([0, 1], dtype=np.int64)
+        out = num.zeros((2,) * 6)
+        result = num.take(arr, idx, axis=0, out=out)
+        assert result.shape == (2,) * 6
+        assert np.all(np.array(result) == 1.0)
+    finally:
+        os.environ.pop("CUPYNUMERIC_TAKE_DEFAULT", None)
 
 
 if __name__ == "__main__":
