@@ -21,8 +21,7 @@ import pytest
 import cupynumeric as num
 from cupynumeric.runtime import Runtime, runtime
 from cupynumeric.settings import settings
-
-# Eager mode removed - EAGER_TEST no longer needed
+from legate.core import get_legate_runtime, types as ty
 
 
 def test_array():
@@ -451,6 +450,14 @@ class TestRuntimeShapeAndConversions:
     def test_to_deferred_array_invalid_type(self) -> None:
         with pytest.raises(RuntimeError, match=r"invalid array type"):
             runtime.to_deferred_array(None, read_only=False)  # type: ignore[arg-type]
+
+
+def test_asarray_physical_store_dtype_conversion() -> None:
+    runtime1 = get_legate_runtime()
+    store = runtime1.create_store(ty.int64, shape=(3,)).get_physical_store()
+    arr = num.asarray(store, dtype=np.float64)
+    assert arr.shape == (3,)
+    assert arr.dtype == np.float64
 
 
 if __name__ == "__main__":

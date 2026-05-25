@@ -492,6 +492,27 @@ def test_pyint_comparison(op, reverse, arr, val):
     assert op(arr, 0).tolist() == [op(v, 0) for v in arr.tolist()]
 
 
+@pytest.mark.parametrize(
+    ("op", "scalar", "expected"),
+    (
+        (num.less, -1, True),
+        (num.greater, 256, True),
+        (num.equal, -1, False),
+        (num.not_equal, 256, True),
+    ),
+)
+def test_out_of_range_pyint_lhs_comparison(
+    op: Any, scalar: int, expected: bool
+) -> None:
+    arr = num.asarray([0, 1, 255], dtype="uint8")
+
+    res = op(scalar, arr)
+
+    assert res.dtype == bool
+    assert res.shape == arr.shape
+    assert np.array_equal(np.asarray(res), np.full(arr.shape, expected))
+
+
 def parse_inputs(in_str, dtype_str):
     dtypes = tuple(np.dtype(dtype) for dtype in dtype_str.split(":"))
     tokens = in_str.split(":")

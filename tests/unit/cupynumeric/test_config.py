@@ -17,6 +17,7 @@ import os
 import sys
 from unittest import mock
 
+import platform
 import pytest
 
 import cupynumeric.config as m  # module under test
@@ -85,6 +86,27 @@ class TestCuPyNumericLib:
         from cupynumeric.install_info import header
 
         assert lib.get_c_header() == header
+
+
+def test_library_extension_darwin(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+
+    assert m.CuPyNumericLib.get_library_extension() == ".dylib"
+
+
+def test_library_extension_unknown_platform(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(platform, "system", lambda: "Plan9")
+
+    with pytest.raises(RuntimeError, match="unknown platform"):
+        m.CuPyNumericLib.get_library_extension()
+
+
+def test_fft_type_single_precision_property() -> None:
+    # No user-level API currently reads this property, so this uses the
+    # public config module's FFT type constant.
+    assert m.FFT_C2C.is_single_precision is True
 
 
 def test_CUPYNUMERIC_LIB_NAME() -> None:

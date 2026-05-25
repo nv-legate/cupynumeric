@@ -78,7 +78,7 @@ def _post_resolution_check(
                 np.array(iinfo.min, dtype=arr_x.dtype)
             )
             op_code = (
-                BinaryOpCode.GREATER_EQUAL if truthiness else BinaryOpCode.LESS
+                BinaryOpCode.LESS_EQUAL if truthiness else BinaryOpCode.GREATER
             )
 
     elif type(obj_y) is int and arr_y.dtype.kind in "iu":
