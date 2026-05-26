@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Global variable used by the importing scripts
-SLURM_JOB_ID=
+SUBMITTED_SLURM_JOB_ID=
 
 function wait_for_job_completion {
     local slurm_job_id="$1"
@@ -57,7 +57,7 @@ function submit_job {
     echo "Submitted job ${slurm_job_id}"
 
     # shellcheck disable=SC2034
-    SLURM_JOB_ID="${slurm_job_id}"
+    SUBMITTED_SLURM_JOB_ID="${slurm_job_id}"
 
     if [[ ${exit_code} -ne 0 ]]; then
         echo "Failed to submit job" >&2

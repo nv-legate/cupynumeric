@@ -51,6 +51,7 @@ jobs:
       cupynumeric_source_dir: ${{ steps.clone-cupynumeric.outputs.cupynumeric_source_dir }}
       legate_gh_ci_dir: ${{ steps.copy-legate-gh-ci.outputs.legate_gh_ci_dir }}
       moved_artifacts_dir: ${{ steps.move-artifacts.outputs.moved_artifacts_dir }}
+      unique_dir: ${{ steps.unique_dir.outputs.path }}
     env:
       LEGATE_CUDA_VERSION: ${{ inputs.cuda-version }}
     steps:
@@ -169,6 +170,7 @@ jobs:
           build-has-tests: ${{ inputs.build-has-tests }}
 
       - name: Run test
+        id: run-test
         env:
           REPO_DIR: ${{ needs.create-slurm-shared-dir.outputs.cupynumeric_source_dir }}
           LEGATE_GH_CI_DIR: ${{ needs.create-slurm-shared-dir.outputs.legate_gh_ci_dir }}
@@ -182,6 +184,17 @@ jobs:
           "${{ env.LEGATE_GH_CI_DIR }}/scripts/entrypoint" \
           "${{ env.REPO_DIR }}/continuous_integration/scripts/test" \
           ${{ matrix.test_options }}
+
+          echo "job_id=${SUBMITTED_SLURM_JOB_ID}" | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Clean up directory of the submitted Slurm job
+        if: steps.run-test.outputs.job_id != ''
+        run: |
+          JOB_DIR="${SLURM_SHARED_DIR:?}/${{ steps.run-test.outputs.job_id }}"
+          echo "Cleaning Slurm job dir: ${JOB_DIR}"
+          if [[ -d "${JOB_DIR}" ]]; then
+            rm -rf "${JOB_DIR:?}/" || true
+          fi
 
       - name: Display structure of output artifacts dir
         id: output-artifacts-exist
@@ -204,3 +217,19 @@ jobs:
         with:
           name: ${{ env.OUTPUT_ARTIFACT_NAME }}
           path: ${{ env.OUTPUT_ARTIFACTS_DIR }}
+
+  final-cleanup:
+    needs:
+      - create-slurm-shared-dir
+      - slurm-test
+    if: github.repository_owner == 'nv-legate'
+    name: Final cleanup
+    runs-on: legate-slurm
+    steps:
+      - name: Clean up shared unique directory
+        run: |
+          UNIQUE_DIR="${{ needs.create-slurm-shared-dir.outputs.unique_dir }}"
+          echo "Cleaning unique dir: ${UNIQUE_DIR}"
+          if [[ -d "${UNIQUE_DIR}" ]]; then
+            rm -rf "${UNIQUE_DIR:?}/" || true
+          fi
