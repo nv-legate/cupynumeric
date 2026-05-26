@@ -271,6 +271,13 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params, cudaStr
 }
 
 CuSolverExtraSymbols::CuSolverExtraSymbols()
+  : cusolver_lib(nullptr),
+    cusolver_geev_bufferSize(nullptr),
+    cusolver_geev(nullptr),
+    has_geev(false),
+    cusolver_syev_batched_bufferSize(nullptr),
+    cusolver_syev_batched(nullptr),
+    has_syev_batched(false)
 {
   cusolver_lib = dlopen("libcusolver.so", RTLD_LAZY | RTLD_DEEPBIND);
   {
@@ -324,6 +331,7 @@ void CuSolverExtraSymbols::finalize()
 
   if (cusolver_lib != nullptr) {
     dlclose(cusolver_lib);
+    cusolver_lib = nullptr;
   }
 }
 
