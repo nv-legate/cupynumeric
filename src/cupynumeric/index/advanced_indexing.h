@@ -25,7 +25,6 @@ struct AdvancedIndexingArgs {
   legate::PhysicalStore input_array;
   legate::PhysicalStore indexing_array;
   const bool is_set;
-  const int64_t key_dim;
 };
 
 class AdvancedIndexingTask : public CuPyNumericTask<AdvancedIndexingTask> {

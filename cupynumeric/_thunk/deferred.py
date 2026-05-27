@@ -369,38 +369,36 @@ def _execute_boolean_indexing_task(
     DeferredArray
         The raw output from the ADVANCED_INDEXING task
     """
+    rhs_store = rhs.base
     key_store = key.base
 
     # Promote the boolean key to match the full dimensionality
     key_dims = key_store.ndim
-    for i in range(key_dims, rhs.ndim):
-        key_store = key_store.promote(i, rhs.shape[i])
+    for i in range(key_dims, rhs_store.ndim):
+        key_store = key_store.promote(i, rhs_store.shape[i])
 
     # Determine output data type
-    out_dtype = rhs.base.type
-    if is_set:
-        # For set operations, we return Point<N> type for indirect copy operations
-        N = rhs.ndim
-        out_dtype = ty.point_type(N)
+    # For set operations, we return Point<N> type for indirect copy operations
+    out_dtype = ty.point_type(rhs_store.ndim) if is_set else rhs_store.type
 
-    # Create output thunk with same dimensionality as input
-    out = runtime.create_unbound_thunk(out_dtype, ndim=rhs.ndim)
-    key_dims_value = key.ndim  # Number of dimensions in the boolean array
+    # Dimensions to which a boolean mask is applied are flattened
+    out = runtime.create_unbound_thunk(
+        out_dtype, ndim=rhs_store.ndim - key.ndim + 1
+    )
 
     # Set up and execute the ADVANCED_INDEXING task
     task = legate_runtime.create_auto_task(
         rhs.library, CuPyNumericOpCode.ADVANCED_INDEXING
     )
     task.add_output(out.base)
-    p_rhs = task.add_input(rhs.base)
+    p_rhs = task.add_input(rhs_store)
     p_key = task.add_input(key_store)
     task.add_scalar_arg(is_set, ty.bool_)
-    task.add_scalar_arg(key_dims_value, ty.int64)
 
     # Add constraints for proper data alignment and broadcasting
     task.add_constraint(align(p_rhs, p_key))
-    if rhs.base.ndim > 1:
-        task.add_constraint(broadcast(p_rhs, range(1, rhs.base.ndim)))
+    if rhs_store.ndim > 1:
+        task.add_constraint(broadcast(p_rhs, range(1, rhs_store.ndim)))
 
     # Execute the boolean indexing task
     task.execute()
@@ -446,26 +444,6 @@ def _process_boolean_array_index_get(
 
     # Execute the ADVANCED_INDEXING task
     out = _execute_boolean_indexing_task(rhs, key, is_set=False)
-    out_dtype = rhs.base.type
-
-    # Post-process the output to handle dimension reduction
-    key_dims = key.ndim
-    out_dim = rhs.ndim - key_dims + 1
-
-    if out_dim != rhs.ndim:
-        out_tmp = out.base
-
-        if out.size == 0:
-            # Handle empty output case
-            out_shape = tuple(out.shape[i] for i in range(0, out_dim))
-            out = runtime.create_deferred_thunk(out_shape, out_dtype)
-            out.fill(np.array(0, dtype=out_dtype.to_numpy_dtype()))
-        else:
-            # Project out the extra dimensions from the end
-            for dim in range(rhs.ndim - out_dim):
-                out_tmp = out_tmp.project(rhs.ndim - dim - 1, 0)
-
-            out = out._copy_store(out_tmp)
 
     return False, rhs, out, ctx.transformed_array
 
@@ -524,25 +502,6 @@ def _process_boolean_array_index_set(
 
     # Execute the ADVANCED_INDEXING task
     out = _execute_boolean_indexing_task(rhs, key, is_set=True)
-    out_dtype = ty.point_type(rhs.ndim)
-
-    # Post-process the output to handle dimension reduction
-    key_dims = key.ndim
-    out_dim = rhs.ndim - key_dims + 1
-
-    if out_dim != rhs.ndim:
-        out_tmp = out.base
-
-        if out.size == 0:
-            # Handle empty output case
-            out_shape = tuple(out.shape[i] for i in range(0, out_dim))
-            out = runtime.create_deferred_thunk(out_shape, out_dtype)
-        else:
-            # Project out the extra dimensions from the end
-            for dim in range(rhs.ndim - out_dim):
-                out_tmp = out_tmp.project(rhs.ndim - dim - 1, 0)
-
-            out = out._copy_store(out_tmp)
 
     # Note: For set operations, we don't apply inverted transpose to the output
     # The output is used for the indirect copy operation, not returned to the user

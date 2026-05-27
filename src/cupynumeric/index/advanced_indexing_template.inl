@@ -24,28 +24,30 @@ namespace cupynumeric {
 
 using namespace legate;
 
-template <VariantKind KIND, Type::Code CODE, int DIM, typename OUT_TYPE>
+template <VariantKind KIND, Type::Code CODE, int IN_DIM, int OUT_DIM, typename OUT_TYPE>
 struct AdvancedIndexingImplBody;
 
-template <VariantKind KIND>
+template <VariantKind KIND, Type::Code CODE>
 struct AdvancedIndexingImpl {
   TaskContext context;
   explicit AdvancedIndexingImpl(TaskContext context) : context(context) {}
 
   // current implementaion of the ND-output regions requires all regions
   // to have the same DIM.
-  template <Type::Code CODE, int DIM>
+  template <int IN_DIM, int OUT_DIM, std::enable_if_t<(OUT_DIM <= IN_DIM)>* = nullptr>
   void operator()(AdvancedIndexingArgs& args) const
   {
-    using VAL             = type_of<CODE>;
-    const auto input_rect = args.input_array.shape<DIM>();
-    auto input_arr        = args.input_array.read_accessor<VAL, DIM>(input_rect);
-    Pitches<DIM - 1> input_pitches{};
+    using VAL = type_of<CODE>;
+
+    constexpr auto KEY_DIM = IN_DIM - OUT_DIM + 1;
+    const auto input_rect  = args.input_array.shape<IN_DIM>();
+    auto input_arr         = args.input_array.read_accessor<VAL, IN_DIM>(input_rect);
+    Pitches<IN_DIM - 1> input_pitches{};
     size_t volume = input_pitches.flatten(input_rect);
 
-    const auto index_rect = args.indexing_array.shape<DIM>();
+    const auto index_rect = args.indexing_array.shape<IN_DIM>();
     // this task is executed only for the case when index array is a bool type
-    auto index_arr = args.indexing_array.read_accessor<bool, DIM>(index_rect);
+    auto index_arr = args.indexing_array.read_accessor<bool, IN_DIM>(index_rect);
 #ifdef DEBUG_CUPYNUMERIC
     // we make sure that index and input shapes are the same on the python side.
     // checking this one more time here
@@ -57,13 +59,36 @@ struct AdvancedIndexingImpl {
       return;
     }
 
-    if (args.is_set) {
-      AdvancedIndexingImplBody<KIND, CODE, DIM, Point<DIM>>{context}(
-        args.output, input_arr, index_arr, input_pitches, input_rect, args.key_dim);
-    } else {
-      AdvancedIndexingImplBody<KIND, CODE, DIM, VAL>{context}(
-        args.output, input_arr, index_arr, input_pitches, input_rect, args.key_dim);
+    // skip_size is number of elements per each out[KEY_DIM-1] sub-array
+    size_t skip_size = 1;
+    for (int dim = KEY_DIM; dim < IN_DIM; ++dim) {
+      skip_size *= (input_rect.hi[dim] - input_rect.lo[dim]) + 1;
     }
+
+    if (args.is_set) {
+      AdvancedIndexingImplBody<KIND, CODE, IN_DIM, OUT_DIM, Point<IN_DIM>>{context}(
+        args.output, input_arr, index_arr, input_pitches, input_rect, volume, skip_size);
+    } else {
+      AdvancedIndexingImplBody<KIND, CODE, IN_DIM, OUT_DIM, VAL>{context}(
+        args.output, input_arr, index_arr, input_pitches, input_rect, volume, skip_size);
+    }
+  }
+
+  template <int IN_DIM, int OUT_DIM, std::enable_if_t<!(OUT_DIM <= IN_DIM)>* = nullptr>
+  void operator()(AdvancedIndexingArgs& args) const
+  {
+  }
+};
+
+template <VariantKind KIND>
+struct AdvancedIndexingDispatcher {
+  template <Type::Code CODE>
+  void operator()(AdvancedIndexingArgs& args, TaskContext context) const
+  {
+    double_dispatch(std::max(1, args.input_array.dim()),
+                    args.output.dim(),
+                    AdvancedIndexingImpl<KIND, CODE>{context},
+                    args);
   }
 };
 
@@ -71,13 +96,10 @@ template <VariantKind KIND>
 static void advanced_indexing_template(TaskContext& context)
 {
   // is_set flag is used to fill Point<N> field for in-place assignment operation
-  bool is_set     = context.scalar(0).value<bool>();
-  int64_t key_dim = context.scalar(1).value<int64_t>();
-  AdvancedIndexingArgs args{context.output(0), context.input(0), context.input(1), is_set, key_dim};
-  double_dispatch(std::max(1, args.input_array.dim()),
-                  args.input_array.code(),
-                  AdvancedIndexingImpl<KIND>{context},
-                  args);
+  bool is_set = context.scalar(0).value<bool>();
+  AdvancedIndexingArgs args{context.output(0), context.input(0), context.input(1), is_set};
+
+  type_dispatch(args.input_array.code(), AdvancedIndexingDispatcher<KIND>{}, args, context);
 }
 
 }  // namespace cupynumeric

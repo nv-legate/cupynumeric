@@ -25,35 +25,41 @@ namespace cupynumeric {
 
 using namespace legate;
 
-template <Type::Code CODE, int DIM, typename OUT_TYPE>
-struct AdvancedIndexingImplBody<VariantKind::OMP, CODE, DIM, OUT_TYPE> {
+template <Type::Code CODE, int IN_DIM, int OUT_DIM, typename OUT_TYPE>
+struct AdvancedIndexingImplBody<VariantKind::OMP, CODE, IN_DIM, OUT_DIM, OUT_TYPE> {
   TaskContext context;
   explicit AdvancedIndexingImplBody(TaskContext context) : context(context) {}
 
   using VAL = type_of<CODE>;
 
+  static constexpr auto KEY_DIM = IN_DIM - OUT_DIM + 1;
+
   size_t compute_output_offsets(ThreadLocalStorage<int64_t>& offsets,
-                                const AccessorRO<bool, DIM>& index,
-                                const Pitches<DIM - 1>& pitches,
-                                const Rect<DIM>& rect,
+                                const AccessorRO<bool, IN_DIM>& index,
+                                const Pitches<IN_DIM - 1>& pitches,
+                                const Rect<IN_DIM>& rect,
                                 const size_t volume,
                                 const size_t skip_size,
                                 const size_t max_threads) const
   {
     ThreadLocalStorage<int64_t> sizes(max_threads);
+
     for (size_t idx = 0; idx < max_threads; ++idx) {
       sizes[idx] = 0;
     }
+
 #pragma omp parallel
     {
       const int tid = omp_get_thread_num();
 #pragma omp for schedule(static)
       for (size_t idx = 0; idx < volume; ++idx) {
         auto p = pitches.unflatten(idx, rect.lo);
+
         sizes[tid] += static_cast<int64_t>(index[p] && ((idx + 1) % skip_size == 0));
       }
     }  // end of parallel
     size_t size = 0;
+
     for (size_t idx = 0; idx < max_threads; ++idx) {
       offsets[idx] = size;
       size += sizes[idx];
@@ -63,63 +69,56 @@ struct AdvancedIndexingImplBody<VariantKind::OMP, CODE, DIM, OUT_TYPE> {
   }
 
   void operator()(PhysicalStore& out_arr,
-                  const AccessorRO<VAL, DIM>& input,
-                  const AccessorRO<bool, DIM>& index,
-                  const Pitches<DIM - 1>& pitches,
-                  const Rect<DIM>& rect,
-                  const size_t key_dim) const
+                  const AccessorRO<VAL, IN_DIM>& input,
+                  const AccessorRO<bool, IN_DIM>& index,
+                  const Pitches<IN_DIM - 1>& input_pitches,
+                  const Rect<IN_DIM>& input_rect,
+                  const size_t input_volume,
+                  const size_t skip_size) const
   {
-    size_t skip_size = 1;
-    for (size_t i = key_dim; i < DIM; i++) {
-      auto diff = 1 + rect.hi[i] - rect.lo[i];
-      if (diff != 0) {
-        skip_size *= diff;
-      }
-    }
-
     const auto max_threads = omp_get_max_threads();
-    const size_t volume    = rect.volume();
     ThreadLocalStorage<int64_t> offsets(max_threads);
-    size_t size =
-      compute_output_offsets(offsets, index, pitches, rect, volume, skip_size, max_threads);
+    size_t size = compute_output_offsets(
+      offsets, index, input_pitches, input_rect, input_volume, skip_size, max_threads);
 
     // calculating the shape of the output region for this sub-task
-    Point<DIM> extents;
+    Point<OUT_DIM> extents;
+
     extents[0] = size;
-    for (size_t i = 0; i < DIM - key_dim; i++) {
-      size_t j       = key_dim + i;
-      extents[i + 1] = 1 + rect.hi[j] - rect.lo[j];
-    }
-    for (size_t i = DIM - key_dim + 1; i < DIM; i++) {
-      extents[i] = 1;
+    for (int32_t i = 1; i < OUT_DIM; i++) {
+      size_t j = KEY_DIM + i - 1;
+
+      extents[i] = (input_rect.hi[j] - input_rect.lo[j]) + 1;
     }
 
-    auto out = out_arr.create_output_buffer<OUT_TYPE, DIM>(extents, true);
+    auto out = out_arr.create_output_buffer<OUT_TYPE, OUT_DIM>(extents, true);
+
     if (size > 0)
 #pragma omp parallel
     {
       const int tid   = omp_get_thread_num();
       int64_t out_idx = offsets[tid];
 #pragma omp for schedule(static)
-      for (size_t idx = 0; idx < volume; ++idx) {
-        auto p = pitches.unflatten(idx, rect.lo);
-        if (index[p] == true) {
-          Point<DIM> out_p;
-          out_p[0] = out_idx;
-          for (size_t i = 0; i < DIM - key_dim; i++) {
-            size_t j     = key_dim + i;
-            out_p[i + 1] = p[j];
-          }
-          for (size_t i = DIM - key_dim + 1; i < DIM; i++) {
-            out_p[i] = 0;
-          }
-          fill_out(out[out_p], p, input[p]);
-          if ((idx + 1) % skip_size == 0) {
-            out_idx++;
-          }
-        }
-      }
 
+      for (size_t idx = 0; idx < input_volume; ++idx) {
+        auto p = input_pitches.unflatten(idx, input_rect.lo);
+
+        if (!index[p]) {
+          continue;
+        }
+
+        Point<OUT_DIM> out_p;
+
+        out_p[0] = out_idx;
+        for (int32_t i = 1; i < OUT_DIM; i++) {
+          size_t j = KEY_DIM + i - 1;
+
+          out_p[i] = p[j];
+        }
+        fill_out(out[out_p], p, input[p]);
+
+        out_idx += (idx + 1) % skip_size == 0;
+      }
     }  // end parallel region
   }
 };
