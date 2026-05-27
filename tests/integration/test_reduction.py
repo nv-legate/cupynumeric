@@ -218,6 +218,20 @@ class TestSumPositive(object):
         out_num = getattr(num, op)(arr_num)
         assert allclose(out_np, out_num)
 
+    @pytest.mark.parametrize("dtype", BOOL_INT_DTYPE, ids=to_dtype)
+    @pytest.mark.parametrize("op", ["sum", "prod", "max"])
+    def test_bool_int_dtype_multi_axis(self, dtype, op):
+        size = (5, 5, 5)
+        axis = (0, 2)
+        arr = np.random.randint(10, size=size)
+        if dtype is bool:
+            arr %= 2
+        arr_np = np.array(arr, dtype=dtype)
+        arr_num = num.array(arr_np)
+        out_np = getattr(np, op)(arr_np, axis=axis)
+        out_num = getattr(num, op)(arr_num, axis=axis)
+        assert allclose(out_np, out_num)
+
     @pytest.mark.parametrize("dtype", COMPLEX_TYPE, ids=to_dtype)
     def test_dtype_complex(self, dtype):
         arr = num.random.rand(5, 5) * 10 + num.random.rand(5, 5) * 10 * 1.0j

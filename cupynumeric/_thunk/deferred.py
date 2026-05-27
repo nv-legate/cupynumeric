@@ -4788,10 +4788,15 @@ class DeferredArray:
                 tmp_shape = (
                     tmp_rhs.shape[:axis] + dim + tmp_rhs.shape[(axis + 1) :]
                 )
+                # lhs_array.base.dtype should already be the dtype used by the
+                # legate task to accumulate for this rhs dtype and operation
+                # (e.g. it should already be 'int64' if the rhs dtype is
+                # 'int32' and the operation is 'sum'), so use that dtype for
+                # the temporary
                 tmp_lhs = runtime.create_deferred_thunk(
-                    tmp_shape, rhs_array.base.type
+                    tmp_shape, lhs_array.base.type
                 )
-                fill_value = _UNARY_RED_IDENTITIES[op](rhs_array.dtype)
+                fill_value = _UNARY_RED_IDENTITIES[op](lhs_array.dtype)
                 tmp_lhs.fill(np.array(fill_value, tmp_lhs.dtype))
 
             self._single_axis_unary_reduction(
