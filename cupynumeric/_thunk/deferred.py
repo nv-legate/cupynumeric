@@ -2246,15 +2246,9 @@ class DeferredArray:
             task.add_scalar_arg(origin, ty.int64)
 
         task.add_constraint(broadcast(p_weights))
+        task.add_constraint(min_extents(p_input, tuple(weights.shape)))
 
-        # TODO(dinodeep): need to incorporate minimum tile size for inputs instead of just
-        # checking if the tile is potentially too small
-        tile_too_small = any(
-            input_dim > 1 and input_dim // runtime.num_gpus < weights_dim
-            for input_dim, weights_dim in zip(input.shape, weights.shape)
-        )
-
-        if mode == NdimageConvolveModeCode.WRAP or tile_too_small:
+        if mode == NdimageConvolveModeCode.WRAP:
             # We can't tile across the input with WRAP mode because the boundary
             # elements would need to access inputs from other tiles.
             # This isn't supported, so just broadcast the input.
@@ -2311,15 +2305,11 @@ class DeferredArray:
             task.add_scalar_arg(origin, ty.int64)
 
         task.add_constraint(broadcast(p_weights))
-
-        tile_too_small = any(
-            input_dim > 1 and input_dim // runtime.num_gpus < weights_dim
-            for input_dim, weights_dim in zip(
-                input.shape[1:], weights.shape[1:]
-            )
+        task.add_constraint(
+            min_extents(p_input, (1, 1) + tuple(weights.shape[1:]))
         )
 
-        if mode == NdimageConvolveModeCode.WRAP or tile_too_small:
+        if mode == NdimageConvolveModeCode.WRAP:
             task.add_constraint(broadcast(p_out, p_input, p_halo))
         else:
             # Only need to bloat the spatial dimensions
