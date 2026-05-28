@@ -41,8 +41,8 @@ class TestRandint:
     def test_high(self):
         L1 = num.random.randint(500, 800)
         L2 = np.random.randint(500, 800)
-        assert 500 < L1 < 800
-        assert 500 < L2 < 800
+        assert 500 <= L1 < 800
+        assert 500 <= L2 < 800
 
     @pytest.mark.xfail(
         reason="https://github.com/nv-legate/cunumeric.internal/issues/199"
