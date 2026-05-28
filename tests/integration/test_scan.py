@@ -81,19 +81,14 @@ def _run_tests(op, n0, shape, dt, axis, out0, outtype):
         getattr(np, op)(A, out=C, axis=axis, dtype=outtype)
 
     print("Checking result...")
-    try:
-        if np.allclose(B, C, equal_nan=True):
-            print("PASS!")
-        else:
-            print("FAIL!")
-            print(f"INPUT    : {A}")
-            print(f"CUPYNUMERIC: {B}")
-            print(f"NUMPY    : {C}")
-            assert False
-    except NotImplementedError as e:
-        # cuPyNumeric does not implement this combination of arguments
-        # Skip the test rather than failing
-        pytest.skip(f"{e}")
+    if np.allclose(B.__array__(), C, equal_nan=True):
+        print("PASS!")
+    else:
+        print("FAIL!")
+        print(f"INPUT    : {A}")
+        print(f"CUPYNUMERIC: {B}")
+        print(f"NUMPY    : {C}")
+        assert False
 
 
 ops = ["cumsum", "cumprod", "nancumsum", "nancumprod"]
@@ -212,11 +207,7 @@ def test_nan_scalar_convert(op: str) -> None:
     arr_num = num.array(arr_np)
     out_np = getattr(np, op)(arr_np, dtype=np.float64)
     out_num = getattr(num, op)(arr_num, dtype=np.float64)
-    with pytest.raises(
-        NotImplementedError,
-        match="cuPyNumeric does not support `equal_nan` yet for `array_equal`",
-    ):
-        assert np.array_equal(out_np, out_num, equal_nan=True)
+    assert np.array_equal(out_np, out_num.__array__(), equal_nan=True)
 
 
 class TestScanErrors:
