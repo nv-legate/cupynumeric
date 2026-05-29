@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026-2026 NVIDIA CORPORATION & AFFILIATES.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+reviews:
+  profile: chill
+  poem: false
+  review_details: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_usernames:
+      - "dependabot[bot]"
+      - "renovate[bot]"
+      - "github-actions[bot]"
