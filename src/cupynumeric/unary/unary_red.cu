@@ -83,7 +83,7 @@ struct ThreadBlock {
   }
 
   // Compute a relative coordiate of a given thread
-  __host__ __device__ Point<DIM> point(coord_t tid) const
+  __device__ Point<DIM> point(coord_t tid) const
   {
     Point<DIM> p;
     for (int32_t dim = 0; dim < DIM; ++dim) {
@@ -141,7 +141,7 @@ struct ThreadBlocks {
   }
 
   // De-linearized the linearized block id and thread it into an N-dimensional point
-  __host__ __device__ Point<DIM> point(coord_t bid, coord_t tid, const Point<DIM>& origin) const
+  __device__ Point<DIM> point(coord_t bid, coord_t tid, const Point<DIM>& origin) const
   {
     Point<DIM> p = origin;
     for (int32_t dim : dim_order_) {
@@ -167,7 +167,7 @@ struct ThreadBlocks {
     collapsed_dim_stride_ = max_num_concurrent_planes * block_.extents_[collapsed_dim_];
   }
 
-  __host__ __device__ inline void next_point(Point<DIM>& point) const
+  __device__ inline void next_point(Point<DIM>& point) const
   {
     point[collapsed_dim_] += collapsed_dim_stride_;
   }
