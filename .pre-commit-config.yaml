@@ -1,5 +1,5 @@
 ---
-exclude: 'examples/15_Step_12\.ipynb'
+exclude: '(examples/15_Step_12\.ipynb|\.oms\.sig$)'
 repos:
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
