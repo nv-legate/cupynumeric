@@ -2562,12 +2562,8 @@ class DeferredArray:
             # use the task
             return "task"
 
-        ## now determine if reshapes are required
-        working_dim_count = len(self.shape) + len(indices_tuple)
-        if working_dim_count > LEGATE_MAX_DIM:
-            # using the task would require reshape, conservatively prefer advanced indexing
-            return "index"
-        return "task"
+        ## conservatively default to "index" to avoid out of memory due to broadcast inputs
+        return "index"
 
     @staticmethod
     def _indices_out_of_bounds(indices: DeferredArray, limit: int) -> bool:
