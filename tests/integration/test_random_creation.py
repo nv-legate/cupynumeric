@@ -182,6 +182,15 @@ INT_DTYPES = [np.int64, np.int32, np.int16]
 UINT_DTYPES = [np.uint64, np.uint16, np.uintp]
 
 
+def _randint_population_stats(low: int, high: int) -> tuple[float, float]:
+    span = high - low
+    mean = (low + high - 1) / 2.0
+    # Discrete uniform variance over span consecutive integer values.
+    variance = (span * span - 1) / 12.0
+    stdev = np.sqrt(variance)
+    return mean, stdev
+
+
 @pytest.mark.parametrize("size", ALL_RNG_SIZES, ids=str)
 @pytest.mark.parametrize("low, high", LOW_HIGH, ids=str)
 @pytest.mark.parametrize("dtype", INT_DTYPES, ids=str)
@@ -195,18 +204,19 @@ def test_randint_basic_stats(low, high, size, dtype):
     assert np.max(arr_num) < high
 
 
-@pytest.mark.parametrize("low", [1024, 1025, 12345], ids=str)
+@pytest.mark.parametrize("limit", [1024, 1025, 12345], ids=str)
 @pytest.mark.parametrize("size", LARGE_RNG_SIZES, ids=str)
 @pytest.mark.parametrize("dtype", INT_DTYPES, ids=str)
-def test_randint_low_limit_only(low, size, dtype):
+def test_randint_single_limit_distribution(limit, size, dtype):
     arr_np, arr_num = gen_random_from_both(
-        "randint", low, size=size, dtype=dtype
+        "randint", limit, size=size, dtype=dtype
     )
-    assert arr_np.dtype == arr_np.dtype
+    assert arr_np.dtype == arr_num.dtype
     assert arr_np.shape == arr_num.shape
-    assert_distribution(
-        arr_num, np.mean(arr_np), np.std(arr_np), mean_tol=0.05
-    )
+    assert np.min(arr_num) >= 0
+    assert np.max(arr_num) < limit
+    mean, stdev = _randint_population_stats(0, limit)
+    assert_distribution(arr_num, mean, stdev, mean_tol=0.05)
 
 
 def test_randint_high_limit():
@@ -276,9 +286,8 @@ def test_randint_distribution(low, high, size, dtype):
     arr_np, arr_num = gen_random_from_both(
         "randint", low=low, high=high, size=size, dtype=dtype
     )
-    assert_distribution(
-        arr_num, np.mean(arr_np), np.std(arr_np), mean_tol=0.05
-    )
+    mean, stdev = _randint_population_stats(low, high)
+    assert_distribution(arr_num, mean, stdev, mean_tol=0.05)
 
 
 @pytest.mark.xfail(True, reason="cuPyNumeric raises NotImplementedError")
@@ -298,9 +307,8 @@ def test_random_integers(low, high, size):
         "random_integers", low=low, high=high, size=size
     )
     assert arr_np.shape == arr_num.shape
-    assert_distribution(
-        arr_num, np.mean(arr_np), np.std(arr_np), mean_tol=0.05
-    )
+    mean, stdev = _randint_population_stats(low, high + 1)
+    assert_distribution(arr_num, mean, stdev, mean_tol=0.05)
 
 
 @pytest.mark.parametrize("size", SMALL_RNG_SIZES + LARGE_RNG_SIZES, ids=str)
