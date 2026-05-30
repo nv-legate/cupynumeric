@@ -30,6 +30,7 @@ class CPNProject(Project):
     def custom_files(self) -> list[CustomTest]:
         return [
             CustomTest("examples/cholesky.py"),
+            CustomTest("examples/indexing_routines.py"),
             CustomTest("examples/quantiles.py"),
             CustomTest("examples/solve.py"),
             CustomTest("examples/sort.py"),
@@ -65,6 +66,13 @@ class CPNProject(Project):
             CustomTest("tests/integration/test_cho_solve.py"),
             CustomTest("tests/integration/test_lexsort.py"),
             CustomTest("tests/integration/test_corner_quantiles.py"),
+            CustomTest("tests/integration/test_qr.py"),
+            CustomTest("tests/integration/test_advanced_indexing.py"),
+            CustomTest("tests/integration/test_take.py"),
+            CustomTest("tests/integration/test_take_along_axis.py"),
+            CustomTest("tests/integration/test_put.py"),
+            CustomTest("tests/integration/test_put_along_axis.py"),
+            CustomTest("tests/integration/test_fill_diagonal.py"),
         ]
 
     def stage_env(self, feature: FeatureType) -> EnvDict:
