@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Iterator, Sequence, cast
 
 import legate.core.types as ty
 import numpy as np
-from legate.core import Field, LogicalArray, Scalar
+from legate.core import Scalar
 from legate.core.utils import OrderedSet
 from numpy.exceptions import AxisError
 
@@ -230,12 +230,11 @@ class ndarray:
             deferred_thunk = self._thunk
             # We don't have nullable data for the moment
             # until we support masked arrays
-            dtype = deferred_thunk.base.type
-            array = LogicalArray.from_store(deferred_thunk.base)
             self._legate_data = dict()
-            self._legate_data["version"] = 1
-            field = Field("cuPyNumeric Array", dtype)
-            self._legate_data["data"] = {field: array}
+            self._legate_data["version"] = 2
+            self._legate_data["data"] = {
+                "cuPyNumeric Array": deferred_thunk.base
+            }
         return self._legate_data
 
     def __dlpack__(

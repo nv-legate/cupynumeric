@@ -368,7 +368,7 @@ class TestRuntimeGetNumpyThunk:
         class FakeLegateObj:
             @property
             def __legate_data_interface__(self):  # type: ignore[no-untyped-def]
-                return {"version": 1, "data": {"f0": object(), "f1": object()}}
+                return {"version": 2, "data": {"f0": object(), "f1": object()}}
 
         with pytest.raises(
             ValueError, match=r"Legate data must be array-like"

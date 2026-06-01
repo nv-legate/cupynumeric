@@ -35,15 +35,6 @@ def test_local_task_array_forced_gpu_path_imports_cupy(monkeypatch) -> None:
     assert num.local_task_array(_FakeStore()) is sentinel
 
 
-def test_local_task_array_with_array() -> None:
-    array = runtime.create_array(ty.int64, shape=(10,)).get_physical_array()
-    result = num.local_task_array(array)
-    assert result.shape == (10,)
-    assert result.dtype == np.int64
-    on_cpu = array.data().target not in {StoreTarget.FBMEM, StoreTarget.ZCMEM}
-    assert isinstance(result, np.ndarray) == on_cpu
-
-
 def test_local_task_array_with_store() -> None:
     store = runtime.create_store(ty.int64, shape=(20,)).get_physical_store()
     result = num.local_task_array(store)

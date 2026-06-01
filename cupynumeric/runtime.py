@@ -213,7 +213,7 @@ class Runtime(object):
         # Check to see if this object implements the Legate data interface
         if hasattr(obj, "__legate_data_interface__"):
             legate_data = obj.__legate_data_interface__
-            if legate_data["version"] != 1:
+            if legate_data["version"] != 2:
                 raise NotImplementedError(
                     "Need support for other Legate data interface versions"
                 )
@@ -221,15 +221,10 @@ class Runtime(object):
             if len(data) != 1:
                 raise ValueError("Legate data must be array-like")
             field = next(iter(data))
-            array = data[field]
-            if array.nested or array.nullable:
-                raise NotImplementedError(
-                    "Array must be non-nullable and not nested"
-                )
 
             from ._thunk.deferred import DeferredArray
 
-            return DeferredArray(array.data)
+            return DeferredArray(data[field])
 
         # See if this is a normal numpy array
         # Make sure to convert numpy matrices to numpy arrays here
