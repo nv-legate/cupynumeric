@@ -184,7 +184,7 @@ class TestDefaults:
         assert m.settings.use_nccl_scatter.default is False
 
     def test_all2all_staging_factor(self) -> None:
-        assert m.settings.all2all_staging_factor.default == 2.0
+        assert m.settings.all2all_staging_factor.default == 1.1
 
     def test_warn(self) -> None:
         assert m.settings.warn.default is False

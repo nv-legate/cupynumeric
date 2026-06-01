@@ -1010,6 +1010,12 @@ inline void unpack_recv_into_output(
 // kernels and live in ZCMEM; the other N-sized tables are host-only
 // (NCCL count/offset args) and live in plain std::vector.
 //
+// Because the ZCMEM tables are rewritten in place each round and host
+// stores into ZCMEM are not ordered against in-flight GPU work, the
+// `fill_round_schedule` call that prepares round `R+1` must
+// `cudaStreamSynchronize` first to ensure the previous round's kernels
+// have finished consuming the tables before they are overwritten.
+//
 //   chunk_send_counts[p]        - NCCL send count for the current round,
 //                                 peer p (offset exchange and, after the
 //                                 direction swap, data exchange).
@@ -1078,8 +1084,15 @@ inline void fill_round_schedule(RoundSchedule& schedule,
                                 const unsigned long long* h_send_counts,
                                 const unsigned long long* h_recv_counts,
                                 const unsigned long long* send_offsets_per_rank,
-                                size_t round)
+                                size_t round,
+                                cudaStream_t stream)
 {
+  // Drain the prior round's GPU work before overwriting the reused ZCMEM
+  // tables (`within_round_send_prefix`, `peer_src_offsets`). Host stores to
+  // ZCMEM are not stream-ordered, so without this sync the next round's
+  // host writes could race with the previous round's kernel reads.
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+
   const int num_ranks                = static_cast<int>(schedule.num_ranks);
   const size_t max_elems_per_peer    = schedule.max_elems_per_peer;
   const unsigned long long round_off = round * max_elems_per_peer;
@@ -1222,7 +1235,8 @@ void local_gather_and_exchange(
                         plan.h_send_counts_per_rank,
                         plan.h_receive_counts_per_rank,
                         plan.h_send_offsets_per_rank,
-                        round);
+                        round,
+                        stream);
 
     const auto* round_send_counts = schedule.chunk_send_counts.data();
     const auto* round_recv_counts = schedule.chunk_recv_counts.data();

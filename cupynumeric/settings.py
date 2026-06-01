@@ -346,7 +346,7 @@ class CupynumericRuntimeSettings(Settings):
     all2all_staging_factor: PrioritizedSetting[float] = PrioritizedSetting(
         "all2all_staging_factor",
         "CUPYNUMERIC_ALL2ALL_STAGING_FACTOR",
-        default=2.0,
+        default=1.1,
         convert=convert_float,
         help="""
         Per-buffer staging budget for the NCCL all-to-all gather/scatter
