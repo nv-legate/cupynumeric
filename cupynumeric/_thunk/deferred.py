@@ -1866,6 +1866,8 @@ class DeferredArray:
                 lhs = lhs._convert_future_to_regionfield()
             if lhs.base.transformed:
                 lhs = lhs._copy_store(lhs.base)
+            if lhs.base.has_scalar_storage:
+                lhs = lhs._convert_future_to_regionfield()
 
             if index_array.size != 0:
                 self._perform_scatter(lhs.base, value_store, index_array.base)
