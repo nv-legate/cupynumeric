@@ -250,7 +250,7 @@ void histogramdd_using_thrust(TaskContext& context,
                               Memory::Kind memkind)
 {
   auto num_args     = context.num_inputs();
-  auto points       = context.input(0).data();
+  auto points       = context.input(0);
   auto has_weights  = context.scalar(0).value<bool>();
   auto points_shape = points.shape<2>();
   auto num_points   = points_shape.hi[0] - points_shape.lo[0] + 1;
@@ -260,7 +260,7 @@ void histogramdd_using_thrust(TaskContext& context,
   }
 
   auto num_dims    = points_shape.hi[1] - points_shape.lo[1] + 1;
-  auto hist_store  = context.reduction(0).data();
+  auto hist_store  = context.reduction(0);
   auto hist_rect   = hist_store.shape<1>();
   auto hist        = hist_store.reduce_accessor<SumReduction<output_t>, true, 1>(hist_rect);
   size_t first_bin = has_weights ? 2 : 1;
@@ -303,7 +303,7 @@ void histogramdd_using_thrust(TaskContext& context,
                                     non_empty_bins_array,
                                     non_empty_weights_array);
     } else {
-      auto weights = context.input(1).data();
+      auto weights = context.input(1);
 
       return type_dispatch(weights.code(),
                            HistogrgmDDBinWeights<exe_policy_t>{},

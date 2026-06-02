@@ -60,11 +60,11 @@ class RepartitionLayoutMapper : public legate::mapping::Mapper {
 
     for (auto& input : inputs) {
       mappings.push_back(legate::mapping::StoreMapping::default_mapping(
-        input.data(), options.front(), true /*exact*/, in_ordering));
+        input, options.front(), true /*exact*/, in_ordering));
     }
     for (auto& output : outputs) {
       mappings.push_back(legate::mapping::StoreMapping::default_mapping(
-        output.data(), options.front(), true /*exact*/, out_ordering));
+        output, options.front(), true /*exact*/, out_ordering));
     }
     return mappings;
   }
@@ -215,8 +215,8 @@ template <bool I_ROW_MAJOR, bool O_ROW_MAJOR>
     pc *= 2;
   }
 
-  auto input_acc  = input.data().read_accessor<int32_t, 2>(shape_in);
-  auto output_acc = output.data().write_accessor<int32_t, 2>(shape_out);
+  auto input_acc  = input.read_accessor<int32_t, 2>(shape_in);
+  auto output_acc = output.write_accessor<int32_t, 2>(shape_out);
 
   bool in_row_major  = shape_in.empty() || input_acc.accessor.is_dense_row_major(shape_in);
   bool in_col_major  = shape_in.empty() || input_acc.accessor.is_dense_col_major(shape_in);

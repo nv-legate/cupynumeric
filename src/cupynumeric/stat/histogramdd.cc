@@ -46,11 +46,11 @@ void HistogramDDTask::cpu_variant(TaskContext context)
   auto has_weights = task.scalar(0).value<bool>();
 
   mappings.push_back(mapping::StoreMapping::default_mapping(
-    coords.data(), options.front(), true /*exact*/, mapping::DimOrdering::fortran_order()));
+    coords, options.front(), true /*exact*/, mapping::DimOrdering::fortran_order()));
   if (has_weights) {
     auto weights = task.input(1);
     mappings.push_back(mapping::StoreMapping::default_mapping(
-      weights.data(), options.front(), true /*exact*/, mapping::DimOrdering::fortran_order()));
+      weights, options.front(), true /*exact*/, mapping::DimOrdering::fortran_order()));
   }
   return std::move(mappings);
 }

@@ -41,7 +41,7 @@ std::optional<size_t> histogramdd_using_thrust_allocation_pool_size(const Task& 
   using output_t = HistogramDDTask::output_t;
   using edge_t   = HistogramDDTask::edge_t;
 
-  auto points_shape = task.input(0).data().shape<2>();
+  auto points_shape = task.input(0).shape<2>();
   auto has_weights  = task.scalar(0).value<bool>();
   auto num_points   = points_shape.hi[0] + 1 - points_shape.lo[0];
   auto num_dims     = points_shape.hi[1] + 1 - points_shape.lo[1];
@@ -50,7 +50,7 @@ std::optional<size_t> histogramdd_using_thrust_allocation_pool_size(const Task& 
   size_t num_bins = 1;
 
   for (size_t d = 0; d < num_dims; d++) {
-    auto dim_edges_shape = task.input(d + first_dim).data().shape<1>();
+    auto dim_edges_shape = task.input(d + first_dim).shape<1>();
     auto dim_bins        = dim_edges_shape.hi - dim_edges_shape.lo;  // one more edge than bins
 
     num_bins *= dim_bins;

@@ -21,8 +21,8 @@
 namespace cupynumeric {
 
 struct SelectArgs {
-  legate::PhysicalArray out;
-  std::vector<legate::PhysicalArray> inputs;
+  legate::PhysicalStore out;
+  std::vector<legate::PhysicalStore> inputs;
   const legate::Scalar& default_value;
 };
 

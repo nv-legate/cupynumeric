@@ -38,11 +38,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
     case CUPYNUMERIC_CONVOLVE: {
       std::vector<StoreMapping> mappings;
       auto inputs = task.inputs();
-      mappings.push_back(StoreMapping::default_mapping(inputs[0].data(), options.front()));
-      mappings.push_back(StoreMapping::default_mapping(inputs[1].data(), options.front()));
+      mappings.push_back(StoreMapping::default_mapping(inputs[0], options.front()));
+      mappings.push_back(StoreMapping::default_mapping(inputs[1], options.front()));
       auto& input_mapping = mappings.back();
       for (uint32_t idx = 2; idx < inputs.size(); ++idx) {
-        input_mapping.add_store(inputs[idx].data());
+        input_mapping.add_store(inputs[idx]);
       }
       return mappings;
     }
@@ -50,9 +50,9 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       std::vector<StoreMapping> mappings;
       auto inputs  = task.inputs();
       auto outputs = task.outputs();
-      mappings.push_back(StoreMapping::default_mapping(inputs[0].data(), options.front()));
+      mappings.push_back(StoreMapping::default_mapping(inputs[0], options.front()));
       mappings.push_back(
-        StoreMapping::default_mapping(outputs[0].data(), options.front(), true /*exact*/));
+        StoreMapping::default_mapping(outputs[0], options.front(), true /*exact*/));
       return mappings;
     }
     case CUPYNUMERIC_TRANSPOSE_COPY_2D: {
@@ -60,7 +60,7 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto output = task.output(0);
 
       mappings.push_back(StoreMapping::default_mapping(
-        output.data(), options.front(), true /*exact*/, DimOrdering::fortran_order()));
+        output, options.front(), true /*exact*/, DimOrdering::fortran_order()));
       return mappings;
     }
     case CUPYNUMERIC_HISTOGRAMDD: {
@@ -82,17 +82,15 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
         auto inputA = task.input(1);
         auto inputB = task.input(2);
 
-        mappings.push_back(
-          StoreMapping::default_mapping(inputA.data(), options.front(), true /*exact*/));
+        mappings.push_back(StoreMapping::default_mapping(inputA, options.front(), true /*exact*/));
         mappings.back().policy().redundant = true;
-        mappings.push_back(
-          StoreMapping::default_mapping(inputB.data(), options.front(), true /*exact*/));
+        mappings.push_back(StoreMapping::default_mapping(inputB, options.front(), true /*exact*/));
         mappings.back().policy().redundant = true;
 
         auto outputC = task.output(0);
 
         mappings.push_back(StoreMapping::default_mapping(
-          outputC.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          outputC, options.front(), true /*exact*/, DimOrdering::c_order()));
 
         return mappings;
       } else {
@@ -102,12 +100,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
         auto inputs     = task.inputs();
         auto reductions = task.reductions();
         for (auto& input : inputs) {
-          mappings.push_back(
-            StoreMapping::default_mapping(input.data(), options.front(), true /*exact*/));
+          mappings.push_back(StoreMapping::default_mapping(input, options.front(), true /*exact*/));
         }
         for (auto& reduction : reductions) {
           mappings.push_back(StoreMapping::default_mapping(
-            reduction.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+            reduction, options.front(), true /*exact*/, DimOrdering::c_order()));
         }
         return mappings;
       }
@@ -120,12 +117,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto inputs     = task.inputs();
       auto reductions = task.reductions();
       for (auto& input : inputs) {
-        mappings.push_back(
-          StoreMapping::default_mapping(input.data(), options.front(), true /*exact*/));
+        mappings.push_back(StoreMapping::default_mapping(input, options.front(), true /*exact*/));
       }
       for (auto& reduction : reductions) {
         mappings.push_back(
-          StoreMapping::default_mapping(reduction.data(), options.front(), true /*exact*/));
+          StoreMapping::default_mapping(reduction, options.front(), true /*exact*/));
       }
       return mappings;
     }
@@ -141,11 +137,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto outputs = task.outputs();
       for (auto& input : inputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          input.data(), options.front(), true /*exact*/, DimOrdering::fortran_order()));
+          input, options.front(), true /*exact*/, DimOrdering::fortran_order()));
       }
       for (auto& output : outputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          output.data(), options.front(), true /*exact*/, DimOrdering::fortran_order()));
+          output, options.front(), true /*exact*/, DimOrdering::fortran_order()));
       }
       return mappings;
     }
@@ -170,11 +166,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto outputs = task.outputs();
       for (auto& input : inputs) {
         mappings.push_back(
-          StoreMapping::default_mapping(input.data(), options.front(), true /*exact*/, ordering));
+          StoreMapping::default_mapping(input, options.front(), true /*exact*/, ordering));
       }
       for (auto& output : outputs) {
         mappings.push_back(
-          StoreMapping::default_mapping(output.data(), options.front(), true /*exact*/, ordering));
+          StoreMapping::default_mapping(output, options.front(), true /*exact*/, ordering));
       }
       return mappings;
     }
@@ -197,20 +193,20 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto ordering = DimOrdering::custom_order(dim_order);
 
       mappings.push_back(
-        StoreMapping::default_mapping(input_a.data(), options.front(), true /*exact*/, ordering));
+        StoreMapping::default_mapping(input_a, options.front(), true /*exact*/, ordering));
 
       // eigenvalue computation is optional
       if (task.outputs().size() > 1) {
         auto output_ev = task.output(1);
-        mappings.push_back(StoreMapping::default_mapping(
-          output_ev.data(), options.front(), true /*exact*/, ordering));
+        mappings.push_back(
+          StoreMapping::default_mapping(output_ev, options.front(), true /*exact*/, ordering));
       }
 
       // remove last dimension for eigenvalues
       dim_order.erase(std::next(dim_order.begin()));
       ordering = DimOrdering::custom_order(dim_order);
       mappings.push_back(
-        StoreMapping::default_mapping(output_ew.data(), options.front(), true /*exact*/, ordering));
+        StoreMapping::default_mapping(output_ew, options.front(), true /*exact*/, ordering));
 
       return mappings;
     }
@@ -223,7 +219,7 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       std::vector<StoreMapping> mappings;
       auto input = task.input(0);
       mappings.push_back(StoreMapping::default_mapping(
-        input.data(), options.front(), true /*exact*/, DimOrdering::fortran_order()));
+        input, options.front(), true /*exact*/, DimOrdering::fortran_order()));
       return mappings;
     }
     case CUPYNUMERIC_SEARCHSORTED: {
@@ -233,10 +229,10 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
 
       for (auto& input : inputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          inputs[0].data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          input, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       mappings.push_back(StoreMapping::default_mapping(
-        reduction.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+        reduction, options.front(), true /*exact*/, DimOrdering::c_order()));
       return mappings;
     }
     case CUPYNUMERIC_SORT: {
@@ -245,11 +241,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto outputs = task.outputs();
       for (auto& input : inputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          input.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          input, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       for (auto& output : outputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          output.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          output, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       return mappings;
     }
@@ -259,11 +255,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto outputs = task.outputs();
       for (auto& input : inputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          input.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          input, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       for (auto& output : outputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          output.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          output, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       return mappings;
     }
@@ -273,10 +269,10 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto inputs  = task.inputs();
       auto outputs = task.outputs();
       for (auto& input : inputs) {
-        mappings.push_back(StoreMapping::default_mapping(input.data(), options.front()));
+        mappings.push_back(StoreMapping::default_mapping(input, options.front()));
       }
       for (auto& output : outputs) {
-        mappings.push_back(StoreMapping::default_mapping(output.data(), options.front()));
+        mappings.push_back(StoreMapping::default_mapping(output, options.front()));
       }
       return mappings;
     }
@@ -286,11 +282,11 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto outputs = task.outputs();
       for (auto& input : inputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          input.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          input, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       for (auto& output : outputs) {
         mappings.push_back(StoreMapping::default_mapping(
-          output.data(), options.front(), true /*exact*/, DimOrdering::c_order()));
+          output, options.front(), true /*exact*/, DimOrdering::c_order()));
       }
       return mappings;
     }
@@ -299,12 +295,10 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
       auto inputs  = task.inputs();
       auto outputs = task.outputs();
       for (auto& input : inputs) {
-        mappings.push_back(
-          StoreMapping::default_mapping(input.data(), options.front(), true /*exact*/));
+        mappings.push_back(StoreMapping::default_mapping(input, options.front(), true /*exact*/));
       }
       for (auto& output : outputs) {
-        mappings.push_back(
-          StoreMapping::default_mapping(output.data(), options.front(), true /*exact*/));
+        mappings.push_back(StoreMapping::default_mapping(output, options.front(), true /*exact*/));
       }
       return mappings;
     }

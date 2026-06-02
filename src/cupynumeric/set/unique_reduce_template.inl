@@ -37,7 +37,7 @@ struct UniqueReduceImpl {
 
   template <Type::Code CODE>
   void operator()(legate::PhysicalStore output,
-                  const std::vector<legate::PhysicalArray>& input_arrs,
+                  const std::vector<legate::PhysicalStore>& input_arrs,
                   exe_pol_t exe_pol)
   {
     using VAL = type_of<CODE>;
@@ -55,7 +55,7 @@ struct UniqueReduceImpl {
       size_t strides[1];
       Rect<1> shape     = input_arr.shape<1>();
       size_t volume     = shape.volume();
-      const VAL* in_ptr = input_arr.data().read_accessor<VAL, 1>(shape).ptr(shape, strides);
+      const VAL* in_ptr = input_arr.read_accessor<VAL, 1>(shape).ptr(shape, strides);
       assert(shape.volume() <= 1 || strides[0] == 1);
       thrust::copy(exe_pol, in_ptr, in_ptr + volume, res_ptr + offset);
       offset += volume;

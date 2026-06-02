@@ -49,7 +49,7 @@ struct SelectImpl {
       return;
     }
 
-    auto out = args.out.data().write_accessor<VAL, DIM>(out_rect);
+    auto out = args.out.write_accessor<VAL, DIM>(out_rect);
 
 #if !LEGATE_DEFINED(LEGATE_BOUNDS_CHECKS)
     // Check to see if this is dense or not
@@ -62,14 +62,14 @@ struct SelectImpl {
     std::vector<AccessorRO<bool, DIM>> condlist;
     condlist.reserve(args.inputs.size() / 2);
     for (int32_t i = 0; i < args.inputs.size() / 2; i++) {
-      condlist.push_back(args.inputs[i].data().read_accessor<bool, DIM>(out_rect));
+      condlist.push_back(args.inputs[i].read_accessor<bool, DIM>(out_rect));
       dense = dense && condlist.back().accessor.is_dense_row_major(out_rect);
     }
 
     std::vector<AccessorRO<VAL, DIM>> choicelist;
     choicelist.reserve(args.inputs.size() / 2);
     for (int32_t i = args.inputs.size() / 2; i < args.inputs.size(); i++) {
-      choicelist.push_back(args.inputs[i].data().read_accessor<VAL, DIM>(out_rect));
+      choicelist.push_back(args.inputs[i].read_accessor<VAL, DIM>(out_rect));
       dense = dense && choicelist.back().accessor.is_dense_row_major(out_rect);
     }
 
