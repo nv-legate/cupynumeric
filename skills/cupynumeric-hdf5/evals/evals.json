@@ -83,7 +83,7 @@
         ],
         "expected_script": null,
         "expected_skill": "cupynumeric-hdf5",
-        "ground_truth": "The agent explains that `legate.io.hdf5` imports `h5py` at module load, so the whole module fails to import until h5py is installed. The fix is `conda install -c conda-forge h5py`. It notes h5py is not part of the default cuPyNumeric environment. It does not run the install command itself.",
+        "ground_truth": "The agent explains that `legate.io.hdf5` imports `h5py` at module load, so the whole module fails to import until h5py is installed. The fix is `conda install -c conda-forge h5py`. It notes h5py is not part of the default cuPyNumeric environment.  It does not run the install command itself.",
         "id": "hdf5-006-h5py-prerequisite",
         "question": "On a fresh cuPyNumeric env, `from legate.io.hdf5 import to_file` raises `ModuleNotFoundError: No module named 'h5py'`. cuPyNumeric and legate import fine. What do I need?",
         "should_trigger": true
