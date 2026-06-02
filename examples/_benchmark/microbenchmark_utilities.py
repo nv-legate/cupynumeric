@@ -58,7 +58,7 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
     warmup: int
     include: re.Pattern[str] | None
     exclude: re.Pattern[str] | None
-    verbose: bool
+    verbosity: int
 
     @classmethod
     def add_parser_group(cls, parser: ArgumentParser, name: str) -> Any:
@@ -99,6 +99,12 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             action="store_true",
             help="Print benchmark names as they are being called",
         )
+        group.add_argument(
+            "--debug",
+            dest="__cpn_debug",
+            action="store_true",
+            help="Print debugging information",
+        )
         return group
 
     @classmethod
@@ -111,18 +117,21 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             include = re.compile(vargs["__cpn_include"])
         if vargs.get("__cpn_exclude", None) is not None:
             exclude = re.compile(vargs["__cpn_exclude"])
+        verbosity = 0
+        if bool(vargs["__cpn_verbose"]):
+            verbosity = 1
+        if bool(vargs["__cpn_debug"]):
+            verbosity = 2
         return MicrobenchmarkConfig(
             **super_conf.to_dict(),
             runs=int(vargs["__cpn_runs"]),
             warmup=int(vargs["__cpn_warmup"]),
             include=include,
             exclude=exclude,
-            verbose=bool(vargs["__cpn_verbose"]),
+            verbosity=verbosity,
         )
 
-    def info(self, msg: str) -> None:
-        if not self.verbose:
-            return
+    def _print_msg(self, msg: str, console: Any = None) -> None:
         if self.package == ArrayPackage.LEGATE:
             # import here because legate may patch stdout
             importlib.import_module("legate.core")
@@ -134,12 +143,26 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
         ):
             from rich.console import Console
 
-            console = Console(file=stdout)
-            console.print(msg)
+            if console is not None:
+                assert isinstance(console, Console)
+                console.print(msg)
+            else:
+                console = Console(file=stdout)
+                console.print(msg)
         else:
             print(msg)
 
-    def print_panel(self, lines: list[str], title: str = "") -> None:
+    def info(self, msg: str, console: Any = None) -> None:
+        if self.verbosity >= 1:
+            self._print_msg(msg, console=console)
+
+    def debug(self, msg: str, console: Any = None) -> None:
+        if self.verbosity >= 2:
+            self._print_msg(msg, console=console)
+
+    def print_panel(
+        self, lines: list[str], title: str = "", console: Any = None
+    ) -> None:
         if self.package == ArrayPackage.LEGATE:
             # import here because legate may patch stdout
             importlib.import_module("legate.core")
@@ -152,8 +175,13 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             from rich.console import Console
             from rich.panel import Panel
 
-            console = Console(file=stdout)
-            console.print(
+            rich_console: Console
+            if console is not None:
+                assert isinstance(console, Console)
+                rich_console = console
+            else:
+                rich_console = Console(file=stdout)
+            rich_console.print(
                 Panel.fit(
                     "\n".join(lines),
                     title=f"[bold]{title}[/bold]" if title else None,
@@ -169,11 +197,13 @@ class MicrobenchmarkConfig(BenchmarkHarnessConfig):
             print("=" * 80)
 
     def check_run(self, name: str) -> bool:
+        allowed_include = True
+        allowed_exclude = True
         if self.include is not None:
-            return self.include.search(name) is not None
+            allowed_include = self.include.search(name) is not None
         if self.exclude is not None:
-            return self.exclude.search(name) is None
-        return True
+            allowed_exclude = self.exclude.search(name) is None
+        return allowed_include and allowed_exclude
 
 
 @dataclass(frozen=True)
@@ -203,9 +233,6 @@ def _group_microbenchmark_calls(
 class MicrobenchmarkSuite(BenchmarkHarness):
     """
     Handles common behavior of all microbenchmark suites.
-
-    When adding to the microbenchmarks, Do not subclass directly: use
-    :py:class:`MicrobenchmarkSuite`.
     """
 
     name: str = "microbenchmark_suite_base"
@@ -343,10 +370,13 @@ class MicrobenchmarkSuite(BenchmarkHarness):
         self.run_timed_with_info(get_benchmark_info(f), f, *args, **kwargs)
 
     def info(self, msg: str) -> None:
-        self._config.info(msg)
+        self._config.info(msg, console=self._console)
+
+    def debug(self, msg: str) -> None:
+        self._config.debug(msg, console=self._console)
 
     def print_panel(self, lines: list[str], title: str = "") -> None:
-        self._config.print_panel(lines, title)
+        self._config.print_panel(lines, title, console=self._console)
 
     def print_config(self) -> None:
         pass

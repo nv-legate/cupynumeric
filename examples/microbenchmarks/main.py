@@ -42,7 +42,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Sequence
 
-# Add parent directory to path to import benchmark.py
+# Add parent directory to path to import _benchmark
 # (Relative imports don't work for scripts run directly)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

@@ -87,6 +87,9 @@ class CuPyNumericTimer(Timer):
                 block=(sync_mode == "block")
             )
 
+    def __repr__(self) -> str:
+        return f"CuPyNumericTimer(blocking={self._blocking})"
+
 
 class CuPyTimer(Timer):
     # TODO(tisaac): Add correct annotation when cupy provides stubs
@@ -97,7 +100,7 @@ class CuPyTimer(Timer):
         self._blocking = blocking
 
     def start(self) -> None:
-        from cupy import cuda  # type: ignore[import-untyped]
+        from cupy import cuda  # type: ignore[import-untyped,import-not-found]
 
         self._start_event = cuda.Event()
         self._start_event.record()
@@ -108,7 +111,7 @@ class CuPyTimer(Timer):
             self._start_event.synchronize()
 
     def stop(self) -> float:
-        from cupy import cuda  # type: ignore[import-untyped]
+        from cupy import cuda  # type: ignore[import-untyped,import-not-found]
 
         assert self._start_event is not None, NO_START_ERR_MSG
 
@@ -122,7 +125,7 @@ class CuPyTimer(Timer):
         # all cupy kernels launch on the same stream, so there is no need to
         # enforce any ordering for the 'fence' case
         if sync_mode == "block":
-            from cupy import cuda  # type: ignore[import-untyped]
+            from cupy import cuda  # type: ignore[import-untyped,import-not-found]
 
             # while an event can be created with cuda.Event(block=true), this
             # controls whether the calling CPU thread is blocked with a
@@ -131,6 +134,9 @@ class CuPyTimer(Timer):
             sync_event = cuda.Event()
             sync_event.record()
             sync_event.synchronize()
+
+    def __repr__(self) -> str:
+        return f"CuPyTimer(blocking={self._blocking})"
 
 
 class NumPyTimer(Timer):
@@ -154,6 +160,9 @@ class NumPyTimer(Timer):
 
     def sync(self, _: SyncMode) -> None:
         pass
+
+    def __repr__(self) -> str:
+        return "NumPyTimer"
 
 
 def get_timer(np: ModuleType, *, blocking: bool = False) -> Timer:

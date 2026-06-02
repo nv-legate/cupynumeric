@@ -45,30 +45,40 @@ from .timer import Timer, get_timer
 
 
 class ArrayPackage(StrEnum):
+    """Array-API packages that can be used."""
+
     NUMPY = auto()
     CUPY = auto()
     LEGATE = auto()
 
 
 class CupyAllocator(StrEnum):
+    """What type of allocator cupy should use."""
+
     DEFAULT = auto()
     MANAGED = auto()
     OFF = auto()
 
 
 class RunMode(Enum):
+    """The type of timing to use for a benchmark."""
+
     TIMED_EXTERNAL = auto()
     TIMED_INTERNAL = auto()
     UNTIMED = auto()
 
 
 class SummarizeFlush(StrEnum):
+    """When the summarization statistics should be calculated."""
+
     RUN = auto()
     EXIT = auto()
     NEVER = auto()
 
 
 class TimerMode(StrEnum):
+    """What type of timing should be computed."""
+
     EXECUTION = auto()
     WALL = auto()
 
@@ -357,6 +367,8 @@ class BenchmarkHarness:
 
     metadata: dict[str, Any]
 
+    _console: Any
+
     def __init__(self, arg: BenchmarkHarnessConfig | Namespace) -> None:
         """Initialize a harness.
 
@@ -366,7 +378,7 @@ class BenchmarkHarness:
         .. code-block:: python
 
             from argparse import ArgumentParser
-            from benchmark import BenchmarkHarness
+            from _benchmark import BenchmarkHarness
 
             parser = ArgumentParser()
             BenchmarkHarness.add_parser_group(parser)
@@ -412,7 +424,7 @@ class BenchmarkHarness:
 
                 self.np = numpy
             case ArrayPackage.CUPY:
-                import cupy  # type: ignore[import-untyped]
+                import cupy  # type: ignore[import-untyped,import-not-found]
 
                 self.np = cupy
                 if self._config.cupy_allocator == CupyAllocator.OFF:
@@ -429,6 +441,7 @@ class BenchmarkHarness:
                 self.np = cupynumeric
         self.execution_timer = get_timer(self.np, blocking=False)
         self.wall_timer = get_timer(self.np, blocking=True)
+        self._console = None
 
     @property
     def repeat(self) -> int:
@@ -469,7 +482,6 @@ class BenchmarkHarness:
         self,
         info: BenchmarkInfo,
         f: Callable[..., Any],
-        args: list[Any] | None,
         kwargs: dict[str, Any],
         plan: Iterable[tuple[Any, ...]],
         mode: RunMode,
@@ -481,13 +493,10 @@ class BenchmarkHarness:
             for p, v in sig.parameters.items()
             if v.kind in [v.POSITIONAL_ONLY, v.POSITIONAL_OR_KEYWORD]
         ]
-        if args is not None and len(args) != len(input_columns):
-            raise RuntimeError(
-                f"{benchmark_name}: {len(args)} positional arguments, expected {len(input_columns)}"
-            )
         for i, c in enumerate(input_columns):
             if c in info.input_names:
                 input_columns[i] = info.input_names[c]
+
         output_columns: list[str]
         output_names = info.output_names
         if isinstance(info.output_names, str):
@@ -516,65 +525,84 @@ class BenchmarkHarness:
 
         timer = self.timer
         summarize = self.summarize if mode != RunMode.UNTIMED else None
+
         with bmark as b:
-            for plan_args in plan:
-                times = []
-                for _i in range(repeat):
-                    input_dict = dict(
-                        zip(input_columns, plan_args, strict=True)
-                    )
-                    time: float = 0.0
-                    if mode == RunMode.TIMED_EXTERNAL:
-                        timer.start()
-                    output_vals = f(*plan_args, **kwargs)
-                    if mode == RunMode.TIMED_EXTERNAL:
-                        time = timer.stop()
-                    output_dict: dict[str, Any]
-                    if isinstance(output_names, str):
-                        output_dict = {output_names: output_vals}
-                        if mode == RunMode.TIMED_INTERNAL:
-                            time = float(output_vals)
-                    else:
-                        if output_vals is None:
-                            output_vals = ()
-                        output_dict = dict(
-                            zip(orig_output_columns, output_vals, strict=True)
-                        )
-                        if mode == RunMode.TIMED_INTERNAL:
-                            time = float(output_vals[info.returns_time])
-                    if mode == RunMode.TIMED_EXTERNAL:
-                        output_dict[_TIME] = time
-                    row = {**input_dict, **output_dict}
-                    for k, v in row.items():
-                        if k in info.formats:
-                            row[k] = info.formats[k](v)
-                    b.log(**row)
-                    times.append(time)
-                    # gc to encourage freeing resources between iterations
-                    # for large problems
-                    gc.collect()
-                if summarize is not None:
-                    summarize_dict = input_dict.copy()
-                    for k, v in summarize_dict.items():
-                        if k in info.formats:
-                            summarize_dict[k] = info.formats[k](v)
-                    summarize.write(benchmark_name, summarize_dict, times)
-                # Flush Legate's deferred GPU deallocations between size
-                # iterations.  Without the fence, large arrays from the
-                # previous size may still occupy GPU memory when the next
-                # (larger) size tries to allocate.
-                if self._config.package == ArrayPackage.LEGATE:
-                    try:
-                        from legate.core import get_legate_runtime
+            console = getattr(b, "console", None)
 
-                        get_legate_runtime().issue_execution_fence(block=True)
-                    except Exception as e:
-                        import warnings
-
-                        warnings.warn(
-                            f"issue_execution_fence failed; GPU memory may not be released: {e}",
-                            stacklevel=2,
+            # swap in console
+            self._console, console = console, self._console
+            try:
+                for plan_args in plan:
+                    if len(plan_args) != len(input_columns):
+                        raise RuntimeError(
+                            f"{benchmark_name}: {len(plan_args)} positional arguments, expected {len(input_columns)}"
                         )
+                    times = []
+                    for _i in range(repeat):
+                        input_dict = dict(
+                            zip(input_columns, plan_args, strict=True)
+                        )
+                        time: float = 0.0
+                        if mode == RunMode.TIMED_EXTERNAL:
+                            timer.start()
+                        output_vals = f(*plan_args, **kwargs)
+                        if mode == RunMode.TIMED_EXTERNAL:
+                            time = timer.stop()
+                        output_dict: dict[str, Any]
+                        if isinstance(output_names, str):
+                            output_dict = {output_names: output_vals}
+                            if mode == RunMode.TIMED_INTERNAL:
+                                time = float(output_vals)
+                        else:
+                            if output_vals is None:
+                                output_vals = ()
+                            output_dict = dict(
+                                zip(
+                                    orig_output_columns,
+                                    output_vals,
+                                    strict=True,
+                                )
+                            )
+                            if mode == RunMode.TIMED_INTERNAL:
+                                time = float(output_vals[info.returns_time])
+                        if mode == RunMode.TIMED_EXTERNAL:
+                            output_dict[_TIME] = time
+                        row = {**input_dict, **output_dict}
+                        for k, v in row.items():
+                            if k in info.formats:
+                                row[k] = info.formats[k](v)
+                        b.log(**row)
+                        times.append(time)
+                        # gc to encourage freeing resources between iterations
+                        # for large problems
+                        gc.collect()
+                    if summarize is not None:
+                        summarize_dict = input_dict.copy()
+                        for k, v in summarize_dict.items():
+                            if k in info.formats:
+                                summarize_dict[k] = info.formats[k](v)
+                        summarize.write(benchmark_name, summarize_dict, times)
+                    # Flush Legate's deferred GPU deallocations between size
+                    # iterations.  Without the fence, large arrays from the
+                    # previous size may still occupy GPU memory when the next
+                    # (larger) size tries to allocate.
+                    if self._config.package == ArrayPackage.LEGATE:
+                        try:
+                            from legate.core import get_legate_runtime
+
+                            get_legate_runtime().issue_execution_fence(
+                                block=True
+                            )
+                        except Exception as e:
+                            import warnings
+
+                            warnings.warn(
+                                f"issue_execution_fence failed; GPU memory may not be released: {e}",
+                                stacklevel=2,
+                            )
+            finally:
+                # swap out console
+                self._console, console = console, self._console
         if summarize and self.summarize_flush == SummarizeFlush.RUN:
             summarize.flush(title=benchmark_name)
 
@@ -588,7 +616,7 @@ class BenchmarkHarness:
         """Run a function in the harness on arguments from a generator."""
         if info is None:
             info = get_benchmark_info(f)
-        self._run(info, f, None, kwargs, arg_gen, RunMode.UNTIMED)
+        self._run(info, f, kwargs, arg_gen, RunMode.UNTIMED)
 
     def run_timed_with_generator(
         self,
@@ -601,9 +629,9 @@ class BenchmarkHarness:
         if info is None:
             info = get_benchmark_info(f)
         if info.returns_time >= 0:
-            self._run(info, f, None, kwargs, arg_gen, RunMode.TIMED_INTERNAL)
+            self._run(info, f, kwargs, arg_gen, RunMode.TIMED_INTERNAL)
         else:
-            self._run(info, f, None, kwargs, arg_gen, RunMode.TIMED_EXTERNAL)
+            self._run(info, f, kwargs, arg_gen, RunMode.TIMED_EXTERNAL)
 
     def run_with_info(
         self,
@@ -615,9 +643,7 @@ class BenchmarkHarness:
         """Run a function with ``info`` that overrides benchmark details attached
         to ``f`` by :py:func:`benchmark_info`.
         """
-        self._run(
-            info, f, list(args), kwargs, product_args(args), RunMode.UNTIMED
-        )
+        self.run_with_generator(info, f, product_args(args), **kwargs)
 
     def run_timed_with_info(
         self,
@@ -629,24 +655,9 @@ class BenchmarkHarness:
         """Run and time a function with ``info`` that overrides benchmark
         details attached to ``f`` by :py:func:`benchmark_info`.
         """
-        if info.returns_time >= 0:
-            self._run(
-                info,
-                f,
-                list(args),
-                kwargs,
-                product_args(args),
-                RunMode.TIMED_INTERNAL,
-            )
-        else:
-            self._run(
-                info,
-                f,
-                list(args),
-                kwargs,
-                product_args(args),
-                RunMode.TIMED_EXTERNAL,
-            )
+        return self.run_timed_with_generator(
+            info, f, product_args(args), **kwargs
+        )
 
     def run(self, f: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         """Run a function in the benchmark harness.

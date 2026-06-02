@@ -115,10 +115,8 @@ class Summarize:
         self.data.clear()
 
         def render(o: Any) -> Text | str:
-            if self.use_rich:
-                return self.console.render_str(str(o))
-            else:
-                return str(o)
+            assert self.use_rich
+            return self.console.render_str(str(o))
 
         if len(summaries) == 0:
             return
