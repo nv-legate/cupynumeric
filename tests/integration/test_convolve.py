@@ -23,6 +23,10 @@ from cupynumeric.runtime import runtime
 
 CUDA_TEST = runtime.num_gpus > 0
 MULTI_GPU = runtime.num_gpus > 1
+CPU_SKIP_SPECIAL_SHAPES = pytest.mark.skipif(
+    not CUDA_TEST,
+    reason="GPU convolve coverage stress case is too slow for CPU direct convolution",
+)
 
 SHAPES = [(100,), (10, 10), (10, 10, 10), (32, 2, 32)]
 FILTER_SHAPES = [(5,), (3, 5), (3, 5, 3), (32, 1, 32)]
@@ -59,15 +63,20 @@ LARGE_SHAPES = [
 ]
 
 SPECIAL_SHAPES = [
-    pytest.param((262144,), (16384,)),
-    pytest.param((8, 8, 8), (65, 65, 65)),
-    pytest.param((100, 100, 100), (7, 9, 11)),
+    pytest.param((262144,), (16384,), marks=CPU_SKIP_SPECIAL_SHAPES),
+    pytest.param((8, 8, 8), (65, 65, 65), marks=CPU_SKIP_SPECIAL_SHAPES),
+    pytest.param((100, 100, 100), (7, 9, 11), marks=CPU_SKIP_SPECIAL_SHAPES),
     pytest.param(
         (200, 200, 200),
         (7, 15, 15),
-        marks=pytest.mark.xfail(
-            MULTI_GPU, run=False, reason="test fails on multi-GPU in pipeline"
-        ),
+        marks=[
+            CPU_SKIP_SPECIAL_SHAPES,
+            pytest.mark.xfail(
+                MULTI_GPU,
+                run=False,
+                reason="test fails on multi-GPU in pipeline",
+            ),
+        ],
     ),
 ]
 
