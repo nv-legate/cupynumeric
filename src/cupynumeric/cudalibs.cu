@@ -21,7 +21,11 @@
 #include <realm/cuda/cuda_module.h>
 
 #include <dlfcn.h>
+#include <link.h>
 #include <stdio.h>
+
+#include <cstring>
+#include <string>
 
 using namespace legate;
 
@@ -270,6 +274,65 @@ cufftPlan* cufftPlanCache::get_cufft_plan(const cufftPlanParams& params, cudaStr
   return result;
 }
 
+namespace {
+
+// Return a handle to the libcusolver instance ALREADY resident in this process from the
+// link against cuSOLVER -- i.e. the same library that provides cusolverDnCreate(), and hence
+// the cuSOLVER handle. We must NOT dlopen the unversioned "libcusolver.so": that name can
+// resolve to a DIFFERENT (foreign) libcusolver than the linked one (e.g. /usr/local/cuda/
+// lib64/libcusolver.so when no unversioned symlink sits next to the linked
+// libcusolver.so.<major>, as in conda envs without libcusolver-dev). Calling geev /
+// syevBatched from a different library instance than the handle yields
+// CUSOLVER_STATUS_INTERNAL_ERROR. Binding the already-resident instance makes this robust to
+// a stray toolkit on the loader path.
+[[nodiscard]] void* open_resident_cusolver()
+{
+  // Locate the resident libcusolver by name (any libcusolver.so.<major>, so there is no
+  // per-CUDA-version maintenance) and re-open that exact file with RTLD_NOLOAD, which returns
+  // the already-loaded instance rather than loading a new (possibly foreign) copy.
+  std::string path;
+  dl_iterate_phdr(
+    [](struct dl_phdr_info* info, size_t, void* data) -> int {
+      if (info->dlpi_name == nullptr) {
+        return 0;
+      }
+      const char* base = std::strrchr(info->dlpi_name, '/');
+      base             = (base != nullptr) ? base + 1 : info->dlpi_name;
+      // Match "libcusolver.so" / "libcusolver.so.<N>" but NOT "libcusolverMp.so*".
+      if (std::strncmp(base, "libcusolver.so", sizeof("libcusolver.so") - 1) == 0) {
+        *static_cast<std::string*>(data) = info->dlpi_name;
+        return 1;  // found -> stop iterating
+      }
+      return 0;
+    },
+    &path);
+  if (!path.empty()) {
+    if (void* handle = dlopen(path.c_str(), RTLD_LAZY | RTLD_NOLOAD); handle != nullptr) {
+      return handle;
+    }
+  }
+  // Fallback: known versioned SONAMEs, resident-only (RTLD_NOLOAD). We never dlopen without
+  // RTLD_NOLOAD: loading a fresh (possibly foreign) libcusolver is exactly the failure this
+  // function exists to prevent.
+  for (const char* soname : {"libcusolver.so.12", "libcusolver.so.11"}) {
+    if (void* handle = dlopen(soname, RTLD_LAZY | RTLD_NOLOAD); handle != nullptr) {
+      return handle;
+    }
+  }
+  // No resident libcusolver. The cuSOLVER handle is created from the linked libcusolver before
+  // any extra symbol is needed, so this is unreachable in practice; abort rather than load a new
+  // (possibly foreign) instance.
+  LEGATE_ABORT("No resident libcusolver found; refusing to dlopen a new copy for extra symbols");
+}
+
+}  // namespace
+
+// Bind to the libcusolver already resident in this process (see open_resident_cusolver) and
+// resolve the optional "extra" cuSOLVER entry points that are absent from our compile-time
+// headers: the expert eigensolver cusolverDnXgeev[_bufferSize] and the batched symmetric
+// eigensolver cusolverDnXsyevBatched[_bufferSize]. Each pair is looked up with dlsym; if either
+// symbol of a pair is missing (older cuSOLVER), that feature is disabled -- has_geev /
+// has_syev_batched stays false -- so callers fall back to the supported path.
 CuSolverExtraSymbols::CuSolverExtraSymbols()
   : cusolver_lib(nullptr),
     cusolver_geev_bufferSize(nullptr),
@@ -279,7 +342,7 @@ CuSolverExtraSymbols::CuSolverExtraSymbols()
     cusolver_syev_batched(nullptr),
     has_syev_batched(false)
 {
-  cusolver_lib = dlopen("libcusolver.so", RTLD_LAZY | RTLD_DEEPBIND);
+  cusolver_lib = open_resident_cusolver();
   {
     void* fn1 = dlsym(cusolver_lib, "cusolverDnXgeev_bufferSize");
     if (fn1 == nullptr) {
