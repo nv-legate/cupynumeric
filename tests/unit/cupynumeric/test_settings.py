@@ -39,6 +39,7 @@ _expected_settings = (
     "preload_cudalibs",
     "take_default",
     "test",
+    "ufunc_native",
     "use_nccl_gather",
     "use_nccl_scatter",
     "warn",
@@ -154,6 +155,7 @@ class TestSettings:
         assert (
             m.settings.fallback_stacktrace.convert_type == 'bool ("0" or "1")'
         )
+        assert m.settings.ufunc_native.convert_type == 'bool ("0" or "1")'
         assert m.settings.numpy_compat.convert_type == 'bool ("0" or "1")'
         assert m.settings.all2all_staging_factor.convert_type == "float"
 
@@ -191,6 +193,9 @@ class TestDefaults:
 
     def test_fallback_stacktrace(self) -> None:
         assert m.settings.fallback_stacktrace.default is False
+
+    def test_ufunc_native(self) -> None:
+        assert m.settings.ufunc_native.default is False
 
     def test_numpy_compat(self) -> None:
         assert m.settings.numpy_compat.default is False

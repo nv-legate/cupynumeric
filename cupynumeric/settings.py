@@ -206,6 +206,18 @@ class CupynumericRuntimeSettings(Settings):
         """,
     )
 
+    ufunc_native: EnvOnlySetting[bool] = EnvOnlySetting(
+        "ufunc_native",
+        "CUPYNUMERIC_UFUNC_NATIVE",
+        default=False,
+        convert=convert_bool,
+        help="""
+        Enable the experimental native C++ ufunc dispatch path.
+
+        This is a read-only environment variable setting used by the runtime.
+        """,
+    )
+
     min_gpu_chunk: EnvOnlySetting[int] = EnvOnlySetting(
         "min_gpu_chunk",
         "CUPYNUMERIC_MIN_GPU_CHUNK",
