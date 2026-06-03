@@ -90,6 +90,7 @@ from ._sort import sort_deferred
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from legate.core import LogicalStorePartition
     from typing_extensions import CapsuleType
 
     from .._array.array import ndarray
@@ -2924,28 +2925,38 @@ class DeferredArray:
                         (k_batch_size, tile_shape[1])
                     )
 
-                    manual_task = legate_runtime.create_manual_task(
-                        self.library,
-                        CuPyNumericOpCode.MATMUL,
-                        launch_shape=(*k_color, *color_shape),
-                    )
+                    def run_matmul_for_batch(
+                        tiled_lhs: LogicalStorePartition,
+                        tiled_rhs1: LogicalStorePartition,
+                        tiled_rhs2: LogicalStorePartition,
+                        i: int,
+                    ) -> None:
+                        manual_task = legate_runtime.create_manual_task(
+                            self.library,
+                            CuPyNumericOpCode.MATMUL,
+                            launch_shape=(*color_shape, i + 1),
+                            lower_bounds=(0, 0, i),
+                        )
 
-                    manual_task.add_output(
-                        tiled_lhs,
-                        (dimension(1), dimension(2)),
-                        is_key_partition=True,
-                    )
-                    manual_task.add_input(
-                        tiled_lhs, (dimension(1), dimension(2))
-                    )
-                    manual_task.add_input(
-                        tiled_rhs1, (dimension(1), dimension(0))
-                    )
-                    manual_task.add_input(
-                        tiled_rhs2, (dimension(0), dimension(2))
-                    )
+                        manual_task.add_output(
+                            tiled_lhs, (dimension(0), dimension(1))
+                        )
+                        manual_task.add_input(
+                            tiled_lhs, (dimension(0), dimension(1))
+                        )
+                        manual_task.add_input(
+                            tiled_rhs1, (dimension(0), dimension(2))
+                        )
+                        manual_task.add_input(
+                            tiled_rhs2, (dimension(2), dimension(1))
+                        )
 
-                    manual_task.execute()
+                        manual_task.execute()
+
+                    for i in range(0, k_color[0]):
+                        run_matmul_for_batch(
+                            tiled_lhs, tiled_rhs1, tiled_rhs2, i
+                        )
 
             else:
                 assert False
