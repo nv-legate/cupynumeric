@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Settings &#8212; NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2)</title>
+    <title>Settings &#8212; NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=a827c40d"></script>
+    <script src="../_static/documentation_options.js?v=cf4b58d7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -139,11 +139,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab)</p>
   
 </a></div>
     
@@ -257,11 +257,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+28.g7a26d2f2)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+31.g0dd8b8ab)</p>
   
 </a>
 
@@ -1119,6 +1119,22 @@ flag enables the acceleration of single-precision cuBLAS routines using
 TF32 tensor cores.</p>
 <p>This is a read-only environment variable setting used by the runtime.</p>
 </section>
+<section id="ufunc-native">
+<h2><code class="docutils literal notranslate"><span class="pre">ufunc_native</span></code><a class="headerlink" href="#ufunc-native" title="Link to this heading">#</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd"><strong>Type</strong><span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool (“0” or “1”)</p>
+</dd>
+<dt class="field-even"><strong>Env var</strong><span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">CUPYNUMERIC_UFUNC_NATIVE</span></code></p>
+</dd>
+<dt class="field-odd"><strong>Default</strong><span class="colon">:</span></dt>
+<dd class="field-odd"><p>False</p>
+</dd>
+</dl>
+<p>Enable the experimental native C++ ufunc dispatch path.</p>
+<p>This is a read-only environment variable setting used by the runtime.</p>
+</section>
 <section id="min-gpu-chunk">
 <h2><code class="docutils literal notranslate"><span class="pre">min_gpu_chunk</span></code><a class="headerlink" href="#min-gpu-chunk" title="Link to this heading">#</a></h2>
 <dl class="field-list simple">
@@ -1367,6 +1383,7 @@ throughput. Recommended: <code class="docutils literal notranslate"><span class=
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#numpy-compat"><code class="docutils literal notranslate"><span class="pre">numpy_compat</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fallback-stacktrace"><code class="docutils literal notranslate"><span class="pre">fallback_stacktrace</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fast-math"><code class="docutils literal notranslate"><span class="pre">fast_math</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ufunc-native"><code class="docutils literal notranslate"><span class="pre">ufunc_native</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#min-gpu-chunk"><code class="docutils literal notranslate"><span class="pre">min_gpu_chunk</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#min-cpu-chunk"><code class="docutils literal notranslate"><span class="pre">min_cpu_chunk</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#min-omp-chunk"><code class="docutils literal notranslate"><span class="pre">min_omp_chunk</span></code></a></li>
