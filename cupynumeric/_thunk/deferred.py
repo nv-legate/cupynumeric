@@ -1653,6 +1653,15 @@ class DeferredArray:
         store = legate_runtime.create_store(
             self.base.type, shape=shape, optimize_scalar=False
         )
+
+        # Handles the case where the source is a scalar and the
+        # destination is a regionfield. This is a workaround for
+        # an issue where the data is not propagated to other ranks for a
+        # subsequent multi-rank consumer.
+        if self.base.has_scalar_storage and self.base.size == 1:
+            legate_runtime.issue_fill(store, self.base)
+            return DeferredArray(base=store)
+
         thunk_copy = DeferredArray(base=store)
         thunk_copy.copy(self, deep=True)
         return thunk_copy
