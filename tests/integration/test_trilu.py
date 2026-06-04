@@ -57,7 +57,6 @@ def test_trilu(func, shape, dtype, k):
     _test(func, anp, a, k)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("k", (-2.5, 0.0, 2.5), ids=lambda k: f"(k={k})")
 @pytest.mark.parametrize("func", FUNCTIONS)
 def test_trilu_float_k(func, k):

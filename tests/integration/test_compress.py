@@ -96,7 +96,6 @@ def test_dtype_out2():
     assert np.array_equal(out_np, out_num)
 
 
-@pytest.mark.xfail
 def test_out_parameter():
     a = mk_seq_array(np, (4,))
     b = mk_seq_array(num, (4,))

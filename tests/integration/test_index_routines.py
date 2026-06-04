@@ -246,7 +246,6 @@ class TestChooseErrors:
         with pytest.raises(ValueError, match=msg):
             num.choose(self.a, [])
 
-    @pytest.mark.xfail
     def test_choices_none(self):
         # In Numpy, it raises TypeError
         # In cuPyNumeric, it raises IndexError: tuple index out of range

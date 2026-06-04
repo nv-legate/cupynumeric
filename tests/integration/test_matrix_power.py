@@ -47,19 +47,8 @@ def test_matrix_power(ndim, exp, dtype):
     assert allclose(res_np, res_num)
 
 
-@pytest.mark.parametrize(
-    "exp",
-    (
-        0,
-        1,
-        pytest.param(2, marks=pytest.mark.xfail),
-        pytest.param(3, marks=pytest.mark.xfail),
-    ),
-)
+@pytest.mark.parametrize("exp", (0, 1, 2, 3))
 def test_matrix_power_empty_matrix(exp):
-    # If exp =2 or 3,
-    # In Numpy, pass and returns empty array
-    # In cuPyNumeric, raise AssertionError in _contract
     shape = (0, 0)
     a_np = mk_0to1_array(np, shape)
     a_num = mk_0to1_array(num, shape)

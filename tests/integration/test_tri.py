@@ -79,7 +79,6 @@ class TestTriErrors:
         with pytest.raises(TypeError, match=msg):
             num.tri(None)
 
-    @pytest.mark.xfail
     def test_k_none(self):
         # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer

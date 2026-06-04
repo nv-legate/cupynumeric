@@ -107,7 +107,6 @@ def test_basic_where(size):
         assert np.array_equal(res_np, res_num, equal_nan=True)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("axis", ((-3, -1), (-1, 0), (-2, 2), (0, 2)))
 def test_axis_tuple(axis):
     # In Numpy, it pass

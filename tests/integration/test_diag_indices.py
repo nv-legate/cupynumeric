@@ -43,7 +43,6 @@ def test_diag_indices(n, ndim):
 
 
 class TestDiagIndicesErrors:
-    @pytest.mark.xfail
     @pytest.mark.parametrize("n", [-10.5, -1])
     def test_negative_n_DIVERGENCE(self, n):
         # np.diag_indices(-10.5) returns empty 2-D array, dtype=float64

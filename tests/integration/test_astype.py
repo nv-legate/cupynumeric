@@ -108,7 +108,6 @@ def test_complex(src_dtype, dst_dtype):
     assert np.array_equal(out_num, out_np)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("src_dtype", ("F", "D"), ids=to_dtype)
 def test_complex_negative(src_dtype):
     complex_input = [

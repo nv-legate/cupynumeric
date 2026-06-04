@@ -277,7 +277,6 @@ class TestSumPositive(object):
             num.sum(arr_num, out=out_num, axis=axis)
             assert allclose(out_np, out_num)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("size", SIZES, ids=str)
     def test_out_axis_dtype(self, size):
         arr = np.random.random(size) * 10

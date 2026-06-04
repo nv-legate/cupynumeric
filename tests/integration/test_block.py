@@ -174,7 +174,6 @@ class TestBlockErrors:
         with pytest.raises(ValueError):
             num.block([a, b])
 
-    @pytest.mark.xfail
     def test_mismatched_shape_3(self):
         a = np.array([[0, 0]])
         b = np.eye(2)

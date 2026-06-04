@@ -402,7 +402,6 @@ class TestXFail:
     This class is to test negative cases
     """
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("func_name", ("nanmin", "nanmax"))
     @pytest.mark.parametrize("ndim", NDIMS)
     @pytest.mark.parametrize("disallowed_dtype", (np.complex64, np.complex128))
@@ -419,7 +418,6 @@ class TestXFail:
         with pytest.raises(expected_exp, match=msg):
             func_num(in_num)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("func_name", ("nanmin", "nanmax"))
     def test_disallowed_dtype_nan_min_max(self, func_name):
         ndim = 1
@@ -437,7 +435,6 @@ class TestXFail:
         with pytest.raises(expected_exp):
             func_num(in_num)
 
-    @pytest.mark.xfail
     def test_disallowed_dtype_nanprod(self):
         ndim = 1
         shape = (3,) * ndim

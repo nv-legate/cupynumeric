@@ -86,7 +86,6 @@ class TestTriluIndicesErrors:
         with pytest.raises(TypeError, match=msg):
             num.tril_indices(None)
 
-    @pytest.mark.xfail
     def test_k_none(self):
         # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer
@@ -156,7 +155,6 @@ class TestTriluIndicesFromErrors:
         with pytest.raises(expected_exc):
             getattr(num, func)(None)
 
-    @pytest.mark.xfail
     def test_k_none(self):
         # In cuPyNumeric, it raises struct.error,
         # msg is required argument is not an integer

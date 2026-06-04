@@ -66,6 +66,8 @@ def reseed_and_gen_random(
     func: str, seed: Any, *args: Any, **kwargs: Any
 ) -> tuple[Any, Any]:
     """Reseeed singleton rng and generate random in NumPy and cuPyNumeric."""
+    np.random.seed(seed)
+    num.random.seed(seed)
     return gen_random_from_both(func, *args, **kwargs)
 
 
@@ -361,7 +363,6 @@ class TestRandomErrors:
         [(-100, ValueError), (12.0, TypeError), ("abc", TypeError)],
         ids=lambda x: f" {str(getattr(x, 'expected_exception', x))} ",
     )
-    @pytest.mark.xfail(reason="NumPy raises exceptions, cuPyNumeric pass")
     def test_invalid_seed(self, seed, expected_exc):
         self.assert_exc_from_both("seed", expected_exc, seed)
         # -100: NumPy raises ValueError: Seed must be between 0 and 2**32 - 1

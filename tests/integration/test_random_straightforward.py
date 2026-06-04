@@ -365,9 +365,6 @@ def test_beta_sizes(t, func, args, size):
     assert a_np.shape == a_num.shape
 
 
-@pytest.mark.xfail(
-    reason="cuPyNumeric returns singleton array; NumPy returns scalar"
-)
 @pytest.mark.parametrize("t", BITGENERATOR_ARGS, ids=str)
 @pytest.mark.parametrize("func, args", FUNC_ARGS, ids=str)
 def test_beta_size_none(t, func, args):

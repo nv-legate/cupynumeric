@@ -91,7 +91,6 @@ def test_axis(func_name, ndim, keepdims, initial):
         assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("axes", ((-3, -1), (-1, 0), (-2, 2), (0, 2)))
 @pytest.mark.parametrize("keepdims", [True, False])
 @pytest.mark.parametrize("func_name", FUNCS)
@@ -212,7 +211,6 @@ def test_out_with_dtype(func_name, keepdims, out_dt):
         assert np.array_equal(res_np, res_num)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("func_name", FUNCS)
 def test_where(func_name):
     # In Numpy, it pass

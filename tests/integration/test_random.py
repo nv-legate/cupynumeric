@@ -25,26 +25,17 @@ class TestRand:
         assert L1.dtype.kind == "f"
         assert L1.ndim == 0
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     @pytest.mark.parametrize("size", (0, 1, 3))
     def test_rand(self, size: int) -> None:
         L1 = num.random.rand(size)
         L2 = np.random.rand(size)
         assert L1.ndim == L2.ndim == 1
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     def test_rand_2d(self) -> None:
         L1 = num.random.rand(3, 3)
         L2 = np.random.rand(3, 3)
         assert L1.ndim == L2.ndim == 2
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     def test_float(self) -> None:
         msg = r"expected a sequence of integers or a single integer"
         with pytest.raises(TypeError, match=msg):
@@ -53,9 +44,6 @@ class TestRand:
         with pytest.raises(TypeError, match=msg):
             np.random.rand(1.5)
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     def test_negative_value(self) -> None:
         msg = r"Extent must be a positive number"
         with pytest.raises(ValueError, match=msg):
@@ -81,9 +69,6 @@ class TestRandn:
         assert L1.dtype.kind == "f"
         assert L1.ndim == 0
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     @pytest.mark.parametrize("size", (0, 1, 3))
     def test_randn(self, size: int) -> None:
         L1 = num.random.randn(size)
@@ -98,9 +83,6 @@ class TestRandn:
         L2 = np.random.randn(3, 3)
         assert L1.ndim == L2.ndim == 2
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     def test_float(self) -> None:
         msg = r"expected a sequence of integers or a single integer"
         with pytest.raises(TypeError, match=msg):
@@ -133,9 +115,6 @@ class TestRandom:
         assert L1.dtype.kind == "f"
         assert L1.ndim == 1
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     @pytest.mark.parametrize("size", (0, 1, 3))
     def test_random(self, size: int) -> None:
         L1 = num.random.random(size)
@@ -169,9 +148,6 @@ class TestRandom:
 
 
 class TestRandomSeed:
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     def test_none(self) -> None:
         num.random.seed()
         L1 = num.random.randn(3, 3)
@@ -179,9 +155,6 @@ class TestRandomSeed:
         L2 = np.random.randn(3, 3)
         assert L1.ndim == L2.ndim
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     @pytest.mark.parametrize("seed", (None, 1, 100, 20000))
     def test_seed(self, seed: int | None) -> None:
         num.random.seed(seed)

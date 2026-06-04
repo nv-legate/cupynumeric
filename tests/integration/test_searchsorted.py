@@ -70,7 +70,6 @@ class TestSearchSortedErrors(object):
             # cuNemeric raises AttributeError: 'NoneType' object
             # has no attribute 'searchsorted'
 
-    @pytest.mark.xfail
     def test_val_none(self):
         arr = [2, 3, 10, 9]
         expected_exc = TypeError

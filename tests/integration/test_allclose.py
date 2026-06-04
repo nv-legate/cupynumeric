@@ -256,7 +256,6 @@ def test_empty_array(a: list[list[float]], b: list[list[float]]) -> None:
 SCALAR_BROADCASTING = ((1e10, [1.00001e10]), (1e10, [[1.00001e10]]))
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(("a", "b"), SCALAR_BROADCASTING)
 def test_scalar_broadcasting(
     a: float | list[float], b: float | list[float]

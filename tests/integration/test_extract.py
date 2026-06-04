@@ -88,7 +88,6 @@ def test_negative_condition(con):
         num.extract(con, a)
 
 
-@pytest.mark.xfail
 def test_complex_condition():
     # when condition is complex type a+bj,
     # if a==0, cuPyNumeric take it as 0, while Numpy take it as 1
