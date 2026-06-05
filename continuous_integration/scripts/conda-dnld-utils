@@ -3,7 +3,7 @@
 set -x
 
 generate_legate_version() {
-    legate_json_version="$(jq -r '.packages.legate.version' ${REPO_DIR}/cmake/versions.json)";
+    legate_json_version="$(jq -r '.packages.legate.conda_version // .packages.legate.version' ${REPO_DIR}/cmake/versions.json)";
     legate_SHA="$(jq -r '.packages.legate.git_tag' ${REPO_DIR}/cmake/versions.json)";
     legate_hash="g${legate_SHA:0:8}"
     export LEGATE_VERSION="${legate_json_version}*"
