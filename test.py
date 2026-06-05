@@ -70,9 +70,12 @@ class CPNProject(Project):
             CustomTest("tests/integration/test_advanced_indexing.py"),
             CustomTest("tests/integration/test_take.py"),
             CustomTest("tests/integration/test_take_along_axis.py"),
+            CustomTest("tests/integration/test_pad.py"),
             CustomTest("tests/integration/test_put.py"),
             CustomTest("tests/integration/test_put_along_axis.py"),
             CustomTest("tests/integration/test_fill_diagonal.py"),
+            CustomTest("tests/integration/test_inv.py"),
+            CustomTest("tests/integration/test_median.py"),
         ]
 
     def stage_env(self, feature: FeatureType) -> EnvDict:
