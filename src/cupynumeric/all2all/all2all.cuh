@@ -472,7 +472,15 @@ static __global__ void pack_indices_by_rank_warp(const int* target_ranks,
     return;
   }
 
-  const int r          = target_ranks[idx];
+  // Skip points that matched no source rect (target_ranks left at the -1
+  // memset sentinel). `compute_histogram` already drops them, so offsets
+  // exclude these slots.
+  const int r = target_ranks[idx];
+
+  if (r < 0) {
+    return;
+  }
+
   const unsigned amask = __activemask();
   const unsigned peers = __match_any_sync(amask, r);
   const int lane       = threadIdx.x & (warpSize - 1);

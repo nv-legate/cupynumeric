@@ -79,8 +79,15 @@ void global_all2all_scatter(TaskContext& context,
   auto partition_rect_infos =
     build_linearized_rect_infos<DIM_partition>(partition_rects, num_ranks, stream);
 
-  auto request_positions = create_buffer<uint64_t>(num_requests, Memory::Kind::GPU_FB_MEM);
-  auto target_ranks      = create_buffer<int>(num_requests, Memory::Kind::GPU_FB_MEM);
+  // Legion's DeferredBuffer asserts when the typed view is reconstructed
+  // from the underlying UntypedDeferredBuffer for a zero-element rect
+  // (field_size == sizeof(FT).
+  // Bump the per-request allocation to at least one element so the cast is
+  // always valid. All downstream consumers are already guarded by the real
+  // `local_index_count`, so the extra slot is never read.
+  const size_t request_alloc_count = std::max<size_t>(num_requests, 1);
+  auto request_positions = create_buffer<uint64_t>(request_alloc_count, Memory::Kind::GPU_FB_MEM);
+  auto target_ranks      = create_buffer<int>(request_alloc_count, Memory::Kind::GPU_FB_MEM);
   auto send_offsets_per_rank =
     create_buffer<unsigned long long>(num_ranks, Memory::Kind::Z_COPY_MEM);
 
