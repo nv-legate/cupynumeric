@@ -25,6 +25,7 @@ import cupynumeric as num
 from cupynumeric.config import CuPyNumericOpCode
 from cupynumeric.runtime import runtime as cpn_runtime
 from cupynumeric.settings import settings
+from legate.core import types as ty
 
 
 def _get_store(arr):
@@ -55,6 +56,8 @@ def _run_all2all_stores(source_store, index_store, output_store):
     task.add_output(output_store)
     task.add_alignment(output_store, index_store)
     task.add_nccl_communicator()
+    task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
+    task.add_scalar_arg(index_store.volume, ty.uint64)
     task.execute()
 
     legate_runtime.issue_execution_fence(block=True)
@@ -92,11 +95,19 @@ _gpu_only = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(autouse=True)
-def enable_nccl_gather():
+# Sweep staging factors: 0.01 / 0.05 force max-K (1 element per round),
+# 0.5 / 1.0 / 1.5 exercise the K-round chunked path, 2.0 is the default.
+@pytest.fixture(
+    autouse=True,
+    params=[0.01, 0.05, 0.5, 1.0, 1.5, 2.0],
+    ids=lambda f: f"factor={f}",
+)
+def enable_nccl_gather(request):
     settings.use_nccl_gather = True
-    yield
+    settings.all2all_staging_factor = request.param
+    yield request.param
     settings.use_nccl_gather.unset_value()
+    settings.all2all_staging_factor.unset_value()
 
 
 @_gpu_only
@@ -170,6 +181,24 @@ class TestAll2All1DSource:
         indices = num.array(idx_np, dtype=num.int64)
         output = num.empty(2048, dtype=num.float32)
         _run_all2all_1d(source, indices, output)
+        expected = np.arange(n, dtype=np.float32)[idx_np]
+        np.testing.assert_array_equal(np.asarray(output), expected)
+
+    def test_fan_out_from_rank_0(self) -> None:
+        # Every output position requests a value from the very start of the
+        # source array. Stresses the asymmetric case where one peer (rank 0)
+        # fans data out to every requester while every other peer sends 0
+        # and receives 0 in the offset/data exchanges.
+        n = 1024
+        per_rank_count = 8
+        idx_np = np.tile(np.arange(per_rank_count, dtype=np.int64), 64)
+
+        source = num.arange(n, dtype=num.float32)
+        indices = num.array(idx_np, dtype=num.int64)
+        output = num.empty(idx_np.size, dtype=num.float32)
+
+        _run_all2all_1d(source, indices, output)
+
         expected = np.arange(n, dtype=np.float32)[idx_np]
         np.testing.assert_array_equal(np.asarray(output), expected)
 
