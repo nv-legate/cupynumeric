@@ -336,22 +336,24 @@ class CupynumericRuntimeSettings(Settings):
     use_nccl_gather: PrioritizedSetting[bool] = PrioritizedSetting(
         "use_nccl_gather",
         "CUPYNUMERIC_USE_NCCL_GATHER",
-        default=False,
+        default=True,
         convert=convert_bool,
         help="""
         Enable distributed gather via the NCCL all-to-all implementation when
-        multiple GPUs are available.
+        multiple GPUs are available. Set to ``0`` to fall back to the
+        Legion-based gather path.
         """,
     )
 
     use_nccl_scatter: PrioritizedSetting[bool] = PrioritizedSetting(
         "use_nccl_scatter",
         "CUPYNUMERIC_USE_NCCL_SCATTER",
-        default=False,
+        default=True,
         convert=convert_bool,
         help="""
         Enable distributed scatter via the NCCL all-to-all implementation when
-        multiple GPUs are available.
+        multiple GPUs are available. Set to ``0`` to fall back to the
+        Legion-based scatter path.
         """,
     )
 

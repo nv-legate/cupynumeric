@@ -180,10 +180,10 @@ class TestDefaults:
         assert m.settings.preload_cudalibs.default is False
 
     def test_use_nccl_gather(self) -> None:
-        assert m.settings.use_nccl_gather.default is False
+        assert m.settings.use_nccl_gather.default is True
 
     def test_use_nccl_scatter(self) -> None:
-        assert m.settings.use_nccl_scatter.default is False
+        assert m.settings.use_nccl_scatter.default is True
 
     def test_all2all_staging_factor(self) -> None:
         assert m.settings.all2all_staging_factor.default == 1.1
