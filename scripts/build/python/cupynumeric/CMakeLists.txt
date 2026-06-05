@@ -41,6 +41,7 @@ add_subdirectory(../../../.. cupynumeric-all)
 
 if(APPLE)
   set(rpaths "@loader_path/../../legate/lib64")
+  set(ufunc_rpaths "@loader_path/../../lib64" ${rpaths})
 else()
   set(rpaths
     "$ORIGIN/../../legate/lib64"
@@ -48,9 +49,15 @@ else()
     "$ORIGIN/../../nvidia/nccl/lib"
     "$ORIGIN/../../nvidia/cu13/lib"
   )
+  set(ufunc_rpaths "$ORIGIN/../../lib64" ${rpaths})
 endif()
 set_property(
   TARGET cupynumeric
   PROPERTY INSTALL_RPATH ${rpaths}
   APPEND
+)
+set_property(
+  TARGET cupynumeric_ufunc_ext
+  APPEND
+  PROPERTY INSTALL_RPATH ${ufunc_rpaths}
 )

@@ -44,6 +44,45 @@ class TestUfuncKindAndRepr:
         assert isinstance(r, str)
 
 
+class TestUfuncNativeBridgeGuardrail:
+    def test_public_ufuncs_do_not_use_native_array_bridge(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_native_handle(self: num.ndarray) -> object:
+            pytest.fail("public ufunc dispatch used the native array bridge")
+
+        def fail_from_native_handle(handle: object) -> num.ndarray:
+            pytest.fail("public ufunc dispatch wrapped a native array handle")
+
+        monkeypatch.setattr(
+            num.ndarray, "_native_array_handle", fail_native_handle
+        )
+        monkeypatch.setattr(
+            num.ndarray,
+            "_from_native_array_handle",
+            staticmethod(fail_from_native_handle),
+        )
+
+        x_np = np.array([1, 2, 3], dtype=np.int32)
+        y_np = np.array([4, 5, 6], dtype=np.int32)
+        x = num.array(x_np)
+        y = num.array(y_np)
+        out = num.empty_like(x)
+
+        neg = num.negative(x)
+        add = num.add(x, y)
+        add_out = num.add(x, y, out=out)
+        reduced = num.add.reduce(x)
+
+        assert np.array_equal(np.asarray(neg), np.negative(x_np))
+        assert np.array_equal(np.asarray(add), np.add(x_np, y_np))
+        assert add_out is out
+        assert np.array_equal(np.asarray(out), np.add(x_np, y_np))
+        assert np.array_equal(
+            np.asarray(reduced), np.asarray(np.add.reduce(x_np))
+        )
+
+
 class TestUfuncPrepareOperandsErrors:
     def test_bad_out_type(self) -> None:
         a_np = np.array([1, 2, 3], dtype=np.int32)

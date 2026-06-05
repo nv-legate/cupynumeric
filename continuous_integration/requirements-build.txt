@@ -4,3 +4,4 @@ ninja
 scikit-build-core[pyproject]>=0.10.0
 setuptools_scm
 cython
+nanobind>=2.0.0

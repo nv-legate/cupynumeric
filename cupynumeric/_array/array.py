@@ -15,14 +15,16 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Callable
 from functools import reduce
+from importlib import import_module
 from math import prod as builtin_prod
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Iterator, Sequence, cast
 
 import legate.core.types as ty
 import numpy as np
-from legate.core import Scalar
+from legate.core import LogicalStore, Scalar
 from legate.core.utils import OrderedSet
 from numpy.exceptions import AxisError
 
@@ -93,6 +95,20 @@ if TYPE_CHECKING:
 
 from math import prod
 
+_NativeArrayHandleFactory = Callable[[int, bool], Any]
+_native_array_handle_factory: _NativeArrayHandleFactory | None
+try:
+    _native_array_handle_factory = cast(
+        _NativeArrayHandleFactory,
+        getattr(
+            import_module("cupynumeric._lib.ufunc"), "_from_store_raw_handle"
+        ),
+    )
+except ModuleNotFoundError as ex:
+    if ex.name != "cupynumeric._lib.ufunc":
+        raise
+    _native_array_handle_factory = None
+
 
 def _warn_and_convert(array: ndarray, dtype: np.dtype[Any]) -> ndarray:
     if array.dtype != dtype:
@@ -144,6 +160,16 @@ class ndarray:
         array: ndarray = object.__new__(ndarray)
         array._init_from_thunk(thunk, writeable=writeable)
         return array
+
+    @staticmethod
+    def _from_native_array_handle(handle: Any) -> ndarray:
+        from .._thunk.deferred import DeferredArray
+
+        store = LogicalStore.__new__(LogicalStore)
+        handle.copy_store_to_raw_handle(store.raw_handle)
+        return ndarray._from_thunk(
+            DeferredArray(store), writeable=handle.writeable()
+        )
 
     @staticmethod
     def _from_buffer(
@@ -222,6 +248,15 @@ class ndarray:
         core_dtype = to_core_type(np.dtype(dtype))
         thunk = runtime.create_deferred_thunk(shape_tuple, core_dtype)
         self._init_from_thunk(thunk, writeable=writeable)
+
+    def _native_array_handle(self) -> Any:
+        if _native_array_handle_factory is None:
+            raise RuntimeError(
+                "cuPyNumeric native ufunc extension is not available"
+            )
+        return _native_array_handle_factory(
+            self._thunk.base.raw_handle, self._writeable
+        )
 
     # Support for the Legate data interface
     @property

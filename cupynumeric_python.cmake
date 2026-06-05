@@ -55,6 +55,36 @@ add_library(cupynumeric_python INTERFACE)
 add_library(cupynumeric::cupynumeric_python ALIAS cupynumeric_python)
 target_link_libraries(cupynumeric_python INTERFACE legate::legate)
 
+find_package(
+  Python
+  REQUIRED
+  COMPONENTS Interpreter Development)
+
+execute_process(
+  COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+  OUTPUT_VARIABLE nanobind_ROOT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  COMMAND_ERROR_IS_FATAL ANY)
+
+find_package(nanobind CONFIG REQUIRED)
+
+nanobind_add_module(cupynumeric_ufunc_ext
+  src/cupynumeric/ufunc/native_array_handle.cc
+  src/cupynumeric/bindings/ufunc_module.cc)
+
+target_include_directories(cupynumeric_ufunc_ext
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+target_link_libraries(cupynumeric_ufunc_ext
+  PRIVATE cupynumeric::cupynumeric)
+
+set_target_properties(cupynumeric_ufunc_ext
+  PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/cupynumeric/_lib"
+    OUTPUT_NAME "ufunc")
+
 # ############################################################################
 # - conda environment --------------------------------------------------------
 
@@ -78,6 +108,9 @@ rapids_cmake_install_lib_dir(lib_dir)
 install(TARGETS cupynumeric_python
         DESTINATION ${lib_dir}
         EXPORT cupynumeric-python-exports)
+
+install(TARGETS cupynumeric_ufunc_ext
+        LIBRARY DESTINATION cupynumeric/_lib)
 
 ##############################################################################
 # - install export -----------------------------------------------------------

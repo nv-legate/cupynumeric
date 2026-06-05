@@ -152,6 +152,7 @@ requirements:
   host:
     - python
     - scikit-build
+    - nanobind >=2.0.0
     # Versions after v0.3.23 conflict with Realm's OpenMP runtime
     # see https://github.com/nv-legate/cupynumeric.internal/issues/342
     - openblas {{ openblas_version }} =*openmp*

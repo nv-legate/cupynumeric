@@ -19,6 +19,7 @@ requires = [
     "setuptools",
     "scikit-build>=0.13.1",
     "cmake>=3.30.4",
+    "nanobind>=2.0.0",
 ]
 
 [tool.pytest.ini_options]

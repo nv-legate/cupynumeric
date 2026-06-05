@@ -18,6 +18,7 @@ requires = [
     "scikit-build-core",
     "cython>=3.0.1",
     "rich",
+    "nanobind>=2.0.0",
 ]
 build-backend = "scikit_build_core.build"
 
