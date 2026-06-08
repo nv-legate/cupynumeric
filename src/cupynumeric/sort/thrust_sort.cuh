@@ -55,7 +55,7 @@ void thrust_local_sort(const VAL* values_in,
   if (indices_in != indices_out) {
     // not in-place --> need a copy
     CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
-      indices_out, values_in, sizeof(int64_t) * volume, cudaMemcpyDeviceToDevice, stream));
+      indices_out, indices_in, sizeof(int64_t) * volume, cudaMemcpyDeviceToDevice, stream));
   }
 
   if (indices_out == nullptr) {
