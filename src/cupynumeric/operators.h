@@ -33,11 +33,21 @@ NDArray array(std::vector<uint64_t> shape, const legate::Type& type);
 
 NDArray abs(NDArray input);
 
+NDArray exp(NDArray input);
+
+NDArray sqrt(NDArray input);
+
+NDArray log(NDArray input);
+
 NDArray add(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
+
+NDArray subtract(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
 
 NDArray multiply(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
 
 NDArray divide(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
+
+NDArray greater(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out = std::nullopt);
 
 NDArray dot(NDArray a, NDArray b);
 

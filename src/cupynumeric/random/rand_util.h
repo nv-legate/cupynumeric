@@ -84,7 +84,7 @@ struct RandomGenerator<RandGenCode::NORMAL, CODE> {
       l = 0xfff8000000000000ull;
       memcpy(&t, &l, sizeof(double)); /* INDEFINITE */
       if (fa == 1.0) {
-        t = a * exp(1000.0); /* Infinity */
+        t = a * ::exp(1000.0); /* Infinity */
       }
     } else if (fa >= 0.9375) {
       /* Based on: J.M. Blair, C.A. Edwards, J.H. Johnson: Rational Chebyshev
@@ -92,7 +92,7 @@ struct RandomGenerator<RandGenCode::NORMAL, CODE> {
          Computation, Vol. 30, No. 136 (Oct. 1976), pp. 827-830. Table 59
        */
       t = log1p(-fa);
-      t = 1.0 / sqrt(-t);
+      t = 1.0 / ::sqrt(-t);
       p = 2.7834010353747001060e-3;
       p = p * t + 8.6030097526280260580e-1;
       p = p * t + 2.1371214997265515515e+0;

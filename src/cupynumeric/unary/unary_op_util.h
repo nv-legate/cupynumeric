@@ -579,7 +579,7 @@ struct UnaryOp<UnaryOpCode::EXP, CODE> {
   {
     if constexpr (std::is_same_v<T, legate::Half>) {
 #if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
-      return legate::Half{exp(static_cast<float>(x))};
+      return legate::Half{::exp(static_cast<float>(x))};
 #else
       return hexp(x);
 #endif
@@ -821,7 +821,7 @@ struct UnaryOp<UnaryOpCode::LOG, CODE> {
   {
     if constexpr (std::is_same_v<T, legate::Half>) {
 #if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
-      return legate::Half{log(static_cast<float>(x))};
+      return legate::Half{::log(static_cast<float>(x))};
 #else
       return hlog(x);
 #endif
@@ -1281,7 +1281,7 @@ struct UnaryOp<UnaryOpCode::SQRT, CODE> {
   {
     if constexpr (std::is_same_v<T, legate::Half>) {
 #if !LEGATE_DEFINED(CUPYNUMERIC_HAVE_HALF_INTRINSICS)
-      return legate::Half{sqrt(static_cast<float>(x))};
+      return legate::Half{::sqrt(static_cast<float>(x))};
 #else
       return hsqrt(x);
 #endif

@@ -55,11 +55,16 @@ class NDArray {
   NDArray operator+(const NDArray& other) const;
   NDArray operator+(const legate::Scalar& other) const;
   NDArray& operator+=(const NDArray& other);
+  NDArray operator-(const NDArray& other) const;
+  NDArray operator-(const legate::Scalar& other) const;
+  NDArray& operator-=(const NDArray& other);
   NDArray operator*(const NDArray& other) const;
   NDArray operator*(const legate::Scalar& other) const;
   NDArray operator/(const NDArray& other) const;
   NDArray operator/(const legate::Scalar& other) const;
   NDArray& operator*=(const NDArray& other);
+  NDArray operator>(const NDArray& other) const;
+  NDArray operator>(const legate::Scalar& other) const;
   NDArray operator[](std::initializer_list<slice> slices) const;
   operator bool() const;
 

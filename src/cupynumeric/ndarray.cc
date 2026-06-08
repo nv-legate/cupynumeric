@@ -176,6 +176,21 @@ NDArray& NDArray::operator+=(const NDArray& other)
   return *this;
 }
 
+NDArray NDArray::operator-(const NDArray& other) const { return subtract(*this, other); }
+
+NDArray NDArray::operator-(const legate::Scalar& other) const
+{
+  auto runtime = CuPyNumericRuntime::get_runtime();
+  auto scalar  = runtime->create_scalar_store(other);
+  return operator-(NDArray(std::move(scalar)));
+}
+
+NDArray& NDArray::operator-=(const NDArray& other)
+{
+  subtract(*this, other, *this);
+  return *this;
+}
+
 NDArray NDArray::operator*(const NDArray& other) const { return multiply(*this, other); }
 
 NDArray NDArray::operator*(const legate::Scalar& other) const
@@ -198,6 +213,15 @@ NDArray NDArray::operator/(const legate::Scalar& other) const
   auto runtime = CuPyNumericRuntime::get_runtime();
   auto scalar  = runtime->create_scalar_store(other);
   return operator/(NDArray(std::move(scalar)));
+}
+
+NDArray NDArray::operator>(const NDArray& other) const { return greater(*this, other); }
+
+NDArray NDArray::operator>(const legate::Scalar& other) const
+{
+  auto runtime = CuPyNumericRuntime::get_runtime();
+  auto scalar  = runtime->create_scalar_store(other);
+  return operator>(NDArray(std::move(scalar)));
 }
 
 NDArray NDArray::operator[](std::initializer_list<slice> slices) const

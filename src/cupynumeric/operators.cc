@@ -58,10 +58,11 @@ NDArray array(std::vector<uint64_t> shape, const legate::Type& type)
 
 NDArray unary_op(UnaryOpCode op_code,
                  NDArray input,
-                 const std::vector<legate::Scalar>& extra_args = {})
+                 const std::vector<legate::Scalar>& extra_args = {},
+                 const std::optional<legate::Type>& out_dtype  = std::nullopt)
 {
   auto runtime = CuPyNumericRuntime::get_runtime();
-  auto out     = runtime->create_array(input.shape(), input.type());
+  auto out     = runtime->create_array(input.shape(), out_dtype.value_or(input.type()));
   out.unary_op(static_cast<int32_t>(op_code), std::move(input), extra_args);
   return out;
 }
@@ -74,12 +75,18 @@ NDArray unary_reduction(UnaryRedCode op_code, NDArray input)
   return out;
 }
 
-NDArray binary_op(BinaryOpCode op_code, NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
+NDArray binary_op(BinaryOpCode op_code,
+                  NDArray rhs1,
+                  NDArray rhs2,
+                  std::optional<NDArray> out,
+                  const std::optional<legate::Type>& out_dtype = std::nullopt)
 {
+  assert(!out.has_value() || !out_dtype.has_value() || out.value().type() == out_dtype.value());
+
   auto runtime = CuPyNumericRuntime::get_runtime();
   if (!out.has_value()) {
     auto out_shape = broadcast_shapes({rhs1, rhs2});
-    out            = runtime->create_array(out_shape, rhs1.type());
+    out            = runtime->create_array(out_shape, out_dtype.value_or(rhs1.type()));
   }
   out->binary_op(static_cast<int32_t>(op_code), std::move(rhs1), std::move(rhs2));
   return out.value();
@@ -87,9 +94,60 @@ NDArray binary_op(BinaryOpCode op_code, NDArray rhs1, NDArray rhs2, std::optiona
 
 NDArray abs(NDArray input) { return unary_op(UnaryOpCode::ABSOLUTE, std::move(input)); }
 
+namespace {
+
+bool is_float_complex_type_(const legate::Type& type)
+{
+  return type == legate::float16() || type == legate::float32() || type == legate::float64() ||
+         type == legate::complex64() || type == legate::complex128();
+}
+
+}  // namespace
+
+NDArray exp(NDArray input)
+{
+  auto in_type = input.type();
+  if (!is_float_complex_type_(in_type)) {
+    throw std::invalid_argument("Input to exp must be a float or complex type");
+  }
+
+  return unary_op(UnaryOpCode::EXP, std::move(input), {}, in_type);
+}
+
+NDArray sqrt(NDArray input)
+{
+  auto in_type = input.type();
+  if (!is_float_complex_type_(in_type)) {
+    throw std::invalid_argument("Input to sqrt must be a float or complex type");
+  }
+
+  return unary_op(UnaryOpCode::SQRT, std::move(input), {}, in_type);
+}
+
+NDArray log(NDArray input)
+{
+  auto in_type = input.type();
+  if (!is_float_complex_type_(in_type)) {
+    throw std::invalid_argument("Input to log must be a float or complex type");
+  }
+
+  return unary_op(UnaryOpCode::LOG, std::move(input), {}, in_type);
+}
+
 NDArray add(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
 {
   return binary_op(BinaryOpCode::ADD, std::move(rhs1), std::move(rhs2), std::move(out));
+}
+
+NDArray subtract(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
+{
+  return binary_op(BinaryOpCode::SUBTRACT, std::move(rhs1), std::move(rhs2), std::move(out));
+}
+
+NDArray greater(NDArray rhs1, NDArray rhs2, std::optional<NDArray> out)
+{
+  return binary_op(
+    BinaryOpCode::GREATER, std::move(rhs1), std::move(rhs2), std::move(out), legate::bool_());
 }
 
 NDArray angle(NDArray input, bool deg)
