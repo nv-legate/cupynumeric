@@ -35,6 +35,12 @@ std::vector<StoreMapping> CuPyNumericMapper::store_mappings(
   const auto task_id = static_cast<CuPyNumericOpCode>(task.task_id());
 
   switch (task_id) {
+    case CUPYNUMERIC_NDIMAGE_FOURIER_GAUSSIAN: {
+      std::vector<StoreMapping> mappings;
+      auto inputs = task.inputs();
+      mappings.push_back(StoreMapping::default_mapping(inputs[0], options.front()));
+      return mappings;
+    }
     case CUPYNUMERIC_CONVOLVE: {
       std::vector<StoreMapping> mappings;
       auto inputs = task.inputs();
@@ -482,6 +488,7 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
         }
       }
     }
+    case CUPYNUMERIC_NDIMAGE_FOURIER_GAUSSIAN:
     case CUPYNUMERIC_CONVOLVE: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         return 0;

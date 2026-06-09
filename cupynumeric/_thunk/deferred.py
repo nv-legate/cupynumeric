@@ -5381,3 +5381,23 @@ class DeferredArray:
         legate_runtime.prefetch_bloated_instances(
             self.base, low_offsets, high_offsets, False
         )
+
+    def ndimage_fourier_gaussian(
+        self, src: DeferredArray, sigmas: Sequence[float], n: int, axis: int
+    ) -> None:
+        src = src._copy_if_partially_overlapping(self)
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.NDIMAGE_FOURIER_GAUSSIAN
+        )
+
+        p_out = task.add_output(self.base)
+        p_in = task.add_input(src.base)
+
+        task.add_scalar_arg(n, ty.int64)
+        task.add_scalar_arg(axis, ty.int32)
+        task.add_scalar_arg(tuple(src.shape), (ty.int64,))
+        task.add_scalar_arg(tuple(sigmas), (ty.float64,))
+
+        task.add_constraint(align(p_out, p_in))
+        task.execute()

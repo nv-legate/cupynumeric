@@ -152,6 +152,7 @@ def test_CuPyNumericOpCode() -> None:
         "MP_QR",
         "MP_SOLVE",
         "NDIMAGE_CONVOLVE",
+        "NDIMAGE_FOURIER_GAUSSIAN",
         "NONZERO",
         "PACKBITS",
         "PAD",

@@ -1,4 +1,4 @@
-# Copyright 2026 NVIDIA Corporation
+# Copyright 2024 NVIDIA Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
 
-from ._array.array import ndarray
-from ._array.util import add_boilerplate, check_writeable
-from .config import NdimageConvolveModeCode
+from .._array.util import add_boilerplate, check_writeable
+from ..lib.array_utils import normalize_axis_index
+from .._module import ndarray
+
+from typing import cast, Sequence, TYPE_CHECKING, Any
+from ..config import NdimageConvolveModeCode
+
+import numpy as np
 
 if TYPE_CHECKING:
-    from .types import NdimageConvolveMode
+    from ..types import NdimageConvolveMode
 
 _MODE_MAP: dict[str, NdimageConvolveModeCode] = {
     "reflect": NdimageConvolveModeCode.REFLECT,
@@ -271,4 +275,107 @@ def batched_convolve(
         input._thunk, weights._thunk, _MODE_MAP[mode], cval, origins
     )
 
+    return output
+
+
+def _normalize_fourier_gaussian_sigmas(
+    sigma: float | Sequence[float], ndim: int
+) -> tuple[float, ...]:
+    if np.ndim(sigma) == 0:
+        return (float(cast(float, sigma)),) * ndim
+
+    sigma_seq = cast(Sequence[float], sigma)
+    sigmas = tuple(float(s) for s in sigma_seq)
+
+    if len(sigmas) != ndim:
+        raise RuntimeError(
+            "sequence argument must have length equal to input rank"
+        )
+
+    return sigmas
+
+
+@add_boilerplate("input", "output")
+def fourier_gaussian(
+    input: ndarray,
+    sigma: float | Sequence[float],
+    n: int = -1,
+    axis: int = -1,
+    output: ndarray | None = None,
+) -> ndarray:
+    """
+    Multidimensional Gaussian fourier filter.
+
+    The input array is multiplied by the Fourier transform of a Gaussian
+    kernel. The input is expected to already be in the frequency domain, such
+    as the result of an FFT.
+
+    Parameters
+    ----------
+    input : array_like
+        Input array in the Fourier domain.
+    sigma : scalar or sequence of scalars
+        Standard deviation for Gaussian kernel. A scalar value applies the
+        same standard deviation to every axis. A sequence must contain one
+        value per input dimension.
+    n : int, optional
+        If nonnegative, ``input`` is treated as the result of a real FFT along
+        ``axis``, and ``n`` is the original real-domain length before the FFT.
+        If negative, ``input`` is treated as the result of a complex FFT.
+        Default is -1.
+    axis : int, optional
+        Axis of the real transform when ``n`` is nonnegative. Default is -1.
+    output : ndarray, optional
+        Destination for the result. If provided, it must be writable and have
+        the same shape and dtype as ``input``. If ``None``, a new array with the
+        same shape and dtype as ``input`` is returned.
+
+    Returns
+    -------
+    ndarray
+        The filtered Fourier-domain array. This is ``output`` when an output
+        array is provided; otherwise it is a newly allocated array.
+
+    Availability
+    ------------
+    Single GPU, Multi GPU
+
+    See Also
+    --------
+    scipy.ndimage.fourier_gaussian
+    """
+    if input.ndim == 0:
+        raise RuntimeError("input must have rank > 0")
+
+    if not (
+        np.issubdtype(input.dtype, np.floating)
+        or np.issubdtype(input.dtype, np.complexfloating)
+    ):
+        raise RuntimeError(f"input dtype {input.dtype} not supported.")
+
+    axis = normalize_axis_index(axis, input.ndim)
+    sigmas = _normalize_fourier_gaussian_sigmas(sigma, input.ndim)
+
+    if output is None:
+        output = ndarray._from_inputs(shape=input.shape, dtype=input.dtype)
+    else:
+        check_writeable(output)
+        if not (
+            np.issubdtype(output.dtype, np.floating)
+            or np.issubdtype(output.dtype, np.complexfloating)
+        ):
+            raise RuntimeError(f"output dtype {output.dtype} not supported.")
+
+        if output.shape != input.shape:
+            raise ValueError(
+                f"output shape of {output.shape} does not match input shape {input.shape}"
+            )
+        if output.dtype != input.dtype:
+            raise TypeError(
+                f"output dtype {output.dtype} does not match input dtype {input.dtype}"
+            )
+
+    output._thunk.ndimage_fourier_gaussian(
+        input._thunk, sigmas, int(n), int(axis)
+    )
     return output
