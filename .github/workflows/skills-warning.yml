@@ -1,0 +1,50 @@
+---
+name: Skills Warning
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+    paths:
+      - 'skills/**'
+
+jobs:
+  skills-warning:
+    runs-on: linux-amd64-cpu4
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Extract PR Number from copy-pr-bot branch
+        id: parse_pr
+        run: |
+          # github.ref_name will look like "pull-request/123"
+          if [[ "${{ github.ref_name }}" =~ ^pull-request/([0-9]+)$ ]]; then
+            echo "pr_number=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+            echo "Found copy-pr-bot tracking branch for PR #${BASH_REMATCH[1]}"
+          else
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "Not a copy-pr-bot tracking branch."
+          fi
+      - uses: step-security/add-pr-comment@v2
+        if: steps.parse_pr.outputs.pr_number != ''
+        with:
+          issue: ${{ steps.parse_pr.outputs.pr_number }}
+          message: |
+            **Warning about changing skills via a PR**
+
+            1) The PR editing a skill must be opened on a branch of cupynumeric.internal directly (not on a fork).
+            2) When everything is ready and approved, someone with admin access (ping manopapad) must comment /nvskills-ci.
+
+            If the signing succeeds:
+
+            * A signature will be generated, and committed by the nvskill-ci bot.
+            * Run /ok to test so our CI will run.
+            * If the CI succeeds, merge the PR with no further changes.
+            * If the CI fails, go back to (2).
+
+            If the signing fails:
+
+            * Go to the failing job.
+            * Find the pipeline ID from the summary.
+            * Find the logs by looking up that pipeline ID in the internal nvcarps-ci CI output.
+            * Fix the issue and go back to (2).
