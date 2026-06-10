@@ -25,7 +25,7 @@ jobs:
             echo "pr_number=" >> $GITHUB_OUTPUT
             echo "Not a copy-pr-bot tracking branch."
           fi
-      - uses: step-security/add-pr-comment@v2
+      - uses: step-security/add-pr-comment@v3
         if: steps.parse_pr.outputs.pr_number != ''
         with:
           issue: ${{ steps.parse_pr.outputs.pr_number }}
