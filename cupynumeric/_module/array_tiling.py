@@ -621,10 +621,6 @@ def _set_wrap_both(
     filled_hi = original_center_hi + (pad_width[axis][1] - right_pad)
     filled_length = filled_hi - filled_lo + 1
 
-    # Calculate how much we can wrap in this iteration
-    if filled_length == 0:
-        # Can't wrap from empty center
-        return 0, 0
     left_chunk = min(left_pad, filled_length)
     right_chunk = min(right_pad, filled_length)
 
@@ -1044,8 +1040,6 @@ def pad(
         elif mode in {"reflect", "symmetric"}:
             allowed_kwargs = {"reflect_type"}
         elif mode == "wrap":
-            allowed_kwargs = set()
-        else:
             allowed_kwargs = set()
 
         unsupported_kwargs = set(kwargs) - allowed_kwargs
