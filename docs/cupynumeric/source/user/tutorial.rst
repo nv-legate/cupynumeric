@@ -51,7 +51,7 @@ Other options
 -------------
 
 cuPyNumeric also works on HPC clusters, e.g. the large `Perlmutter`_
-supercomputerlocated at the National Energy Research Scientific Computing
+supercomputer located at the National Energy Research Scientific Computing
 Center (`NERSC`_).
 
 Basic Linux installation
@@ -115,7 +115,7 @@ terminal:
 HPC cluster installation
 ========================
 
-Installing on HPC clusters such as Perlmutter requries extra steps to build
+Installing on HPC clusters such as Perlmutter requires extra steps to build
 wrappers for system MPI and GASNet libraries. See the Legate documentation for
 `GASNet-based Installation`_ for full details.
 
@@ -123,7 +123,7 @@ Running cuPyNumeric code
 ========================
 
 We will start by demonstrating with a simple dot-product example. Create a
-new file file ``main.py`` containing the following code:
+new file ``main.py`` containing the following code:
 
 .. code-block:: python
 
@@ -206,7 +206,7 @@ Examples
 Matrix multiplication
 ---------------------
 
-Matrix multiplication is a basic operation where to two matrices are combined
+Matrix multiplication is a basic operation where two matrices are combined
 to produce a new matrix. The new matrix has elements that were computed as
 the sum of the products of the corresponding rows of the first matrix and the
 columns of the second matrix. When scaling matrix multiplication, multiple
@@ -516,7 +516,7 @@ Black-Scholes
 -------------
 
 The `Black-Scholes model`_ is a mathematical model developed by economists
-Fisher Black, Myron Scholes, and Rober Merton in the early 1970s. The model
+Fisher Black, Myron Scholes, and Robert Merton in the early 1970s. The model
 is used to calculate the theoretical price of stock options.
 
 Given the following inputs
@@ -553,7 +553,7 @@ Where:
     \end{eqnarray}
 
 and :math:`N(x)` is the cumulative distribution function of the standard
-normal distribuation
+normal distribution
 
 The illustration below demonstrates how the Black-Scholes model might be
 used to compute call and put option prices for 10,000 options distributed
@@ -639,7 +639,7 @@ This results in the call option price:
 
     C = 50 \cdot 0.6368 - 50e^{-0.05} \cdot 0.5596 \approx \boldsymbol{5.22}\ .
 
-This answer is the price of a call option. A similar computatation yields
+This answer is the price of a call option. A similar computation yields
 the price for a put option.
 
 Running on CPU
@@ -714,9 +714,9 @@ Jacobi stencil
 The Jacobi stencil is a method used to solve systems of linear or partial
 differential equations. The technique works by repeatedly taking the averages
 of the neighboring points to update the value at each grid location. This
-method is often used along slide problems like heat diffusion.
+method is often used alongside problems like heat diffusion.
 
-The forumula for the stencil computation is given by:
+The formula for the stencil computation is given by:
 
 .. math::
 
@@ -997,7 +997,7 @@ This should result in an image similar to this:
 Resource allocation
 ===================
 
-As previously mentioned, cuPyNumeric is build on top of Legate. Legate is what
+As previously mentioned, cuPyNumeric is built on top of Legate. Legate is what
 will be utilized to execute your programs. By default Legate will query the
 available hardware on the current system, and reserve for its use all CPU
 cores, all GPUs and most of the available memory. You can disable this
@@ -1147,4 +1147,4 @@ For more best practices, refer to cuPyNumeric
 .. _NERSC: https://www.nersc.gov/
 .. _Perlmutter: https://www.nersc.gov/systems/perlmutter/
 .. _PyPI: https://pypi.org/project/nvidia-cupynumeric
-.. _Running Legate Programs: https://docs.nvidia.com/legate/latest/usage.html
+.. _Running Legate Programs: https://docs.nvidia.com/legate/latest/manual/usage/index.html

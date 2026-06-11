@@ -180,7 +180,7 @@ logical_xor = create_binary_ufunc(
 )
 
 logical_not = create_unary_ufunc(
-    "Compute bit-wise inversion, or bit-wise NOT, element-wise.",
+    "Compute the truth value of NOT x element-wise.",
     "logical_not",
     UnaryOpCode.LOGICAL_NOT,
     (

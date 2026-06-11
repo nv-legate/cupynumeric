@@ -256,7 +256,7 @@ def cumprod(
     NumPy with floating point and complex types. For example, when boundary
     values such as inf occur they may not propagate as expected. Consider the
     float32 array ``[3e+37, 1, 100, 0.01]``. NumPy's cumprod will return a
-    result ofc``[3e+37, 3e+37, inf, inf]``. However, cuPyNumeric might
+    result of ``[3e+37, 3e+37, inf, inf]``. However, cuPyNumeric might
     internally partition the array such that partition 0 has ``[3e+37, 1]``
     and partition 1 has ``[100, 0.01]``, returning the result
     ``[3e+37, 3e+37, inf, 3e+37]``.
@@ -877,14 +877,14 @@ def nansum(
 ) -> ndarray:
     """
     Return the sum of array elements over a given axis treating
-    Not a Numbers (NaNs) as ones.
+    Not a Numbers (NaNs) as zero.
 
     Zero is returned for slices that are all-NaN or empty.
 
     Parameters
     ----------
     a : array_like
-        Array containing numbers whose product is desired. If a is not
+        Array containing numbers whose sum is desired. If a is not
         an array, a conversion is attempted.
 
     axis : None or int or tuple[int], optional

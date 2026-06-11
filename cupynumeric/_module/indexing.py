@@ -206,7 +206,7 @@ def mask_indices(
         `k` is an optional argument to the function.
     k : scalar
         An optional argument which is passed through to `mask_func`. Functions
-        like :func:`cupynumeric.triu`, :func:`cupynumeric,tril`
+        like :func:`cupynumeric.triu`, :func:`cupynumeric.tril`
         take a second argument that is interpreted as an offset.
 
     Returns
@@ -683,7 +683,7 @@ def take_along_axis(a: ndarray, indices: ndarray, axis: int | None) -> ndarray:
     -------
     out: ndarray (Ni..., J, Nk...)
         The indexed result. It is going to be a view to `arr` for most cases,
-        except the case when `axis=Null` and `arr.ndim>1`.
+        except the case when `axis=None` and `arr.ndim>1`.
 
     See Also
     --------
@@ -771,7 +771,7 @@ def put_along_axis(
         Destination array.
     indices : ndarray (Ni..., J, Nk...)
         Indices to change along each 1d slice of `arr`. This must match the
-        dimension of arr, but dimensions in Ni and Nj may be 1 to broadcast
+        dimension of arr, but dimensions in Ni and Nk may be 1 to broadcast
         against `arr`.
     values : array_like (Ni..., J, Nk...)
         values to insert at those indices. Its shape and dimension are

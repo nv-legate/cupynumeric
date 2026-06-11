@@ -143,7 +143,7 @@ def asarray(a: Any, dtype: np.dtype[Any] | None = None) -> ndarray:
 
     Notes
     ------
-    The input array will be copied it is a view of another NumPy ndarray or
+    The input array will be copied if it is a view of another NumPy ndarray or
     if its datatype and the requested datatype are different.
 
     See Also

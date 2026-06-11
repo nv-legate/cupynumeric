@@ -1,4 +1,4 @@
-Trying Numpy code without changes
+Trying NumPy code without changes
 =================================
 
 The ``lgpatch`` script (in the same location as the ``legate`` executable) can
@@ -13,7 +13,7 @@ patch:
     lgpatch <program> -patch numpy
 
 For example, here is a small ``test.py`` program that imports and uses various
-``numpy`` funtions:
+``numpy`` functions:
 
 .. code-block:: python
 

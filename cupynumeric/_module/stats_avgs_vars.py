@@ -86,7 +86,7 @@ def average(
         ``float64`` if `a` is integral. Otherwise, if `weights` is not None and
         `a` is non-integral, the result type will be the type of lowest
         precision capable of representing values of both `a` and `weights`. If
-        `a` happens to be integral, the previous rules still applies but the
+        `a` happens to be integral, the previous rules still apply but the
         result dtype will at least be ``float64``.
 
     Raises
