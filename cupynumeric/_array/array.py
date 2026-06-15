@@ -1966,7 +1966,7 @@ class ndarray:
         subok: bool = True,
         copy: bool = False,
     ) -> ndarray:
-        """a.astype(dtype, order='C', casting='unsafe', subok=True, copy=True)
+        """a.astype(dtype, order='C', casting='unsafe', subok=True, copy=False)
 
         Copy of the array, cast to a specified type.
 
@@ -1981,7 +1981,7 @@ class ndarray:
             means 'F' order if all the arrays are Fortran contiguous,
             'C' order otherwise, and 'K' means as close to the
             order the array elements appear in memory as possible.
-            Default is 'K'.
+            Default is 'C'.
 
         casting : ``{'no', 'equiv', 'safe', 'same_kind', 'unsafe'}``, optional
             Controls what kind of data casting may occur. Defaults to 'unsafe'
@@ -2000,7 +2000,7 @@ class ndarray:
             array.
 
         copy : bool, optional
-            By default, astype does not returns a newly allocated array. If
+            By default, astype does not return a newly allocated array. If
             this is set to True, a copy is made and returned, instead of the
             input array.
 
