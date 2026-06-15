@@ -101,7 +101,7 @@ following (with the desired CUDA version):
 
 .. code-block:: sh
 
-   $ CONDA_OVERRIDE_CUDA="12.2" conda install -c conda-forge -c legate cupynumeric
+   $ CONDA_OVERRIDE_CUDA="12.9" conda install -c conda-forge -c legate cupynumeric
 
 
 Building from source

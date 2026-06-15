@@ -364,7 +364,7 @@ This produces output like the following when run on Perlmutter:
     Problem size: 70000
     Matrix multiplication took 11680.5460 ms
 
-Now let's use **8 gpus (2 node)** to solve a bigger problem, the problem
+Now let's use **8 GPUs (2 nodes)** to solve a bigger problem, the problem
 size this time around will be **100,000**:
 
 .. code-block:: sh
@@ -1058,7 +1058,7 @@ using the array-based functions.
 
 .. code-block:: python
 
-    # NOT recommended: Performaing large-scale computation using lists
+    # NOT recommended: Performing large-scale computation using lists
     # and other native Python data structures
     x = [1, 2, 3]
     y = []

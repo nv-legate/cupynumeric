@@ -44,7 +44,7 @@ The code runs a function that replaces the contents of the
 output array with the contents of the input array. cuPyNumeric arrays,
 like ``in_arr`` and ``out_arr`` are similar to NumPy arrays but are
 backed by Legate stores for parallel execution across CPUs and GPUs.
-When these arrays are passed into the ``foo_in_out`` task, they are
+When these arrays are passed into the ``simple_in_out`` task, they are
 automatically converted into Legate-compatible objects such as
 ``InputStore`` or ``OutputStore``, depending on how they are used in the task.
 In Legate, arguments representing a portion of a logical store or array must be
@@ -325,7 +325,7 @@ Running on CPU and GPU
 -----------------------
 
 In order to run the program, use the legate launcher, and include any
-flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
+flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
@@ -469,7 +469,7 @@ Running on CPU and GPU
 ----------------------
 
 In order to run the program, use the legate launcher, and include any
-flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
+flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
@@ -615,7 +615,7 @@ Running on CPU and GPU
 ----------------------
 
 In order to run the program, use the legate launcher, and include any
-flags necessary like ``--cpu``, ``--gpu``, and more. If you want to run
+flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
