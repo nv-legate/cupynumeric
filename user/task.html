@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Extend cuPyNumeric with Legate-tasks &#8212; NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56)</title>
+    <title>Extend cuPyNumeric with Legate-tasks &#8212; NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3)</title>
   
   
   
@@ -28,8 +28,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
@@ -37,14 +37,14 @@
     <link rel="stylesheet" type="text/css" href="../_static/params.css" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
 
 
-    <script src="../_static/documentation_options.js?v=4a828b2a"></script>
+    <script src="../_static/documentation_options.js?v=ae2d576d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user/task';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.18.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.19.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://docs.nvidia.com/cupynumeric/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = '26.07';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -141,11 +141,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3)</p>
   
 </a></div>
     
@@ -259,11 +259,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+47.gddb27d56)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+48.g14ba18f3)</p>
   
 </a>
 
@@ -1028,7 +1028,7 @@ Please refer to the <a class="reference external" href="https://github.com/NVIDI
 output array with the contents of the input array. cuPyNumeric arrays,
 like <code class="docutils literal notranslate"><span class="pre">in_arr</span></code> and <code class="docutils literal notranslate"><span class="pre">out_arr</span></code> are similar to NumPy arrays but are
 backed by Legate stores for parallel execution across CPUs and GPUs.
-When these arrays are passed into the <code class="docutils literal notranslate"><span class="pre">foo_in_out</span></code> task, they are
+When these arrays are passed into the <code class="docutils literal notranslate"><span class="pre">simple_in_out</span></code> task, they are
 automatically converted into Legate-compatible objects such as
 <code class="docutils literal notranslate"><span class="pre">InputStore</span></code> or <code class="docutils literal notranslate"><span class="pre">OutputStore</span></code>, depending on how they are used in the task.
 In Legate, arguments representing a portion of a logical store or array must be
@@ -1409,7 +1409,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <section id="id4">
 <h3>Running on CPU and GPU<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <p>In order to run the program, use the legate launcher, and include any
-flags necessary like <code class="docutils literal notranslate"><span class="pre">--cpu</span></code>, <code class="docutils literal notranslate"><span class="pre">--gpu</span></code>, and more. If you want to run
+flags necessary like <code class="docutils literal notranslate"><span class="pre">--cpus</span></code>, <code class="docutils literal notranslate"><span class="pre">--gpus</span></code>, and more. If you want to run
 specifically only on CPU, you must add the flag <code class="docutils literal notranslate"><span class="pre">--gpus</span> <span class="pre">0</span></code>.
 For a complete guide and additional options, see the <a class="reference external" href="https://docs.nvidia.com/legate/latest/usage.html">Legate documentation</a>.</p>
 <p>Let’s set the size of the input array to 10 million. We’ll also include
@@ -1619,7 +1619,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <section id="id14">
 <h3>Running on CPU and GPU<a class="headerlink" href="#id14" title="Link to this heading">#</a></h3>
 <p>In order to run the program, use the legate launcher, and include any
-flags necessary like <code class="docutils literal notranslate"><span class="pre">--cpu</span></code>, <code class="docutils literal notranslate"><span class="pre">--gpu</span></code>, and more. If you want to run
+flags necessary like <code class="docutils literal notranslate"><span class="pre">--cpus</span></code>, <code class="docutils literal notranslate"><span class="pre">--gpus</span></code>, and more. If you want to run
 specifically only on CPU, you must add the flag <code class="docutils literal notranslate"><span class="pre">--gpus</span> <span class="pre">0</span></code>.
 For a complete guide and additional options, see the <a class="reference external" href="https://docs.nvidia.com/legate/latest/usage.html">Legate documentation</a>.</p>
 <p>Let’s increase the size of the matrix by setting <code class="docutils literal notranslate"><span class="pre">m</span></code> = 1000, <code class="docutils literal notranslate"><span class="pre">k</span></code> = 1000, and
@@ -1815,7 +1815,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <section id="id24">
 <h3>Running on CPU and GPU<a class="headerlink" href="#id24" title="Link to this heading">#</a></h3>
 <p>In order to run the program, use the legate launcher, and include any
-flags necessary like <code class="docutils literal notranslate"><span class="pre">--cpu</span></code>, <code class="docutils literal notranslate"><span class="pre">--gpu</span></code>, and more. If you want to run
+flags necessary like <code class="docutils literal notranslate"><span class="pre">--cpus</span></code>, <code class="docutils literal notranslate"><span class="pre">--gpus</span></code>, and more. If you want to run
 specifically only on CPU, you must add the flag <code class="docutils literal notranslate"><span class="pre">--gpus</span> <span class="pre">0</span></code>.
 For a complete guide and additional options, see the <a class="reference external" href="https://docs.nvidia.com/legate/latest/usage.html">Legate documentation</a>.</p>
 <section id="id26">
@@ -1979,8 +1979,8 @@ Here is an example performed on the <a class="reference external" href="https://
   
 
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 
 
   <footer class="bd-footer">
