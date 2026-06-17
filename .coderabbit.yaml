@@ -8,6 +8,24 @@ reviews:
   profile: chill
   poem: false
   review_details: false
+  pre_merge_checks:
+    custom_checks:
+      - mode: warning
+        name: "Parallelism regression"
+        instructions: |
+          Fail this check if the PR appears to reduce distributed or
+          intra-node parallelism without documenting that the reduction is
+          intentional and bounded. Examples include replacing partitioned
+          execution with broadcast/full-store/single-tile execution, making
+          workers do duplicate work through replicated read-write access,
+          removing tiling or partitioning constraints such as align, scale,
+          bloat, halo, or minimum extents without an equivalent parallel
+          alternative, disabling NCCL/GPU/OpenMP paths, routing nontrivial
+          arrays through serial Python or host materialization, or lowering
+          color counts, tile counts, batch parallelism, or processor use.
+
+          Pass when there is no evidence of a parallelism reduction, or when
+          the PR clearly explains why the reduction is necessary and limited.
   auto_review:
     enabled: true
     auto_incremental_review: true
