@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-set -x
+quiet_legate_conda_retry() {
+    LEGATE_CONDA_RETRY_QUIET=1 legate-conda-retry "$@"
+}
 
 setup_env() {
-    set -xeuo pipefail
+    set -euo pipefail
 
     . conda-dnld-utils
     setup_conda_channel;
@@ -11,8 +13,8 @@ setup_env() {
 
     # Run package updates and install packages
     if [[ -z "${SLURM_JOB_ID:-}" ]]; then
-        apt-get update
-        apt-get install -y numactl make
+        apt-get -qq update >/dev/null
+        apt-get -qq install -y numactl make >/dev/null
     else
         # Set unlimited locked memory for UCX/GPU operations
         # Must be set here otherwise legate-issue will fail
@@ -22,30 +24,49 @@ setup_env() {
     legate-conda-retry search --override-channels -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" --info cupynumeric
 
     # This requires strict channel priority to work (prioritize local channel)
-    legate-conda-retry create -y -n legate -c "${ARTIFACTS_DIR}/conda-build/cupynumeric" -c https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL} -c conda-forge legate cupynumeric
+    local create_args=(
+        create
+        -y
+        -n legate
+        -c "${ARTIFACTS_DIR}/conda-build/cupynumeric"
+        -c "https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL}"
+        -c conda-forge
+        legate
+        cupynumeric
+    )
+    quiet_legate_conda_retry "${create_args[@]}"
 }
 
 setup_test_env() {
-    legate-conda-retry install -y "clang-tools>=8" "clang>=8" colorama coverage mock pre-commit pytest-cov pytest-mock "pytest" types-docutils pynvml psutil
+    quiet_legate_conda_retry install -y \
+        "clang-tools>=8" "clang>=8" colorama coverage mock pre-commit \
+        pytest-cov pytest-mock "pytest" types-docutils pynvml psutil pip
 
     if [[ "${CUPY_REQUIRED_FOR_TESTS:-0}" == "1" ]]; then
-        legate-conda-retry install -y cupy
+        quiet_legate_conda_retry install -y cupy
     fi
 
-    pip install array-api-compat tifffile
+    hash -r
+    python -m pip install --disable-pip-version-check array-api-compat tifffile
 }
 
 setup_docs_env() {
-    legate-conda-retry install -y pandoc doxygen
-    pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme cffi
+    quiet_legate_conda_retry install -y pandoc doxygen pip
+    hash -r
+    python -m pip install \
+        --disable-pip-version-check \
+        ipython jinja2 "markdown<3.4.0" myst-parser nbsphinx \
+        sphinx-copybutton "sphinx>=8" nvidia-sphinx-theme cffi
 }
 
 setup_mypy_env() {
-    legate-conda-retry install -y "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton  "sphinx>=4.4.0" types-docutils scipy-stubs
+    quiet_legate_conda_retry install -y \
+        "mypy>=0.961" jinja2 nbsphinx sphinx-copybutton \
+        "sphinx>=4.4.0" types-docutils scipy-stubs
 }
 
 setup_unit_env() {
-    legate-conda-retry install -y pytest pytest-mock mock cffi
+    quiet_legate_conda_retry install -y pytest pytest-mock mock cffi
 }
 
 run_legate_issue() {
@@ -57,7 +78,13 @@ run_legate_issue() {
 }
 
 test_cupynumeric() {
-    set -xeo pipefail
+    set -eo pipefail
+
+    if [[ $# -eq 0 ]]; then
+        echo "Missing command: expected sbatch, test, mypy, docs, unit, or cpp" >&2
+        return 2
+    fi
+    local command="$1"
 
     . conda-utils;
     export CONDA_ENV=legate
@@ -65,19 +92,26 @@ test_cupynumeric() {
     setup_env;
 
     activate_conda_env;
-    conda_info;
+    if [[ "${LEGATE_CI_VERBOSE:-0}" == "1" ]]; then
+        conda_info;
+    fi
 
     cd "${REPO_DIR}";
 
-    export WORKERS=""
+    local workers_args=()
     if command -v nvidia-smi &> /dev/null; then
         gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
         if [ "$gpu_count" -ge 2 ]; then
-            export WORKERS="-j 1"
+            workers_args=(-j 1)
         fi
     fi
 
-    case "$1" in
+    local test_verbose_args=()
+    if [[ "${LEGATE_CI_VERBOSE:-0}" == "1" ]]; then
+        test_verbose_args=(-vv)
+    fi
+
+    case "${command}" in
         sbatch)
             echo "Executing sbatch tests..."
             shift;
@@ -101,7 +135,7 @@ test_cupynumeric() {
             fi
             setup_test_env;
             run_legate_issue;
-            ./test.py ${WORKERS} -vv --timeout 600 "$@"
+            ./test.py "${workers_args[@]}" "${test_verbose_args[@]}" --timeout 600 "$@"
             ;;
         "mypy")
             echo "Installing and executing mypy..."
@@ -134,10 +168,10 @@ test_cupynumeric() {
             shift;
             run_legate_issue;
             export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib/legate/deps:${LD_LIBRARY_PATH:-}
-            REALM_BACKTRACE=1 LEGATE_TEST=1 ${CONDA_PREFIX}/bin/cpp_tests
+            REALM_BACKTRACE=1 LEGATE_TEST=1 "${CONDA_PREFIX}/bin/cpp_tests"
             ;;
         *)
-            echo "Invalid command: $1"
+            echo "Invalid command: ${command}"
             return 1
             ;;
     esac

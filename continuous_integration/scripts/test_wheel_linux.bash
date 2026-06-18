@@ -15,7 +15,7 @@ set -euo pipefail
 export CUDA_MAJOR_VER=${CUDA_MAJOR_VER:=13}
 
 # Install legate first and then cupynumeric.
-pip install wheel/*.whl final-dist/*.whl
+python -m pip install --disable-pip-version-check wheel/*.whl final-dist/*.whl
 
 echo "Configure Legate and run some tests"
 export LEGATE_SHOW_CONFIG=1
@@ -24,7 +24,14 @@ export LEGION_DEFAULT_ARGS="-ll:show_rsrv"
 
 # Attempt to run the tests, we must move cupynumeric to avoid it being used.
 mv cupynumeric cupynumeric-moved
-pip install array-api-compat cupy-cuda${CUDA_MAJOR_VER}x pytest pynvml psutil scipy
+python -m pip install \
+  --disable-pip-version-check \
+  array-api-compat \
+  "cupy-cuda${CUDA_MAJOR_VER}x" \
+  pytest \
+  pynvml \
+  psutil \
+  scipy
 
 echo "Attempt to import cupynumeric"
 python -c 'import cupynumeric as np'

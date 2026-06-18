@@ -46,7 +46,7 @@ export CUDA_MAJOR_VER=${CUDA_MAJOR_VER:=13}
 
 if [[ "${CI:-false}" == "true" ]]; then
   echo "Installing extra system packages"
-  dnf install -y gcc-toolset-14-libatomic-devel
+  dnf -q install -y gcc-toolset-14-libatomic-devel
     # Enable gcc-toolset-11 environment
   source /opt/rh/gcc-toolset-14/enable
   # Verify compiler version
@@ -76,19 +76,26 @@ package_name="cupynumeric${package_suffix}"
 
 # This is all very hackish and needs to be fixed up.
 echo "Installing build requirements"
-python -m pip install -v --prefer-binary -r continuous_integration/requirements-build.txt
+python -m pip install \
+  --disable-pip-version-check \
+  --prefer-binary \
+  -r continuous_integration/requirements-build.txt
 if [[ "${CUDA_MAJOR_VER}" == "12" ]]; then
-  python -m pip install -v --prefer-binary \
+  python -m pip install \
+    --disable-pip-version-check \
+    --prefer-binary \
     cutensor-cu12'>=2.0,<2.3.0.6' \
     nvidia-nccl-cu12'>=2.28,<2.30'
 else
-  python -m pip install -v --prefer-binary \
+  python -m pip install \
+    --disable-pip-version-check \
+    --prefer-binary \
     cutensor-cu13'>=2.0,<2.3.0.6' \
     nvidia-nccl-cu13'>=2.28,<2.30'
 fi
 
 # Install the legate wheel that was downloaded.
-pip install wheel/*.whl
+python -m pip install --disable-pip-version-check wheel/*.whl
 
 sitepkgs=$(python -c 'import site; print(site.getsitepackages()[0], end="")')
 # Add in the symbolic links for cuTensor so that CMake can find it (hack)
@@ -131,7 +138,6 @@ echo "SKBUILD_CMAKE_ARGS='${SKBUILD_CMAKE_ARGS}'"
 # metadata failure during the pip wheel build.
 mv "${CUPYNUMERIC_DIR}"/cupynumeric/_version.py "${CUPYNUMERIC_DIR}"/cupynumeric/_version.py.bak
 echo "Removed scikit-build _version.py file"
-ls -lah
 
 echo "Building wheel..."
 cd "${package_dir}"
@@ -140,7 +146,6 @@ sccache --zero-stats
 
 python -m pip wheel \
   -w "${CUPYNUMERIC_DIR}"/dist \
-  -v \
   --no-deps \
   --disable-pip-version-check \
   .

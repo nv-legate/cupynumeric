@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 generate_legate_version() {
     legate_json_version="$(jq -r '.packages.legate.version' ${REPO_DIR}/cmake/versions.json)";
     legate_SHA="$(jq -r '.packages.legate.git_tag' ${REPO_DIR}/cmake/versions.json)";
@@ -21,8 +19,8 @@ verify_legate_version() {
 setup_conda_channel() {
     if ! command -v jq &> /dev/null; then
         echo "Installing jq"
-        apt-get update -q
-        apt-get -q install -y jq
+        apt-get -qq update >/dev/null
+        apt-get -qq install -y jq >/dev/null
     fi
     # strict channel ordering is required for prioritizing packages from artifacts
     conda config --set channel_priority strict

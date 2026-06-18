@@ -31,6 +31,10 @@ on:
       cuda-version:
         required: false
         type: string
+      ci-verbose:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   setup-build:
@@ -58,14 +62,14 @@ jobs:
     needs: setup-build
     name: "Build (${{ inputs.platform }}, ${{ inputs.target-device }}, ${{ inputs.build-type }}, Python ${{ inputs.python-version }})"
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.49
+      nv-legate/legate-gh-ci/.github/workflows/gh-build.yml@v1.50
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      legate-gh-ci-tag: "v1.46"
+      legate-gh-ci-tag: "v1.50"
       network: "ucx"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
@@ -75,6 +79,7 @@ jobs:
       setup-python-proxy-cache: true
       timeout: ${{ (inputs.platform == 'linux-aarch64' && inputs.target-device == 'gpu') && 120 || 60 }}
       cuda-version: ${{ inputs.cuda-version }}
+      ci-verbose: ${{ inputs.ci-verbose }}
     secrets: inherit
 
   setup-test:
@@ -91,7 +96,7 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          set -xeuo pipefail
+          set -euo pipefail
 
           if [ "${{ inputs.target-device }}" = "gpu" ] && [ "${{ inputs.platform }}" = "linux" ]; then
             export MATRICES="
@@ -197,7 +202,7 @@ jobs:
       matrix: ${{fromJson(needs.setup-test.outputs.matrix)}}
 
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.49
+      nv-legate/legate-gh-ci/.github/workflows/gh-test-within-container.yml@v1.50
     with:
       build-has-tests: ${{ inputs.build-has-tests }}
       build-mode: ""
@@ -205,7 +210,7 @@ jobs:
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
       has-gpu: ${{ inputs.target-device == 'gpu' }}
-      legate-gh-ci-tag: "v1.46"
+      legate-gh-ci-tag: "v1.50"
       name: ${{ matrix.test_name }}
       network: "ucx"
       platform: ${{ inputs.platform }}
@@ -217,6 +222,7 @@ jobs:
       enable-core-dumps: false
       timeout: 50
       cuda-version: ${{ inputs.cuda-version }}
+      ci-verbose: ${{ inputs.ci-verbose }}
     secrets: inherit
 
   slurm-test:
@@ -235,11 +241,12 @@ jobs:
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      legate-gh-ci-tag: "slurm"
+      legate-gh-ci-tag: "v1.50"
       platform: ${{ inputs.platform }}
       python-version: ${{ inputs.python-version }}
       target-device: ${{ inputs.target-device }}
       cuda-version: ${{ inputs.cuda-version }}
+      ci-verbose: ${{ inputs.ci-verbose }}
     secrets: inherit
 
   upload:
@@ -249,14 +256,14 @@ jobs:
     if: ${{ always() && github.repository_owner == 'nv-legate' && contains(github.workflow, 'release') && inputs.build-has-tests == false }}
     name: Upload package to Anaconda Server
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.49
+      nv-legate/legate-gh-ci/.github/workflows/gh-upload.yml@v1.50
     with:
       build-has-tests: false
       build-mode: ""
       build-type: ${{ inputs.build-type }}
       client-repo: ${{ github.event.repository.name }}
       client-ref: ${{ inputs.ref-sha }}
-      legate-gh-ci-tag: "v1.45"
+      legate-gh-ci-tag: "v1.50"
       name: Upload package to Server
       network: "ucx"
       pkgSubString: "cupynumeric-"
@@ -269,4 +276,5 @@ jobs:
       default-branch: ${{ inputs.default-branch }}
       timeout: 15
       cuda-version: ${{ inputs.cuda-version }}
+      ci-verbose: ${{ inputs.ci-verbose }}
     secrets: inherit

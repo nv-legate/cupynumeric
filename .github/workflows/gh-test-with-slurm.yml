@@ -41,6 +41,10 @@ on:
         required: false
         type: string
         default: "prepare-slurm-shared"
+      ci-verbose:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   create-slurm-shared-dir:
@@ -54,6 +58,7 @@ jobs:
       unique_dir: ${{ steps.unique_dir.outputs.path }}
     env:
       LEGATE_CUDA_VERSION: ${{ inputs.cuda-version }}
+      LEGATE_CI_VERBOSE: ${{ inputs.ci-verbose && '1' || '0' }}
     steps:
       - name: Checkout legate-gh-ci
         uses: actions/checkout@v6
@@ -61,7 +66,9 @@ jobs:
           repository: "nv-legate/legate-gh-ci"
           ref: ${{ inputs.legate-gh-ci-tag }}
           token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+          persist-credentials: false
           fetch-depth: 0
+          show-progress: false
           path: legate-gh-ci
 
       - name: Recent commits on legate-gh-ci
@@ -148,12 +155,26 @@ jobs:
     timeout-minutes: 50
     env:
       LEGATE_CUDA_VERSION: ${{ inputs.cuda-version }}
+      LEGATE_CI_VERBOSE: ${{ inputs.ci-verbose && '1' || '0' }}
 
     defaults:
       run:
-        shell: bash --noprofile --norc -xeuo pipefail {0}
+        shell: bash --noprofile --norc -euo pipefail {0}
 
     steps:
+      - name: Checkout legate-gh-ci
+        uses: actions/checkout@v6
+        with:
+          repository: "nv-legate/legate-gh-ci"
+          ref: ${{ inputs.legate-gh-ci-tag }}
+          token: ${{ secrets.NV_LEGATE_INTER_REPOS_ACCESS_RO }}
+          fetch-depth: 0
+          show-progress: false
+          path: legate-gh-ci
+
+      - name: Recent commits on legate-gh-ci
+        run: git -C legate-gh-ci log -3 --format='%H %s'
+
       - name: Setup
         uses: ./legate-gh-ci/.github/actions/setup
         with:
@@ -201,8 +222,8 @@ jobs:
         run: |
           if [[ -d "${OUTPUT_ARTIFACTS_DIR:-}" && -n "$(ls -A "${OUTPUT_ARTIFACTS_DIR}")" ]]; then
             echo "output-artifacts-exist=true" >> "${GITHUB_OUTPUT}"
-            echo "::group::Output artifacts file tree"
-            ls -lahR "${OUTPUT_ARTIFACTS_DIR}"
+            echo "::group::Output artifact summary"
+            bash "${{ needs.create-slurm-shared-dir.outputs.legate_gh_ci_dir }}/scripts/summarize-artifacts" "${OUTPUT_ARTIFACTS_DIR}"
             echo "::endgroup::"
           else
             echo "output-artifacts-exist=false" >> "${GITHUB_OUTPUT}"

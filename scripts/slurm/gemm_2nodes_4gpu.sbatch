@@ -21,15 +21,18 @@ set -eou pipefail
 echo "Starting job ${SLURM_JOB_ID} on the ${SLURM_NODELIST} node[s]"
 
 if [[ $# -ge 2 ]]; then
-    # source entrypoint
-    # shellcheck disable=SC1090
-    source "$1"
-    shift
+    entrypoint_script="$(realpath "$1")"
+    test_script="$(realpath "$2")"
+    shift 2
 
-    # source test
     # shellcheck disable=SC1090
-    source "$1"
-    shift
+    source "${entrypoint_script}"
+    set_initial_env
+    git config --global --add safe.directory "${REPO_DIR}"
+    cd "${REPO_DIR}"
+
+    # shellcheck disable=SC1090
+    source "${test_script}"
 
     # run only prepare part
     test_cupynumeric sbatch "$@"
@@ -94,7 +97,6 @@ GEMM_SCRIPT=examples/gemm.py
 # Check SLURM GPU allocation
 cat <<EOF
 0. SLURM GPU Allocation:
-# FIXME: compare those vars with another branch!!!
 SLURM_JOB_GPUS: ${SLURM_JOB_GPUS:-Not set}
 SLURM_GPUS_ON_NODE: ${SLURM_GPUS_ON_NODE:-Not set}
 SLURM_GPUS_PER_NODE: ${SLURM_GPUS_PER_NODE:-Not set}

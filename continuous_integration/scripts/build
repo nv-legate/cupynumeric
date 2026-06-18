@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-set -x
 
 build_release_product() {
-    set -xeuo pipefail;
+    set -euo pipefail;
 
     echo "RUNNING build_release_product"
 
@@ -52,12 +51,11 @@ build_release_product() {
 }
 
 copy_release_artifacts() {
-    set -xeuo pipefail;
+    set -euo pipefail;
     echo Copying release artifacts
 
     cp -r /tmp/out          "$ARTIFACTS_DIR"
     cp -r /tmp/conda-build  "$ARTIFACTS_DIR"
-    ls -lahR $ARTIFACTS_DIR
 }
 
 build_project() {

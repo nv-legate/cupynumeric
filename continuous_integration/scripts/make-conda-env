@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 . conda-utils
 
 make_release_env() {
@@ -9,26 +7,30 @@ make_release_env() {
 }
 
 make_docs_env() {
-    set -xeuo pipefail
+    set -euo pipefail
 
     export DEBIAN_FRONTEND=non-interactive
     export CONDA_ENV=legate
 
     # Run package updates and install packages
-    apt-get update
-    apt-get install -y numactl make
+    apt-get -qq update >/dev/null
+    apt-get -qq install -y numactl make >/dev/null
 
-    legate-conda-retry create -yn "${CONDA_ENV}" pandoc doxygen
+    legate-conda-retry create -yn "${CONDA_ENV}" pandoc doxygen pip
 
     . conda-utils;
     activate_conda_env;
+    hash -r
 
     # mamba install -y pandoc doxygen
-    pip install ipython jinja2 "markdown<3.4.0" myst-parser  nbsphinx  sphinx-copybutton  "sphinx>=8"  nvidia-sphinx-theme cffi
+    python -m pip install \
+        --disable-pip-version-check \
+        ipython jinja2 "markdown<3.4.0" myst-parser nbsphinx \
+        sphinx-copybutton "sphinx>=8" nvidia-sphinx-theme cffi
 }
 
 make_conda_env() {
-    set -xeuo pipefail
+    set -euo pipefail
 
     case "$1" in
         ci) make_release_env;;
