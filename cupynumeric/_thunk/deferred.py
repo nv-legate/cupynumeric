@@ -5383,13 +5383,18 @@ class DeferredArray:
             self.base, low_offsets, high_offsets, False
         )
 
-    def ndimage_fourier_gaussian(
-        self, src: DeferredArray, sigmas: Sequence[float], n: int, axis: int
+    def ndimage_fourier_filter(
+        self,
+        src: DeferredArray,
+        sigmas: Sequence[float],
+        n: int,
+        axis: int,
+        filter_id: int,
     ) -> None:
         src = src._copy_if_partially_overlapping(self)
 
         task = legate_runtime.create_auto_task(
-            self.library, CuPyNumericOpCode.NDIMAGE_FOURIER_GAUSSIAN
+            self.library, CuPyNumericOpCode.NDIMAGE_FOURIER_FILTER
         )
 
         p_out = task.add_output(self.base)
@@ -5397,6 +5402,7 @@ class DeferredArray:
 
         task.add_scalar_arg(n, ty.int64)
         task.add_scalar_arg(axis, ty.int32)
+        task.add_scalar_arg(filter_id, ty.int32)
         task.add_scalar_arg(tuple(src.shape), (ty.int64,))
         task.add_scalar_arg(tuple(sigmas), (ty.float64,))
 

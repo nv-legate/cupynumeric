@@ -14,41 +14,42 @@
  *
  */
 
-#include "cupynumeric/ndimage/fourier_gaussian.h"
-#include "cupynumeric/ndimage/fourier_gaussian_template.inl"
-
-#include "cupynumeric/pitches.h"
+#include "cupynumeric/ndimage/fourier_filter.h"
+#include "cupynumeric/ndimage/fourier_filter_template.inl"
 
 namespace cupynumeric {
 
 using namespace legate;
 
 template <typename VAL, int DIM>
-struct NdimageFourierGaussianImplBody<VariantKind::OMP, VAL, DIM> {
+struct NdimageFourierFilterImplBody<VariantKind::CPU, VAL, DIM> {
   TaskContext context;
 
-  explicit NdimageFourierGaussianImplBody(TaskContext context) : context(context) {}
+  explicit NdimageFourierFilterImplBody(TaskContext context) : context(context) {}
 
   void operator()(AccessorWO<VAL, DIM> output,
                   AccessorRO<VAL, DIM> input,
                   const Rect<DIM>& rect,
-                  const NdimageFourierGaussianParams params) const
+                  const NdimageFourierFilterParams params) const
   {
-    Pitches<DIM - 1> pitches;
-    const size_t volume = pitches.flatten(rect);
-
-#pragma omp parallel for schedule(static)
-    for (size_t idx = 0; idx < volume; ++idx) {
-      const Point<DIM> p  = pitches.unflatten(idx, rect.lo);
-      const double factor = fourier_gaussian_factor<DIM>(p, rect, params);
-      output[p]           = input[p] * VAL{factor};
+    for (PointInRectIterator<DIM> it(rect); it.valid(); ++it) {
+      const Point<DIM> p  = *it;
+      const double factor = fourier_filter_factor<DIM>(p, rect, params);
+      output[p]           = input[p] * static_cast<VAL>(factor);
     }
   }
 };
 
-/*static*/ void NdimageFourierGaussianTask::omp_variant(TaskContext context)
+/*static*/ void NdimageFourierFilterTask::cpu_variant(TaskContext context)
 {
-  ndimage_fourier_gaussian_template<VariantKind::OMP>(context);
+  ndimage_fourier_filter_template<VariantKind::CPU>(context);
 }
+
+namespace {
+static const auto cupynumeric_reg_task_ = []() -> char {
+  NdimageFourierFilterTask::register_variants();
+  return 0;
+}();
+}  // namespace
 
 }  // namespace cupynumeric

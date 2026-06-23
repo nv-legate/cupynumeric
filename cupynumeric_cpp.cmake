@@ -180,7 +180,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/stat/bincount.cc
   src/cupynumeric/convolution/convolve.cc
   src/cupynumeric/ndimage/convolve.cc
-  src/cupynumeric/ndimage/fourier_gaussian.cc
+  src/cupynumeric/ndimage/fourier_filter.cc
   src/cupynumeric/transform/flip.cc
   src/cupynumeric/utilities/repartition.cc
   src/cupynumeric/arg_redop_register.cc
@@ -253,7 +253,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/stat/bincount_omp.cc
     src/cupynumeric/convolution/convolve_omp.cc
     src/cupynumeric/ndimage/convolve_omp.cc
-    src/cupynumeric/ndimage/fourier_gaussian_omp.cc
+    src/cupynumeric/ndimage/fourier_filter_omp.cc
     src/cupynumeric/transform/flip_omp.cc
     src/cupynumeric/stat/histogram_omp.cc
     src/cupynumeric/stat/histogramdd_omp.cc
@@ -321,7 +321,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/stat/bincount.cu
     src/cupynumeric/convolution/convolve.cu
     src/cupynumeric/ndimage/convolve.cu
-    src/cupynumeric/ndimage/fourier_gaussian.cu
+    src/cupynumeric/ndimage/fourier_filter.cu
     src/cupynumeric/fft/fft.cu
     src/cupynumeric/transform/flip.cu
     src/cupynumeric/utilities/repartition.cu
