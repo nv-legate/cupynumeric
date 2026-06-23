@@ -55,6 +55,17 @@ jobs:
       - name: run pre-commit
         uses: pre-commit/action@v3.0.1
 
+      # Block padding the marker-reason baseline: it may only shrink relative
+      # to the merge-base with the default branch (the pre-commit hook trusts
+      # the file as-is). Until the baseline lands on the default branch the
+      # check skips cleanly (baseline_at_ref -> None), so this is safe to keep
+      # enabled even on the PR that first introduces the baseline.
+      - name: Enforce marker-reason baseline ratchet
+        run: |
+          git fetch --no-tags origin "${{ github.event.repository.default_branch }}"
+          base="$(git merge-base HEAD FETCH_HEAD)"
+          python scripts/hooks/check_marker_reason.py --against "${base}"
+
   lint-pass:
     if: always()
     needs:

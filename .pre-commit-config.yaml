@@ -55,6 +55,17 @@ repos:
         entry: python scripts/hooks/check_availability_boilerplate.py
         language: python
         types: [python]
+      - id: check-marker-reason
+        name: Check xfail/skip/skipif carry a classified reason
+        description: >
+          Every pytest xfail/skip/skipif marker must carry a reason tagged
+          [severe]/[not-severe]/[triage]; severe ones must reference an issue.
+          New violations are blocked; the existing backlog is grandfathered in
+          scripts/hooks/marker_reason_baseline.txt (a ratchet that only shrinks).
+        entry: python scripts/hooks/check_marker_reason.py
+        language: python
+        types: [python]
+        files: ^tests/(unit|integration)/
       - id: legate-defined
         name: legate-defined
         description: 'Find uses of ifdef LEGATE_ that should be using LegateDefined()'
