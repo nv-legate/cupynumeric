@@ -61,7 +61,7 @@ jobs:
       LEGATE_CI_VERBOSE: ${{ inputs.ci-verbose && '1' || '0' }}
     steps:
       - name: Checkout legate-gh-ci
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: "nv-legate/legate-gh-ci"
           ref: ${{ inputs.legate-gh-ci-tag }}
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout legate-gh-ci
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: "nv-legate/legate-gh-ci"
           ref: ${{ inputs.legate-gh-ci-tag }}

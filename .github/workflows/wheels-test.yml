@@ -96,7 +96,7 @@ jobs:
           extra_attributes: "legate.PACKAGER=conda,legate.CUDA_VER=${{ matrix.CUDA_VER }},legate.PY_VER=${{ matrix.PY_VER }},legate.ARCH=${{ matrix.ARCH }}"
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}

@@ -19,7 +19,7 @@ jobs:
       LEGATE_SHA: ${{ steps.legate-sha.outputs.sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - name: Get the Legate SHA

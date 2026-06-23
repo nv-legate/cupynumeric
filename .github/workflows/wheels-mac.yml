@@ -87,7 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - uses: actions/checkout@900f2210b1d28bbbd0bd22d17926b9e224e8f231  # v5
+      - uses: actions/checkout@b9e0990d219a03df7633c93f6f005a8fecbcab22  # v5
         with:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.sha }}
@@ -127,7 +127,7 @@ jobs:
           echo "legate_prefix=${legate_prefix}" >> "${GITHUB_ENV}"
 
       - name: Build the wheel
-        uses: pypa/cibuildwheel@f03ac7617d6cff873ccf24cc0d567ef5ba5a9e6d  # v4.0.0
+        uses: pypa/cibuildwheel@294735312765b09d24a2fbec22660ce817587d55  # v4.1.0
         with:
           package-dir: ./scripts/build/python/cupynumeric/
           output-dir: wheelhouse
