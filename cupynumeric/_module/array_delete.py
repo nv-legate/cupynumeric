@@ -22,7 +22,7 @@ from .._utils import is_np2
 
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_index
-else:
+else:  # pragma: no cover - NumPy 1.x compatibility
     from numpy.core.multiarray import normalize_axis_index  # type: ignore[no-redef]
 
 

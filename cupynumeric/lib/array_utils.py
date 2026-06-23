@@ -21,7 +21,7 @@ from .._utils import is_np2
 if is_np2:
     from numpy.lib.array_utils import normalize_axis_tuple as _nat
     from numpy.lib.array_utils import normalize_axis_index as _nai
-else:
+else:  # pragma: no cover - NumPy 1.x compatibility
     from numpy.core.numeric import normalize_axis_tuple as _nat  # type: ignore
     from numpy.core.multiarray import normalize_axis_index as _nai  # type: ignore
 

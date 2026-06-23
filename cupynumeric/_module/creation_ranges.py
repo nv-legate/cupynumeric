@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 if is_np2:
     from numpy.exceptions import AxisError
-else:
+else:  # pragma: no cover - NumPy 1.x compatibility
     from numpy import AxisError  # type: ignore[no-redef,attr-defined]
 
 _builtin_max = max
