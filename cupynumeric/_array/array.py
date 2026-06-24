@@ -654,7 +654,7 @@ class ndarray:
         See Also
         --------
         shape : Equivalent getter function.
-        reshape : Function forsetting ``shape``.
+        reshape : Function for setting ``shape``.
         ndarray.reshape : Method for setting ``shape``.
 
         """
@@ -3633,7 +3633,7 @@ class ndarray:
         These Boolean-valued flags affect how numpy interprets the memory
         area used by `a` (see Notes below). The ALIGNED flag can only
         be set to True if the data is actually aligned according to the type.
-        The WRITEBACKIFCOPY and flag can never be set
+        The WRITEBACKIFCOPY flag can never be set
         to True. The flag WRITEABLE can only be set to True if the array owns
         its own memory, or the ultimate owner of the memory exposes a
         writeable buffer interface, or is a string. (The exception for string
@@ -3652,7 +3652,7 @@ class ndarray:
         -----
         Array flags provide information about how the memory area used
         for the array is to be interpreted. There are 7 Boolean flags
-        in use, only four of which can be changed by the user:
+        in use, only three of which can be changed by the user:
         WRITEBACKIFCOPY, WRITEABLE, and ALIGNED.
 
         WRITEABLE (W) the data area can be written to;

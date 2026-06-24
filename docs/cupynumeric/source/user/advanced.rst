@@ -14,7 +14,7 @@ the ``legate`` driver, followed by the number of nodes to be used.
 When running on 2+ nodes, a task launcher must be specified.
 
 Legate currently supports using ``mpirun``, ``srun``, and ``jsrun`` as task
-launchers for multi-node execution via the ``--launcher`` command like
+launchers for multi-node execution via the ``--launcher`` command-line
 arguments:
 
 .. code-block:: sh
@@ -32,7 +32,7 @@ It is also possible to use "standard python" in place of the ``legate`` driver.
 
 For more details about running multi-node configurations, please see the
 `Distributed Launch <https://docs.nvidia.com/legate/latest/manual/usage/running.html#distributed-launch>`_
-chapter of the the `Legate documentation <https://docs.nvidia.com/legate/latest/index.html>`_.
+chapter of the `Legate documentation <https://docs.nvidia.com/legate/latest/index.html>`_.
 
 Passing Legion and Realm arguments
 ----------------------------------
@@ -48,7 +48,7 @@ variables, for example:
 Using the GASNet networking backend
 -----------------------------------
 
-Standard Legate packges come with UCX networking support.
+Standard Legate packages come with UCX networking support.
 To run cuPyNumeric programs with Legate using GASNet requires installing
 additional separate packages.
 Please see `How Do I Install Legate with the MPI and GASNet wrappers <https://docs.nvidia.com/legate/latest/gasnet.html#how-do-i-install-legate-with-the-mpi-and-gasnet-wrappers>`_

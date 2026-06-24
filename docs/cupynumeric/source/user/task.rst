@@ -63,7 +63,7 @@ For more details about Legate task behavior, see `legate_task`_. Inside
 the task, ``TaskContext`` provides access to the execution environment,
 including inputs, outputs, and the execution target (CPU or GPU). The
 method ``ctx.get_variant_kind()`` is used to determine the target device,
-and based on this, the variable ``xp`` is set to either the CuPy for GPU
+and based on this, the variable ``xp`` is set to either CuPy for GPU
 execution or NumPy for CPU execution. Using ``xp``, the task creates views
 of the task-local partitions of the Legate-backed global input and
 output arrays as either CuPy or NumPy arrays.
@@ -175,7 +175,7 @@ flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must include the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
-.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 
 Let’s set the input array size to 10 million elements to better
 evaluate the speedup from distributed computing with GPUs.
@@ -216,7 +216,7 @@ Multi-Node execution
 Refer to the Legate documentation on how to run on `multi-node`_.
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
-.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _multi-node: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 .. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run on multi-node, use the following command.
@@ -329,7 +329,7 @@ flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
-.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 
 Let’s set the size of the input array to 10 million. We’ll also include
 a warm-up run before measuring execution time to ensure that one-time
@@ -371,7 +371,7 @@ Multi-Node execution
 Refer to the Legate documentation on how to run on `multi-node`_.
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
-.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _multi-node: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 .. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run with Multi-Node, use the following command.
@@ -473,7 +473,7 @@ flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
-.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 
 Let's increase the size of the matrix by setting ``m`` = 1000, ``k`` = 1000, and
 ``n`` = 1000. We’ll also include a warm-up run before measuring execution
@@ -514,7 +514,7 @@ Multi-Node execution
 Refer to the Legate documentation on how to run on `multi-node`_.
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
-.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _multi-node: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 .. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run with Multi-Node, use the following command.
@@ -533,7 +533,7 @@ Fast Fourier Transform problem
 ==============================
 
 The Fast Fourier Transform (FFT) is an algorithm which is used to
-compute the discrete fourier transform of a sequence. It is used to help
+compute the discrete Fourier transform of a sequence. It is used to help
 break down a complex signal like sound and images, which is instrumental
 in image processing, medical imaging, and more. This example
 demonstrates how to use Legate and cuPyNumeric to perform a batched 2D Fast
@@ -619,7 +619,7 @@ flags necessary like ``--cpus``, ``--gpus``, and more. If you want to run
 specifically only on CPU, you must add the flag ``--gpus 0``.
 For a complete guide and additional options, see the `Legate documentation`_.
 
-.. _Legate documentation: https://docs.nvidia.com/legate/latest/usage.html
+.. _Legate documentation: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 
 
 CPU execution
@@ -656,7 +656,7 @@ Refer to the Legate documentation on how to run on `multi-node`_.
 Here is an example performed on the `Perlmutter`_ supercomputer.
 
 
-.. _multi-node: https://docs.nvidia.com/legate/latest/usage.html
+.. _multi-node: https://docs.nvidia.com/legate/latest/manual/usage/index.html
 .. _Perlmutter: https://docs.nersc.gov/systems/perlmutter/architecture/
 
 To run with Multi-Node, use the following command.

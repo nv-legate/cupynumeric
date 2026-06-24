@@ -47,7 +47,7 @@ By default this invocation will use all the hardware resources (e.g. CPU cores,
 RAM, GPUs) available on the current machine.
 
 For more information on controlling the resource allocation, running on multiple
-nodes etc. see https://docs.nvidia.com/legate/latest/usage.html.
+nodes etc. see https://docs.nvidia.com/legate/latest/manual/usage/index.html.
 
 Jupyter
 -------

@@ -122,7 +122,7 @@ class CupynumericRuntimeSettings(Settings):
         default="plain",
         convert=convert_doctor_format,
         help="""
-        Format for cuPyNumeric ouput: plain, json, or csv.
+        Format for cuPyNumeric output: plain, json, or csv.
         """,
     )
 

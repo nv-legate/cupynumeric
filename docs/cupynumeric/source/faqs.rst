@@ -27,7 +27,7 @@ to learn more about cuPyNumeric.
 When to use python vs legate?
 -----------------------------
 
-The ``legate`` launcher affords comman line options for configurtion, while
+The ``legate`` launcher affords command line options for configuration, while
 using ``python`` requires configuring via ``LEGATE_CONFIG``. When running
 local applications, it is mostly a matter of preference. When running in
 multi-node situations, ``legate`` has some additional command line options
@@ -37,7 +37,7 @@ What if I don’t have a GPU?
 ---------------------------
 
 If you don’t have a GPU, you can either use the CPU or the OMP variant. See
-`Resource allocation` for informations on how to use the respective variants.
+`Resource allocation` for information on how to use the respective variants.
 
 What does this warning mean?
 ----------------------------

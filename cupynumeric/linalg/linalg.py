@@ -413,7 +413,7 @@ def qr(a: ndarray) -> tuple[ndarray, ...]:
     q : (M, K) array_like
         A matrix with orthonormal columns. K = min(M, N).
     r : (K, N) array_like
-        The uppoer triangular matrix.
+        The upper triangular matrix.
 
     Raises
     ------

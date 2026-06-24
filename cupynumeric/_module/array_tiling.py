@@ -149,7 +149,7 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
 
     Notes
     -----
-    Currently, repeat operations supports only 1D arrays
+    Currently, repeat operations support only 1D arrays
 
     See Also
     --------

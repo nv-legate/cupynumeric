@@ -74,7 +74,7 @@ def arange(
     step : int or float, optional
         Spacing between values.  For any output `out`, this is the distance
         between two adjacent values, ``out[i+1] - out[i]``.  The default
-        step size is 1.  If `step` is specified as a position argument,
+        step size is 1.  If `step` is specified as a positional argument,
         `start` must also be given.
     dtype : data-type
         The type of the output array.  If `dtype` is not given, infer the data
@@ -290,9 +290,9 @@ def meshgrid(
         If True the shape of the returned coordinate array for dimension *i*
         is reduced from ``(N1, ..., Ni, ... Nn)`` to
         ``(1, ..., 1, Ni, 1, ..., 1)``.  These sparse coordinate grids are
-        intended to be use with broadcasting.  When all
+        intended to be used with broadcasting.  When all
         coordinates are used in an expression, broadcasting still leads to a
-        fully-dimensonal result array.
+        fully-dimensional result array.
 
         Default is False.
     copy : bool, optional
