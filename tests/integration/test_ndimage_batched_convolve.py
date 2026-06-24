@@ -21,12 +21,24 @@ import scipy.ndimage as scipy_ndimage
 from utils.comparisons import allclose
 
 import cupynumeric as num
+from cupynumeric.ndimage.ndimage import _MODE_MAP
 from cupynumeric.runtime import runtime
 
 
 pytestmark = pytest.mark.skipif(
     runtime.num_gpus == 0,
     reason="cupynumeric.ndimage.batched_convolve is only supported on GPU",
+)
+
+MODES = (
+    "reflect",
+    "constant",
+    "nearest",
+    "mirror",
+    "wrap",
+    "grid-mirror",
+    "grid-constant",
+    "grid-wrap",
 )
 
 
@@ -124,10 +136,11 @@ def test_data_dimensionality_and_output(
     )
 
 
-@pytest.mark.parametrize(
-    "mode",
-    ("reflect", "constant", "nearest", "mirror", "wrap", "grid-constant"),
-)
+def test_modes_match_mode_map() -> None:
+    assert set(MODES) == set(_MODE_MAP)
+
+
+@pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize(
     "input_shape,weights_shape",
     [
@@ -205,6 +218,14 @@ def test_invalid_shapes(
         )
 
 
+def test_invalid_mode() -> None:
+    input_num = num.array(_make_input((2, 4)))
+    weights_num = num.array(_make_weights((3, 2)))
+
+    with pytest.raises(ValueError, match=r"mode must be one of"):
+        num.ndimage.batched_convolve(input_num, weights_num, mode="bad-mode")
+
+
 def test_invalid_output() -> None:
     input_num = num.array(_make_input((2, 4)))
     weights_num = num.array(_make_weights((3, 2)))
@@ -213,6 +234,17 @@ def test_invalid_output() -> None:
         num.ndimage.batched_convolve(
             input_num, weights_num, output=num.empty((2, 4))
         )
+
+
+def test_invalid_output_dtype() -> None:
+    input_np = _make_input((2, 4), np.dtype(np.float32))
+    weights_np = _make_weights((3, 2), np.dtype(np.float32))
+    input_num = num.array(input_np)
+    weights_num = num.array(weights_np)
+    output = num.empty((2, 3, 4), dtype=np.float64)
+
+    with pytest.raises(ValueError, match=r"output array dtype"):
+        num.ndimage.batched_convolve(input_num, weights_num, output=output)
 
 
 if __name__ == "__main__":

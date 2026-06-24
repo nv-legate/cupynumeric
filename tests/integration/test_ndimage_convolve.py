@@ -21,6 +21,7 @@ import scipy.ndimage as scipy_ndimage
 from utils.comparisons import allclose
 
 import cupynumeric as num
+from cupynumeric.ndimage.ndimage import _MODE_MAP
 from cupynumeric.runtime import runtime
 
 
@@ -119,6 +120,10 @@ def test_data_dimensionality_and_output(
     )
 
 
+def test_modes_match_mode_map() -> None:
+    assert set(MODES) == set(_MODE_MAP)
+
+
 @pytest.mark.parametrize(
     "input_shape, weights_shape",
     [((3,), (7,)), ((3,), (8,)), ((7, 7), (4, 4)), ((2, 3), (4, 5))],
@@ -180,6 +185,60 @@ def test_invalid_origin(origin: int | tuple[int, ...]) -> None:
 
     with pytest.raises(ValueError):
         num.ndimage.convolve(input_num, weights_num, origin=origin)
+
+
+def test_invalid_mode() -> None:
+    input_num = num.array(_make_input((4, 5)))
+    weights_num = num.array(_make_weights((2, 3)))
+
+    with pytest.raises(ValueError, match=r"mode must be one of"):
+        num.ndimage.convolve(input_num, weights_num, mode="bad-mode")
+
+
+@pytest.mark.parametrize(
+    "input_np, weights_np",
+    [(np.array(1.0), _make_weights((2,))), (_make_input((4,)), np.array(1.0))],
+    ids=("zero_dim_input", "zero_dim_weights"),
+)
+def test_zero_dimensional_rejected(
+    input_np: np.ndarray, weights_np: np.ndarray
+) -> None:
+    with pytest.raises(ValueError, match=r"at least 1-D"):
+        num.ndimage.convolve(num.array(input_np), num.array(weights_np))
+
+
+def test_dimension_mismatch() -> None:
+    input_num = num.array(_make_input((4, 5)))
+    weights_num = num.array(_make_weights((3,)))
+
+    with pytest.raises(ValueError, match=r"same dimensions"):
+        num.ndimage.convolve(input_num, weights_num)
+
+
+def test_invalid_output_shape() -> None:
+    input_num = num.array(_make_input((4, 5)))
+    weights_num = num.array(_make_weights((2, 3)))
+    output = num.empty((4, 4), dtype=input_num.dtype)
+
+    with pytest.raises(ValueError, match=r"output array shape"):
+        num.ndimage.convolve(input_num, weights_num, output=output)
+
+
+def test_invalid_output_dtype() -> None:
+    input_np = _make_input((4, 5)).astype(np.float32)
+    input_num = num.array(input_np)
+    weights_num = num.array(_make_weights((2, 3)).astype(np.float32))
+    output = num.empty(input_num.shape, dtype=np.float64)
+
+    with pytest.raises(ValueError, match=r"output array dtype"):
+        num.ndimage.convolve(input_num, weights_num, output=output)
+
+
+def test_weights_cast_to_input_dtype() -> None:
+    input_np = _make_input((4, 5)).astype(np.float32)
+    weights_np = _make_weights((2, 3)).astype(np.float64)
+
+    _check_convolve(input_np, weights_np, mode="constant", cval=1.25)
 
 
 def test_axes_not_implemented() -> None:
