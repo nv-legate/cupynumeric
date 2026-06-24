@@ -39,7 +39,7 @@ different install configurations, or building cuPyNumeric from source.
 📌 **Note**
 
 Linux packages support Python versions 3.11 to 3.14. macOS aarch64 pip wheels
-support Python versions 3.11 to 3.13. Windows is only supported through WSL.
+support Python versions 3.11 to 3.14. Windows is only supported through WSL.
 
 ## Documentation
 

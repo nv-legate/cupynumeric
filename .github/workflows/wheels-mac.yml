@@ -61,6 +61,7 @@ jobs:
           - { PY_VER: '3.11' }
           - { PY_VER: '3.12' }
           - { PY_VER: '3.13' }
+          - { PY_VER: '3.14' }
           "
 
           MATRIX="$(
