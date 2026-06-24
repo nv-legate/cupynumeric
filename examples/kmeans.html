@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>K-Means Clustering Algorithm &#8212; NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</title>
+    <title>K-Means Clustering Algorithm &#8212; NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</title>
   
   
   
@@ -45,7 +45,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=faa14073"></script>
+    <script src="../_static/documentation_options.js?v=9a233a98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -142,11 +142,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a></div>
     
@@ -260,11 +260,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a>
 
@@ -342,7 +342,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user/doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../user/howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../user/howtos/benchmarking.html">Performance Benchmarking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying Numpy code without changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying NumPy code without changes</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="../user/advanced.html">Advanced topics</a></li>
@@ -1024,10 +1024,10 @@
     <span class="n">n_elements</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_centroids</span><span class="p">:</span> <span class="nb">int</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Randomly initalize data and centroids of the clusters.</span>
+<span class="sd">    Randomly initialize data and centroids of the clusters.</span>
 
 <span class="sd">    n_elements: int</span>
-<span class="sd">        Number of elements/observations that need to be clusters</span>
+<span class="sd">        Number of elements/observations that need to be clustered</span>
 <span class="sd">    n_dims: int</span>
 <span class="sd">        Dimension of the elements/observations</span>
 <span class="sd">    n_centroids: int</span>
@@ -1112,7 +1112,7 @@
     <span class="c1"># Get the number of points associated with each centroid</span>
     <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="n">n_centroids</span><span class="p">)</span>
     <span class="c1"># Build label masks for each centroid and sum across all the</span>
-    <span class="c1"># points assocated with each new centroid</span>
+    <span class="c1"># points associated with each new centroid</span>
     <span class="n">distance_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_centroids</span><span class="p">):</span>
         <span class="c1"># Boolean mask indicating where the points are for this center</span>
@@ -1152,7 +1152,7 @@
 <span class="sd">    n_iters: int</span>
 <span class="sd">        Maximum number of iterations</span>
 <span class="sd">    n_elements: int</span>
-<span class="sd">        Number of elements/observations that need to be clusters</span>
+<span class="sd">        Number of elements/observations that need to be clustered</span>
 <span class="sd">    n_iter_check: int</span>
 <span class="sd">        Determines how often we check for convergence.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

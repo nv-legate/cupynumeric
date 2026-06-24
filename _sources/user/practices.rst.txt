@@ -25,7 +25,7 @@ for additional configuration options.
 We recommend users to not partition the data explicitly
 using libraries like `mpi4py <https://mpi4py.readthedocs.io/en/stable/>`_
 since `Legate <https://docs.nvidia.com/legate/latest/overview.html>`_
-handles data partitioning, communication and synchronization implictly.
+handles data partitioning, communication and synchronization implicitly.
 Instead, write a "serial" code using vectorized NumPy APIs
 or using Legate Tasks and then import cupynumeric.
 

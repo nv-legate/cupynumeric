@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Tutorial &#8212; NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</title>
+    <title>Tutorial &#8212; NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=faa14073"></script>
+    <script src="../_static/documentation_options.js?v=9a233a98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -141,11 +141,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a></div>
     
@@ -259,11 +259,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a>
 
@@ -341,7 +341,7 @@
 <li class="toctree-l2"><a class="reference internal" href="doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="howtos/benchmarking.html">Performance Benchmarking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="howtos/patching.html">Trying Numpy code without changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="howtos/patching.html">Trying NumPy code without changes</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="advanced.html">Advanced topics</a></li>
@@ -1018,7 +1018,7 @@ computation time compared to using NumPy alone.</p></li>
 <section id="other-options">
 <h3>Other options<a class="headerlink" href="#other-options" title="Link to this heading">#</a></h3>
 <p>cuPyNumeric also works on HPC clusters, e.g. the large <a class="reference external" href="https://www.nersc.gov/systems/perlmutter/">Perlmutter</a>
-supercomputerlocated at the National Energy Research Scientific Computing
+supercomputer located at the National Energy Research Scientific Computing
 Center (<a class="reference external" href="https://www.nersc.gov/">NERSC</a>).</p>
 </section>
 </section>
@@ -1072,14 +1072,14 @@ conda<span class="w"> </span>activate<span class="w"> </span>legate
 </section>
 <section id="hpc-cluster-installation">
 <h2>HPC cluster installation<a class="headerlink" href="#hpc-cluster-installation" title="Link to this heading">#</a></h2>
-<p>Installing on HPC clusters such as Perlmutter requries extra steps to build
+<p>Installing on HPC clusters such as Perlmutter requires extra steps to build
 wrappers for system MPI and GASNet libraries. See the Legate documentation for
 <a class="reference external" href="https://docs.nvidia.com/legate/latest/gasnet.html#gasnet-based-installation">GASNet-based Installation</a> for full details.</p>
 </section>
 <section id="running-cupynumeric-code">
 <h2>Running cuPyNumeric code<a class="headerlink" href="#running-cupynumeric-code" title="Link to this heading">#</a></h2>
 <p>We will start by demonstrating with a simple dot-product example. Create a
-new file file <code class="docutils literal notranslate"><span class="pre">main.py</span></code> containing the following code:</p>
+new file <code class="docutils literal notranslate"><span class="pre">main.py</span></code> containing the following code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -1130,7 +1130,7 @@ simply loading the appropriate modules, but in a multi-node setting the driver
 needs to be used to enable –launcher and related options. To see more details
 of the resulting invocation, add the <code class="docutils literal notranslate"><span class="pre">--verbose</span></code> option before <code class="docutils literal notranslate"><span class="pre">./main.py</span></code>.
 For more information on Command-Line Interface Options refer to the sections
-below or refer to <a class="reference external" href="https://docs.nvidia.com/legate/latest/usage.html">Running Legate Programs</a>.</p>
+below or refer to <a class="reference external" href="https://docs.nvidia.com/legate/latest/manual/usage/index.html">Running Legate Programs</a>.</p>
 <p>Running the code above produces output like the following when run on
 Perlmutter:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Dot product: 25001932.012924932
@@ -1149,7 +1149,7 @@ variable <code class="docutils literal notranslate"><span class="pre">LEGATE_LIM
 <h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
 <section id="matrix-multiplication">
 <h3>Matrix multiplication<a class="headerlink" href="#matrix-multiplication" title="Link to this heading">#</a></h3>
-<p>Matrix multiplication is a basic operation where to two matrices are combined
+<p>Matrix multiplication is a basic operation where two matrices are combined
 to produce a new matrix. The new matrix has elements that were computed as
 the sum of the products of the corresponding rows of the first matrix and the
 columns of the second matrix. When scaling matrix multiplication, multiple
@@ -1398,7 +1398,7 @@ Elapsed Time: 13012.767 ms
 <section id="black-scholes">
 <h3>Black-Scholes<a class="headerlink" href="#black-scholes" title="Link to this heading">#</a></h3>
 <p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Black–Scholes_model">Black-Scholes model</a> is a mathematical model developed by economists
-Fisher Black, Myron Scholes, and Rober Merton in the early 1970s. The model
+Fisher Black, Myron Scholes, and Robert Merton in the early 1970s. The model
 is used to calculate the theoretical price of stock options.</p>
 <p>Given the following inputs</p>
 <ul class="simple">
@@ -1428,7 +1428,7 @@ d_1 &amp;=&amp; (\ln(S_0/K) + (r + \sigma^2/2)T)/(\sigma\sqrt{T}) \\\
 d_2 &amp;=&amp; d_1 - \sigma\sqrt{T}
 \end{eqnarray}\end{split}\]</div>
 <p>and <span class="math notranslate nohighlight">\(N(x)\)</span> is the cumulative distribution function of the standard
-normal distribuation</p>
+normal distribution</p>
 <p>The illustration below demonstrates how the Black-Scholes model might be
 used to compute call and put option prices for 10,000 options distributed
 across four worker nodes. Each node is responsible for processing a portion
@@ -1496,7 +1496,7 @@ N(0.15) &amp;=&amp; \boldsymbol{0.5596} \\\
 <p>This results in the call option price:</p>
 <div class="math notranslate nohighlight">
 \[C = 50 \cdot 0.6368 - 50e^{-0.05} \cdot 0.5596 \approx \boldsymbol{5.22}\ .\]</div>
-<p>This answer is the price of a call option. A similar computatation yields
+<p>This answer is the price of a call option. A similar computation yields
 the price for a put option.</p>
 </section>
 <section id="id4">
@@ -1553,8 +1553,8 @@ Elapsed Time: 1241.457 ms
 <p>The Jacobi stencil is a method used to solve systems of linear or partial
 differential equations. The technique works by repeatedly taking the averages
 of the neighboring points to update the value at each grid location. This
-method is often used along slide problems like heat diffusion.</p>
-<p>The forumula for the stencil computation is given by:</p>
+method is often used alongside problems like heat diffusion.</p>
+<p>The formula for the stencil computation is given by:</p>
 <div class="math notranslate nohighlight">
 \[\mathbf{X}_{i,j}^{k+1} = (1/4)\cdot(\mathbf{X}_{i-1,j}^k + \mathbf{X}_{i+1,j}^k + \mathbf{X}_{i,j-1}^k + \mathbf{X}_{i,j+1}^k)\ .\]</div>
 <p><em>(NOTE: The image below does not depict cuPyNumeric’s approach to parallelism.
@@ -1797,7 +1797,7 @@ edges from image based on the results.</p>
 </section>
 <section id="resource-allocation">
 <h2>Resource allocation<a class="headerlink" href="#resource-allocation" title="Link to this heading">#</a></h2>
-<p>As previously mentioned, cuPyNumeric is build on top of Legate. Legate is what
+<p>As previously mentioned, cuPyNumeric is built on top of Legate. Legate is what
 will be utilized to execute your programs. By default Legate will query the
 available hardware on the current system, and reserve for its use all CPU
 cores, all GPUs and most of the available memory. You can disable this

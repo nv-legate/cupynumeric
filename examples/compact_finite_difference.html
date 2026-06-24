@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Compact Finite Difference Scheme &#8212; NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</title>
+    <title>Compact Finite Difference Scheme &#8212; NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</title>
   
   
   
@@ -45,7 +45,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=faa14073"></script>
+    <script src="../_static/documentation_options.js?v=9a233a98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -142,11 +142,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a></div>
     
@@ -260,11 +260,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a>
 
@@ -342,7 +342,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user/doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../user/howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../user/howtos/benchmarking.html">Performance Benchmarking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying Numpy code without changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying NumPy code without changes</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="../user/advanced.html">Advanced topics</a></li>
@@ -999,7 +999,7 @@
 <p>where the matrix <span class="math notranslate nohighlight">\(\mathbf{A}\)</span> is tridiagonal and <span class="math notranslate nohighlight">\(\mathbf{B}\)</span> is pentadiagonal. In this example, we store the matrix, <span class="math notranslate nohighlight">\(\mathbf{A}\)</span>, as a dense matrix and explicitly compute <span class="math notranslate nohighlight">\(\mathbf{B} f\)</span> instead of storing B to save memory. To compute the derivative, <span class="math notranslate nohighlight">\(f'\)</span>, of a function, <span class="math notranslate nohighlight">\(f\)</span>, using a sixth order compact finite difference, we solve a linear system of equations</p>
 <p>The main and off-diagonal elements of matrix <span class="math notranslate nohighlight">\(\mathbf{A}\)</span> are 1.0 and 1.0/3 respectively. For this example, we consider a sine function, <span class="math notranslate nohighlight">\(f=\sin({k x})\)</span></p>
 <hr class="docutils" />
-<p>The domain extends from 0 to <span class="math notranslate nohighlight">\(2 \pi\)</span> and is discretized using N points. Since the stecil for the RHS extends 2 points on either side, we may have to create arrays of size (N+4) to accomodate storing the values of points outside the domain.</p>
+<p>The domain extends from 0 to <span class="math notranslate nohighlight">\(2 \pi\)</span> and is discretized using N points. Since the stencil for the RHS extends 2 points on either side, we may have to create arrays of size (N+4) to accommodate storing the values of points outside the domain.</p>
 </section>
 <section id="Implementation">
 <h2>Implementation<a class="headerlink" href="#Implementation" title="Link to this heading">#</a></h2>

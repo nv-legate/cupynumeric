@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Newton Raphson Method In Two Dimensions &#8212; NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</title>
+    <title>Newton Raphson Method In Two Dimensions &#8212; NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</title>
   
   
   
@@ -45,7 +45,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=faa14073"></script>
+    <script src="../_static/documentation_options.js?v=9a233a98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -142,11 +142,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a></div>
     
@@ -260,11 +260,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a>
 
@@ -342,7 +342,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user/doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../user/howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../user/howtos/benchmarking.html">Performance Benchmarking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying Numpy code without changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying NumPy code without changes</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="../user/advanced.html">Advanced topics</a></li>
@@ -1084,7 +1084,7 @@ Newton&#39;s method converged in 7 iterations to xk: [-2.  3.]
 </pre></div></div>
 </div>
 <hr class="docutils" />
-<p>We see that the solution has converged to <span class="math notranslate nohighlight">\((x, y) = (-2, 3)\)</span> which satisfies both the equation in 7 iterations</p>
+<p>We see that the solution has converged to <span class="math notranslate nohighlight">\((x, y) = (-2, 3)\)</span> which satisfies both equations in 7 iterations</p>
 <div class="line-block">
 <div class="line">The problem can be cast such that the computation of inverse is substituted by a linear solve, as shown below:</div>
 <div class="line"><span class="math notranslate nohighlight">\(x_{k} =  x_{k-1} - x_{k}^{*}\)</span></div>
@@ -1092,7 +1092,7 @@ Newton&#39;s method converged in 7 iterations to xk: [-2.  3.]
 </div>
 <p>And $x_{k}^{*} $ is solution to the system of equation defined as <span class="math notranslate nohighlight">\({\mathbf{J}(x_{k})}~ x_{k}^{*} = \mathbf{f}(x_{k})\)</span></p>
 <hr class="docutils" />
-<p>We can then use NumPy’s <code class="docutils literal notranslate"><span class="pre">linalg.solve</span></code> API to perform the linear solve as shown below. And we can see that the algorithm converges to the same solution in exactly the same number of iteration</p>
+<p>We can then use NumPy’s <code class="docutils literal notranslate"><span class="pre">linalg.solve</span></code> API to perform the linear solve as shown below. And we can see that the algorithm converges to the same solution in exactly the same number of iterations</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>

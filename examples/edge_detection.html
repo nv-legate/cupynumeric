@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Edge Detection &#8212; NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</title>
+    <title>Edge Detection &#8212; NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</title>
   
   
   
@@ -45,7 +45,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=faa14073"></script>
+    <script src="../_static/documentation_options.js?v=9a233a98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -142,11 +142,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a></div>
     
@@ -260,11 +260,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+55.g81db157e)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+59.g17a854b5)</p>
   
 </a>
 
@@ -342,7 +342,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user/doctor.html">cuPyNumeric Doctor</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../user/howtos/index.html">Howtos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../user/howtos/benchmarking.html">Performance Benchmarking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying Numpy code without changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user/howtos/patching.html">Trying NumPy code without changes</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="../user/advanced.html">Advanced topics</a></li>
@@ -977,12 +977,12 @@
 <h1>Edge Detection<a class="headerlink" href="#Edge-Detection" title="Link to this heading">#</a></h1>
 <section id="Learning-Outcomes">
 <h2>Learning Outcomes<a class="headerlink" href="#Learning-Outcomes" title="Link to this heading">#</a></h2>
-<p>This example identifies edges in an image using Sobol edge detection algorithm and is implemented using NumPy and SciPy. An edge is defined as an abrupt change in intensity of the image. The Sobol edge detection algorithm uses a kernel in each direction to compute derivative of intensity of the image. The gradient of the intensity will help us determine the locations where changes in intensity are abrupt, which can then be used to detect edges in an image.</p>
+<p>This example identifies edges in an image using Sobel edge detection algorithm and is implemented using NumPy and SciPy. An edge is defined as an abrupt change in intensity of the image. The Sobel edge detection algorithm uses a kernel in each direction to compute derivative of intensity of the image. The gradient of the intensity will help us determine the locations where changes in intensity are abrupt, which can then be used to detect edges in an image.</p>
 <p>This example uses the following packages in addition to NumPy/cuPyNumeric: Scipy, Matplotlib, PIL</p>
 </section>
 <section id="Background">
 <h2>Background<a class="headerlink" href="#Background" title="Link to this heading">#</a></h2>
-<p>For more information on edge detection, check this <a class="reference external" href="https://www.cs.auckland.ac.nz/compsci373s1c/PatricesLectures/Edge%20detection-Sobel_2up.pdf">material</a>.</p>
+<p>For more information on edge detection, see the <a class="reference external" href="https://en.wikipedia.org/wiki/Sobel_operator">Sobel operator</a>.</p>
 </section>
 <section id="Implementation">
 <h2>Implementation<a class="headerlink" href="#Implementation" title="Link to this heading">#</a></h2>
@@ -1044,7 +1044,7 @@
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read the image</span>
 <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;image.png&quot;</span><span class="p">))</span>
 
-<span class="c1"># Sobol kernels in x and y to compute the derivatives</span>
+<span class="c1"># Sobel kernels in x and y to compute the derivatives</span>
 <span class="n">kernel_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
 <span class="n">kernel_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
 
