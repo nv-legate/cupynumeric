@@ -116,16 +116,6 @@ def test_empty():
         np.convolve([], [], mode="same")
 
 
-@pytest.mark.skip(reason="Eager mode removed - warning no longer emitted")
-def test_convolve_warns_direct_in_1d(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CUPYNUMERIC_WARN", "1")
-    msg = r"the method direct is ignored for the 1D convolution"
-    a = num.array([1, 2, 3])
-    v = num.array([0, 1, 0])
-    with pytest.warns(UserWarning, match=msg):
-        num.convolve(a, v, mode="same", method="direct")
-
-
 def test_convolve_direct_ignored_matches_default() -> None:
     a = num.array([1, 2, 3])
     v = num.array([0, 1, 0])

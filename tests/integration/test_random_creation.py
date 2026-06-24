@@ -150,7 +150,6 @@ def test_default_rng_bitgenerator():
     assert rng_num_1.random() == rng_num_2.random()
 
 
-@pytest.mark.xfail(reason="cupynumeric.internal#135")
 def test_default_rng_generator():
     steps = 3
     seed = 12345
@@ -422,14 +421,7 @@ class TestRandomErrors:
     @pytest.mark.parametrize(
         "dtype",
         [
-            pytest.param(
-                str,
-                marks=pytest.mark.xfail(
-                    reason="NumPy raise TypeError, cuPyNumeric pass"
-                ),
-            ),
-            # NumPy: TypeError: Unsupported dtype dtype('<U') for randint
-            # cuPyNumeric: array(['4'], dtype='<U1')
+            str,
             pytest.param(
                 np.float16,
                 marks=pytest.mark.xfail(

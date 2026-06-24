@@ -145,19 +145,16 @@ def test_array_2d_repeats_invalid(repeats):
         num.repeat(anp, repeats)
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("arr", ([1, 2, 3], [[1, 3], [2, 4]]))
 @pytest.mark.parametrize("repeats", (-3, [-3]))
-def test_array_1d_repeats_fatal_error(arr, repeats):
+def test_array_repeats_negative_raises(arr, repeats):
     anp = np.array(arr)
     anum = num.array(arr)
     expected_exc = ValueError
     with pytest.raises(expected_exc):
         np.repeat(anp, repeats)
-        # numpy raises "ValueError: negative dimensions are not allowed"
     with pytest.raises(expected_exc):
         num.repeat(anum, repeats)
-        # cuPyNumeric got "Fatal Python error: Aborted"
 
 
 @pytest.mark.parametrize("arr", (None, [], 3, [1, 2, 3], [[1, 3], [2, 4]]))

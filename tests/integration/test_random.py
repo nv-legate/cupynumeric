@@ -75,9 +75,6 @@ class TestRandn:
         L2 = np.random.randn(size)
         assert L1.ndim == L2.ndim == 1
 
-    @pytest.mark.xfail(
-        reason="numpy failures in random.mtrand.RandomState.standard_normal"
-    )
     def test_2d(self) -> None:
         L1 = num.random.randn(3, 3)
         L2 = np.random.randn(3, 3)

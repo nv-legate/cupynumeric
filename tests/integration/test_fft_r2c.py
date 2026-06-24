@@ -188,21 +188,6 @@ def test_fftn_axis_out_of_bounds() -> None:
         num.fft.fftn(arr, axes=(3,))
 
 
-@pytest.mark.skip(
-    reason="eager-only: this test required eager mode which has been removed"
-)
-def test_rfft_single_precision_unsupported_dtype(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    data = np.random.rand(8).astype(np.float32)
-    if np.fft.rfft(data).dtype == np.complex128:
-        pytest.skip("numpy returns complex128; error path not reachable")
-    monkeypatch.setattr("cupynumeric._thunk.eager.is_np2", False)
-    msg = r"Unsupported data type .* in eager FFT"
-    with pytest.raises(RuntimeError, match=msg):
-        num.fft.rfft(num.array(data))
-
-
 def check_4d_r2c(N, dtype=np.float64):
     Z = np.random.rand(*N).astype(dtype)
     Z_num = num.array(Z)

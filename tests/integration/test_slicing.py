@@ -80,8 +80,6 @@ def test_0d():
     assert np.array_equal(sl_np, sl_num)
 
 
-# TODO: Legate needs 4-D arrays for this to work correctly
-@pytest.mark.skip
 def test_4d():
     natestg = num.array(NATEST)
 
