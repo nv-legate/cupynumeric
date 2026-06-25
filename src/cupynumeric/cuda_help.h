@@ -42,101 +42,210 @@
 
 namespace cupynumeric {
 
+namespace detail {
+
+__host__ inline const char* cufft_error_string(cufftResult result)
+{
+  switch (result) {
+    case CUFFT_INVALID_PLAN: return "CUFFT_INVALID_PLAN";
+    case CUFFT_ALLOC_FAILED: return "CUFFT_ALLOC_FAILED";
+    case CUFFT_INVALID_TYPE: return "CUFFT_INVALID_TYPE";
+    case CUFFT_INVALID_VALUE: return "CUFFT_INVALID_VALUE";
+    case CUFFT_INTERNAL_ERROR: return "CUFFT_INTERNAL_ERROR";
+    case CUFFT_EXEC_FAILED: return "CUFFT_EXEC_FAILED";
+    case CUFFT_SETUP_FAILED: return "CUFFT_SETUP_FAILED";
+    case CUFFT_INVALID_SIZE: return "CUFFT_INVALID_SIZE";
+    case CUFFT_UNALIGNED_DATA: return "CUFFT_UNALIGNED_DATA";
+#ifdef CUFFT_INCOMPLETE_PARAMETER_LIST
+    case CUFFT_INCOMPLETE_PARAMETER_LIST: return "CUFFT_INCOMPLETE_PARAMETER_LIST";
+#endif
+    case CUFFT_INVALID_DEVICE: return "CUFFT_INVALID_DEVICE";
+#ifdef CUFFT_PARSE_ERROR
+    case CUFFT_PARSE_ERROR: return "CUFFT_PARSE_ERROR";
+#endif
+    case CUFFT_NO_WORKSPACE: return "CUFFT_NO_WORKSPACE";
+    case CUFFT_NOT_IMPLEMENTED: return "CUFFT_NOT_IMPLEMENTED";
+    case CUFFT_NOT_SUPPORTED: return "CUFFT_NOT_SUPPORTED";
+#ifdef CUFFT_MISSING_DEPENDENCY
+    case CUFFT_MISSING_DEPENDENCY: return "CUFFT_MISSING_DEPENDENCY";
+#endif
+#ifdef CUFFT_NVRTC_FAILURE
+    case CUFFT_NVRTC_FAILURE: return "CUFFT_NVRTC_FAILURE";
+#endif
+#ifdef CUFFT_NVJITLINK_FAILURE
+    case CUFFT_NVJITLINK_FAILURE: return "CUFFT_NVJITLINK_FAILURE";
+#endif
+#ifdef CUFFT_NVSHMEM_FAILURE
+    case CUFFT_NVSHMEM_FAILURE: return "CUFFT_NVSHMEM_FAILURE";
+#endif
+    default: return "<unknown>";
+  }
+}
+
+__host__ inline const char* cusolver_error_string(cusolverStatus_t status)
+{
+  switch (status) {
+    case CUSOLVER_STATUS_NOT_INITIALIZED: return "CUSOLVER_STATUS_NOT_INITIALIZED";
+    case CUSOLVER_STATUS_ALLOC_FAILED: return "CUSOLVER_STATUS_ALLOC_FAILED";
+    case CUSOLVER_STATUS_INVALID_VALUE: return "CUSOLVER_STATUS_INVALID_VALUE";
+    case CUSOLVER_STATUS_ARCH_MISMATCH: return "CUSOLVER_STATUS_ARCH_MISMATCH";
+    case CUSOLVER_STATUS_MAPPING_ERROR: return "CUSOLVER_STATUS_MAPPING_ERROR";
+    case CUSOLVER_STATUS_EXECUTION_FAILED: return "CUSOLVER_STATUS_EXECUTION_FAILED";
+    case CUSOLVER_STATUS_INTERNAL_ERROR: return "CUSOLVER_STATUS_INTERNAL_ERROR";
+    case CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
+      return "CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
+    case CUSOLVER_STATUS_NOT_SUPPORTED: return "CUSOLVER_STATUS_NOT_SUPPORTED";
+    case CUSOLVER_STATUS_ZERO_PIVOT: return "CUSOLVER_STATUS_ZERO_PIVOT";
+    case CUSOLVER_STATUS_INVALID_LICENSE: return "CUSOLVER_STATUS_INVALID_LICENSE";
+#ifdef CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED
+    case CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED:
+      return "CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_PARAMS_INVALID
+    case CUSOLVER_STATUS_IRS_PARAMS_INVALID: return "CUSOLVER_STATUS_IRS_PARAMS_INVALID";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC
+    case CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC: return "CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE
+    case CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE:
+      return "CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER
+    case CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER:
+      return "CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_INTERNAL_ERROR
+    case CUSOLVER_STATUS_IRS_INTERNAL_ERROR: return "CUSOLVER_STATUS_IRS_INTERNAL_ERROR";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_NOT_SUPPORTED
+    case CUSOLVER_STATUS_IRS_NOT_SUPPORTED: return "CUSOLVER_STATUS_IRS_NOT_SUPPORTED";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_OUT_OF_RANGE
+    case CUSOLVER_STATUS_IRS_OUT_OF_RANGE: return "CUSOLVER_STATUS_IRS_OUT_OF_RANGE";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES
+    case CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES:
+      return "CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED
+    case CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED:
+      return "CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED
+    case CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED: return "CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED";
+#endif
+#ifdef CUSOLVER_STATUS_IRS_MATRIX_SINGULAR
+    case CUSOLVER_STATUS_IRS_MATRIX_SINGULAR: return "CUSOLVER_STATUS_IRS_MATRIX_SINGULAR";
+#endif
+#ifdef CUSOLVER_STATUS_INVALID_WORKSPACE
+    case CUSOLVER_STATUS_INVALID_WORKSPACE: return "CUSOLVER_STATUS_INVALID_WORKSPACE";
+#endif
+    default: return "<unknown>";
+  }
+}
+
+__host__ inline const char* cublas_error_string(cublasStatus_t status)
+{
+  switch (status) {
+    case CUBLAS_STATUS_NOT_INITIALIZED: return "CUBLAS_STATUS_NOT_INITIALIZED";
+    case CUBLAS_STATUS_ALLOC_FAILED: return "CUBLAS_STATUS_ALLOC_FAILED";
+    case CUBLAS_STATUS_INVALID_VALUE: return "CUBLAS_STATUS_INVALID_VALUE";
+    case CUBLAS_STATUS_ARCH_MISMATCH: return "CUBLAS_STATUS_ARCH_MISMATCH";
+    case CUBLAS_STATUS_MAPPING_ERROR: return "CUBLAS_STATUS_MAPPING_ERROR";
+    case CUBLAS_STATUS_EXECUTION_FAILED: return "CUBLAS_STATUS_EXECUTION_FAILED";
+    case CUBLAS_STATUS_INTERNAL_ERROR: return "CUBLAS_STATUS_INTERNAL_ERROR";
+    case CUBLAS_STATUS_NOT_SUPPORTED: return "CUBLAS_STATUS_NOT_SUPPORTED";
+    case CUBLAS_STATUS_LICENSE_ERROR: return "CUBLAS_STATUS_LICENSE_ERROR";
+    default: return "<unknown>";
+  }
+}
+
+}  // namespace detail
+
 __host__ inline void check_cuda(cudaError_t error, const char* file, int line)
 {
   if (error != cudaSuccess) {
-    fprintf(stderr,
-            "Internal CUDA failure with error %s (%s) in file %s at line %d\n",
-            cudaGetErrorString(error),
-            cudaGetErrorName(error),
-            file,
-            line);
-#ifdef DEBUG_CUPYNUMERIC
-    assert(false);
-#else
-    exit(error);
-#endif
+    LEGATE_ABORT("Internal CUDA failure with error ",
+                 cudaGetErrorString(error),
+                 " (",
+                 cudaGetErrorName(error),
+                 ", code ",
+                 error,
+                 ") in file ",
+                 file,
+                 " at line ",
+                 line);
   }
 }
 
 __host__ inline void check_cublas(cublasStatus_t status, const char* file, int line)
 {
   if (status != CUBLAS_STATUS_SUCCESS) {
-    fprintf(stderr,
-            "Internal cuBLAS failure with error code %d in file %s at line %d\n",
-            status,
-            file,
-            line);
-#ifdef DEBUG_CUPYNUMERIC
-    assert(false);
-#else
-    exit(status);
-#endif
+    LEGATE_ABORT("Internal cuBLAS failure with error ",
+                 detail::cublas_error_string(status),
+                 " (code ",
+                 status,
+                 ") in file ",
+                 file,
+                 " at line ",
+                 line);
   }
 }
 
 __host__ inline void check_cufft(cufftResult result, const char* file, int line)
 {
   if (result != CUFFT_SUCCESS) {
-    fprintf(stderr,
-            "Internal cuFFT failure with error code %d in file %s at line %d\n",
-            result,
-            file,
-            line);
-#ifdef DEBUG_CUPYNUMERIC
-    assert(false);
-#else
-    exit(result);
-#endif
+    LEGATE_ABORT("Internal cuFFT failure with error ",
+                 detail::cufft_error_string(result),
+                 " (code ",
+                 result,
+                 ") in file ",
+                 file,
+                 " at line ",
+                 line);
   }
 }
 
 __host__ inline void check_cusolver(cusolverStatus_t status, const char* file, int line)
 {
   if (status != CUSOLVER_STATUS_SUCCESS) {
-    fprintf(stderr,
-            "Internal cuSOLVER failure with error code %d in file %s at line %d\n",
-            status,
-            file,
-            line);
-#ifdef DEBUG_CUPYNUMERIC
-    assert(false);
-#else
-    exit(status);
-#endif
+    LEGATE_ABORT("Internal cuSOLVER failure with error ",
+                 detail::cusolver_error_string(status),
+                 " (code ",
+                 status,
+                 ") in file ",
+                 file,
+                 " at line ",
+                 line);
   }
 }
 
 __host__ inline void check_cutensor(cutensorStatus_t result, const char* file, int line)
 {
   if (result != CUTENSOR_STATUS_SUCCESS) {
-    fprintf(stderr,
-            "Internal Legate CUTENSOR failure with error %s (%d) in file %s at line %d\n",
-            cutensorGetErrorString(result),
-            result,
-            file,
-            line);
-#ifdef DEBUG_CUPYNUMERIC
-    assert(false);
-#else
-    exit(result);
-#endif
+    LEGATE_ABORT("Internal cuTENSOR failure with error ",
+                 cutensorGetErrorString(result),
+                 " (code ",
+                 result,
+                 ") in file ",
+                 file,
+                 " at line ",
+                 line);
   }
 }
 
 __host__ inline void check_nccl(ncclResult_t error, const char* file, int line)
 {
   if (error != ncclSuccess) {
-    fprintf(stderr,
-            "Internal NCCL failure with error %s in file %s at line %d\n",
-            ncclGetErrorString(error),
-            file,
-            line);
-#ifdef DEBUG_CUPYNUMERIC
-    assert(false);
-#else
-    exit(error);
-#endif
+    LEGATE_ABORT("Internal NCCL failure with error ",
+                 ncclGetErrorString(error),
+                 " (code ",
+                 error,
+                 ") in file ",
+                 file,
+                 " at line ",
+                 line);
   }
 }
 
