@@ -15,9 +15,12 @@
  */
 
 #include "cupynumeric/mapper.h"
+#include "cupynumeric/mapper_gpu_util.h"
 #include "legate/utilities/assert.h"
 
 #include <cupynumeric/stat/histogramdd.h>
+
+#include <map>
 
 using namespace legate;
 using namespace legate::mapping;
@@ -744,8 +747,14 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       // full global volume when the partitioner replicates the indices.
       const std::size_t avg_per_rank_count =
         static_cast<std::size_t>((global_index + num_ranks - 1) / num_ranks);
+      // Gather: index array is input(1). Scatter: source (values) array is input(0),
+      // confirmed by all2all_scatter.cu which uses source_rect.volume() as num_requests.
+      // Both are co-partitioned in practice, but using the correct input is semantically
+      // right and guards against future repartitioning.
       const std::size_t local_index_count =
-        static_cast<std::size_t>(task.input(1).domain().get_volume());
+        task_id == CUPYNUMERIC_ALL2ALL_SCATTER
+          ? static_cast<std::size_t>(task.input(0).domain().get_volume())
+          : static_cast<std::size_t>(task.input(1).domain().get_volume());
       const std::size_t max_staging_bytes = std::max<std::size_t>(
         elem_size,
         static_cast<std::size_t>(staging_factor * static_cast<double>(avg_per_rank_count) *
@@ -773,14 +782,9 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
                  kNumRoundScheduleZcmemTables * per_rank_u64 + allreduce_buf_bytes;
         }
         case legate::mapping::StoreTarget::FBMEM: {
+#if LEGATE_DEFINED(LEGATE_USE_CUDA)
           // Per-rank FBMEM terms include local request buffers, small metadata,
           // CUB temp, three round-offset buffers, and two staging buffers.
-          //
-          // CUB histogram temp upper bound: each SM keeps a privatized
-          // `num_bins * sizeof(uint32_t)` counters. `num_bins` here is
-          // `num_ranks` (one bin per peer). We cannot query the actual SM
-          // count from the mapper, so use a conservative upper bound.
-          constexpr std::size_t MAX_POSSIBLE_SMS = 4096;
 
           const auto local_terms =
             aligned_size(local_index_count * sizeof(std::uint64_t), DEFAULT_ALIGNMENT) +
@@ -799,7 +803,23 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           // largest-DIM Point + Pitches representable.
           constexpr std::size_t rect_info_bytes_max =
             sizeof(legate::Point<LEGATE_MAX_DIM>) + LEGATE_MAX_DIM * sizeof(std::int64_t);
-          const auto cub_temp_budget = num_ranks * sizeof(std::uint32_t) * MAX_POSSIBLE_SMS;
+          // Cache the CUB temp storage query keyed on (num_ranks, local_index_count).
+          // Legion serializes mapper callbacks with the mapper lock, so no mutex is needed.
+          // Only successful (non-zero) results are cached; a failure returns nullopt
+          // rather than silently underallocating the pool.
+          using CubCacheKey = std::pair<std::size_t, std::size_t>;
+          static std::map<CubCacheKey, std::size_t> cub_temp_cache;
+          const CubCacheKey cub_key{num_ranks, local_index_count};
+          auto cub_it = cub_temp_cache.find(cub_key);
+          if (cub_it == cub_temp_cache.end()) {
+            const auto queried =
+              query_cub_histogram_even_temp_bytes(static_cast<int>(num_ranks), local_index_count);
+            if (queried == 0) {
+              return std::nullopt;
+            }
+            cub_it = cub_temp_cache.emplace(cub_key, queried).first;
+          }
+          const auto cub_temp_budget = cub_it->second;
           const auto small_terms =
             aligned_size(num_ranks * rect_info_bytes_max, DEFAULT_ALIGNMENT) + per_rank_u64 +
             cub_temp_budget;
@@ -811,8 +831,15 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           //     `send_staging`, `recv_staging` (each bounded by `staging_per_buffer`).
           constexpr std::size_t kNumRoundOffsetBuffers = 3;
           constexpr std::size_t kNumStagingBuffers     = 2;
-          return local_terms + kNumRoundOffsetBuffers * round_offset_buf_bound +
-                 kNumStagingBuffers * staging_per_buffer + small_terms;
+          const std::size_t raw_pool                   = local_terms +
+                                       kNumRoundOffsetBuffers * round_offset_buf_bound +
+                                       kNumStagingBuffers * staging_per_buffer + small_terms;
+
+          return raw_pool;
+#else
+          // Dead in CPU-only builds; the all2all task has a GPU-only variant.
+          return std::nullopt;
+#endif  // LEGATE_USE_CUDA
         }
       }
       // SYSMEM / SOCKETMEM are not queried: only the GPU variant sets

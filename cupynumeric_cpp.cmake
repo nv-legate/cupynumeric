@@ -318,6 +318,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/set/in1d.cu
     src/cupynumeric/all2all/all2all_gather.cu
     src/cupynumeric/all2all/all2all_scatter.cu
+    src/cupynumeric/mapper_gpu_util.cu
     src/cupynumeric/stat/bincount.cu
     src/cupynumeric/convolution/convolve.cu
     src/cupynumeric/ndimage/convolve.cu
