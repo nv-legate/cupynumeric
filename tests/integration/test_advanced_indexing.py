@@ -1297,6 +1297,183 @@ class TestGeneralPathGather:
         assert np.array_equal(expected, actual)
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int64])
+class TestBoolMaskSetArrayRhs:
+    """``a[bool_mask] = b`` with non-scalar ``b``.
+
+    Single-process bool-mask SET with ``b.size > 1`` is routed through
+    ``General`` (ZIP + scatter); multi-process uses the bool fast path
+    (ADVANCED_INDEXING + scatter). These tests lock behavioral equivalence
+    with NumPy for both paths.
+
+    Scalar-rhs bool SET is already covered elsewhere (PUTMASK fast path).
+    """
+
+    def test_1d_full_shape(self, dtype: np.dtype) -> None:
+        rng = np.random.default_rng(101)
+        n = 64
+        a_np = rng.integers(0, 100, size=n).astype(dtype)
+        mask_np = rng.random(n) < 0.4
+        b_np = rng.integers(-50, 50, size=int(mask_np.sum())).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_2d_full_shape(self, dtype: np.dtype) -> None:
+        # mask.shape == a.shape; result selects scalars (1-D rhs).
+        rng = np.random.default_rng(102)
+        a_np = rng.integers(0, 100, size=(8, 12)).astype(dtype)
+        mask_np = rng.random((8, 12)) < 0.3
+        b_np = rng.integers(-50, 50, size=int(mask_np.sum())).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_2d_leading_axis(self, dtype: np.dtype) -> None:
+        # mask.shape == a.shape[:1]; each True selects a row of length
+        # a.shape[1]. Exercises the leading-axes slab pattern.
+        rng = np.random.default_rng(103)
+        a_np = rng.integers(0, 100, size=(10, 5)).astype(dtype)
+        mask_np = rng.random(10) < 0.5
+        n_true = int(mask_np.sum())
+        b_np = rng.integers(-50, 50, size=(n_true, 5)).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_3d_leading_axes(self, dtype: np.dtype) -> None:
+        # 2-D mask on 3-D array; rhs is (n_true, trailing_dim).
+        rng = np.random.default_rng(104)
+        a_np = rng.integers(0, 100, size=(4, 5, 6)).astype(dtype)
+        mask_np = rng.random((4, 5)) < 0.4
+        n_true = int(mask_np.sum())
+        b_np = rng.integers(-50, 50, size=(n_true, 6)).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_bool_on_middle_axis(self, dtype: np.dtype) -> None:
+        # a[:, mask, :] = b — bool with slice(None) co-keys.
+        # Bool with co-keys → _prepare_boolean_array_indexing returns None;
+        # General handles it (ADVANCED_INDEXING via nonzero + scatter).
+        rng = np.random.default_rng(105)
+        a_np = rng.integers(0, 100, size=(4, 8, 3)).astype(dtype)
+        mask_np = rng.random(8) < 0.5
+        n_true = int(mask_np.sum())
+        b_np = rng.integers(-50, 50, size=(4, n_true, 3)).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[:, mask_np, :] = b_np
+        a_num[:, num.array(mask_np), :] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_all_true_mask(self, dtype: np.dtype) -> None:
+        rng = np.random.default_rng(106)
+        n = 30
+        a_np = rng.integers(0, 100, size=n).astype(dtype)
+        mask_np = np.ones(n, dtype=bool)
+        b_np = rng.integers(-50, 50, size=n).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_empty_mask_no_op(self, dtype: np.dtype) -> None:
+        # All-False mask: nothing to scatter; array unchanged.
+        a_np = np.arange(20, dtype=dtype)
+        mask_np = np.zeros(20, dtype=bool)
+        b_np = np.array([], dtype=dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_larger_2d(self, dtype: np.dtype) -> None:
+        # Larger problem to give multi-GPU partitioning something to chew on.
+        rng = np.random.default_rng(107)
+        a_np = rng.integers(0, 1000, size=(64, 64)).astype(dtype)
+        mask_np = rng.random((64, 64)) < 0.25
+        b_np = rng.integers(-500, 500, size=int(mask_np.sum())).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np] = b_np
+        a_num[num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+
+def test_bool_set_dtype_conversion() -> None:
+    """``a[mask] = b`` with mismatched dtypes — ``ndarray.__setitem__``
+    converts ``b`` to ``a.dtype`` before the scatter, so a float64 rhs
+    assigned into an int64 array is silently truncated, matching NumPy."""
+    rng = np.random.default_rng(201)
+    a_np = rng.integers(0, 100, size=20).astype(np.int64)
+    mask_np = np.zeros(20, dtype=bool)
+    mask_np[::3] = True
+    # Non-scalar float rhs assigned into int array (silently truncates).
+    b_np = np.linspace(0.5, 5.5, int(mask_np.sum()), dtype=np.float64)
+
+    a_num = num.array(a_np.copy())
+    a_np[mask_np] = b_np
+    a_num[num.array(mask_np)] = num.array(b_np)
+    assert np.array_equal(a_np, a_num)
+
+
+def test_bool_set_dtype_conversion_scalar_rhs() -> None:
+    """Scalar-rhs variant of the dtype-conversion contract — PUTMASK
+    fast path with mismatched scalar dtype."""
+    a_np = np.zeros(10, dtype=np.int32)
+    mask_np = np.array([True, False] * 5)
+    rhs = np.float64(7.9)
+
+    a_num = num.array(a_np.copy())
+    a_np[mask_np] = rhs
+    a_num[num.array(mask_np)] = rhs
+    assert np.array_equal(a_np, a_num)
+
+
+def test_int_index_scatter_0d_rhs() -> None:
+    """``a[indices] = scalar_0d`` via General scatter with a 0-D rhs.
+
+    On single-GPU, _lower_to_strategy promotes the 0-D rhs to 1-D for the
+    _can_skip_transformed_index_copy decision, then calls execute_set with
+    the original 0-D value.  Verifies the scatter produces the correct result
+    and does not crash or silently write wrong values.
+    """
+    rng = np.random.default_rng(301)
+    a_np = rng.integers(0, 100, size=(8, 6)).astype(np.float32)
+    rows_np = rng.integers(0, 8, size=5)
+    cols_np = rng.integers(0, 6, size=5)
+    scalar = np.float32(42.0)
+
+    a_num = num.array(a_np.copy())
+    a_np[rows_np, cols_np] = scalar
+    a_num[num.array(rows_np), num.array(cols_np)] = scalar
+    assert np.array_equal(a_np, a_num)
+
+
+def test_int_index_scatter_0d_rhs_1d() -> None:
+    """1-D variant: ``a[indices] = scalar_0d`` on a 1-D array."""
+    rng = np.random.default_rng(302)
+    a_np = rng.integers(0, 100, size=20).astype(np.int64)
+    idx_np = rng.integers(0, 20, size=7)
+    scalar = np.int64(-1)
+
+    a_num = num.array(a_np.copy())
+    a_np[idx_np] = scalar
+    a_num[num.array(idx_np)] = scalar
+    assert np.array_equal(a_np, a_num)
+
+
 def test_integer_indexing_out_of_bounds() -> None:
     arr = num.arange(12, dtype=np.float32).reshape(3, 4)
     idx = num.array([0, 999], dtype=np.int64)

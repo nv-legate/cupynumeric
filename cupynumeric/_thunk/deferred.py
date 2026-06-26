@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable
-from dataclasses import dataclass
 from enum import IntEnum, unique
 from functools import reduce
 from itertools import chain
@@ -86,6 +85,14 @@ from ..linalg._solve import solve_deferred
 from ..linalg._svd import svd_deferred
 from ..runtime import runtime
 from ..settings import settings
+from ._advanced_indexing import _slice_store, _unpack_ellipsis
+from ._indexing_strategy import (
+    Basic,
+    BoolMask,
+    General,
+    IntArraySingleAxis,
+    Strategy,
+)
 from ._sort import sort_deferred
 
 if TYPE_CHECKING:
@@ -134,29 +141,6 @@ if TYPE_CHECKING:
 else:
     # At runtime, IndexKey is just an alias for Any
     IndexKey: TypeAlias = Any
-
-
-@dataclass(frozen=True)
-class BooleanIndexingContext:
-    """
-    Prepared context for boolean array indexing operations.
-
-    Attributes
-    ----------
-    transformed_array : DeferredArray
-        Array after transformations and transpose
-    bool_key : DeferredArray
-        Boolean indexing array (mask)
-    inverted_transpose_indices : tuple[int, ...] | None
-        Indices to undo transpose (None if no transpose)
-    transpose_index : int
-        Original position of boolean array
-    """
-
-    transformed_array: DeferredArray
-    bool_key: DeferredArray
-    inverted_transpose_indices: tuple[int, ...] | None
-    transpose_index: int
 
 
 legate_runtime = get_legate_runtime()
@@ -281,232 +265,6 @@ def _make_deferred_binary_ufunc(ufunc: binary_ufunc) -> Callable[..., ndarray]:
         )
 
     return method
-
-
-def _apply_non_boolean_keys(
-    new_key: tuple[Any, ...],
-    store: LogicalStore,
-    transpose_index: int,
-    slice_store_func: Any,
-) -> tuple[LogicalStore, int]:
-    """
-    Apply non-boolean indexing keys (int, slice, newaxis) to a store.
-
-    This is a helper function for boolean array indexing that applies
-    transformations like integer indexing, slicing, and newaxis before
-    the boolean indexing operation.
-
-    Parameters
-    ----------
-    new_key : tuple
-        Tuple of indexing keys (excluding the boolean array)
-    store : LogicalStore
-        The store to transform
-    transpose_index : int
-        Original position of the boolean array in the full key
-    slice_store_func : callable
-        Function to call for slice operations (DeferredArray._slice_store)
-
-    Returns
-    -------
-    tuple[LogicalStore, int]
-        The transformed store and the new position of the boolean dimension
-    """
-    shift = 0  # Track dimension shifts due to projections
-    new_boolean_position = transpose_index
-
-    for dim, k in enumerate(new_key):
-        # Determine if this key affects dimensions before the boolean array
-        affects_boolean_position = dim < transpose_index
-
-        if isinstance(k, int):
-            # Integer indexing: select a specific slice along this dimension
-            if k < 0:
-                # Convert negative indices
-                k += store.shape[dim + shift]
-            store = store.project(dim + shift, k)
-            shift -= 1  # Projection reduces dimensionality
-            # If this projection is before the boolean dimension, adjust its position
-            if affects_boolean_position:
-                new_boolean_position -= 1
-        elif k is np.newaxis:
-            # Add a new dimension of size 1
-            store = store.promote(dim + shift, 1)
-            # If this promotion is before the boolean dimension, adjust its position
-            if affects_boolean_position:
-                new_boolean_position += 1
-        elif isinstance(k, slice):
-            # Slice indexing: select a range along this dimension
-            k, store = slice_store_func(k, store, dim + shift)
-            # Slicing doesn't change dimensionality, so no adjustment needed
-        else:
-            raise TypeError(
-                "Unsupported entry type passed to advanced indexing operation"
-            )
-
-    return store, new_boolean_position
-
-
-def _execute_boolean_indexing_task(
-    rhs: DeferredArray, key: DeferredArray, is_set: bool
-) -> DeferredArray:
-    """
-    Execute the ADVANCED_INDEXING task for boolean indexing.
-
-    This is shared logic for both get and set operations.
-
-    Parameters
-    ----------
-    rhs : DeferredArray
-        The input array (after transformations and transpose)
-    key : DeferredArray
-        The boolean mask (will be promoted to match rhs dimensionality)
-    is_set : bool
-        Whether this is a set operation
-
-    Returns
-    -------
-    DeferredArray
-        The raw output from the ADVANCED_INDEXING task
-    """
-    rhs_store = rhs.base
-    key_store = key.base
-
-    # Promote the boolean key to match the full dimensionality
-    key_dims = key_store.ndim
-    for i in range(key_dims, rhs_store.ndim):
-        key_store = key_store.promote(i, rhs_store.shape[i])
-
-    # Determine output data type
-    # For set operations, we return Point<N> type for indirect copy operations
-    out_dtype = ty.point_type(rhs_store.ndim) if is_set else rhs_store.type
-
-    # Dimensions to which a boolean mask is applied are flattened
-    out = runtime.create_unbound_thunk(
-        out_dtype, ndim=rhs_store.ndim - key.ndim + 1
-    )
-
-    # Set up and execute the ADVANCED_INDEXING task
-    task = legate_runtime.create_auto_task(
-        rhs.library, CuPyNumericOpCode.ADVANCED_INDEXING
-    )
-    task.add_output(out.base)
-    p_rhs = task.add_input(rhs_store)
-    p_key = task.add_input(key_store)
-    task.add_scalar_arg(is_set, ty.bool_)
-
-    # Add constraints for proper data alignment and broadcasting
-    task.add_constraint(align(p_rhs, p_key))
-    if rhs_store.ndim > 1:
-        task.add_constraint(broadcast(p_rhs, range(1, rhs_store.ndim)))
-
-    # Execute the boolean indexing task
-    task.execute()
-
-    return out
-
-
-def _process_boolean_array_index_get(
-    ctx: BooleanIndexingContext,
-) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
-    """
-    Process boolean array indexing for get operations: result = a[bool_mask]
-
-    Parameters
-    ----------
-    ctx : BooleanIndexingContext
-        The prepared boolean indexing context
-
-    Returns
-    -------
-    tuple[bool, DeferredArray, DeferredArray, DeferredArray]
-        (False, rhs, out, self) tuple containing the indexing result
-    """
-    rhs = ctx.transformed_array
-    key = ctx.bool_key
-
-    # Handle edge cases where either the key or input array is empty
-    if key.size == 0 or rhs.size == 0:
-        # Calculate the number of selected elements
-        if rhs.size == 0 and key.size != 0:
-            s = key.nonzero()[0].size
-        else:
-            s = 0
-
-        # Calculate output shape
-        out_shape = (s,) + tuple(
-            rhs.shape[i] for i in range(key.ndim, rhs.ndim)
-        )
-
-        out = runtime.create_deferred_thunk(out_shape, rhs.base.type)
-        out.fill(np.zeros((), dtype=out.dtype))
-        return False, rhs, out, ctx.transformed_array
-
-    # Execute the ADVANCED_INDEXING task
-    out = _execute_boolean_indexing_task(rhs, key, is_set=False)
-
-    return False, rhs, out, ctx.transformed_array
-
-
-def _process_boolean_array_index_set(
-    ctx: BooleanIndexingContext, value: Any
-) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
-    """
-    Process boolean array indexing for set operations: a[bool_mask] = value
-
-    Parameters
-    ----------
-    ctx : BooleanIndexingContext
-        The prepared boolean indexing context
-    value : Any
-        The value to assign
-
-    Returns
-    -------
-    tuple[bool, DeferredArray, DeferredArray, DeferredArray]
-        (True, rhs, out, self) tuple containing the indexing result
-    """
-    rhs = ctx.transformed_array
-    key = ctx.bool_key
-
-    # Handle edge cases where either the key or input array is empty
-    if key.size == 0 or rhs.size == 0:
-        # Calculate the number of selected elements
-        if rhs.size == 0 and key.size != 0:
-            s = key.nonzero()[0].size
-        else:
-            s = 0
-
-        # Calculate output shape
-        out_shape = (s,) + tuple(
-            rhs.shape[i] for i in range(key.ndim, rhs.ndim)
-        )
-
-        out = runtime.create_deferred_thunk(out_shape, rhs.base.type)
-        out.fill(np.zeros((), dtype=out.dtype))
-        return False, rhs, out, ctx.transformed_array
-
-    # Optimization for scalar assignment: a[bool_mask] = scalar_value
-    has_scalar_value = value is not None and value.size == 1
-    can_use_putmask = (
-        has_scalar_value
-        and ctx.inverted_transpose_indices is None  # No transpose was applied
-        and ctx.transpose_index == 0  # Boolean array was at the beginning
-    )
-
-    if can_use_putmask:
-        # Use putmask for efficient scalar assignment
-        mask = DeferredArray(base=key.base)
-        rhs.putmask(mask, value)
-        return False, rhs, rhs, ctx.transformed_array
-
-    # Execute the ADVANCED_INDEXING task
-    out = _execute_boolean_indexing_task(rhs, key, is_set=True)
-
-    # Note: For set operations, we don't apply inverted transpose to the output
-    # The output is used for the indirect copy operation, not returned to the user
-
-    return True, rhs, out, ctx.transformed_array
 
 
 class DeferredArray:
@@ -735,242 +493,47 @@ class DeferredArray:
         store_copy.copy(store_to_copy, deep=True)
         return store_copy
 
-    @staticmethod
-    def _slice_store(
-        k: slice, store: LogicalStore, dim: int
-    ) -> tuple[slice, LogicalStore]:
-        start = k.start
-        end = k.stop
-        step = k.step
-        size = store.shape[dim]
-
-        if start is not None:
-            if start < 0:
-                start += size
-            start = max(0, min(size, start))
-        if end is not None:
-            if end < 0:
-                end += size
-            end = max(0, min(size, end))
-        if (
-            (start is not None and start == size)
-            or (end is not None and end == 0)
-            or (start is not None and end is not None and start >= end)
-        ):
-            start = 0
-            end = 0
-            step = 1
-        k = slice(start, end, step)
-
-        if start == end and start == 0:  # empty slice
-            # Only project if the dimension has non-zero extent.
-            # If the dimension already has extent 0, we can't project index 0
-            # since it's out of bounds [0, 0).
-            if size > 0:
-                store = store.project(dim, 0)
-                store = store.promote(dim, 0)
-            # If size == 0, store is already empty in this dimension
-        else:
-            store = store.slice(dim, k)
-
-        return k, store
-
-    def _try_single_boolean_array_index_get(
-        self, key: IndexKey
-    ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray] | None:
-        """
-        Try to handle single boolean array indexing for get operations: result = a[bool_mask]
-
-        Args:
-            key: The indexing key
-
-        Returns:
-            None if this is not a single boolean array case
-            (False, rhs, out, self) tuple if successfully handled (False indicates get operation)
-        """
-        if (prepared := self._prepare_boolean_array_indexing(key)) is None:
-            return None
-
-        return _process_boolean_array_index_get(prepared)
-
-    def _try_single_boolean_array_index_set(
-        self, key: IndexKey, value: Any
-    ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray] | None:
-        """
-        Try to handle single boolean array indexing for set operations: a[bool_mask] = value
-
-        Args:
-            key: The indexing key
-            value: The value to assign
-
-        Returns:
-            None if this is not a single boolean array case
-            (True, rhs, out, self) tuple if successfully handled (True indicates set operation)
-        """
-        if (prepared := self._prepare_boolean_array_indexing(key)) is None:
-            return None
-
-        return _process_boolean_array_index_set(prepared, value)
-
     def _prepare_boolean_array_indexing(
         self, key: IndexKey
-    ) -> BooleanIndexingContext | None:
+    ) -> BoolMask | None:
+        """Return a BoolMask for ``a[bool_mask]`` or ``a[(bool_mask,)]``.
+
+        Returns ``None`` for everything else — co-keys, integer arrays, and
+        multi-element tuples all fall back to ``General``.
         """
-        Prepare single boolean array indexing by validating and transforming the array.
-
-        This function detects if the indexing operation involves exactly one boolean array,
-        validates shapes, applies necessary transformations (int, slice, newaxis), and
-        transposes to move boolean dimensions to the front.
-
-        Args:
-            key: The indexing key (can be a single array or tuple of indices)
-
-        Returns:
-            None if this is not a single boolean array case or if complex transformations
-            make it unsuitable for the optimized path.
-
-            Otherwise returns a BooleanIndexingContext containing:
-            - transformed_array: The array after transformations and transpose
-            - bool_key: The boolean indexing array
-            - inverted_transpose_indices: Indices to undo the transpose (None if no transpose)
-            - transpose_index: Original position of the boolean array
-        """
-        # Case 1: Direct boolean array indexing like a[bool_mask]
-        if isinstance(key, DeferredArray) and key.dtype == bool:
-            # Simple case: no transpose needed, boolean array is already at position 0
-            bool_key = (
-                runtime.to_deferred_array(key, read_only=True)
-                if not isinstance(key, DeferredArray)
-                else key
-            )
-            return BooleanIndexingContext(
-                transformed_array=self,
-                bool_key=bool_key,
-                inverted_transpose_indices=None,
-                transpose_index=0,
-            )
-
-        # Case 2: Tuple indexing with exactly one boolean array like a[:, bool_mask, :]
-        if not isinstance(key, tuple):
-            return None  # Not a tuple, can't be our target case
-
-        # Expand ellipsis (...) to explicit slice(None) entries
-        key = self._unpack_ellipsis(key, self.ndim)
-
-        # Scan through the key tuple to find boolean arrays
-        # Find all array indices in the key
-        array_indices = [
-            i for i, k in enumerate(key) if isinstance(k, DeferredArray)
-        ]
-
-        # We only handle the case with exactly one array
-        if len(array_indices) != 1:
+        if isinstance(key, DeferredArray) and key.dtype == np.dtype(bool):
+            bool_key = key
+        elif (
+            isinstance(key, tuple)
+            and len(key) == 1
+            and isinstance(key[0], DeferredArray)
+            and key[0].dtype == np.dtype(bool)
+        ):
+            bool_key = key[0]
+        else:
             return None
 
-        transpose_index = array_indices[0]
-
-        # Non-boolean arrays are handled by general advanced indexing
-        if key[transpose_index].dtype != bool:
-            return None
-
-        # Now we have exactly one boolean array at position transpose_index
-        # We need to apply other transformations first, then transpose to move boolean dimensions to front
-        # This optimization avoids expensive copy operations in the advanced indexing task
-
-        lhs = self
-        bool_key = key[transpose_index]
-        key_dim = bool_key.ndim  # Boolean array can be multi-dimensional
-
-        # Validate boolean array shape compatibility BEFORE any transformations
-        # The boolean array's dimensions must match the corresponding dimensions of the original array
-        # at the original transpose_index position
-        if not isinstance(bool_key, DeferredArray):
-            bool_key = runtime.to_deferred_array(bool_key, read_only=True)
-
-        for i in range(key_dim):
-            original_dim_index = transpose_index + i
-            if original_dim_index >= lhs.ndim:
+        for i in range(bool_key.ndim):
+            if i >= self.ndim:
                 raise ValueError(
-                    f"Boolean array has {key_dim} dimensions but can't index "
-                    f"starting at position {transpose_index} in array with {lhs.ndim} dimensions"
+                    f"Boolean array has {bool_key.ndim} dimensions but can't "
+                    f"index starting at position 0 in array with {self.ndim} dimensions"
                 )
-            if bool_key.shape[i] != lhs.shape[original_dim_index]:
+            if bool_key.shape[i] != self.shape[i]:
                 raise ValueError(
                     f"shape of the boolean index array for dimension {i} "
-                    f"doesn't match the input array shape at position {original_dim_index}: "
-                    f"expected {lhs.shape[original_dim_index]}, got {bool_key.shape[i]}"
+                    f"doesn't match the input array shape at position {i}: "
+                    f"expected {self.shape[i]}, got {bool_key.shape[i]}"
                 )
 
-        # First, apply all non-boolean transformations to get the correct intermediate array
-        # We need to track how the boolean dimension position changes due to these transformations
-        new_boolean_position = transpose_index
-
-        # Process all the other keys in the tuple (everything except the boolean array)
-        # These need to be applied BEFORE transpose to get the correct dimensions
-        # Keys before boolean array
-        keys_before = (key[i] for i in range(0, transpose_index))
-        # Keys after boolean array
-        keys_after = (key[i] for i in range(transpose_index + 1, len(key)))
-
-        new_key = tuple(chain(keys_before, keys_after))
-
-        # Apply the non-boolean keys first
-        if new_key:
-            store, new_boolean_position = _apply_non_boolean_keys(
-                new_key, lhs.base, transpose_index, DeferredArray._slice_store
-            )
-            # Wrap the modified store back into a DeferredArray
-            lhs = DeferredArray(store)
-
-        # Now calculate transpose indices based on the transformed array dimensions
-        # Move the boolean dimensions from new_boolean_position to the front
-        # Boolean dimensions first
-        bool_dims = range(new_boolean_position, new_boolean_position + key_dim)
-
-        # Dimensions before boolean array
-        before_dims = range(0, new_boolean_position)
-
-        # Dimensions after boolean array
-        after_dims = range(new_boolean_position + key_dim, lhs.ndim)
-
-        transpose_indices = tuple(chain(bool_dims, before_dims, after_dims))
-
-        # Apply the transpose to move boolean dimensions to the front
-        # Only transpose if boolean array is not already at position 0
-        if new_boolean_position != 0:
-            lhs = lhs.transpose(transpose_indices)
-
-        # Calculate inverted transpose indices to undo the transpose after boolean indexing
-        # This is needed to restore the correct dimension order in the final result
-        inverted_transpose_indices = None
-        if new_boolean_position != 0:
-            # Create the inverse permutation of the transpose
-            inverted_transpose_indices = tuple(
-                i
-                for i, k in sorted(
-                    enumerate(transpose_indices), key=lambda x: x[1]
-                )
-            )
-
-        # For complex cases with transformations, fall back to the general advanced indexing
-        # The transformation pipeline is complex and error-prone for boolean indexing
-        # It's safer to let the general advanced indexing handle these cases
-        # Fallback to general advanced indexing if there are transformations
-        # or if the boolean position changed
-        if new_key or new_boolean_position != transpose_index:
-            # Fall back to general advanced indexing for complex cases
-            return None
-
-        # Simple case: boolean indexing without complex transformations
-        # Return the prepared arrays and metadata
-        return BooleanIndexingContext(
-            transformed_array=lhs,
+        return BoolMask(
+            array=self,
+            transformed_array=self,
             bool_key=bool_key,
-            inverted_transpose_indices=inverted_transpose_indices,
-            transpose_index=new_boolean_position,
+            transpose_index=0,
         )
 
-    def _check_if_can_use_take(
+    def _can_use_take(
         self, computed_key: tuple[Any, ...]
     ) -> tuple[bool, int, DeferredArray | None]:
         """
@@ -1005,7 +568,9 @@ class DeferredArray:
                 mask_axis = array_positions[0]
                 array_element = computed_key[mask_axis]
 
-                if array_element.ndim == 1 and array_element.dtype != bool:
+                if array_element.ndim == 1 and array_element.dtype != np.dtype(
+                    bool
+                ):
                     # Empty index arrays are fine — np.take(a, [], axis=k) returns an
                     # empty result without a task-submission error.
                     can_use_take_path = True
@@ -1100,6 +665,14 @@ class DeferredArray:
         if runtime.num_procs != 1 or self.base.ndim == 0:
             return None
 
+        # If every dimension is indexed by a 0-D scalar array, the output is
+        # scalar — bail before _prepare_zip_indices so the caller's _zip_indices
+        # call doesn't have to repeat the same work.
+        if len(arrays) == self.ndim and all(
+            isinstance(a, DeferredArray) and a.ndim == 0 for a in arrays
+        ):
+            return None
+
         start_index, arrays, key_dim, out_shape = self._prepare_zip_indices(
             start_index, arrays
         )
@@ -1176,16 +749,23 @@ class DeferredArray:
         """
         Try the fused zip + scatter fast path for advanced-indexing set.
 
-        Inputs are the outputs of ``_prepare_advanced_indexing_inputs``:
-        ``self`` is the (possibly copied) right-hand side, ``new_self`` is
-        the transformed destination view so we can stream updates back if
-        the prep had to materialize a copy.
+        ``self`` is the post-transformation destination view (LHS into which
+        values are scattered); ``value`` is the right-hand side being scattered
+        in; ``new_self`` is the original destination for copy-back when the
+        transformation materialized a distinct buffer.
 
         Returns ``True`` when the scatter ran in place; ``False`` lets the
         caller fall back to ``_zip_indices`` + ``_perform_scatter`` using
         the same prepared inputs.
         """
         if runtime.num_procs != 1 or self.base.ndim == 0:
+            return False
+
+        # Same scalar-output pre-check as _zipgather to avoid a double
+        # _prepare_zip_indices call when the caller falls back to _zip_indices.
+        if len(arrays) == self.ndim and all(
+            isinstance(a, DeferredArray) and a.ndim == 0 for a in arrays
+        ):
             return False
 
         start_index, arrays, key_dim, out_shape = self._prepare_zip_indices(
@@ -1225,16 +805,15 @@ class DeferredArray:
 
         return True
 
-    def _perform_gather(
+    def _dispatch_gather(
         self,
         result: LogicalStore,
         source: LogicalStore,
         index_array: LogicalStore,
     ) -> None:
         """
-        Performs a gather operation from source into result stores.
-        The implementation will switch between a single-processor gather task
-        and a multi-processor scatter operation depending on processor count.
+        Runtime-tier selection for gather: single-GPU task, NCCL all-to-all,
+        or Legate ``issue_gather``. Pure Layer-C dispatch — no bookkeeping.
         """
         if (
             runtime.num_procs == 1
@@ -1254,6 +833,34 @@ class DeferredArray:
             self._nccl_all2all_gather(source, index_array, result)
         else:
             legate_runtime.issue_gather(result, source, index_array)
+
+    def _perform_gather(
+        self, source: DeferredArray, index_array: DeferredArray
+    ) -> DeferredArray:
+        """
+        High-level gather entry: allocates result, converts scalar futures,
+        and picks the runtime tier.
+
+        Single owner for advanced-indexing GET bookkeeping. Callers pass
+        DeferredArrays and receive a freshly-allocated result.
+        """
+        if source.base.has_scalar_storage:
+            source = source._convert_future_to_regionfield()
+        if index_array.base.has_scalar_storage:
+            index_array = index_array._convert_future_to_regionfield()
+            result_store = legate_runtime.create_store(
+                source.base.type,
+                shape=index_array.shape,
+                optimize_scalar=False,
+            )
+        else:
+            result_store = legate_runtime.create_store(
+                source.base.type, shape=index_array.base.shape
+            )
+        result = DeferredArray(base=result_store)
+
+        self._dispatch_gather(result.base, source.base, index_array.base)
+        return result
 
     def _issue_scatter_task(
         self,
@@ -1284,16 +891,15 @@ class DeferredArray:
         task.add_broadcast(index_array)
         task.execute()
 
-    def _perform_scatter(
+    def _dispatch_scatter(
         self,
         result: LogicalStore,
         source: LogicalStore,
         index_array: LogicalStore,
     ) -> None:
         """
-        Performs a scatter operation from source into result stores.
-        The implementation will switch between a single-processor scatter task
-        and a multi-processor scatter operation depending on processor count.
+        Runtime-tier selection for scatter: single-GPU task, NCCL all-to-all,
+        or Legate ``issue_scatter``. Pure Layer-C dispatch — no bookkeeping.
         """
         if (
             runtime.num_procs == 1
@@ -1313,6 +919,70 @@ class DeferredArray:
             self._all2all_scatter(source, index_array, result)
         else:
             legate_runtime.issue_scatter(result, index_array, source)
+
+    def _perform_scatter(
+        self,
+        source: DeferredArray,
+        index_array: DeferredArray,
+        destination: DeferredArray,
+        user_target: DeferredArray | None = None,
+    ) -> None:
+        """
+        High-level scatter entry: broadcasts source, converts scalar futures,
+        handles transformed-destination copy-back, and picks the runtime tier.
+
+        Single owner for advanced-indexing SET bookkeeping.
+
+        ``destination`` is the buffer the scatter writes into (typically a
+        transformed view or the fresh copy produced by
+        ``_prepare_advanced_indexing_inputs``); ``user_target`` is the array
+        the data should ultimately land in. If ``destination`` ends up being
+        materialized into a working buffer (transformed or scalar-storage),
+        that buffer is copied to ``user_target`` at the end. When omitted,
+        ``user_target`` defaults to ``destination`` (used by ``put``, where
+        the caller manages its own copy-back).
+        """
+        if user_target is None:
+            user_target = destination
+
+        use_nccl_scatter = (
+            settings.use_nccl_scatter()
+            and runtime.num_gpus > 1
+            and destination.base.ndim > 0
+            and source.base.ndim > 0
+            and index_array.base.ndim > 0
+        )
+
+        # Source broadcast / materialization.
+        # _all2all_scatter cannot handle broadcast-transformed source stores
+        # (shape mismatch case), so materialize. Transformed stores of matching
+        # shape are handled correctly by the NCCL task directly.
+        if source.shape != index_array.shape:
+            broadcasted = source._broadcast(index_array.base.shape)
+            source = source._copy_store(broadcasted)
+        elif not use_nccl_scatter and source.base.transformed:
+            source = source._copy_store(source.base)
+
+        if source.base.has_scalar_storage:
+            source = source._convert_future_to_regionfield()
+
+        if index_array.base.has_scalar_storage:
+            index_array = index_array._convert_future_to_regionfield()
+
+        # Scatter into a working buffer if destination is transformed or scalar-storage.
+        lhs = destination
+        if lhs.base.has_scalar_storage:
+            lhs = lhs._convert_future_to_regionfield()
+        if not use_nccl_scatter and lhs.base.transformed:
+            lhs = lhs._copy_store(lhs.base)
+
+        if index_array.size != 0:
+            self._dispatch_scatter(lhs.base, source.base, index_array.base)
+
+        # TODO this copy will be removed when affine copies are supported in
+        # Legion/Realm.
+        if lhs.base is not user_target.base:
+            user_target.copy(lhs, deep=True)
 
     def _nccl_all2all_gather(
         self,
@@ -1377,7 +1047,7 @@ class DeferredArray:
 
     def _advanced_indexing_using_take(
         self, mask_axis: int, mask_array: Any
-    ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray]:
+    ) -> DeferredArray:
         """Optimised path for a[indices, :, :] (or similar) using np.take."""
         # Call _take_using_take_task directly to avoid re-entering the
         # advanced-indexing shortcut and causing infinite recursion.
@@ -1394,8 +1064,7 @@ class DeferredArray:
             if indices._less(-lim).any() or indices._greater_equal(lim).any():
                 raise IndexError("invalid entry in indices array")
 
-        result = self._take_using_take_task(indices, mask_axis, mode="wrap")
-        return False, result, result, self
+        return self._take_using_take_task(indices, mask_axis, mode="wrap")
 
     def _can_skip_transformed_index_copy(
         self,
@@ -1444,29 +1113,6 @@ class DeferredArray:
             or can_use_nccl_scatter
         )
 
-    def _try_advanced_indexing_using_take(
-        self, key: Any
-    ) -> tuple[bool, DeferredArray, DeferredArray, DeferredArray] | None:
-        """
-        Try the ``np.take`` fast path for ``a[indices, :, :]`` / ``a[:, indices]``.
-
-        Returns the same 4-tuple as ``_advanced_indexing_using_take`` if the
-        shortcut applies, otherwise ``None``.
-        """
-        computed_key: tuple[Any, ...]
-        if isinstance(key, DeferredArray):
-            computed_key = (key,)
-        else:
-            computed_key = key
-        assert isinstance(computed_key, tuple)
-        computed_key = self._unpack_ellipsis(computed_key, self.ndim)
-        can_use_take_path, mask_axis, mask_array = self._check_if_can_use_take(
-            computed_key
-        )
-        if not can_use_take_path:
-            return None
-        return self._advanced_indexing_using_take(mask_axis, mask_array)
-
     def _prepare_advanced_indexing_inputs(
         self, key: Any, is_set: bool, set_value: Any | None
     ) -> tuple[DeferredArray, int, tuple[Any, ...], DeferredArray]:
@@ -1490,7 +1136,7 @@ class DeferredArray:
         else:
             computed_key = key
         assert isinstance(computed_key, tuple)
-        computed_key = self._unpack_ellipsis(computed_key, self.ndim)
+        computed_key = _unpack_ellipsis(computed_key, self.ndim)
 
         # the index where the first index_array is passed to the [] operator
         start_index = -1
@@ -1513,7 +1159,7 @@ class DeferredArray:
                 transpose_needed = transpose_needed or ((dim - last_index) > 1)
                 if (
                     isinstance(k, DeferredArray)
-                    and k.dtype == bool
+                    and k.dtype == np.dtype(bool)
                     and k.ndim >= 2
                 ):
                     for i in range(dim, dim + k.ndim):
@@ -1543,6 +1189,10 @@ class DeferredArray:
         shift = 0
         for dim, k in enumerate(computed_key):
             if np.isscalar(k):
+                if not isinstance(k, (bool, int, np.integer)):
+                    raise TypeError(
+                        "Unsupported entry type passed to advanced indexing operation"
+                    )
                 if k < 0:  # type: ignore [operator]
                     k += store.shape[dim + shift]  # type: ignore [operator]
                 store = store.project(dim + shift, k)
@@ -1550,9 +1200,15 @@ class DeferredArray:
             elif k is np.newaxis:
                 store = store.promote(dim + shift, 1)
             elif isinstance(k, slice):
-                k, store = self._slice_store(k, store, dim + shift)
+                store = _slice_store(k, store, dim + shift)
             elif isinstance(k, DeferredArray):
-                if k.dtype == bool:
+                if k.dtype == np.dtype(bool):
+                    if dim + k.ndim + shift > store.ndim:
+                        raise ValueError(
+                            f"Boolean array has {k.ndim} dimensions but can't "
+                            f"index starting at position {dim + shift} in array "
+                            f"with {store.ndim} dimensions"
+                        )
                     for i in range(k.ndim):
                         if k.shape[i] != store.shape[dim + i + shift]:
                             raise ValueError(
@@ -1586,36 +1242,16 @@ class DeferredArray:
 
         return rhs, start_index, tuple_of_arrays, self
 
-    @staticmethod
-    def _unpack_ellipsis(key: tuple[Any, ...], ndim: int) -> tuple[Any, ...]:
-        num_ellipsis = sum(k is Ellipsis for k in key)
-        num_newaxes = sum(k is np.newaxis for k in key)
-
-        if num_ellipsis == 0:
-            return key
-        elif num_ellipsis > 1:
-            raise ValueError("Only a single ellipsis must be present")
-
-        free_dims = ndim - (len(key) - num_newaxes - num_ellipsis)
-        to_replace = (slice(None),) * free_dims
-        unpacked: tuple[Any, ...] = ()
-        for k in key:
-            if k is Ellipsis:
-                unpacked += to_replace
-            else:
-                unpacked += (k,)
-        return unpacked
-
     def _get_view(self, key: tuple[Any, ...]) -> DeferredArray:
         # key is guaranteed to be a tuple by ndarray._convert_key() before reaching _get_view()
-        key = self._unpack_ellipsis(key, self.ndim)
+        key = _unpack_ellipsis(key, self.ndim)
         store = self.base
         shift = 0
         for dim, k in enumerate(key):
             if k is np.newaxis:
                 store = store.promote(dim + shift, 1)
             elif isinstance(k, slice):
-                _, store = self._slice_store(k, store, dim + shift)
+                store = _slice_store(k, store, dim + shift)
             elif np.isscalar(k):
                 if k < 0:  # type: ignore [operator]
                     k += store.shape[dim + shift]  # type: ignore [operator]
@@ -1666,237 +1302,102 @@ class DeferredArray:
         thunk_copy.copy(self, deep=True)
         return thunk_copy
 
-    def get_item(self, key: IndexKey) -> DeferredArray:
-        # Check to see if this is advanced indexing or not
-        if is_advanced_indexing(key):
-            # Single boolean-array fast path returns the final result
-            # directly — no zip / gather needed.
-            boolean_result = self._try_single_boolean_array_index_get(key)
-            if boolean_result is not None:
-                return boolean_result[2]
+    # ----- Strategy lowering & per-path executors --------------------------
 
-            # ``np.take`` fast path for ``a[indices, :, :]`` / ``a[:, indices]``.
-            # ndim > 1 keeps the 1-D gather (a[indices]) on the gather path.
-            if self.ndim > 1:
-                take_result = self._try_advanced_indexing_using_take(key)
-                if take_result is not None:
-                    return take_result[2]
+    def _lower_to_strategy(
+        self, key: IndexKey, rhs: DeferredArray | None = None
+    ) -> Strategy:
+        """Lower an indexing key into a ``Strategy`` instance.
 
-            # General advanced-indexing path: derive the raw index arrays
-            # once so we can choose between the fused single-GPU
-            # zipgather and the fallback zip + gather without redoing
-            # the work.
-            rhs, start_index, tuple_of_arrays, self = (
+        Performs the source-transformation prep inline so ``General`` carries
+        the post-transformation view + prepared index arrays.
+        """
+        if not is_advanced_indexing(key):
+            return Basic(array=self, key=cast(tuple[Any, ...], key))
+
+        if rhs is not None:
+            # Used in two places below: bool-strategy override and 0-D rhs promotion.
+            zipscatter_eligible = runtime.num_procs == 1 and self.base.ndim > 0
+
+            # _prepare_boolean_array_indexing returns None for non-boolean keys
+            # (integer arrays, mixed tuples, etc.).
+            bool_strategy = self._prepare_boolean_array_indexing(key)
+            if bool_strategy is not None:
+                # Boolean mask SET: use BoolMask in all cases except
+                # single-GPU non-scalar rhs, where General's fused zipscatter
+                # is faster.
+                if not (zipscatter_eligible and rhs.size > 1):
+                    return bool_strategy
+
+            # General path: integer-array keys, and boolean mask on single-GPU
+            # with non-scalar rhs where the fused zipscatter is preferred.
+            # On single-GPU, promote a 0-D rhs to 1-D so that
+            # _can_skip_transformed_index_copy can clear set_value.ndim > 0
+            # and avoid materialising an unnecessary copy of the store.
+            # On multi-GPU that optimisation is gated on num_procs == 1
+            # anyway, so the promotion would have no effect.
+            prep_value = (
+                DeferredArray(base=rhs.base.promote(0, 1))
+                if zipscatter_eligible and rhs.base.ndim == 0
+                else rhs
+            )
+            array, start_index, index_arrays, original = (
                 self._prepare_advanced_indexing_inputs(
-                    key, is_set=False, set_value=None
+                    key, is_set=True, set_value=prep_value
                 )
             )
-            check_bounds = settings.bounds_check_enabled("indexing")
-
-            fused_result = rhs._zipgather(
-                start_index, tuple_of_arrays, check_bounds=check_bounds
-            )
-            if fused_result is not None:
-                return fused_result
-
-            index_array = rhs._zip_indices(
-                start_index, tuple_of_arrays, check_bounds=check_bounds
+            return General(
+                array=array,
+                original=original,
+                index_arrays=index_arrays,
+                start_index=start_index,
             )
 
-            if rhs.base.has_scalar_storage:
-                rhs = rhs._convert_future_to_regionfield()
-            result: DeferredArray
-            if index_array.base.has_scalar_storage:
-                index_array = index_array._convert_future_to_regionfield()
-                result_store = legate_runtime.create_store(
-                    self.base.type,
-                    shape=index_array.shape,
-                    optimize_scalar=False,
-                )
-                result = DeferredArray(base=result_store)
+        # GET path
+        bool_strategy = self._prepare_boolean_array_indexing(key)
+        if bool_strategy is not None:
+            return bool_strategy
+
+        # ``np.take`` fast path for ``a[indices, :, :]`` / ``a[:, indices]``.
+        # ndim > 1 keeps the 1-D gather (``a[indices]``) on the gather path.
+        if self.ndim > 1:
+            computed_key: tuple[Any, ...]
+            if isinstance(key, DeferredArray):
+                computed_key = (key,)
             else:
-                # The gather output is isomorphic to the index array — same
-                # shape, just a different element type.  Pass the Legate
-                # Shape directly; reading its extents (which would block)
-                # is deferred until Legate actually needs them.
-                result_store = legate_runtime.create_store(
-                    self.base.type, shape=index_array.base.shape
+                computed_key = _unpack_ellipsis(
+                    cast(tuple[Any, ...], key), self.ndim
                 )
-                result = DeferredArray(base=result_store)
-
-            self._perform_gather(result.base, rhs.base, index_array.base)
-
-        else:
-            # Not advanced indexing - key is a tuple (converted by ndarray._convert_key)
-            result = self._get_view(cast(tuple[Any, ...], key))
-
-            if ... not in key and result.shape == ():  # type: ignore[operator]
-                input = result
-                result = runtime.create_deferred_thunk((), self.base.type)
-
-                task = legate_runtime.create_auto_task(
-                    self.library, CuPyNumericOpCode.READ
+            can_use_take, mask_axis, mask_array = self._can_use_take(
+                computed_key
+            )
+            if can_use_take:
+                assert mask_array is not None
+                return IntArraySingleAxis(
+                    array=self, indices=mask_array, axis=mask_axis
                 )
-                task.add_input(input.base)
-                task.add_output(result.base)
 
-                task.execute()
+        array, start_index, index_arrays, original = (
+            self._prepare_advanced_indexing_inputs(
+                key, is_set=False, set_value=None
+            )
+        )
+        return General(
+            array=array,
+            original=original,
+            index_arrays=index_arrays,
+            start_index=start_index,
+        )
 
-        return result
+    def get_item(self, key: IndexKey) -> DeferredArray:
+        return self._lower_to_strategy(key).execute_get()
 
     def set_item(self, key: IndexKey, value: Any) -> None:
         assert self.dtype == value.dtype
-
-        # Check to see if this is advanced indexing or not
+        # copy if a self-copy might overlap
         if is_advanced_indexing(key):
-            # copy if a self-copy might overlap
             value = value._copy_if_overlapping(self)
-
-            # Prefer fused zipscatter on single-GPU; bool + scalar value
-            # is routed through the bool shortcut → putmask instead.
-            zipscatter_eligible = (
-                runtime.num_procs == 1
-                and self.base.ndim > 0
-                and not (
-                    isinstance(key, DeferredArray)
-                    and key.dtype == bool
-                    and value.size == 1
-                )
-            )
-
-            if zipscatter_eligible:
-                # Lift 0-D to 1-D for the prep only, so it returns the
-                # transformed view rather than a copy.  The fallback below
-                # keeps the original 0-D value, which broadcasts cleanly
-                # against an empty index_array.shape.
-                prep_value = (
-                    DeferredArray(base=value.base.promote(0, 1))
-                    if value.base.ndim == 0
-                    else value
-                )
-
-                rhs, start_index, tuple_of_arrays, self = (
-                    self._prepare_advanced_indexing_inputs(
-                        key, is_set=True, set_value=prep_value
-                    )
-                )
-                check_bounds = settings.bounds_check_enabled("indexing")
-
-                if rhs._zipscatter(
-                    prep_value,
-                    start_index,
-                    tuple_of_arrays,
-                    self,
-                    check_bounds,
-                ):
-                    return
-
-                # zipscatter declined.  Reuse the prepared inputs to
-                # build the index array for the fallback.
-                index_array = rhs._zip_indices(
-                    start_index, tuple_of_arrays, check_bounds=check_bounds
-                )
-                lhs = rhs
-                copy_needed = True
-            else:
-                # Multi-GPU or bool+scalar: try the bool single-array
-                # shortcut (putmask or bool-task → scatter); otherwise
-                # prep + zip_indices for general advanced indexing.
-                boolean_result = self._try_single_boolean_array_index_set(
-                    key, value
-                )
-                if boolean_result is not None:
-                    copy_needed, lhs, index_array, self = boolean_result
-                else:
-                    rhs, start_index, tuple_of_arrays, self = (
-                        self._prepare_advanced_indexing_inputs(
-                            key, is_set=True, set_value=value
-                        )
-                    )
-                    index_array = rhs._zip_indices(
-                        start_index,
-                        tuple_of_arrays,
-                        check_bounds=settings.bounds_check_enabled("indexing"),
-                    )
-                    lhs = rhs
-                    copy_needed = True
-
-            if not copy_needed:
-                return
-
-            if value.shape != index_array.shape:
-                value_tmp = value._broadcast(index_array.base.shape)
-                value_tmp = value._copy_store(value_tmp)
-                value_store = value_tmp.base
-            else:
-                if value.base.transformed:
-                    value = value._copy_store(value.base)
-                value_store = value.base
-
-            # the case when value is a scalar and indices array contains
-            # a single value
-            # TODO this logic should be removed when copy accepts Futures
-            if value_store.has_scalar_storage:
-                value_tmp = DeferredArray(base=value_store)
-                value_tmp2 = value_tmp._convert_future_to_regionfield()
-                value_store = value_tmp2.base
-
-            if index_array.base.has_scalar_storage:
-                index_array = index_array._convert_future_to_regionfield()
-            if lhs.base.has_scalar_storage:
-                lhs = lhs._convert_future_to_regionfield()
-            nccl_scatter = settings.use_nccl_scatter() and runtime.num_gpus > 1
-            if lhs.base.transformed and not nccl_scatter:
-                lhs = lhs._copy_store(lhs.base)
-            if lhs.base.has_scalar_storage:
-                lhs = lhs._convert_future_to_regionfield()
-
-            if index_array.size != 0:
-                self._perform_scatter(lhs.base, value_store, index_array.base)
-
-            # TODO this copy will be removed when affine copies are
-            # supported in Legion/Realm
-            if lhs is not self:
-                self.copy(lhs, deep=True)
-
-        else:
-            # Not advanced indexing - key is a tuple (converted by ndarray._convert_key)
-            view = self._get_view(cast(tuple[Any, ...], key))
-
-            if view.size == 0:
-                return
-
-            if view.shape == ():
-                # We're just writing a single value
-                assert value.size == 1
-
-                task = legate_runtime.create_auto_task(
-                    self.library, CuPyNumericOpCode.WRITE
-                )
-                # Since we pass the view with write discard privilege,
-                # we should make sure that the mapper either creates a fresh
-                # instance just for this one-element view or picks one of the
-                # existing valid instances for the parent.
-                task.add_output(view.base)
-                task.add_input(value.base)
-                task.execute()
-            else:
-                # In Python, any inplace update of form arr[key] op= value
-                # goes through three steps: 1) __getitem__ fetching the object
-                # for the key, 2) __iop__ for the update, and 3) __setitem__
-                # to set the result back. In cuPyNumeric, the object we
-                # return in step (1) is actually a subview to the array arr
-                # through which we make updates in place, so after step (2) is
-                # done, the effect of inplace update is already reflected
-                # to the arr. Therefore, we skip the copy to avoid redundant
-                # copies if we know that we hit such a scenario.
-                # NOTE: Neither Store nor Storage have an __eq__, so we can
-                # only check that the underlying RegionField/Future corresponds
-                # to the same Legion handle.
-                if view.base.equal_storage(value.base):
-                    return
-
-                view.copy(value, deep=False)
+        self._lower_to_strategy(key, rhs=value).execute_set(value)
 
     def broadcast_to(self, shape: NdShape) -> DeferredArray:
         return DeferredArray(base=self._broadcast(shape))
@@ -3218,7 +2719,7 @@ class DeferredArray:
         if indirect.base.has_scalar_storage:
             indirect = indirect._convert_future_to_regionfield()
 
-        self._perform_scatter(self_tmp.base, values.base, indirect.base)
+        self._dispatch_scatter(self_tmp.base, values.base, indirect.base)
 
         if self_tmp is not self:
             self.copy(self_tmp, deep=True)
@@ -5299,7 +4800,9 @@ class DeferredArray:
         task.add_scalar_arg(False, ty.bool_)  # check bounds
         task.execute()
 
-        self._perform_gather(self.base, src.base, indirect.base)
+        # _wrap manages its own destination (self.base) and pre-converts
+        # the source, so use the Layer-C dispatch directly.
+        self._dispatch_gather(self.base, src.base, indirect.base)
 
     # Perform a histogram operation on the array
     def histogram(
