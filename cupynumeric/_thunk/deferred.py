@@ -1822,8 +1822,15 @@ class DeferredArray:
                 "GPU execution is required for FFT operations."
             )
         else:
+            from ..fft._bluestein import warn_if_bluestein_fft
+
             input = rhs.base
             output = lhs.base
+
+            bluestein_axes = warn_if_bluestein_fft(axes, input, output)
+            bluestein_mask = 0
+            for ax in bluestein_axes:
+                bluestein_mask |= 1 << int(ax)
 
             task = legate_runtime.create_auto_task(
                 self.library, CuPyNumericOpCode.FFT
@@ -1839,6 +1846,8 @@ class DeferredArray:
                 or tuple(axes) != tuple(sorted(axes)),
                 ty.bool_,
             )
+
+            task.add_scalar_arg(bluestein_mask, ty.int32)
             for ax in axes:
                 task.add_scalar_arg(ax, ty.int64)
 

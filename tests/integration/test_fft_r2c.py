@@ -238,6 +238,48 @@ def check_4d_r2c(N, dtype=np.float64):
     assert allclose(Z, Z_num)
 
 
+def check_bluestein_r2c(name, shape, kwargs, dtype=np.float64):
+    # A transform length with a prime factor > 131 forces the cuFFT Bluestein
+    # path (handled via the chunked over-axes implementation). 137 is a prime
+    # > 131; 4/8 are 131-smooth batch dims.
+    Z = np.random.rand(*shape).astype(dtype)
+    Z_num = num.array(Z)
+    print(f"=== Bluestein R2C {name}, args: {kwargs} ===")
+    assert allclose(np.fft.rfftn(Z, **kwargs), num.fft.rfftn(Z_num, **kwargs))
+
+
+def test_bluestein():
+    check_bluestein_r2c("1d", (137,), {})  # Bluestein on the r2c (last) axis
+    check_bluestein_r2c("2d-r2c-axis", (4, 137), {"axes": (0, 1)})
+    check_bluestein_r2c("2d-c2c-axis", (137, 8), {"axes": (0, 1)})
+    check_bluestein_r2c("3d-c2c-middle", (4, 137, 8), {"axes": (0, 1, 2)})
+
+
+def check_interior_axis_r2c(shape, axes, dtype=np.float64):
+    Z = np.random.rand(*shape).astype(dtype)
+    Z_num = num.array(Z)
+    print(f"=== interior-axis R2C {shape}, axes={axes}, {dtype} ===")
+    assert allclose(
+        np.fft.rfftn(Z, axes=axes), num.fft.rfftn(Z_num, axes=axes)
+    )
+
+
+def test_interior_axis_alignment():
+    # R2C along an interior axis is computed as a batch of strided 1D transforms
+    # looped over the leading dims (num_slices > 1). cuFFT requires the real base
+    # pointer of each transform to be aligned to the complex element type; an odd
+    # real per-slice volume (all of shape[axis:] odd) used to misalign odd slices
+    # and raise CUFFT_INVALID_VALUE. All shapes here have odd interior/trailing
+    # dimensions to exercise that path.
+    for axes in [(1,), (2, 1), (0, 2, 1)]:
+        check_interior_axis_r2c((2, 3, 5), axes)
+        check_interior_axis_r2c((2, 3, 5), axes, dtype=np.float32)
+    for axes in [(1,), (2,), (3, 1)]:
+        check_interior_axis_r2c((2, 3, 5, 7), axes)
+    # Even per-slice offset (control): must keep working.
+    check_interior_axis_r2c((2, 4, 5), (1,))
+
+
 def test_1d():
     check_1d_r2c(N=153)
     check_1d_r2c(N=153, dtype=np.float32)

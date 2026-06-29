@@ -186,6 +186,11 @@ def check_4d_c2c(N, dtype=np.float64):
             {"s": (N[0] - 1, N[1] - 2, N[2] // 2, N[3])},
             {"s": (N[0] + 1, N[1] + 2, N[2] + 3, N[3] - 1)},
             {"s": (N[0] + 1, N[1] + 2, N[2] + 3, N[3] // 2)},
+            # Contiguous axis blocks touching an array end: exercise the batched
+            # N-D plan path for DIM > 3 (start-touching and end-touching).
+            {"axes": (0, 1)},
+            {"axes": (3, 2)},
+            {"axes": (2, 3, 1)},
         )
         + tuple({"axes": (i,)} for i in range(4))
         + tuple({"axes": (-i,)} for i in range(1, 5))
@@ -245,6 +250,32 @@ def test_3d():
 def test_4d():
     check_4d_c2c(N=(9, 10, 11, 12))
     check_4d_c2c(N=(9, 10, 11, 12), dtype=np.float32)
+
+
+def check_bluestein_c2c(name, shape, kwargs, dtype=np.float64):
+    # A transform length with a prime factor > 131 forces cuFFT onto the
+    # Bluestein algorithm, which cuPyNumeric handles via the chunked over-axes
+    # implementation. Batch dims are kept small as Bluestein is comparatively
+    # expensive; 137/139 are primes > 131, while 4/5 are 131-smooth.
+    Z = (
+        np.random.rand(*shape).astype(dtype)
+        + np.random.rand(*shape).astype(dtype) * 1j
+    )
+    Z_num = num.array(Z)
+    print(f"=== Bluestein C2C {name}, args: {kwargs} ===")
+    assert allclose(np.fft.fftn(Z, **kwargs), num.fft.fftn(Z_num, **kwargs))
+    assert allclose(np.fft.ifftn(Z, **kwargs), num.fft.ifftn(Z_num, **kwargs))
+
+
+def test_bluestein():
+    check_bluestein_c2c("1d", (137,), {})  # DIM=1: batch==1, no chunking
+    check_bluestein_c2c("2d-last", (4, 137), {"axes": (1,)})
+    check_bluestein_c2c("2d-first", (137, 4), {"axes": (0,)})
+    check_bluestein_c2c(
+        "3d-middle", (3, 137, 5), {"axes": (1,)}
+    )  # num_slices>1
+    check_bluestein_c2c("2d-both", (137, 139), {"axes": (0, 1)})
+    check_bluestein_c2c("3d-mixed", (137, 4, 5), {"axes": (0, 1, 2)})  # mask
 
 
 @pytest.mark.parametrize(

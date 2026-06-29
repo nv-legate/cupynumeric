@@ -246,6 +246,64 @@ def check_4d_c2r(N, dtype=np.float64):
     assert allclose(Z, Z_num)
 
 
+def check_bluestein_c2r(name, in_shape, kwargs, dtype=np.float64):
+    # A (real-output) transform length with a prime factor > 131 forces the
+    # cuFFT Bluestein path (handled via the chunked over-axes implementation).
+    # 137 is a prime > 131; the complex input length along a c2r axis of output
+    # length 137 is 137 // 2 + 1 == 69.
+    Z = (
+        np.random.rand(*in_shape).astype(dtype)
+        + np.random.rand(*in_shape).astype(dtype) * 1j
+    )
+    Z_num = num.array(Z)
+    print(f"=== Bluestein C2R {name}, args: {kwargs} ===")
+    assert allclose(
+        np.fft.irfftn(Z, **kwargs), num.fft.irfftn(Z_num, **kwargs)
+    )
+
+
+def test_bluestein():
+    # Bluestein on the c2r (last) axis: real output length 137 from 69 complex.
+    check_bluestein_c2r("1d-c2r-axis", (69,), {"s": (137,)})
+    check_bluestein_c2r(
+        "2d-c2r-axis", (4, 69), {"s": (4, 137), "axes": (0, 1)}
+    )
+    # Bluestein on a c2c (non-last) axis within the c2r path: axis 0 length 137.
+    check_bluestein_c2r("2d-c2c-axis", (137, 8), {"axes": (0, 1)})
+    check_bluestein_c2r("3d-c2c-middle", (4, 137, 8), {"axes": (0, 1, 2)})
+
+
+def check_interior_axis_c2r(in_shape, kwargs, dtype=np.complex128):
+    Z = (
+        np.random.rand(*in_shape).astype(dtype)
+        + np.random.rand(*in_shape).astype(dtype) * 1j
+    )
+    Z_num = num.array(Z)
+    print(f"=== interior-axis C2R {in_shape}, args: {kwargs}, {dtype} ===")
+    assert allclose(
+        np.fft.irfftn(Z, **kwargs), num.fft.irfftn(Z_num, **kwargs)
+    )
+
+
+def test_interior_axis_alignment():
+    # C2R reconstructs a real output along an interior axis as a batch of strided
+    # 1D transforms looped over the leading dims (num_slices > 1). cuFFT requires
+    # the real OUTPUT base pointer to be complex-aligned; an odd real per-slice
+    # volume used to misalign odd slices and raise CUFFT_INVALID_VALUE. Each case
+    # produces a real output whose interior/trailing dims are odd.
+    # in (2,2,5) -> out (2,3,5): offset_out = 3*5 = 15 (odd).
+    check_interior_axis_c2r((2, 2, 5), {"s": (3,), "axes": (1,)})
+    check_interior_axis_c2r(
+        (2, 2, 5), {"s": (3,), "axes": (1,)}, dtype=np.complex64
+    )
+    # c2c on axis 2 then c2r on interior axis 1 -> out (2,3,5).
+    check_interior_axis_c2r((2, 2, 5), {"s": (5, 3), "axes": (2, 1)})
+    # 4D: c2r on interior axis 2, in (2,3,3,7) -> out (2,3,5,7): offset_out = 35.
+    check_interior_axis_c2r((2, 3, 3, 7), {"s": (5,), "axes": (2,)})
+    # Even per-slice offset (control): out (2,4,5), offset_out = 20.
+    check_interior_axis_c2r((2, 3, 5), {"s": (4,), "axes": (1,)})
+
+
 def test_1d():
     check_1d_c2r(N=78)
     check_1d_c2r(N=78, dtype=np.float32)

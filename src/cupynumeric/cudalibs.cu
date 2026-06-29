@@ -128,7 +128,7 @@ std::string cufftPlanParams::to_string() const
 struct cufftPlanCache {
  private:
   // Maximum number of plans to keep per dimension
-  static constexpr int32_t MAX_PLANS = 4;
+  static constexpr int32_t MAX_PLANS = 16;
 
  private:
   struct LRUEntry {

@@ -27,6 +27,7 @@ struct FFTArgs {
   CuPyNumericFFTType type;
   CuPyNumericFFTDirection direction;
   bool operate_over_axes;
+  int32_t bluestein_mask;
   std::vector<int64_t> axes;
 };
 

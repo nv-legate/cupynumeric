@@ -55,7 +55,14 @@ struct FFTImpl {
     auto output = args.output.write_accessor<OUTPUT_TYPE, DIM>(out_rect);
 
     FFTImplBody<KIND, FFT_TYPE, FFT<FFT_TYPE, CODE_IN>::CODE_OUT, CODE_IN, DIM>{context}(
-      output, input, out_rect, in_rect, args.axes, args.direction, args.operate_over_axes);
+      output,
+      input,
+      out_rect,
+      in_rect,
+      args.axes,
+      args.direction,
+      args.operate_over_axes,
+      args.bluestein_mask);
   }
 
   // Filter valid types
@@ -95,9 +102,10 @@ static void fft_template(TaskContext& context)
   args.type              = context.scalar(0).value<CuPyNumericFFTType>();
   args.direction         = context.scalar(1).value<CuPyNumericFFTDirection>();
   args.operate_over_axes = context.scalar(2).value<bool>();
+  args.bluestein_mask    = context.scalar(3).value<int32_t>();
 
   const auto num_scalars = context.num_scalars();
-  for (uint32_t i = 3; i < num_scalars; ++i) {
+  for (uint32_t i = 4; i < num_scalars; ++i) {
     args.axes.push_back(context.scalar(i).value<int64_t>());
   }
 
