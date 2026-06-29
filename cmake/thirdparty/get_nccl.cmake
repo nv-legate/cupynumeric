@@ -55,7 +55,7 @@ function(validate_nccl_version ver)
   # the dependency lists.
   # ver_max is an *exclusive* upper bound
   set(ver_min 2.28)
-  set(ver_max 2.30)
+  set(ver_max 2.31)
 
   if(ver VERSION_LESS ver_min)
     message(FATAL_ERROR "Detected NCCL version ${ver}, but >= ${ver_min} is required")
