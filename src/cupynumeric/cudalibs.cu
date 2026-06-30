@@ -650,6 +650,11 @@ class UnloadCUDALibsTask : public CuPyNumericTask<UnloadCUDALibsTask> {
   static inline const auto TASK_CONFIG =
     legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_UNLOAD_CUDALIBS}};
 
+#if LEGATE_DEFINED(CUPYNUMERIC_USE_CUSOLVERMP)
+  // cusolverMpDestroy internally calls ncclCommFinalize which is a collective operation.
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_concurrent(true);
+#endif
+
  public:
   static void gpu_variant(legate::TaskContext context)
   {
