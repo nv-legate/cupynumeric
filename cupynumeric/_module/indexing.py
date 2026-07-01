@@ -27,6 +27,7 @@ from .._array.util import (
 from .._module.array_dimension import broadcast_arrays, broadcast_to
 from .._utils.array import calculate_volume
 from ..lib.array_utils import normalize_axis_index
+from ..settings import settings as cupynumeric_settings
 from ..types import NdShape
 from .array_joining import hstack
 from .array_shape import reshape
@@ -740,6 +741,23 @@ def take_along_axis(a: ndarray, indices: ndarray, axis: int | None) -> ndarray:
         )
         return ndarray._from_thunk(result_thunk)
     else:
+        # Fast path for the cases the TAKE task above does not handle (>4D,
+        # or non-broadcasting index/array shapes).  Instead of materializing a
+        # full set of fancy-index arrays via
+        # ``_fill_fancy_index_for_along_axis_routines`` (which builds broadcast
+        # ``arange`` coordinate arrays), this feeds the fused gather only the real
+        # ``indices`` array and lets the kernel rebuild the remaining
+        # coordinates from the iteration point.  ``_gather_along_axis`` returns
+        # ``None`` when it is not eligible.
+        check_bounds = cupynumeric_settings.bounds_check_enabled(
+            "take_along_axis"
+        )
+        gathered_thunk = a._thunk._gather_along_axis(
+            indices._thunk, computed_axis, check_bounds
+        )
+        if gathered_thunk is not None:
+            return ndarray._from_thunk(gathered_thunk)
+
         # Fall back to fancy indexing for:
         # - Arrays with >4 dimensions
         # - Arrays requiring broadcasting
@@ -854,6 +872,21 @@ def put_along_axis(
         raise ValueError(
             "`indices` and `a` must have the same number of dimensions"
         )
+
+    # Fast path that avoids materializing a full set of fancy-index arrays via
+    # ``_fill_fancy_index_for_along_axis_routines`` (which builds broadcast
+    # ``arange`` coordinate arrays -- transformed stores that crash the
+    # multi-GPU all2all scatter).  Instead this feeds the fused scatter only
+    # the real ``indices`` array and lets the kernel rebuild the remaining
+    # coordinates from the iteration point.  ``_scatter_along_axis`` returns
+    # ``False`` when it is not eligible (broadcasting indices, transformed
+    # stores, mixed dtypes, ...).
+    check_bounds = cupynumeric_settings.bounds_check_enabled("indexing")
+    if a._thunk._scatter_along_axis(
+        values._thunk, indices._thunk, computed_axis, check_bounds
+    ):
+        return
+
     ind = _fill_fancy_index_for_along_axis_routines(
         a.shape, computed_axis, indices
     )

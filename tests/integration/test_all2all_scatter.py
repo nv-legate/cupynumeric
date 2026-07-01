@@ -59,6 +59,7 @@ def _run_nccl_scatter_stores(source_store, index_store, output_store):
     task.add_nccl_communicator()
     task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
     task.add_scalar_arg(index_store.volume, ty.uint64)
+    task.add_scalar_arg(0, ty.int64)  # narrays (legacy Point<N> path)
     task.execute()
 
     legate_runtime.issue_execution_fence(block=True)

@@ -147,10 +147,10 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
 }
 
 // Host-side wrapper used by both ZipTask and ZipGatherTask GPU variants.
-// Throws a legate::TaskException if any index in the supplied arrays is out
-// of range for its corresponding extent in `shape`.
+// Returns `true` if any index in the supplied arrays falls outside its
+// corresponding extent in `shape`.
 template <int DIM>
-inline void check_index_arrays_out_of_bounds(
+[[nodiscard]] inline bool check_index_arrays_out_of_bounds(
   const Buffer<AccessorRO<int64_t, DIM>, 1>& index_arrays,
   const int64_t volume,
   const Rect<DIM>& rect,
@@ -174,9 +174,7 @@ inline void check_index_arrays_out_of_bounds(
   }
   CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
 
-  if (out_of_bounds.read(stream)) {
-    throw legate::TaskException("index is out of bounds in index array");
-  }
+  return out_of_bounds.read(stream);
 }
 #endif  // LEGATE_DEFINED(LEGATE_NVCC)
 

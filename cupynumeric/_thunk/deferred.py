@@ -124,6 +124,17 @@ def _prod(tpl: Sequence[int]) -> int:
     return reduce(lambda a, b: a * b, tpl, 1)
 
 
+def _broadcastable_to(src: Sequence[int], dst: Sequence[int]) -> bool:
+    """Whether ``src`` can be numpy-broadcast *up* to ``dst`` (one-directional).
+
+    ``src`` may have fewer dims than ``dst``; aligning from the right, each
+    ``src`` extent must equal the corresponding ``dst`` extent or be ``1``.
+    """
+    if len(src) > len(dst):
+        return False
+    return all(s in (1, d) for s, d in zip(reversed(src), reversed(dst)))
+
+
 # Type alias for NumPy-style indexing keys
 # An indexing key can be:
 # - int: integer index
@@ -643,7 +654,11 @@ class DeferredArray:
         task.execute()
 
     def _zipgather(
-        self, start_index: int, arrays: tuple[Any, ...], check_bounds: bool
+        self,
+        start_index: int,
+        arrays: tuple[Any, ...],
+        check_bounds: bool,
+        prepared: tuple[int, tuple[Any, ...], int, NdShape] | None = None,
     ) -> DeferredArray | None:
         """
         Try the fused zip + gather fast path for advanced indexing.
@@ -665,17 +680,19 @@ class DeferredArray:
         if runtime.num_procs != 1 or self.base.ndim == 0:
             return None
 
-        # If every dimension is indexed by a 0-D scalar array, the output is
-        # scalar — bail before _prepare_zip_indices so the caller's _zip_indices
-        # call doesn't have to repeat the same work.
-        if len(arrays) == self.ndim and all(
-            isinstance(a, DeferredArray) and a.ndim == 0 for a in arrays
-        ):
-            return None
-
-        start_index, arrays, key_dim, out_shape = self._prepare_zip_indices(
-            start_index, arrays
-        )
+        if prepared is None:
+            # If every dimension is indexed by a 0-D scalar array, the output
+            # is scalar — bail before _prepare_zip_indices so the caller's
+            # _zip_indices call doesn't have to repeat the same work.
+            if len(arrays) == self.ndim and all(
+                isinstance(a, DeferredArray) and a.ndim == 0 for a in arrays
+            ):
+                return None
+            start_index, arrays, key_dim, out_shape = (
+                self._prepare_zip_indices(start_index, arrays)
+            )
+        else:
+            start_index, arrays, key_dim, out_shape = prepared
         if out_shape == ():
             return None
 
@@ -745,6 +762,7 @@ class DeferredArray:
         arrays: tuple[Any, ...],
         new_self: DeferredArray,
         check_bounds: bool,
+        prepared: tuple[int, tuple[Any, ...], int, NdShape] | None = None,
     ) -> bool:
         """
         Try the fused zip + scatter fast path for advanced-indexing set.
@@ -754,6 +772,10 @@ class DeferredArray:
         in; ``new_self`` is the original destination for copy-back when the
         transformation materialized a distinct buffer.
 
+        When ``prepared`` is supplied it is used verbatim as
+        ``(start_index, raw_arrays, key_dim, out_shape)`` (see
+        ``_scatter_along_axis``).
+
         Returns ``True`` when the scatter ran in place; ``False`` lets the
         caller fall back to ``_zip_indices`` + ``_perform_scatter`` using
         the same prepared inputs.
@@ -761,16 +783,19 @@ class DeferredArray:
         if runtime.num_procs != 1 or self.base.ndim == 0:
             return False
 
-        # Same scalar-output pre-check as _zipgather to avoid a double
-        # _prepare_zip_indices call when the caller falls back to _zip_indices.
-        if len(arrays) == self.ndim and all(
-            isinstance(a, DeferredArray) and a.ndim == 0 for a in arrays
-        ):
-            return False
-
-        start_index, arrays, key_dim, out_shape = self._prepare_zip_indices(
-            start_index, arrays
-        )
+        if prepared is None:
+            # Same scalar-output pre-check as _zipgather to avoid a double
+            # _prepare_zip_indices call when the caller falls back to
+            # _zip_indices.
+            if len(arrays) == self.ndim and all(
+                isinstance(a, DeferredArray) and a.ndim == 0 for a in arrays
+            ):
+                return False
+            start_index, arrays, key_dim, out_shape = (
+                self._prepare_zip_indices(start_index, arrays)
+            )
+        else:
+            start_index, arrays, key_dim, out_shape = prepared
         if out_shape == ():
             return False
 
@@ -984,6 +1009,56 @@ class DeferredArray:
         if lhs.base is not user_target.base:
             user_target.copy(lhs, deep=True)
 
+    @staticmethod
+    def _materialize_future_index_arrays(
+        raw_arrays: tuple[Any, ...],
+    ) -> tuple[Any, ...]:
+        """Convert future/scalar-backed index stores to region fields.
+
+        The fused all2all tasks launch over an index space and read the
+        per-dim index arrays through region accessors.  A store backed by a
+        Legion ``Future`` (scalar storage, e.g. ``num.zeros((1,))``) would be
+        passed to the task as an external future, tripping Legion's dynamic
+        type check during argument resolution.  Mirror the legacy gather path
+        and materialize such stores into region fields first.
+        """
+        return tuple(
+            DeferredArray(base=a)._convert_future_to_regionfield().base
+            if (a.has_scalar_storage)
+            else a
+            for a in raw_arrays
+        )
+
+    @staticmethod
+    def _add_all2all_fused_scalars(
+        task: Any,
+        source_shape: tuple[int, ...],
+        narrays: int = 0,
+        key_dim: int = 0,
+        start_index: int = 0,
+        check_bounds: bool = False,
+    ) -> None:
+        """Append fused-ZIP metadata scalars to an All2All task.
+
+        Slots 0/1 (``staging_factor`` and ``global_index``) are appended by
+        the individual launcher because they are direction-specific.
+
+        Slot 2 is always ``narrays``.  When ``narrays == 0`` (legacy
+        Point<N> index input) no further scalars are needed.  When
+        ``narrays > 0`` the C++ task reads key_dim, start_index, the
+        source shape as one int64 extent per dimension (not a
+        ``DomainPoint`` future), and check_bounds.
+        """
+        task.add_scalar_arg(narrays, ty.int64)
+        if narrays == 0:
+            return
+        task.add_scalar_arg(key_dim, ty.int64)
+        task.add_scalar_arg(start_index, ty.int64)
+        task.add_scalar_arg(len(source_shape), ty.int64)
+        for extent in source_shape:
+            task.add_scalar_arg(extent, ty.int64)
+        task.add_scalar_arg(check_bounds, ty.bool_)
+
     def _nccl_all2all_gather(
         self,
         source: LogicalStore,
@@ -991,9 +1066,19 @@ class DeferredArray:
         result: LogicalStore,
     ) -> None:
         """
-        Distributed gather via NCCL all-to-all.
+        Distributed gather via NCCL all-to-all (Point<N> path).
+
         Semantics: result[p] = source[index_array[p]] for all p.
-        Source is partitioned across ranks; indices may reference any rank's data.
+        Source is partitioned across ranks; indices may reference any
+        rank's data. ``index_array`` is a Point<source.ndim> store, as
+        produced by ``CUPYNUMERIC_ZIP``.
+
+        Prefer ``_nccl_zipgather`` (which skips the standalone ZIP task)
+        when the per-dim index arrays are still available — this entry
+        point exists for the rare path that already has a materialized
+        Point<N> store (e.g. ``rhs._zip_indices`` was already needed for
+        an unrelated reason). Internally it threads the same scalar
+        layout, with ``narrays = 0`` to select the Point<N> code path.
         """
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.ALL2ALL_GATHER
@@ -1011,6 +1096,8 @@ class DeferredArray:
         # needed so all ranks pick the same K.
         task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
         task.add_scalar_arg(index_array.volume, ty.uint64)
+
+        self._add_all2all_fused_scalars(task, tuple(source.shape))
         task.execute()
 
     def _all2all_scatter(
@@ -1020,12 +1107,15 @@ class DeferredArray:
         result: LogicalStore,
     ) -> None:
         """
-        Distributed scatter via NCCL all-to-all.
-        Semantics: result[index_array[p]] = source[p] for all p.
-        Result is partitioned across ranks; indices may reference any rank's data.
+        Distributed scatter via NCCL all-to-all (Point<N> path).
 
-        Duplicate target indices race (last-writer-wins is undefined), matching
-        the single-GPU CUPYNUMERIC_SCATTER task semantics.
+        Semantics: result[index_array[p]] = source[p] for all p.
+        Result is partitioned across ranks; indices may reference any
+        rank's data. See ``_nccl_all2all_gather`` for the Point<N>/fused
+        path choice — ``_nccl_zipscatter`` is the fused counterpart.
+
+        Duplicate target indices race (last-writer-wins is undefined),
+        matching the single-GPU CUPYNUMERIC_SCATTER task semantics.
         """
         task = legate_runtime.create_auto_task(
             self.library, CuPyNumericOpCode.ALL2ALL_SCATTER
@@ -1033,8 +1123,6 @@ class DeferredArray:
         task.add_input(source)
         task.add_input(index_array)
         task.add_output(result)
-        # Ensure cells of `result` that are not written by this scatter retain
-        # their existing values (mirrors `_issue_scatter_task`).
         task.add_input(result)
         task.add_alignment(source, index_array)
         task.add_nccl_communicator()
@@ -1043,7 +1131,345 @@ class DeferredArray:
         # aligned), so the same average-per-rank basis applies.
         task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
         task.add_scalar_arg(index_array.volume, ty.uint64)
+        self._add_all2all_fused_scalars(task, tuple(result.shape))
         task.execute()
+
+    def _nccl_zipgather(
+        self,
+        start_index: int,
+        arrays: tuple[Any, ...],
+        check_bounds: bool,
+        prepared: tuple[int, tuple[Any, ...], int, NdShape] | None = None,
+    ) -> DeferredArray | None:
+        """
+        Fused multi-GPU advanced-indexing gather.
+
+        Mirrors the single-GPU ``_zipgather`` but for the multi-rank NCCL
+        all-to-all path: rather than launching the CUPYNUMERIC_ZIP task to
+        materialize a Point<N> store and then feeding that to
+        ``_nccl_all2all_gather``, the per-dim int64 index arrays are
+        passed directly into the all2all task, which reconstructs the
+        Point<N> on the fly inside its kernels.
+
+        Returns the gather result thunk on success, or ``None`` to fall
+        back to ``_zip_indices`` + ``_nccl_all2all_gather`` when the path
+        is not eligible..
+        """
+        if self.base.ndim == 0:
+            return None
+
+        if prepared is None:
+            start_index, raw_arrays, key_dim, out_shape = (
+                self._prepare_zip_indices(start_index, arrays)
+            )
+        else:
+            start_index, raw_arrays, key_dim, out_shape = prepared
+        if out_shape == () or raw_arrays[0].ndim == 0:
+            return None
+
+        # Materialize any future/scalar-backed inputs into region fields before
+        # they reach the index-space all2all task (mirrors the legacy gather
+        # path, which converts both the source and the index stores via
+        # ``_convert_future_to_regionfield``).  A future-backed input would
+        # otherwise be handed to Legion as an external future and abort the
+        # task during argument resolution, before the task body runs.
+        source = self
+        if source.base.has_scalar_storage:
+            source = source._convert_future_to_regionfield()
+        raw_arrays = self._materialize_future_index_arrays(raw_arrays)
+
+        result = runtime.create_deferred_thunk(out_shape, self.base.type)
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.ALL2ALL_GATHER
+        )
+        if check_bounds:
+            task.throws_exception(IndexError)
+
+        task.add_input(source.base)
+        p_iter = task.add_output(result.base)
+        # Align every per-dim index array with the result iteration store.
+        # ``task.add_alignment`` only accepts stores; for partition variables
+        # we have to go through ``add_constraint(align(...))``.
+        for a in raw_arrays:
+            p_a = task.add_input(a)
+            task.add_constraint(align(p_iter, p_a))
+        # Partition only along the indexed (real) axes, keeping the promoted
+        # (broadcast) axes whole.  The partitioner cannot tile a broadcast
+        # axis, so without this it replicates the whole iteration store on
+        # every rank which can be large.
+        indexed_axes = set(range(start_index, start_index + key_dim))
+        broadcast_axes = [
+            ax for ax in range(result.base.ndim) if ax not in indexed_axes
+        ]
+        if broadcast_axes:
+            task.add_constraint(broadcast(p_iter, broadcast_axes))
+        task.add_nccl_communicator()
+
+        task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
+        task.add_scalar_arg(result.base.volume, ty.uint64)
+        self._add_all2all_fused_scalars(
+            task,
+            self.shape,
+            narrays=len(raw_arrays),
+            key_dim=key_dim,
+            start_index=start_index,
+            check_bounds=check_bounds,
+        )
+        task.execute()
+        return result
+
+    def _nccl_zipscatter(
+        self,
+        value: DeferredArray,
+        start_index: int,
+        arrays: tuple[Any, ...],
+        new_self: DeferredArray,
+        check_bounds: bool,
+        prepared: tuple[int, tuple[Any, ...], int, NdShape] | None = None,
+    ) -> bool:
+        """
+        Fused multi-GPU advanced-indexing set.
+
+        Mirrors the single-GPU ``_zipscatter`` but for the multi-rank NCCL
+        all-to-all path: the per-dim int64 index arrays are fed directly
+        into the all2all scatter task, skipping the standalone
+        CUPYNUMERIC_ZIP launch and the materialized Point<N> store.
+
+        When ``prepared`` is supplied it is used verbatim as
+        ``(start_index, raw_arrays, key_dim, out_shape)`` instead of calling
+        ``_prepare_zip_indices``.  This lets the along-axis passthrough
+        feed a single full-rank index array with ``key_dim == 1``
+        so the kernel reconstructs the remaining coordinates from the
+        iteration point (see ``_scatter_along_axis``).
+
+        Returns ``True`` on success; ``False`` to fall back to
+        ``_zip_indices`` + ``_all2all_scatter`` when the path is not
+        eligible.
+        """
+        if self.base.ndim == 0:
+            return False
+
+        if prepared is None:
+            start_index, raw_arrays, key_dim, out_shape = (
+                self._prepare_zip_indices(start_index, arrays)
+            )
+        else:
+            start_index, raw_arrays, key_dim, out_shape = prepared
+        if out_shape == () or raw_arrays[0].ndim == 0:
+            return False
+
+        # Materialize any future/scalar-backed index arrays into region fields
+        # before they reach the index-space all2all task (see the matching
+        # comment in ``_nccl_zipgather``).
+        raw_arrays = self._materialize_future_index_arrays(raw_arrays)
+
+        # 0-D values (e.g. ``arr[[1, 2]] = 5``) are not fed through the fused
+        # all2all scatter: they fall back to ZIP + ``_perform_scatter``, which
+        # broadcasts the scalar and matches ``_can_skip_transformed_index_copy``
+        # (``set_value.ndim > 0``).  Boolean mask + scalar is handled earlier
+        # via ``_try_single_boolean_array_index_set`` → ADVANCED_INDEXING.
+        if value.base.ndim == 0:
+            return False
+
+        if value.shape != out_shape:
+            # ``_broadcast`` yields a transformed store backed by a small
+            # physical tile.  The all2all scatter iterates over this source
+            # store *and* reads the per-dim index arrays over the source rect,
+            # so a transformed/broadcast source makes Realm unable to build an
+            # affine accessor for the (dense) index arrays under partitioning.
+            # Materialize the broadcast value into a dense store first,
+            # mirroring the separate ZIP + scatter in ``set_item``.
+            value_store = value._copy_store(value._broadcast(out_shape)).base
+        else:
+            value_store = value.base
+
+        # Materialize Future-backed value stores before the all2all task sees
+        # them (mirrors ``_zipscatter``).  This is not the 0-D scalar case
+        # above; it covers deferred arrays that already match ``out_shape`` but
+        # are still stored as a Legion Future.
+        if value_store.has_scalar_storage:
+            value_store = (
+                DeferredArray(base=value_store)
+                ._convert_future_to_regionfield()
+                .base
+            )
+
+        lhs: DeferredArray = self
+        if lhs.base.has_scalar_storage:
+            lhs = lhs._convert_future_to_regionfield()
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.ALL2ALL_SCATTER
+        )
+        if check_bounds:
+            task.throws_exception(IndexError)
+
+        p_iter = task.add_input(value_store)
+        task.add_output(lhs.base)
+        # Align every per-dim index array with the source (value) iteration
+        # store -- the all2all scatter iterates over `value`, not `result`.
+        # ``task.add_alignment`` only accepts stores; for partition variables
+        # we have to go through ``add_constraint(align(...))``.
+        for a in raw_arrays:
+            p_a = task.add_input(a)
+            task.add_constraint(align(p_iter, p_a))
+        # Partition only along the indexed (real) axes; keep promoted
+        # (broadcast) axes whole.  A broadcast index axis cannot be tiled, so
+        # without this the partitioner replicates the whole iteration store on
+        # every rank and the per-element request/peer buffers can be large.
+        indexed_axes = set(range(start_index, start_index + key_dim))
+        broadcast_axes = [
+            ax for ax in range(value_store.ndim) if ax not in indexed_axes
+        ]
+        if broadcast_axes:
+            task.add_constraint(broadcast(p_iter, broadcast_axes))
+        # Preserve unwritten cells of the destination (mirrors
+        # `_all2all_scatter`).
+        task.add_input(lhs.base)
+        task.add_nccl_communicator()
+
+        task.add_scalar_arg(settings.all2all_staging_factor(), ty.float64)
+        task.add_scalar_arg(value_store.volume, ty.uint64)
+        self._add_all2all_fused_scalars(
+            task,
+            lhs.shape,
+            narrays=len(raw_arrays),
+            key_dim=key_dim,
+            start_index=start_index,
+            check_bounds=check_bounds,
+        )
+        task.execute()
+
+        # If `_prepare_advanced_indexing_inputs` materialized `self` into a
+        # temporary copy, mirror the updated result back into the
+        # transformed destination view (parallels ``_zipscatter``).
+        if lhs is not new_self:
+            new_self.copy(lhs, deep=True)
+
+        return True
+
+    def _as_int64_index(self, indices: DeferredArray) -> DeferredArray:
+        """Return ``indices`` as an int64 deferred array (converting if
+        necessary).  The fused zip / scatter / gather tasks require int64
+        index stores; ``_prepare_zip_indices`` normally enforces this, but the
+        along-axis passthrough drivers bypass it."""
+        if indices.dtype != np.int64:
+            ind_64 = runtime.create_deferred_thunk(
+                shape=indices.shape, dtype=ty.int64
+            )
+            ind_64.convert(indices, warn=False)
+            return ind_64
+        return indices
+
+    def _along_axis_eligible(self, indices: DeferredArray, axis: int) -> bool:
+        """Whether the *_along_axis passthrough lowering can be used.
+
+        We feed a single full-rank index array straight into the fused
+        scatter/gather with ``key_dim == 1`` so ``build_source_point``
+        reconstructs the non-axis coordinates from the iteration point.  This
+        requires the index array to *be* the iteration domain (not a broadcast
+        view) so it is never a transformed store -- exactly what avoids the
+        AffineAccessor failure in the fused all2all path.
+        """
+        if self.base.ndim == 0 or indices.base.ndim == 0:
+            return False
+        if self.base.ndim != indices.base.ndim:
+            return False
+        if not (0 <= axis < indices.base.ndim):
+            return False
+        # The passthrough iterates over the index domain and copies the
+        # non-axis coordinates straight from the iteration point, so every
+        # non-axis extent must match the destination/source.  If the index
+        # array would need to broadcast against ``self`` (extent 1 vs N),
+        # defer to the generic fancy-index path which handles broadcasting.
+        for i in range(indices.base.ndim):
+            if i != axis and indices.shape[i] != self.shape[i]:
+                return False
+        # A transformed / future-backed index array would have to be
+        # materialized; that is exactly the copy we are trying to avoid, so
+        # defer those cases to the generic fancy-index path.
+        if indices.base.transformed or indices.base.has_scalar_storage:
+            return False
+        # The destination must be a plain region-backed store; transformed
+        # destinations are handled by the fancy-index path's copy-back logic.
+        if self.base.transformed or self.base.has_scalar_storage:
+            return False
+        return True
+
+    def _scatter_along_axis(
+        self,
+        value: DeferredArray,
+        indices: DeferredArray,
+        axis: int,
+        check_bounds: bool,
+    ) -> bool:
+        """Fused ``put_along_axis`` set without building broadcast coordinate
+        index arrays.
+
+        ``self`` is the destination ``a``.  Passes only the real ``indices``
+        array (placed at ``axis``, ``key_dim == 1``); the kernel fills the
+        other coordinates from the iteration point.  Returns ``True`` on
+        success, ``False`` to let the caller fall back to the generic
+        ``a[fancy_index] = values`` path.
+        """
+        if not self._along_axis_eligible(indices, axis):
+            return False
+        if value.base.ndim == 0:
+            return False
+        # The fused scatter copies value bytes into the destination, so the
+        # dtypes must already match.  Mixed-dtype puts (with their implicit
+        # conversion warning) are handled by the fancy-index fallback.
+        if value.dtype != self.dtype:
+            return False
+        # ``values`` must broadcast up to the index shape (numpy
+        # ``put_along_axis`` semantics).  When it does not (e.g. extra dims or
+        # mismatched extents), defer to the generic fancy-index path so it
+        # raises the appropriate ``ValueError`` instead of tripping an
+        # internal broadcast assertion in the fused task.
+        if not _broadcastable_to(value.shape, indices.shape):
+            return False
+
+        indices = self._as_int64_index(indices)
+        prepared = (axis, (indices.base,), 1, indices.shape)
+
+        if runtime.num_procs == 1:
+            return self._zipscatter(
+                value, axis, (indices,), self, check_bounds, prepared=prepared
+            )
+        if settings.use_nccl_scatter() and runtime.num_gpus > 1:
+            return self._nccl_zipscatter(
+                value, axis, (indices,), self, check_bounds, prepared=prepared
+            )
+        # Generic multi-rank (e.g. CPU) path is handled by the caller's
+        # fancy-index fallback (ZIP task + scatter).
+        return False
+
+    def _gather_along_axis(
+        self, indices: DeferredArray, axis: int, check_bounds: bool
+    ) -> DeferredArray | None:
+        """Fused ``take_along_axis`` gather without building broadcast
+        coordinate index arrays.
+
+        ``self`` is the source ``a``.  Returns the gather result thunk on
+        success, or ``None`` to let the caller fall back to the generic
+        fancy-index path.
+        """
+        if not self._along_axis_eligible(indices, axis):
+            return None
+
+        indices = self._as_int64_index(indices)
+        prepared = (axis, (indices.base,), 1, indices.shape)
+
+        if runtime.num_procs == 1:
+            return self._zipgather(
+                axis, (indices,), check_bounds, prepared=prepared
+            )
+        if settings.use_nccl_gather() and runtime.num_gpus > 1:
+            return self._nccl_zipgather(
+                axis, (indices,), check_bounds, prepared=prepared
+            )
+        return None
 
     def _advanced_indexing_using_take(
         self, mask_axis: int, mask_array: Any

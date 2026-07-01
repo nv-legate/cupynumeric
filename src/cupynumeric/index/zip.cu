@@ -122,8 +122,12 @@ struct ZipImplBody<VariantKind::GPU, DIM, N> {
       index_buf[idx] = index_arrays[idx];
     }
     if (check_bounds) {
-      check_index_arrays_out_of_bounds<DIM>(
+      const bool oob = check_index_arrays_out_of_bounds<DIM>(
         index_buf, volume, rect, pitches, index_arrays.size(), start_index, shape, stream);
+
+      if (oob) {
+        throw legate::TaskException("index is out of bounds in index array");
+      }
     }
 
     if (index_arrays.size() == N) {

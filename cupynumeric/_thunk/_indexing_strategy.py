@@ -256,6 +256,18 @@ class General(Strategy):
             )
         ) is not None:
             return fused_result
+        # Multi-GPU fused path: feed per-dim index arrays directly into the
+        # NCCL all-to-all gather, skipping the standalone ZIP task.
+        if (
+            settings.use_nccl_gather()
+            and runtime.num_gpus > 1
+            and self.array.base.ndim > 0
+        ):
+            nccl_fused = self.array._nccl_zipgather(
+                self.start_index, self.index_arrays, check_bounds=check_bounds
+            )
+            if nccl_fused is not None:
+                return nccl_fused
         index_array = self.array._zip_indices(
             self.start_index, self.index_arrays, check_bounds=check_bounds
         )
@@ -269,6 +281,21 @@ class General(Strategy):
             self.index_arrays,
             self.original,
             check_bounds,
+        ):
+            return
+        # Multi-GPU fused path: feed per-dim index arrays directly into the
+        # NCCL all-to-all scatter, skipping the standalone ZIP task.
+        if (
+            settings.use_nccl_scatter()
+            and runtime.num_gpus > 1
+            and self.array.base.ndim > 0
+            and self.array._nccl_zipscatter(
+                rhs,
+                self.start_index,
+                self.index_arrays,
+                self.original,
+                check_bounds,
+            )
         ):
             return
         index_array = self.array._zip_indices(

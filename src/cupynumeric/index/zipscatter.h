@@ -42,6 +42,18 @@ struct ZipScatterArgs {
   const bool check_bounds;
 };
 
+#if LEGATE_DEFINED(LEGATE_USE_CUDA)
+namespace detail {
+// Runs the fused zip+scatter GPU kernel directly from `args`, bypassing the
+// task's scalar/input layout. Used by the all2all scatter task when the
+// partitioner sequentializes the launch (single rank owns all the data): the
+// NCCL shuffle is unnecessary, so we do the same local zip+scatter as
+// CUPYNUMERIC_ZIPSCATTER. Defined in zipscatter.cu so the GPU ImplBody
+// instantiations are reused.
+void launch_local_zipscatter_gpu(legate::TaskContext& context, ZipScatterArgs& args);
+}  // namespace detail
+#endif
+
 class ZipScatterTask : public CuPyNumericTask<ZipScatterTask> {
  public:
   static inline const auto TASK_CONFIG =

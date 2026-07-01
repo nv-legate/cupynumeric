@@ -33,6 +33,18 @@ struct ZipGatherArgs {
   const bool check_bounds;
 };
 
+#if LEGATE_DEFINED(LEGATE_USE_CUDA)
+namespace detail {
+// Runs the fused zip+gather GPU kernel directly from `args`, bypassing the
+// task's scalar/input layout. Used by the all2all gather task when the
+// partitioner sequentializes the launch (single rank owns all the data): the
+// NCCL shuffle is unnecessary, so we do the same local zip+gather as
+// CUPYNUMERIC_ZIPGATHER. Defined in zipgather.cu so the GPU ImplBody
+// instantiations are reused.
+void launch_local_zipgather_gpu(legate::TaskContext& context, ZipGatherArgs& args);
+}  // namespace detail
+#endif
+
 class ZipGatherTask : public CuPyNumericTask<ZipGatherTask> {
  public:
   static inline const auto TASK_CONFIG =

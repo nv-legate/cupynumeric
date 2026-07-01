@@ -84,6 +84,8 @@
 //            output at the offsets it just received in step 2.
 
 #include "cupynumeric/cuda_help.h"
+#include "cupynumeric/index/zip.h"
+#include "cupynumeric/index/zip_common.inl"
 #include "cupynumeric/pitches.h"
 #include "cupynumeric/utilities/thrust_util.h"
 
@@ -157,6 +159,122 @@ struct DensePointLoader {
   const legate::Point<DIM_input>* __restrict__ ptr;
 
   __device__ legate::Point<DIM_input> operator()(size_t flat_idx) const { return ptr[flat_idx]; }
+};
+
+// Fused-ZIP point loaders: build a Point<N> on the fly from N per-dim int64
+// index arrays, matching what the ZIP task would have materialized. N is the
+// source ndim; narrays may be less than N for partial advanced indexing
+// (broadcast / passthrough dims fall back to the iteration point p).
+//
+// The same build_source_point helper backs the dense and sparse paths so
+// gather, scatter, and the single-GPU zipgather/zipscatter kernels agree on
+// the Point<N> they would have written.
+template <int DIM_output, int N>
+struct ZippedAccessorPointLoader {
+  Buffer<AccessorRO<int64_t, DIM_output>, 1> index_accs;
+  Pitches<DIM_output - 1> pitches;
+  legate::Point<DIM_output> lo;
+  int64_t narrays;
+  int64_t key_dim;
+  int64_t start_index;
+  legate::DomainPoint shape;
+
+  __device__ legate::Point<N> operator()(size_t flat_idx) const
+  {
+    const auto p = pitches.unflatten(flat_idx, lo);
+    return build_source_point<DIM_output, N>(
+      p,
+      SparseIndexLoader<DIM_output, Buffer<AccessorRO<int64_t, DIM_output>, 1>>{index_accs},
+      flat_idx,
+      narrays,
+      key_dim,
+      start_index,
+      shape,
+      ComputeIdxCudaFn{});
+  }
+};
+
+template <int DIM_output, int N>
+struct ZippedDensePointLoader {
+  Buffer<const int64_t*, 1> index_ptrs;
+  Pitches<DIM_output - 1> pitches;
+  legate::Point<DIM_output> lo;
+  int64_t narrays;
+  int64_t key_dim;
+  int64_t start_index;
+  legate::DomainPoint shape;
+
+  __device__ legate::Point<N> operator()(size_t flat_idx) const
+  {
+    legate::Point<DIM_output> p{};
+    if (narrays != N) {
+      p = pitches.unflatten(flat_idx, lo);
+    }
+    return build_source_point<DIM_output, N>(
+      p,
+      DenseIndexLoader<DIM_output, Buffer<const int64_t*, 1>>{index_ptrs},
+      flat_idx,
+      narrays,
+      key_dim,
+      start_index,
+      shape,
+      ComputeIdxCudaFn{});
+  }
+};
+
+// Index loader providers select between the materialized-Point<N>-store
+// path (`PointIndexLoaderProvider`) and the fused per-dim int64 array
+// path (`FusedIndexLoaderProvider`). The helpers downstream
+// (`classify_index_points`, `linearize_and_exchange_offsets`, ...) are
+// templated on the provider, so both paths share the same kernels — they
+// only differ in how a flat output index is turned into a source Point<N>.
+//
+// Each provider exposes:
+//   - `is_dense()`                       — whether the dense loader is usable
+//   - `make_dense_loader()`              — a functor: flat_idx -> Point<N>
+//   - `make_sparse_loader()`             — a functor: flat_idx -> Point<N>
+template <int DIM_input, int DIM_output>
+struct PointIndexLoaderProvider {
+  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_output>* index;
+
+  [[nodiscard]] bool is_dense() const { return index->is_dense(); }
+
+  [[nodiscard]] DensePointLoader<DIM_input> make_dense_loader() const
+  {
+    return DensePointLoader<DIM_input>{index->dense_ptr};
+  }
+
+  [[nodiscard]] AccessorPointLoader<DIM_input, DIM_output> make_sparse_loader() const
+  {
+    return AccessorPointLoader<DIM_input, DIM_output>{index->acc, index->pitches, index->lo};
+  }
+};
+
+template <int DIM_input, int DIM_output>
+struct FusedIndexLoaderProvider {
+  Buffer<AccessorRO<int64_t, DIM_output>, 1> index_accs;
+  Buffer<const int64_t*, 1> index_ptrs;
+  bool dense;
+  Pitches<DIM_output - 1> pitches;
+  legate::Point<DIM_output> lo;
+  int64_t narrays;
+  int64_t key_dim;
+  int64_t start_index;
+  legate::DomainPoint shape;
+
+  [[nodiscard]] bool is_dense() const { return dense; }
+
+  [[nodiscard]] ZippedDensePointLoader<DIM_output, DIM_input> make_dense_loader() const
+  {
+    return ZippedDensePointLoader<DIM_output, DIM_input>{
+      index_ptrs, pitches, lo, narrays, key_dim, start_index, shape};
+  }
+
+  [[nodiscard]] ZippedAccessorPointLoader<DIM_output, DIM_input> make_sparse_loader() const
+  {
+    return ZippedAccessorPointLoader<DIM_output, DIM_input>{
+      index_accs, pitches, lo, narrays, key_dim, start_index, shape};
+  }
 };
 
 // Stores the rect's low corner and pre-computed pitches for the linearization.
@@ -388,17 +506,16 @@ __global__ void assign_target_ranks_kernel(PointLoader loader,
   }
 }
 
-template <int DIM_input, int DIM_output>
-void classify_index_points(
-  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_output>& index,
-  size_t local_index_count,
-  int* target_ranks,
-  const void* source_rects,
-  int num_ranks,
-  cudaStream_t stream)
+template <int DIM_input, typename IndexLoaderProvider>
+void classify_index_points(const IndexLoaderProvider& index,
+                           size_t local_index_count,
+                           int* target_ranks,
+                           const void* source_rects,
+                           int num_ranks,
+                           cudaStream_t stream)
 {
-  using AccLoader = AccessorPointLoader<DIM_input, DIM_output>;
-  using DnsLoader = DensePointLoader<DIM_input>;
+  using DnsLoader = decltype(std::declval<IndexLoaderProvider>().make_dense_loader());
+  using AccLoader = decltype(std::declval<IndexLoaderProvider>().make_sparse_loader());
 
   const auto& properties = get_device_properties();
   const size_t blocks    = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
@@ -428,7 +545,7 @@ void classify_index_points(
 
   if (index.is_dense()) {
     assign_target_ranks_kernel<DnsLoader, DIM_input>
-      <<<blocks, THREADS_PER_BLOCK, smem_size, stream>>>(DnsLoader{index.dense_ptr},
+      <<<blocks, THREADS_PER_BLOCK, smem_size, stream>>>(index.make_dense_loader(),
                                                          local_index_count,
                                                          target_ranks,
                                                          source_rects_ptr,
@@ -436,13 +553,12 @@ void classify_index_points(
                                                          tile_size);
   } else {
     assign_target_ranks_kernel<AccLoader, DIM_input>
-      <<<blocks, THREADS_PER_BLOCK, smem_size, stream>>>(
-        AccLoader{index.acc, index.pitches, index.lo},
-        local_index_count,
-        target_ranks,
-        source_rects_ptr,
-        num_ranks,
-        tile_size);
+      <<<blocks, THREADS_PER_BLOCK, smem_size, stream>>>(index.make_sparse_loader(),
+                                                         local_index_count,
+                                                         target_ranks,
+                                                         source_rects_ptr,
+                                                         num_ranks,
+                                                         tile_size);
   }
 }
 
@@ -504,10 +620,10 @@ static __global__ void pack_indices_by_rank_warp(const int* target_ranks,
 // `request_positions` is filled in a separate pass
 // (`pack_request_positions`) once `send_offsets_per_rank`
 // is known, so the warp pack can write directly into peer-major slots.
-template <int DIM_input, int DIM_output>
+template <int DIM_input, typename IndexLoaderProvider>
 [[nodiscard]] ShuffleDescriptor create_shuffle_information(
   TaskContext& context,
-  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_output>& index,
+  const IndexLoaderProvider& index,
   size_t local_index_count,
   const void* source_rects,
   int* target_ranks,
@@ -530,7 +646,7 @@ template <int DIM_input, int DIM_output>
   // classify local index points by destination rank, then histogram
   // them into the Z_COPY-resident send_counts_per_rank.
   if (local_index_count > 0) {
-    classify_index_points<DIM_input, DIM_output>(
+    classify_index_points<DIM_input>(
       index, local_index_count, target_ranks, source_rects, num_ranks, stream);
 
     compute_histogram(target_ranks, local_index_count, send_counts_per_rank_ptr, num_ranks, stream);
@@ -696,29 +812,28 @@ __global__ void linearize_offsets_kernel(PointLoader loader,
   round_send_offsets[idx] = rect_info.linearize(point);
 }
 
-template <int DIM_input, int DIM_index_outer>
-inline void linearize_and_exchange_offsets(
-  TaskContext& context,
-  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_index_outer>& index,
-  const uint64_t* round_request_positions,
-  const unsigned long long* round_send_counts,
-  const unsigned long long* round_recv_counts,
-  const unsigned long long* round_send_prefix,
-  const unsigned long long* round_recv_prefix,
-  const LinearizedRectInfo<DIM_input>* rect_infos,
-  uint64_t* round_send_offsets,
-  uint64_t* round_recv_offsets,
-  unsigned long long total_round_send,
-  int num_ranks,
-  ncclComm_t* nccl_comm,
-  cudaStream_t stream)
+template <int DIM_input, typename IndexLoaderProvider>
+inline void linearize_and_exchange_offsets(TaskContext& context,
+                                           const IndexLoaderProvider& index,
+                                           const uint64_t* round_request_positions,
+                                           const unsigned long long* round_send_counts,
+                                           const unsigned long long* round_recv_counts,
+                                           const unsigned long long* round_send_prefix,
+                                           const unsigned long long* round_recv_prefix,
+                                           const LinearizedRectInfo<DIM_input>* rect_infos,
+                                           uint64_t* round_send_offsets,
+                                           uint64_t* round_recv_offsets,
+                                           unsigned long long total_round_send,
+                                           int num_ranks,
+                                           ncclComm_t* nccl_comm,
+                                           cudaStream_t stream)
 {
   if (total_round_send > 0) {
     const size_t blocks =
       (static_cast<size_t>(total_round_send) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
     if (index.is_dense()) {
-      const DensePointLoader<DIM_input> loader{index.dense_ptr};
+      const auto loader = index.make_dense_loader();
       linearize_offsets_kernel<decltype(loader), DIM_input>
         <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(loader,
                                                    round_request_positions,
@@ -728,8 +843,7 @@ inline void linearize_and_exchange_offsets(
                                                    round_send_offsets,
                                                    static_cast<size_t>(total_round_send));
     } else {
-      const AccessorPointLoader<DIM_input, DIM_index_outer> loader{
-        index.acc, index.pitches, index.lo};
+      const auto loader = index.make_sparse_loader();
       linearize_offsets_kernel<decltype(loader), DIM_input>
         <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(loader,
                                                    round_request_positions,
@@ -1016,7 +1130,6 @@ inline void unpack_recv_into_output(
 // kernels and live in ZCMEM; the other N-sized tables are host-only
 // (NCCL count/offset args) and live in plain std::vector.
 //
-// Because the ZCMEM tables are rewritten in place each round and host
 // stores into ZCMEM are not ordered against in-flight GPU work, the
 // `fill_round_schedule` call that prepares round `R+1` must
 // `cudaStreamSynchronize` first to ensure the previous round's kernels
@@ -1166,6 +1279,28 @@ inline void fill_round_schedule(RoundSchedule& schedule,
   return buf.ptr(0)[1];
 }
 
+// Collective OR-reduction of a host bool across every rank in the launch.
+//
+// Used to make the fused-path bounds check symmetric: every rank evaluates
+// its local shard of the index arrays, calls this helper with its local
+// out-of-bounds flag, and then throws a legate::TaskException together iff
+// *any* rank observed an OOB index.
+[[nodiscard]] inline bool nccl_any_bool(TaskContext& context,
+                                        bool local_value,
+                                        ncclComm_t* nccl_comm,
+                                        cudaStream_t stream)
+{
+  auto buf      = create_buffer<uint8_t>(2, Memory::Kind::Z_COPY_MEM);
+  buf.ptr(0)[0] = local_value ? 1 : 0;
+  buf.ptr(0)[1] = 0;
+
+  context.concurrent_task_barrier();
+  CHECK_NCCL(ncclAllReduce(buf.ptr(0), buf.ptr(0) + 1, 1, ncclUint8, ncclMax, *nccl_comm, stream));
+  context.concurrent_task_barrier();
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+  return buf.ptr(0)[1] != 0;
+}
+
 // Step 3+4+5 orchestration. The `RoundSchedule` is rebuilt in place each
 // round (O(N) host + a small GPU gather) and then each iteration is:
 //   1. linearize_offsets_kernel - fill round_send_offsets (round-local FB,
@@ -1196,13 +1331,13 @@ inline void fill_round_schedule(RoundSchedule& schedule,
 // `num_ranks * max_elems_per_peer * <bytes>` and reused every round.
 template <Type::Code CODE,
           int DIM_input,
-          int DIM_index_outer,
           int PACK_DIM,
           int UNPACK_DIM,
-          bool IS_GATHER>
+          bool IS_GATHER,
+          typename IndexLoaderProvider>
 void local_gather_and_exchange(
   TaskContext& context,
-  const StoreView<AccessMode::Read, legate::Point<DIM_input>, DIM_index_outer>& index,
+  const IndexLoaderProvider& index,
   const uint64_t* request_positions,
   const ShuffleDescriptor& plan,
   const LinearizedRectInfo<DIM_input>* rect_infos,
@@ -1260,20 +1395,20 @@ void local_gather_and_exchange(
                                    stream);
     const uint64_t* round_request_positions = round_request_positions_buf.ptr(0);
 
-    linearize_and_exchange_offsets<DIM_input, DIM_index_outer>(context,
-                                                               index,
-                                                               round_request_positions,
-                                                               round_send_counts,
-                                                               round_recv_counts,
-                                                               round_send_prefix,
-                                                               round_recv_prefix,
-                                                               rect_infos,
-                                                               round_send_offsets.ptr(0),
-                                                               round_recv_offsets.ptr(0),
-                                                               total_round_send,
-                                                               num_ranks,
-                                                               nccl_comm,
-                                                               stream);
+    linearize_and_exchange_offsets<DIM_input>(context,
+                                              index,
+                                              round_request_positions,
+                                              round_send_counts,
+                                              round_recv_counts,
+                                              round_send_prefix,
+                                              round_recv_prefix,
+                                              rect_infos,
+                                              round_send_offsets.ptr(0),
+                                              round_recv_offsets.ptr(0),
+                                              total_round_send,
+                                              num_ranks,
+                                              nccl_comm,
+                                              stream);
 
     // Pack permutation is 1:1 with the staging buffer thanks to the
     // round-contiguous request_positions and round-local round_recv_offsets.

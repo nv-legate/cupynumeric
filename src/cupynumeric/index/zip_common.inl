@@ -22,6 +22,7 @@
 // pieces live in a neutral header rather than under either side.
 
 #include "cupynumeric/cupynumeric_task.h"
+#include "cupynumeric/index/zip.h"
 
 namespace cupynumeric {
 
@@ -62,6 +63,16 @@ struct DenseIndexLoader {
   LEGATE_HOST_DEVICE int64_t load(size_t dim, const Point<DIM>& /*p*/, size_t idx) const
   {
     return index_ptrs[dim][idx];
+  }
+};
+
+// Functor wrapping ``compute_idx_cuda`` so it can be passed as the
+// ComputeIndexFn template parameter of ``build_source_point``.  Shared by the
+// single-GPU zipgather/zipscatter kernels and the fused all2all path.
+struct ComputeIdxCudaFn {
+  LEGATE_HOST_DEVICE legate::coord_t operator()(legate::coord_t index, legate::coord_t extent) const
+  {
+    return compute_idx_cuda(index, extent);
   }
 };
 

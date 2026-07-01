@@ -24,14 +24,6 @@ namespace cupynumeric {
 
 using namespace legate;
 
-struct ZipScatterComputeIndexCuda {
-  __device__ __forceinline__ legate::coord_t operator()(legate::coord_t index,
-                                                        legate::coord_t extent) const
-  {
-    return compute_idx_cuda(index, extent);
-  }
-};
-
 // Type-erased dense kernel. Source values are loaded by flat index from a
 // contiguous `src_bytes` buffer, the destination point is computed by zipping
 // the index arrays at the same flat index, and the write uses a typed
@@ -71,7 +63,7 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
                                key_dim,
                                start_index,
                                shape,
-                               ZipScatterComputeIndexCuda{});
+                               ComputeIdxCudaFn{});
   copy_elements(
     out_bytes + new_point.dot(out_byte_strides), src_bytes + idx * elem_size, elem_size);
 }
@@ -105,7 +97,7 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
     key_dim,
     start_index,
     shape,
-    ZipScatterComputeIndexCuda{});
+    ComputeIdxCudaFn{});
   out[new_point] = src[p];
 }
 
@@ -208,14 +200,18 @@ struct ZipScatterImplBody<VariantKind::GPU, DIM, N> {
       // Identical contract as the gather pipeline: confirms each index is in
       // [0, shape[start_index + n]). `shape` here is the destination shape,
       // so out-of-bounds means an illegal write target.
-      check_index_arrays_out_of_bounds<DIM>(index_buf,
-                                            volume,
-                                            src_rect,
-                                            pitches,
-                                            index_arrays.size(),
-                                            args.start_index,
-                                            args.shape,
-                                            stream);
+      const bool oob = check_index_arrays_out_of_bounds<DIM>(index_buf,
+                                                             volume,
+                                                             src_rect,
+                                                             pitches,
+                                                             index_arrays.size(),
+                                                             args.start_index,
+                                                             args.shape,
+                                                             stream);
+
+      if (oob) {
+        throw legate::TaskException("index is out of bounds in index array");
+      }
     }
 
     if (dense_path) {
@@ -262,6 +258,20 @@ struct ZipScatterImplBody<VariantKind::GPU, DIM, N> {
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
   }
 };
+
+namespace detail {
+
+void launch_local_zipscatter_gpu(TaskContext& context, ZipScatterArgs& args)
+{
+  // Mirror zipscatter_template's dispatch order: DIM = source/iteration dim,
+  // N = indexed (out) dim.
+  double_dispatch(std::max(1, args.source.dim()),
+                  std::max(1, args.out.dim()),
+                  ZipScatterDimDispatch<VariantKind::GPU>{context},
+                  args);
+}
+
+}  // namespace detail
 
 /*static*/ void ZipScatterTask::gpu_variant(TaskContext context)
 {

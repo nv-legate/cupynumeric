@@ -727,15 +727,32 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     case CUPYNUMERIC_ALL2ALL_SCATTER: {
       const auto num_ranks = task.get_launch_domain().get_volume();
 
-      // Single-rank tasks dispatch to the local GatherTask / ScatterTask
-      // kernels, which need no shuffle scratch.
+      // Single-rank tasks skip the NCCL shuffle. The legacy (narrays == 0)
+      // path dispatches to the local Gather/Scatter (Thrust) kernels, which
+      // need no scratch. The fused (narrays > 0) path runs the local
+      // zip+gather / zip+scatter kernels, which allocate the same index
+      // accessor (FBMEM) and pointer (ZCMEM) tables as CUPYNUMERIC_ZIPGATHER /
+      // ZIPSCATTER.
       if (num_ranks <= 1) {
+        const auto narrays = task.scalar(2).value<std::int64_t>();
+        if (narrays <= 0) {
+          return 0;
+        }
+        if (memory_kind == legate::mapping::StoreTarget::FBMEM) {
+          return aligned_size(static_cast<std::size_t>(narrays) * sizeof(ACC_TYPE),
+                              DEFAULT_ALIGNMENT);
+        }
+        if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
+          return aligned_size(static_cast<std::size_t>(narrays) * sizeof(const int64_t*),
+                              DEFAULT_ALIGNMENT);
+        }
         return 0;
       }
 
       const auto elem_size      = task.input(0).type().size();
       const auto staging_factor = task.scalar(0).value<double>();
       const auto global_index   = task.scalar(1).value<std::uint64_t>();
+      const auto narrays        = task.scalar(2).value<std::int64_t>();
 
       if (!(staging_factor > 0.0)) {
         LEGATE_ABORT("CUPYNUMERIC_ALL2ALL_STAGING_FACTOR must be a positive finite value, got ",
@@ -745,6 +762,9 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
       // `avg_per_rank_count` is the partitioned-case basis (ceil(V / N));
       // `local_index_count` is this task's actual slice and equals the
       // full global volume when the partitioner replicates the indices.
+      // `task.input(1)` is the first index input regardless of whether the
+      // task is in legacy (Point<N>) or fused (per-dim int64) mode -- both
+      // are aligned with the iteration store, so the volume matches.
       const std::size_t avg_per_rank_count =
         static_cast<std::size_t>((global_index + num_ranks - 1) / num_ranks);
       // Gather: index array is input(1). Scatter: source (values) array is input(0),
@@ -768,18 +788,29 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           // `ShuffleDescriptor` uint64 arrays + the two GPU-visible
           // num_ranks-sized `RoundSchedule` tables (within_round_send_prefix,
           // peer_src_offsets). The other RoundSchedule tables are
-          // host-only std::vector and don't consume ZCMEM.
+          // host-only std::vector and don't consume ZCMEM. The two
+          // GPU-visible RoundSchedule tables are written by the host
+          // in `fill_round_schedule` and made visible to subsequent
+          // kernels via an explicit `cudaStreamSynchronize(stream)` at
+          // the end of that function (raw ZCMEM stores are not visible
+          // to a subsequent same-stream kernel on aarch64 without a
+          // barrier).
           constexpr std::size_t rect_bytes_max = sizeof(legate::Rect<LEGATE_MAX_DIM>);
           const auto partition_rects_bytes =
             aligned_size(num_ranks * rect_bytes_max, DEFAULT_ALIGNMENT);
           const auto local_rect_bytes = aligned_size(rect_bytes_max, DEFAULT_ALIGNMENT);
           const auto allreduce_buf_bytes =
             aligned_size(2 * sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+          // `nccl_any_bool` collective OOB check (check_bounds path) allocates a
+          // single uint8[2] Z_COPY buffer.
+          const auto oob_check_buf_bytes =
+            aligned_size(2 * sizeof(std::uint8_t), DEFAULT_ALIGNMENT);
           constexpr std::size_t kNumShuffleDescriptorU64Buffers = 3;
           constexpr std::size_t kNumRoundScheduleZcmemTables    = 2;
           return partition_rects_bytes + local_rect_bytes +
                  kNumShuffleDescriptorU64Buffers * per_rank_u64 +
-                 kNumRoundScheduleZcmemTables * per_rank_u64 + allreduce_buf_bytes;
+                 kNumRoundScheduleZcmemTables * per_rank_u64 + allreduce_buf_bytes +
+                 oob_check_buf_bytes;
         }
         case legate::mapping::StoreTarget::FBMEM: {
 #if LEGATE_DEFINED(LEGATE_USE_CUDA)
@@ -831,9 +862,27 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           //     `send_staging`, `recv_staging` (each bounded by `staging_per_buffer`).
           constexpr std::size_t kNumRoundOffsetBuffers = 3;
           constexpr std::size_t kNumStagingBuffers     = 2;
-          const std::size_t raw_pool                   = local_terms +
-                                       kNumRoundOffsetBuffers * round_offset_buf_bound +
-                                       kNumStagingBuffers * staging_per_buffer + small_terms;
+          // Fused-path accessor / pointer tables (narrays > 0 only). Both tables
+          // live in FB and are populated via stream-ordered cudaMemcpyAsync; the
+          // dense pointer table cannot be in ZCMEM because the kernel that reads
+          // the per-dim pointers and dereferences them would race the host stores
+          // on weakly-ordered systems (aarch64).
+          const std::size_t fused_acc_table_bytes =
+            narrays > 0 ? aligned_size(static_cast<std::size_t>(narrays) * sizeof(ACC_TYPE),
+                                       DEFAULT_ALIGNMENT)
+                        : 0;
+          const std::size_t fused_ptr_table_bytes =
+            narrays > 0 ? aligned_size(static_cast<std::size_t>(narrays) * sizeof(std::int64_t*),
+                                       DEFAULT_ALIGNMENT)
+                        : 0;
+          // `check_index_arrays_out_of_bounds` (check_bounds path) allocates one
+          // DeviceScalarReductionBuffer scalar in FB (1 element, 16B-aligned).
+          const std::size_t oob_reduction_buf_bytes =
+            aligned_size(sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
+          const std::size_t raw_pool =
+            local_terms + kNumRoundOffsetBuffers * round_offset_buf_bound +
+            kNumStagingBuffers * staging_per_buffer + small_terms + fused_acc_table_bytes +
+            fused_ptr_table_bytes + oob_reduction_buf_bytes;
 
           return raw_pool;
 #else
