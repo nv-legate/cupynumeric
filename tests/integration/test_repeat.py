@@ -146,8 +146,22 @@ def test_array_2d_repeats_invalid(repeats):
 
 
 @pytest.mark.parametrize("arr", ([1, 2, 3], [[1, 3], [2, 4]]))
-@pytest.mark.parametrize("repeats", (-3, [-3]))
+@pytest.mark.parametrize("repeats", (-3, [-3], np.int64(-3)))
 def test_array_repeats_negative_raises(arr, repeats):
+    anp = np.array(arr)
+    anum = num.array(arr)
+    expected_exc = ValueError
+    with pytest.raises(expected_exc):
+        np.repeat(anp, repeats)
+    with pytest.raises(expected_exc):
+        num.repeat(anum, repeats)
+
+
+@pytest.mark.parametrize(
+    ("arr", "repeats"),
+    (([1, 2, 3], [1, -2, 3]), ([[1, 3], [2, 4]], [1, -2, 3, 1])),
+)
+def test_array_repeats_negative_array(arr, repeats):
     anp = np.array(arr)
     anum = num.array(arr)
     expected_exc = ValueError

@@ -58,6 +58,27 @@ struct check_nonzero_scalar_fn {
   }
 };
 
+void throw_if_repeat_negative(int64_t repeats)
+{
+  if (repeats < 0) {
+    throw std::invalid_argument("negative dimensions are not allowed");
+  }
+}
+
+void validate_repeat_scalar_repeats(NDArray repeats)
+{
+  assert(repeats.type() == legate::int64());
+  throw_if_repeat_negative(repeats.get_read_accessor<int64_t, 1>()[0]);
+}
+
+void validate_repeat_repeats(NDArray repeats)
+{
+  // Validate before launching REPEAT so invalid inputs raise a regular exception.
+  assert(repeats.type() == legate::int64());
+  auto min = amin(repeats);
+  throw_if_repeat_negative(min.get_read_accessor<int64_t, 1>()[0]);
+}
+
 struct get_typesize_fn {
   template <legate::Type::Code CODE>
   uint64_t operator()()
@@ -1492,9 +1513,7 @@ NDArray NDArray::copy()
 
 NDArray NDArray::repeat(int64_t repeats, std::optional<int32_t> axis)
 {
-  if (repeats < 0) {
-    throw std::invalid_argument("negative dimensions are not allowed");
-  }
+  throw_if_repeat_negative(repeats);
 
   auto runtime = CuPyNumericRuntime::get_runtime();
 
@@ -1576,7 +1595,13 @@ NDArray NDArray::repeat(NDArray repeats, std::optional<int32_t> axis)
     return src.copy();
   }
 
-  if (repeats.get_store().has_scalar_storage()) {
+  if (repeats.type() != legate::int64()) {
+    repeats = repeats._warn_and_convert(legate::int64());
+  }
+
+  bool scalar_repeats = repeats.get_store().has_scalar_storage();
+  if (scalar_repeats) {
+    validate_repeat_scalar_repeats(repeats);
     size_t len = src.shape()[axis_int];
     if (len > 1) {
       repeats = repeats._wrap(len);
@@ -1589,8 +1614,8 @@ NDArray NDArray::repeat(NDArray repeats, std::optional<int32_t> axis)
   if (repeats.shape()[0] != src.shape()[axis_int]) {
     throw std::invalid_argument("incorrect shape of repeats array");
   }
-  if (repeats.type() != legate::int64()) {
-    repeats = repeats._warn_and_convert(legate::int64());
+  if (!scalar_repeats) {
+    validate_repeat_repeats(repeats);
   }
 
   auto runtime        = CuPyNumericRuntime::get_runtime();

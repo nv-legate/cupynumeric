@@ -60,6 +60,24 @@ _STAT_FUNCTIONS_AXIS = {
 }
 
 
+def _validate_repeat_repeats(repeats: Any) -> None:
+    # Scalar repeats may reach this helper before conversion in the ndarray
+    # input path. Cast here so validation matches the value later passed to
+    # the repeat thunk.
+    if np.ndim(repeats) == 0:
+        if np.int64(repeats) < 0:
+            raise ValueError("negative dimensions are not allowed")
+        return
+
+    if isinstance(repeats, ndarray):
+        if (repeats < 0).any():
+            raise ValueError("negative dimensions are not allowed")
+        return
+
+    if np.any(np.asarray(repeats) < 0):
+        raise ValueError("negative dimensions are not allowed")
+
+
 @add_boilerplate("A")
 def tile(
     A: ndarray, reps: int | Sequence[int] | npt.NDArray[np.int_]
@@ -186,6 +204,7 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
                     category=UserWarning,
                 )
             repeats = np.int64(repeats)
+            _validate_repeat_repeats(repeats)
             return full((repeats,), cast(int | float, a))
         elif np.ndim(repeats) == 1 and len(repeats) == 1:
             if not isinstance(repeats, int):
@@ -194,6 +213,7 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
                     category=UserWarning,
                 )
             repeats = np.int64(repeats)
+            _validate_repeat_repeats(repeats[0])
             return full((repeats[0],), cast(int | float, a))
         else:
             raise ValueError(
@@ -220,6 +240,8 @@ def repeat(a: ndarray, repeats: Any, axis: int | None = None) -> ndarray:
     if np.ndim(repeats) == 1:
         if repeats.shape[0] == 1 and repeats.shape[0] != array.shape[axis_int]:
             repeats = repeats[0]
+
+    _validate_repeat_repeats(repeats)
 
     # repeats is a scalar.
     if np.ndim(repeats) == 0:

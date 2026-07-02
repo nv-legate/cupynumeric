@@ -243,7 +243,7 @@ TEST(Repeat, test_array_2d_repeats_invalid)
   }
 }
 
-TEST(Repeat, test_array_1d_repeats_fatal_error)
+TEST(Repeat, test_array_repeats_negative)
 {
   std::vector<std::tuple<std::vector<int32_t>, std::vector<uint64_t>>> arr_list{
     {{1, 2, 3}, {}}, {{1, 3, 2, 4}, {2, 2}}};
@@ -253,10 +253,22 @@ TEST(Repeat, test_array_1d_repeats_fatal_error)
     auto rep = mk_array(repeats, rep_shape);
     for (auto [x_in, x_shape] : arr_list) {
       auto x = mk_array(x_in, x_shape);
-      // @pytest.mark.skip()
-      // Aborted, got fatal error: "out of memory"
-      // EXPECT_ANY_THROW(repeat(x, rep));
+      EXPECT_THROW(repeat(x, rep), std::invalid_argument);
     }
+  }
+}
+
+TEST(Repeat, test_array_repeats_negative_array)
+{
+  std::vector<std::tuple<std::vector<int32_t>,
+                         std::vector<uint64_t>,
+                         std::vector<int32_t>,
+                         std::vector<uint64_t>>>
+    cases{{{1, 2, 3}, {}, {1, -2, 3}, {3}}, {{1, 3, 2, 4}, {2, 2}, {1, -2, 3, 1}, {4}}};
+  for (auto [x_in, x_shape, repeats, rep_shape] : cases) {
+    auto x   = mk_array(x_in, x_shape);
+    auto rep = mk_array(repeats, rep_shape);
+    EXPECT_THROW(repeat(x, rep), std::invalid_argument);
   }
 }
 
