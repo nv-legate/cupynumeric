@@ -24,18 +24,23 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/scan.h>
 
+#include <cstdint>
+#include <limits>
+#include <tuple>
+#include <utility>
+
 namespace cupynumeric {
 
 namespace {
 
-template <typename VAL, int IN_DIM, int OUT_DIM, typename OUT_TYPE>
+template <typename VAL, int IN_DIM, int OUT_DIM, typename OUT_TYPE, typename OFFSET_T>
 __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   getitem_masked(const size_t volume,
                  const AccessorRO<VAL, IN_DIM> input,
                  const AccessorRO<bool, IN_DIM> index,
                  Pitches<IN_DIM - 1> in_pitches,
                  Point<IN_DIM> in_lo,
-                 uint64_t* offsets,
+                 OFFSET_T* offsets,
                  Buffer<OUT_TYPE, OUT_DIM> out,
                  Pitches<OUT_DIM - 1> out_pitches,
                  Point<OUT_DIM> out_lo)
@@ -51,14 +56,14 @@ __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   }
 }
 
-template <typename VAL, int IN_DIM, int OUT_DIM, typename OUT_TYPE>
+template <typename VAL, int IN_DIM, int OUT_DIM, typename OUT_TYPE, typename OFFSET_T>
 __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   getitem_masked_dense(const size_t volume,
                        const VAL* input,
                        const bool* index,
                        Pitches<IN_DIM - 1> in_pitches,
                        Point<IN_DIM> in_lo,
-                       uint64_t* offsets,
+                       OFFSET_T* offsets,
                        Buffer<OUT_TYPE, OUT_DIM> out,
                        Pitches<OUT_DIM - 1> out_pitches,
                        Point<OUT_DIM> out_lo)
@@ -74,17 +79,21 @@ __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   }
 }
 
-template <int DIM>
-uint64_t* calculate_offsets(cudaStream_t stream,
-                            const size_t volume,
-                            const bool index_dense,
-                            const AccessorRO<bool, DIM>& index,
-                            const Pitches<DIM - 1>& in_pitches,
-                            const Rect<DIM>& rect)
+// OFFSET_T is the per-element prefix-sum scratch: it holds counts of true mask entries, which are
+// <= volume, so the caller passes uint32 when the tile fits in 2^32 elements (halving this
+// full-volume buffer) and uint64 otherwise. Returns the offsets buffer and the total count of
+// selected elements (the last prefix sum).
+template <typename OFFSET_T, int DIM>
+std::pair<OFFSET_T*, uint64_t> calculate_offsets(cudaStream_t stream,
+                                                 const size_t volume,
+                                                 const bool index_dense,
+                                                 const AccessorRO<bool, DIM>& index,
+                                                 const Pitches<DIM - 1>& in_pitches,
+                                                 const Rect<DIM>& rect)
 {
   const auto& in_lo    = rect.lo;
-  auto buffer          = create_buffer<uint64_t, 1>(volume, legate::Memory::Kind::GPU_FB_MEM);
-  uint64_t* buffer_ptr = buffer.ptr(Rect<1>{Point<1>{0}, Point<1>{volume}});
+  auto buffer          = create_buffer<OFFSET_T, 1>(volume, legate::Memory::Kind::GPU_FB_MEM);
+  OFFSET_T* buffer_ptr = buffer.ptr(0);
 
   // perform an inclusive scan to compute indices of elements to copy to output
   auto alloc   = ThrustAllocator(legate::Memory::Kind::GPU_FB_MEM);
@@ -92,15 +101,15 @@ uint64_t* calculate_offsets(cudaStream_t stream,
 
   if (index_dense) {
     auto index_ptr   = index.ptr(rect);
-    auto cast_lambda = [] __host__ __device__(bool x) -> uint64_t {
-      return static_cast<uint64_t>(x);
+    auto cast_lambda = [] __host__ __device__(bool x) -> OFFSET_T {
+      return static_cast<OFFSET_T>(x);
     };
     auto cast_iter = thrust::make_transform_iterator(index_ptr, cast_lambda);
 
     thrust::inclusive_scan(exe_pol, cast_iter, cast_iter + volume, buffer_ptr);
   } else {
-    auto get_index_lambda = [index, in_pitches, in_lo] __host__ __device__(uint64_t i) -> uint64_t {
-      return static_cast<uint64_t>(index[in_pitches.unflatten(i, in_lo)]);
+    auto get_index_lambda = [index, in_pitches, in_lo] __host__ __device__(uint64_t i) -> OFFSET_T {
+      return static_cast<OFFSET_T>(index[in_pitches.unflatten(i, in_lo)]);
     };
     auto get_index_iter = thrust::make_transform_iterator(
       thrust::make_counting_iterator<uint64_t>(0), get_index_lambda);
@@ -108,8 +117,46 @@ uint64_t* calculate_offsets(cudaStream_t stream,
     thrust::inclusive_scan(exe_pol, get_index_iter, get_index_iter + volume, buffer_ptr);
   }
 
+  // Get the last element of the buffer to compute the number of selected elements
+  OFFSET_T last_offset;
+  CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
+    &last_offset, buffer_ptr + volume - 1, sizeof(OFFSET_T), cudaMemcpyDeviceToHost, stream));
+  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+
   // It's safe to "leak" the buffer, as the runtime destroys the buffer once the task is done.
-  return buffer_ptr;
+  return {buffer_ptr, last_offset};
+}
+
+template <typename VAL, int IN_DIM, int OUT_DIM, typename OUT_TYPE, typename OFFSET_T>
+void launch_getitem(cudaStream_t stream,
+                    const size_t volume,
+                    const bool dense,
+                    const AccessorRO<VAL, IN_DIM>& input,
+                    const AccessorRO<bool, IN_DIM>& index,
+                    const Pitches<IN_DIM - 1>& in_pitches,
+                    const Rect<IN_DIM>& rect,
+                    OFFSET_T* offsets,
+                    Buffer<OUT_TYPE, OUT_DIM>& out,
+                    const Pitches<OUT_DIM - 1>& out_pitches,
+                    const Point<OUT_DIM>& out_lo)
+{
+  const size_t blocks = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+
+  if (dense) {
+    getitem_masked_dense<VAL, IN_DIM, OUT_DIM, OUT_TYPE>
+      <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(volume,
+                                                 input.ptr(rect),
+                                                 index.ptr(rect),
+                                                 in_pitches,
+                                                 rect.lo,
+                                                 offsets,
+                                                 out,
+                                                 out_pitches,
+                                                 out_lo);
+  } else {
+    getitem_masked<VAL, IN_DIM, OUT_DIM, OUT_TYPE><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+      volume, input, index, in_pitches, rect.lo, offsets, out, out_pitches, out_lo);
+  }
 }
 
 }  // namespace
@@ -141,15 +188,27 @@ struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, IN_DIM, OUT_DIM, OUT_TYP
     bool dense       = false;
 #endif
 
-    auto stream      = context.get_task_stream();
-    auto* buffer_ptr = calculate_offsets(stream, volume, index_dense, index, in_pitches, rect);
+    auto stream = context.get_task_stream();
 
-    // Get the last element of the buffer to compute the size
-    uint64_t count;
-    CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
-      &count, buffer_ptr + volume - 1, sizeof(uint64_t), cudaMemcpyDeviceToHost, stream));
+    // volume == 0 is handled in advanced_indexing_template.inl by binding empty output data, so
+    // the offsets[volume - 1] read in calculate_offsets is always valid here.
+    LEGATE_ASSERT(volume > 0);
 
-    CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+    // The full-volume prefix-sum scratch holds counts <= volume; use uint32 when the tile fits in
+    // 2^32 elements (halving the buffer), else uint64. The output index type is unaffected.
+    const bool narrow_offsets =
+      volume <= static_cast<size_t>(std::numeric_limits<std::uint32_t>::max());
+
+    std::uint32_t* offsets32 = nullptr;
+    std::uint64_t* offsets64 = nullptr;
+    uint64_t count           = 0;
+    if (narrow_offsets) {
+      std::tie(offsets32, count) =
+        calculate_offsets<std::uint32_t>(stream, volume, index_dense, index, in_pitches, rect);
+    } else {
+      std::tie(offsets64, count) =
+        calculate_offsets<std::uint64_t>(stream, volume, index_dense, index, in_pitches, rect);
+    }
 
     // Compute the outer dimension of the output buffer
     uint64_t outer_dim_size = count;
@@ -174,19 +233,32 @@ struct AdvancedIndexingImplBody<VariantKind::GPU, CODE, IN_DIM, OUT_DIM, OUT_TYP
     Pitches<OUT_DIM - 1> out_pitches{};
     out_pitches.flatten(out_rect);
 
-    const size_t blocks       = (volume + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    const bool any_index_true = count > 0;
-
-    if (any_index_true && dense) {
-      auto input_ptr = input.ptr(rect);
-      auto index_ptr = index.ptr(rect);
-
-      getitem_masked_dense<VAL, IN_DIM, OUT_DIM, OUT_TYPE>
-        <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-          volume, input_ptr, index_ptr, in_pitches, rect.lo, buffer_ptr, out, out_pitches, out_lo);
-    } else if (any_index_true) {
-      getitem_masked<VAL, IN_DIM, OUT_DIM, OUT_TYPE><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-        volume, input, index, in_pitches, rect.lo, buffer_ptr, out, out_pitches, out_lo);
+    if (count > 0) {
+      if (narrow_offsets) {
+        launch_getitem(stream,
+                       volume,
+                       dense,
+                       input,
+                       index,
+                       in_pitches,
+                       rect,
+                       offsets32,
+                       out,
+                       out_pitches,
+                       out_lo);
+      } else {
+        launch_getitem(stream,
+                       volume,
+                       dense,
+                       input,
+                       index,
+                       in_pitches,
+                       rect,
+                       offsets64,
+                       out,
+                       out_pitches,
+                       out_lo);
+      }
     }
 
     CUPYNUMERIC_CHECK_CUDA_STREAM(stream);
