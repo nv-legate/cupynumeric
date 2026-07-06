@@ -29,6 +29,28 @@ function(find_or_configure_cutensor)
     # it built and installed on the machine already
     rapids_find_package(cutensor REQUIRED)
 
+    # If cuTENSOR ships no CMake config, the rapids_find_generate_module can't
+    # populate cutensor_VERSION. In turn we parse it from the header;
+    # leaving it empty if the header can't be matched.
+    if(NOT cutensor_VERSION AND cutensor_INCLUDE_DIR AND EXISTS "${cutensor_INCLUDE_DIR}/cutensor.h")
+        file(STRINGS "${cutensor_INCLUDE_DIR}/cutensor.h" _cutensor_h REGEX "^#define CUTENSOR_(MAJOR|MINOR|PATCH) ")
+        if(_cutensor_h MATCHES "CUTENSOR_MAJOR ([0-9]+)")
+            set(_cutensor_major "${CMAKE_MATCH_1}")
+        endif()
+        if(_cutensor_h MATCHES "CUTENSOR_MINOR ([0-9]+)")
+            set(_cutensor_minor "${CMAKE_MATCH_1}")
+        endif()
+        if(DEFINED _cutensor_major AND DEFINED _cutensor_minor)
+            set(cutensor_VERSION "${_cutensor_major}.${_cutensor_minor}")
+        endif()
+    endif()
+
+    if(NOT cutensor_VERSION)
+        message(WARNING "Could not determine the cuTENSOR version; skipping the cuTENSOR>=2.0 version check.")
+    elseif(cutensor_VERSION VERSION_LESS "2.0")
+        message(FATAL_ERROR "cuTENSOR version ${cutensor_VERSION} is not supported. Please install cuTENSOR 2.0 or later.")
+    endif()
+
 endfunction()
 
 find_or_configure_cutensor()

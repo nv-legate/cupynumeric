@@ -199,8 +199,9 @@ class CupynumericRuntimeSettings(Settings):
         help="""
         Enable certain optimized execution modes for floating-point math
         operations, that may violate strict IEEE specifications. Currently this
-        flag enables the acceleration of single-precision cuBLAS routines using
-        TF32 tensor cores.
+        flag enables the acceleration of single-precision matmul (cuBLAS) and
+        tensor-contraction / einsum / tensordot (cuTENSOR) routines using TF32
+        tensor cores.
 
         This is a read-only environment variable setting used by the runtime.
         """,

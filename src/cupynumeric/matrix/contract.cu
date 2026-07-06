@@ -36,7 +36,10 @@ struct contract_helper<legate::Half> {
 template <>
 struct contract_helper<float> {
   static constexpr auto data_type_code = CUTENSOR_R_32F;
-  static cutensorComputeDescriptor_t compute_type_code() { return CUTENSOR_COMPUTE_DESC_32F; }
+  static cutensorComputeDescriptor_t compute_type_code()
+  {
+    return is_fast_math() ? CUTENSOR_COMPUTE_DESC_TF32 : CUTENSOR_COMPUTE_DESC_32F;
+  }
   using scalar_t = float;
 };
 
@@ -50,7 +53,10 @@ struct contract_helper<double> {
 template <>
 struct contract_helper<legate::Complex<float>> {
   static constexpr auto data_type_code = CUTENSOR_C_32F;
-  static cutensorComputeDescriptor_t compute_type_code() { return CUTENSOR_COMPUTE_DESC_32F; }
+  static cutensorComputeDescriptor_t compute_type_code()
+  {
+    return is_fast_math() ? CUTENSOR_COMPUTE_DESC_TF32 : CUTENSOR_COMPUTE_DESC_32F;
+  }
   using scalar_t = legate::Complex<float>;
 };
 

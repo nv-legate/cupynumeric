@@ -33,6 +33,7 @@
 #include <cufftXt.h>
 #include <cutensor.h>
 #include <nccl.h>
+#include <cstdlib>
 
 #define THREADS_PER_BLOCK 128
 #define MIN_CTAS_PER_SM 4
@@ -586,6 +587,16 @@ __device__ __forceinline__ void reduce_output(DeviceScalarReductionBuffer<REDUCT
     // Make sure the result is visible externally
     __threadfence_system();
   }
+}
+
+[[nodiscard]] inline bool is_fast_math()
+{
+  static const bool fast_math = []() {
+    const char* fm = std::getenv("CUPYNUMERIC_FAST_MATH");
+    return fm != nullptr && std::atoi(fm) > 0;
+  }();
+
+  return fast_math;
 }
 
 template <typename T>

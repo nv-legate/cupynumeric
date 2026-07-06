@@ -486,8 +486,7 @@ cublasHandle_t CUDALibraries::get_cublas()
 {
   if (nullptr == cublas_) {
     CHECK_CUBLAS(cublasCreate(&cublas_));
-    const char* fast_math = getenv("CUPYNUMERIC_FAST_MATH");
-    if (fast_math != nullptr && atoi(fast_math) > 0) {
+    if (is_fast_math()) {
       // Enable acceleration of single precision routines using TF32 tensor cores.
       cublasStatus_t status = cublasSetMathMode(cublas_, CUBLAS_TF32_TENSOR_OP_MATH);
       if (status != CUBLAS_STATUS_SUCCESS) {
