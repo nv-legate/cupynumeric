@@ -24,190 +24,53 @@ dimension from ``--size`` or ``--memory-size``.
 
 from __future__ import annotations
 
-import math
-import warnings
-
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from _benchmark import (
-    MicrobenchmarkCall,
     MicrobenchmarkSuite,
-    benchmark_info,
+    microbenchmark,
+    random_array,
     timed_loop,
 )
 from _benchmark.harness import ArrayPackage
-from _benchmark.sizing import SizeRequest, rescale_sizes_by_work
+from _benchmark.sizing import SizeRequest
 
-RAND_SCALE_FACTOR = 100
+if TYPE_CHECKING:
+    from typing import Callable, Any
+    from _benchmark import ArrayDescription
 
 
 @dataclass(frozen=True)
 class FFTCase:
     name: str
     dims: int
-    dtype_name: str
     extent: int
 
     @property
     def transform_volume(self) -> int:
         return self.extent**self.dims
 
-    @property
-    def itemsize(self) -> int:
-        return 16 if self.dtype_name == "complex128" else 8
-
-
-@dataclass(frozen=True)
-class BatchedFFTSizeResolution:
-    requested_memory_target_bytes: int
-    detail_lines: tuple[str, ...]
-
-    def panel_lines(self) -> list[str]:
-        return [
-            (
-                "requested_memory_target: "
-                f"{self.requested_memory_target_bytes:,} bytes"
-            ),
-            *self.detail_lines,
-        ]
-
 
 _CASES = (
-    FFTCase("1d", 1, "complex64", 262_144),
-    FFTCase("2d", 2, "complex64", 512),
-    FFTCase("3d", 3, "complex64", 64),
-    FFTCase("2d_double", 2, "complex128", 512),
+    FFTCase("1d", 1, 262_144),
+    FFTCase("2d", 2, 512),
+    FFTCase("3d", 3, 64),
 )
 
-_SHARED_TRANSFORM_VOLUME = _CASES[0].transform_volume
-if any(
-    case.transform_volume != _SHARED_TRANSFORM_VOLUME for case in _CASES[1:]
-):
-    raise RuntimeError("batched FFT cases must use the same transform volume")
 
-
-def _case_shape(case: FFTCase, batch: int) -> tuple[int, ...]:
-    return (batch,) + (case.extent,) * case.dims
-
-
-def _resolve_batch_from_size(size: int, case: FFTCase) -> int:
-    return max(1, size // case.transform_volume)
-
-
-def _estimate_case_working_set_bytes(case: FFTCase, batch: int) -> int:
-    return 2 * batch * case.transform_volume * case.itemsize
-
-
-def _estimate_case_work(case: FFTCase, batch: int) -> float:
-    return batch * case.transform_volume * math.log2(case.transform_volume)
-
-
-def _resolve_batch_from_memory_target(target_bytes: int, case: FFTCase) -> int:
-    return max(1, target_bytes // _estimate_case_working_set_bytes(case, 1))
-
-
-def _effective_memory_target_bytes(
-    target_bytes: int, work_scale: float
-) -> int:
-    return int(target_bytes * work_scale)
-
-
-def _describe_work_scaled_case(
-    case: FFTCase, work_scale: float, effective_target_bytes: int, batch: int
-) -> str:
-    shape = " x ".join(str(extent) for extent in _case_shape(case, batch))
-    estimated = _estimate_case_working_set_bytes(case, batch)
-    return (
-        f"{case.name} work_scale={work_scale:g}: "
-        f"effective_target={effective_target_bytes:,} bytes, "
-        f"batch={batch:,}, shape={shape}, "
-        f"dtype={case.dtype_name}, "
-        f"estimated_working_set={estimated:,} bytes"
-    )
-
-
-def _resolve_case_batches(
-    size_request: SizeRequest,
-) -> tuple[dict[FFTCase, list[int]], list[BatchedFFTSizeResolution] | None]:
-    if size_request.exact_size is not None:
-        return (
-            {
-                case: rescale_sizes_by_work(
-                    size_request,
-                    (
-                        _resolve_batch_from_size(size, case)
-                        for size in size_request.exact_size
-                    ),
-                    estimate_work=lambda batch, case=case: (
-                        _estimate_case_work(case, batch)
-                    ),
-                )
-                for case in _CASES
-            },
-            None,
-        )
-
-    assert size_request.memory_target_bytes is not None
-    batches = {case: [] for case in _CASES}
-    resolutions = []
-    for target_bytes in size_request.memory_target_bytes:
-        detail_lines = []
-        oversized = []
-        for case in _CASES:
-            for work_scale in size_request.rescale_by_work:
-                effective_target = _effective_memory_target_bytes(
-                    target_bytes, work_scale
-                )
-                batch = _resolve_batch_from_memory_target(
-                    effective_target, case
-                )
-                batches[case].append(batch)
-                detail_lines.append(
-                    _describe_work_scaled_case(
-                        case, work_scale, effective_target, batch
-                    )
-                )
-                estimated = _estimate_case_working_set_bytes(case, batch)
-                if estimated > effective_target:
-                    oversized.append(
-                        f"{case.name} work_scale={work_scale:g}="
-                        f"{estimated:,} bytes"
-                    )
-        if oversized:
-            warnings.warn(
-                "memory target is smaller than estimated working set for "
-                "batched FFT case(s): " + ", ".join(oversized),
-                RuntimeWarning,
-                stacklevel=2,
-            )
-        resolutions.append(
-            BatchedFFTSizeResolution(
-                requested_memory_target_bytes=target_bytes,
-                detail_lines=tuple(detail_lines),
-            )
-        )
-    return batches, resolutions
+RAND_SCALE_FACTOR = 100
 
 
 def _make_input(array_module, shape: tuple[int, ...], dtype_name: str):
-    real_dtype = (
-        array_module.float64
-        if dtype_name == "complex128"
-        else array_module.float32
+    return random_array(
+        array_module, shape, dtype_name, scale=RAND_SCALE_FACTOR
     )
-    float_array = (
-        array_module.random.rand(*shape).astype(real_dtype) * RAND_SCALE_FACTOR
-    )
-    return float_array.astype(getattr(array_module, dtype_name))
 
 
-@benchmark_info(
-    input_names={"dims": "fft_dims", "dtype_name": "dtype"},
-    formats={"dtype": str},
-)
-def batched_fft(np, dims, dtype_name, batch, extent, runs, warmup, *, timer):
+def _batched_fft(np, dims, dtype, batch, extent, runs, warmup, *, timer):
     shape = (batch,) + (extent,) * dims
-    src = _make_input(np, shape, dtype_name)
+    src = _make_input(np, shape, dtype)
     axes = tuple(range(1, len(shape)))
 
     def operation():
@@ -216,47 +79,42 @@ def batched_fft(np, dims, dtype_name, batch, extent, runs, warmup, *, timer):
     return timed_loop(operation, timer, runs, warmup) / runs
 
 
-def run_benchmarks(suite, size_request: SizeRequest):
-    """Run representative batched FFT benchmarks."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    case_batches, resolutions = _resolve_case_batches(size_request)
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
+def _args_to_arrays(dims, dtype, batch, extent) -> list[ArrayDescription]:
+    shape = (batch,) + (extent,) * dims
+    return [("input", shape, dtype), ("output", shape, dtype)]
 
-    calls = []
-    for case in _CASES:
-        for batch in case_batches[case]:
-            calls.append(
-                MicrobenchmarkCall(
-                    case_id=f"batched_fft.{case.name}",
-                    name=case.name,
-                    function=batched_fft,
-                    args=(
-                        np,
-                        case.dims,
-                        case.dtype_name,
-                        batch,
-                        case.extent,
-                        runs,
-                        warmup,
-                    ),
-                )
-            )
-    suite.run_timed_calls(calls, timer=timer)
+
+def _microbenchmark(case: FFTCase) -> Callable[..., Any]:
+    return microbenchmark(
+        name=case.name,
+        input_names={"dims": "fft_dims"},
+        size_to_args=lambda size, dims, extent: {
+            "batch": max(1, size // extent**dims)
+        },
+        args_to_arrays=_args_to_arrays,
+        plan={"dims": case.dims, "extent": case.extent},
+    )(_batched_fft)
 
 
 class BatchedFFTSuite(MicrobenchmarkSuite):
     name = "batched_fft"
 
-    def run_suite(self, size_request: SizeRequest):
+    def __init__(self, config, args) -> None:
+        super().__init__(config, args)
+
+        for case in _CASES:
+            # have to prefix names because they start with numbers
+            setattr(self, f"batched_fft_{case.name}", _microbenchmark(case))
+
+    def dtypes(self) -> list[str]:
+        return ["complex64", "complex128"]
+
+    def run_suite(self, size_request: SizeRequest) -> None:
         # FFT is only supported on GPU in cuPyNumeric
         if self._config.package == ArrayPackage.LEGATE:
             from cupynumeric.runtime import runtime
 
             if runtime.num_gpus == 0:
-                print("Skipping batched_fft suite: FFT requires GPU")
+                self.info("Skipping batched_fft suite: FFT requires GPU")
                 return
-        run_benchmarks(self, size_request)
+        super().run_suite(size_request)

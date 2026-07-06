@@ -28,61 +28,37 @@ on float32, float64
 
 from _benchmark import (
     MicrobenchmarkSuite,
-    benchmark_info,
+    microbenchmark,
+    random_array,
     timed_loop,
-    format_dtype,
 )
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
 
 
-# =============================================================================
-# GENERAL SCALAR REDUCTION BENCHMARKS: sum, prod, min, max, argmin, argmax
-# =============================================================================
-
-
-# Model the random float64 source plus a same-size reduction input buffer.
-_SCALARRED_BYTES_PER_ELEMENT = 16
-
-
-@benchmark_info(formats={"dtype": format_dtype, "func": lambda f: f.__name__})
-def scalar_red(np, func, dtype, size, runs, warmup, *, timer):
-    """[np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]"""
-
-    in_arr = np.random.rand(size).astype(dtype)
-
-    def operation():
-        return func(in_arr)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run general scalar benchmarks."""
+def _plan(suite):
     np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request, bytes_per_element=_SCALARRED_BYTES_PER_ELEMENT
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    dtypes = [np.float32, np.float64]
-    red_types = [np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]
-
-    suite.run_timed(
-        scalar_red, np, red_types, dtypes, sizes, runs, warmup, timer=timer
-    )
+    return [
+        {"func": func}
+        for func in [np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]
+    ]
 
 
 class ScalarRedSuite(MicrobenchmarkSuite):
     name = "scalared"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    def dtypes(self) -> list[str]:
+        return ["float32", "float64"]
+
+    @microbenchmark(
+        formats={"func": lambda f: f.__name__},
+        args_to_arrays=lambda size, dtype: [("input", size, dtype)],
+        plan=_plan,
+    )
+    def scalar_red(np, func, dtype, size, runs, warmup, *, timer):
+        """[np.sum, np.prod, np.min, np.max, np.argmin, np.argmax]"""
+
+        in_arr = random_array(np, size, dtype)
+
+        def operation():
+            return func(in_arr)
+
+        return timed_loop(operation, timer, runs, warmup) / runs

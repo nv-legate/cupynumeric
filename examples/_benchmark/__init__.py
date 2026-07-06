@@ -19,27 +19,36 @@ from .format_dtype import format_dtype
 from .get_numpy import get_numpy
 from .harness import BenchmarkHarness, SummarizeFlush, parse_with_harness
 from .info import BenchmarkInfo, benchmark_info, get_benchmark_info
+from .microbenchmark_info import (
+    MISSING,
+    SIZE,
+    ArrayDescription,
+    microbenchmark,
+)
+from .microbenchmark_utilities import MicrobenchmarkConfig, MicrobenchmarkSuite
+from .random_array import random_array
+from .sizing import nthroot
 from .summarize import Summarize
 from .timer import get_timer, timed_loop
-from .microbenchmark_utilities import (
-    MicrobenchmarkCall,
-    MicrobenchmarkConfig,
-    MicrobenchmarkSuite,
-)
 
 __all__ = (
+    "MISSING",
+    "SIZE",
+    "ArrayDescription",
     "BenchmarkHarness",
     "BenchmarkInfo",
     "MicrobenchmarkConfig",
-    "MicrobenchmarkCall",
     "MicrobenchmarkSuite",
     "Summarize",
     "SummarizeFlush",
     "benchmark_info",
     "format_dtype",
+    "microbenchmark",
+    "nthroot",
     "get_benchmark_info",
     "get_numpy",
     "get_timer",
     "parse_with_harness",
+    "random_array",
     "timed_loop",
 )

@@ -51,13 +51,14 @@ class SyncSuite(MicrobenchmarkSuite):
     name = "sync"
 
     def run_suite(self, _: SizeRequest) -> None:
-        self.run_timed(
-            sync,
-            self.np,
-            ["none", "fence", "block"],
-            list(TimerMode),
-            self.runs,
-            self.warmup,
-            execution_timer=self.execution_timer,
-            wall_timer=self.wall_timer,
-        )
+        if not self.dry_run:
+            self.run_timed(
+                sync,
+                self.np,
+                ["none", "fence", "block"],
+                list(TimerMode),
+                self.runs,
+                self.warmup,
+                execution_timer=self.execution_timer,
+                wall_timer=self.wall_timer,
+            )

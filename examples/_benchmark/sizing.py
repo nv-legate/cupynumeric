@@ -3,11 +3,10 @@ from __future__ import annotations
 import argparse
 import math
 import re
-import warnings
 
 from argparse import ArgumentParser, Namespace
-from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field, replace
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 DEFAULT_PROBLEM_SIZE = 10_000_000
 
@@ -54,10 +53,6 @@ def parse_work_scale(value: str) -> float:
     return amount
 
 
-def clamp(value: int, lo: int, hi: int) -> int:
-    return max(lo, min(hi, value))
-
-
 def add_size_request_parser_group(parser: ArgumentParser) -> None:
     group = parser.add_argument_group()
     group.add_argument(
@@ -93,30 +88,6 @@ def add_size_request_parser_group(parser: ArgumentParser) -> None:
             "(B, KiB, MiB, GiB, TiB)"
         ),
     )
-
-
-@dataclass(frozen=True)
-class SizeResolution:
-    resolved_size: int
-    requested_memory_target_bytes: int
-    estimated_working_set_bytes: int
-    detail_lines: tuple[str, ...] = ()
-
-    def panel_lines(self) -> list[str]:
-        lines = [
-            f"resolved_size: {self.resolved_size:,}",
-            (
-                "requested_memory_target: "
-                f"{self.requested_memory_target_bytes:,} bytes"
-            ),
-            (
-                "estimated_working_set: "
-                f"{self.estimated_working_set_bytes:,}"
-                " bytes"
-            ),
-        ]
-        lines.extend(self.detail_lines)
-        return lines
 
 
 @dataclass(frozen=True)
@@ -238,174 +209,16 @@ def resolve_size_by_monotonic_search(
     return low
 
 
-def rescale_sizes_by_work(
-    size_request: SizeRequest,
-    base_sizes: Iterable[int],
-    *,
-    estimate_work: Callable[[int], int | float] | None,
-) -> list[int]:
-    if not size_request.uses_work_rescale:
-        return [*base_sizes]
-    if estimate_work is None:
-        raise RuntimeError("work rescaling is not supported for this suite")
+def nthroot(x: int, p: int, lower_bound: int = 1) -> int:
+    """Return integer approximation of `p`th root of `x`.
 
-    sizes: list[int] = []
-    for base_size in base_sizes:
-        base_work = estimate_work(base_size)
-        if base_work <= 0:
-            raise RuntimeError("work estimate must be positive")
-        for work_scale in size_request.rescale_by_work:
-            if work_scale == 1.0:
-                sizes.append(base_size)
-                continue
-            target_work = base_work * work_scale
-            resolved_size = resolve_size_by_monotonic_search(
-                target_work,
-                estimate_value=estimate_work,
-                initial_guess=max(1, int(base_size * work_scale)),
-            )
-            resolved_work = estimate_work(resolved_size)
-            if resolved_work > target_work:
-                warnings.warn(
-                    "work target is smaller than minimum estimated work: "
-                    f"estimated={resolved_work}, target={target_work}",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-            sizes.append(resolved_size)
-    return sizes
-
-
-def _work_rescale_detail_lines(
-    size_request: SizeRequest, sizes: Iterable[int]
-) -> tuple[str, ...]:
-    if not size_request.uses_work_rescale:
-        return ()
-
-    return (
-        "work-rescaled sizes:",
-        *(
-            f"work_scale={work_scale:g}: resolved_size={size:,}"
-            for work_scale, size in zip(
-                size_request.rescale_by_work, sizes, strict=True
-            )
-        ),
-    )
-
-
-def resolve_suite_size(
-    size_request: SizeRequest,
-    *,
-    resolve_from_target: Callable[[int], int],
-    estimate_working_set_bytes: Callable[[int], int],
-    estimate_work: Callable[[int], int | float] | None = None,
-    describe_size: Callable[[int], Iterable[str]] | None = None,
-) -> tuple[list[int], list[SizeResolution] | None]:
+    Has optional `lower_bound`.
     """
-    Resolve an exact suite size from an explicit size or memory target.
-
-    Parameters
-    ----------
-    size_request : SizeRequest
-        User-provided sizing mode, target values, and work rescale factors.
-    resolve_from_target : Callable[[int], int]
-        Maps a target working-set size in bytes to a suite-specific size.
-    estimate_working_set_bytes : Callable[[int], int]
-        Estimates the suite working set for a resolved size.
-    estimate_work : Callable[[int], int | float] | None, optional
-        Estimates suite work for a resolved size. Required when
-        ``size_request`` asks for work rescaling.
-    describe_size : Callable[[int], Iterable[str]] | None, optional
-        Produces additional human-readable sizing details.
-    """
-    if size_request.exact_size is not None:
-        return (
-            rescale_sizes_by_work(
-                size_request,
-                size_request.exact_size,
-                estimate_work=estimate_work,
-            ),
-            None,
-        )
-
-    resolved_sizes = []
-    resolutions = []
-    assert size_request.memory_target_bytes is not None
-    for target_bytes in size_request.memory_target_bytes:
-        resolved_size = resolve_from_target(target_bytes)
-        detail_lines: Iterable[str] = ()
-        if describe_size is not None:
-            detail_lines = describe_size(resolved_size)
-        estimated_working_set_bytes = estimate_working_set_bytes(resolved_size)
-        resolution = SizeResolution(
-            resolved_size=resolved_size,
-            requested_memory_target_bytes=target_bytes,
-            estimated_working_set_bytes=estimated_working_set_bytes,
-            detail_lines=tuple(detail_lines),
-        )
-        resolved_sizes.append(resolved_size)
-        resolutions.append(resolution)
-        if estimated_working_set_bytes > target_bytes:
-            warnings.warn(
-                "memory target is smaller than estimated working set: "
-                f"estimated={estimated_working_set_bytes:,} bytes, "
-                f"target={target_bytes:,} bytes",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-    rescaled_sizes = rescale_sizes_by_work(
-        size_request, resolved_sizes, estimate_work=estimate_work
-    )
-    if size_request.uses_work_rescale:
-        scale_count = len(size_request.rescale_by_work)
-        resolutions = [
-            replace(
-                resolution,
-                detail_lines=(
-                    *resolution.detail_lines,
-                    *_work_rescale_detail_lines(
-                        size_request,
-                        rescaled_sizes[
-                            index * scale_count : (index + 1) * scale_count
-                        ],
-                    ),
-                ),
-            )
-            for index, resolution in enumerate(resolutions)
-        ]
-    return (rescaled_sizes, resolutions)
-
-
-def resolve_size_by_binary_search(
-    target_bytes: int,
-    *,
-    estimate_working_set_bytes: Callable[[int], int],
-    initial_guess: int,
-) -> int:
-    return resolve_size_by_monotonic_search(
-        target_bytes,
-        estimate_value=estimate_working_set_bytes,
-        initial_guess=initial_guess,
-    )
-
-
-def resolve_linear_suite_size(
-    size_request: SizeRequest,
-    *,
-    bytes_per_element: int,
-    describe_size: Callable[[int], Iterable[str]] | None = None,
-) -> tuple[list[int], list[SizeResolution] | None]:
-    if bytes_per_element <= 0:
-        raise ValueError("bytes_per_element must be positive")
-
-    return resolve_suite_size(
-        size_request,
-        resolve_from_target=lambda target_bytes: max(
-            1, target_bytes // bytes_per_element
-        ),
-        estimate_working_set_bytes=lambda resolved_size: (
-            bytes_per_element * resolved_size
-        ),
-        estimate_work=lambda resolved_size: resolved_size,
-        describe_size=describe_size,
-    )
+    float_root = x ** (1 / p)
+    root_round = round(float_root)
+    root_approx: int
+    if root_round**p == x:
+        root_approx = root_round
+    else:
+        root_approx = math.floor(float_root)
+    return max(lower_bound, root_approx)

@@ -50,342 +50,348 @@ Usage:
 
 from __future__ import annotations
 
-import math
 import random
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.harness import ArrayPackage
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
-
-
-# =============================================================================
-# GENERAL ADVANCED INDEXING BENCHMARKS (Uses Copy Operations)
-# =============================================================================
-
-
-# Binding test: noncontiguous_get — a (n²×8) + contiguous copy (n²×8) +
-# output (n²×8) + ZIP Point<2> (n²×16) with num_indices = n → n²×40 bytes.
-# 1D tests use num_indices = sqrt(size), so their intermediates are negligible.
-_GENERAL_INDEXING_BYTES_PER_ELEMENT = 40
-
-
-def _describe_size(size: int) -> list[str]:
-    n = math.isqrt(size)
-    n_3d = int(size ** (1 / 3))
-    return [
-        f"resolved_2d_shape: {n} x {n}",
-        f"resolved_3d_shape: {n_3d} x {n_3d} x {n_3d}",
-    ]
-
-
-def boolean_set_array(np, size, runs, warmup, *, timer):
-    """Array assignment to boolean mask."""
-    a = np.random.random(size)
-    mask = a > 0.5
-    num_selected = int(mask.sum())
-    values = np.random.random(num_selected)
-
-    def operation():
-        a[mask] = values
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
-    """Mixed indexing: integer array + slices."""
-    a = np.random.random((n, n, n))
-    indices = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return a[indices, :, : n // 2]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def non_contiguous_indexing(np, n, num_indices, runs, warmup, *, timer):
-    """Non-contiguous indexing: indices on multiple non-adjacent dimensions."""
-    a = np.random.random((n, n, n))
-    idx_row = np.random.randint(0, n, num_indices)
-    idx_col = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return a[idx_row, :, idx_col]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def boolean_with_slice(np, n, runs, warmup, *, timer):
-    """Boolean mask on first dim with slice: a[mask, :] — nonzero + ZIP + gather."""
-    a = np.random.random((n, n))
-    mask = a[:, 0] > 0.5
-
-    def operation():
-        return a[mask, :]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def array_get_1d(np, size, num_indices, runs, warmup, *, timer):
-    """1D array GET with integer array (like config_ints[safe_indices])."""
-    a = np.random.random(size)
-    indices = np.random.randint(0, size, num_indices)
-
-    def operation():
-        return a[indices]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def array_set_1d(np, size, num_indices, runs, warmup, *, timer):
-    """1D array SET with integer array (like Hv[batch_indices] = values)."""
-    a = np.random.random(size)
-    indices = np.random.randint(0, size, num_indices)
-    values = np.random.random(num_indices)
-
-    def operation():
-        a[indices] = values
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
-    """2D assignment with scalar row + list of columns (like result[idx, list(positions)] = True)."""
-    a = np.random.random((n, n))
-    idx = n // 2
-    positions = random.sample(range(n), num_cols)
-
-    def operation():
-        a[idx, positions] = 999.0
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def array_set_col_2d(np, n, num_indices, runs, warmup, *, timer):
-    """Column-wise integer array SET: a[:, indices] = v — ZIP + scatter."""
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, num_indices)
-    values = np.random.random((n, num_indices))
-
-    def operation():
-        a[:, indices] = values
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def boolean_col_with_slice(np, n, runs, warmup, *, timer):
-    """Boolean mask on non-first dim: a[:, bool_mask] — nonzero + ZIP + gather."""
-    a = np.random.random((n, n))
-    mask = a[0, :] > 0.5
-
-    def operation():
-        return a[:, mask]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def newaxis_int_get(np, size, num_indices, runs, warmup, *, timer):
-    """
-    Integer array GET with trailing newaxis: a[indices, np.newaxis].
-    Covers key type: newaxis; key composition: int array + newaxis (mixed).
-    Path: newaxis in key prevents TAKE task routing → ZIP + gather.
-    """
-    a = np.random.random(size)
-    indices = np.random.randint(0, size, num_indices)
-
-    def operation():
-        return a[indices, np.newaxis]  # shape: (num_indices, 1)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def ellipsis_int_get(np, n, num_indices, runs, warmup, *, timer):
-    """
-    Integer array GET with Ellipsis on leading axes: a[..., indices] (2D).
-    Covers key type: Ellipsis; key composition: Ellipsis + int array (mixed).
-    Semantically equivalent to a[:, indices] but tests whether Ellipsis
-    normalization routes to TAKE task or falls back to ZIP + gather.
-    """
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return a[..., indices]  # Ellipsis expands to slice(None) for dim 0
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def noncontiguous_get(np, n, num_indices, runs, warmup, *, timer):
-    """
-    Integer array GET from a non-contiguous (transposed) source array: a.T[indices].
-    Covers contiguity: F-contiguous (non-C-contiguous) source requires a copy
-    before gather can proceed.
-    """
-    a = np.random.random((n, n)).T  # F-contiguous (transposed view)
-    indices = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return a[indices]  # gather from non-contiguous source
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def array_key_scalar_set(np, size, num_indices, runs, warmup, *, timer):
-    """
-    Scalar RHS assignment via integer array key: a[indices] = scalar.
-    Covers RHS type: scalar with non-boolean key (no putmask path).
-    Path: ZIP task → scatter (scalar broadcast, distinct from putmask).
-    """
-    a = np.random.random(size)
-    indices = np.random.randint(0, size, num_indices)
-
-    def operation():
-        a[indices] = 0.0
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def take_one_per_row(np, m, n, runs, warmup, *, timer):
-    """
-    Take one element from each row (Legate-Boost pattern).
-    Pattern: A[np.arange(M), index] where index[i] selects column for row i
-    Equivalent to: np.stack([A[row, index[row]] for row in range(M)])
-    """
-    a = np.random.random((m, n))
-    col_indices = np.random.randint(0, n, m)
-    row_indices = np.arange(m)
-
-    def operation():
-        return a[row_indices, col_indices]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run general advanced indexing benchmarks (uses Copy operations)."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request,
-        bytes_per_element=_GENERAL_INDEXING_BYTES_PER_ELEMENT,
-        describe_size=_describe_size,
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    ns = [math.isqrt(size) for size in sizes]
-
-    def arg_gen_1d():
-        for size in sizes:
-            num_indices = max(1, math.isqrt(size))
-            yield (np, size, num_indices, runs, warmup)
-
-    def arg_gen_2d():
-        for size in sizes:
-            n = math.isqrt(size)
-            num_row_idx = n
-            yield (np, n, num_row_idx, runs, warmup)
-
-    def arg_gen_3d():
-        for size in sizes:
-            n_3d = int(size ** (1 / 3))
-            num_indices = n_3d
-            yield (np, n_3d, num_indices, runs, warmup)
-
-    def arg_gen_one_per_row():
-        for n in ns:
-            yield (np, n, n, runs, warmup)
-
-    # 1. Boolean mask SET (array) — ADVANCED_INDEXING task + scatter
-    suite.run_timed(boolean_set_array, np, sizes, runs, warmup, timer=timer)
-
-    # 2. Mixed indexing: a[indices, :, slice] — ZIP + gather
-    suite.run_timed_with_generator(
-        None, mixed_indexing, arg_gen_3d(), timer=timer
-    )
-
-    # 3. Non-contiguous indexing (indices on non-adjacent dims — ZIP + gather)
-    # TODO: re-enable for >4 GPUs once the NCCL all2all crash is fixed.
-    # On 8+ GPUs the gather goes through _nccl_all2all_gather and fails with
-    # "Internal NCCL failure with error unhandled cuda error" at
-    # src/cupynumeric/all2all/all2all.cuh:316. Works on 1/2/4 GPUs.
-    skip_non_contiguous = False
-    suite_config = getattr(suite, "_config", None)
-    if (
-        suite_config is not None
-        and suite_config.package == ArrayPackage.LEGATE
-    ):
-        from cupynumeric.runtime import runtime
-
-        if runtime.num_gpus > 4:
-            skip_non_contiguous = True
-            suite.info(
-                f"Skipping general_indexing::non_contiguous_indexing on "
-                f"{runtime.num_gpus} GPUs: NCCL all2all crash above 4 GPUs"
-            )
-    if not skip_non_contiguous:
-        suite.run_timed_with_generator(
-            None, non_contiguous_indexing, arg_gen_3d(), timer=timer
-        )
-
-    # 4. Boolean mask with slice: a[mask, :] — nonzero + ZIP + gather
-    suite.run_timed(boolean_with_slice, np, ns, runs, warmup, timer=timer)
-
-    # 5. Take one from each row (Legate-Boost: A[arange(M), index] — ZIP + gather)
-    suite.run_timed_with_generator(
-        None, take_one_per_row, arg_gen_one_per_row(), timer=timer
-    )
-
-    # 6-7. 1D integer array GET and SET (Hamiltonian pattern)
-    suite.run_timed_with_generator(
-        None, array_get_1d, arg_gen_1d(), timer=timer
-    )
-    suite.run_timed_with_generator(
-        None, array_set_1d, arg_gen_1d(), timer=timer
-    )
-
-    # 8. 2D scalar+list assignment (Hamiltonian pattern)
-    suite.run_timed_with_generator(
-        None, scalar_list_set_2d, arg_gen_2d(), timer=timer
-    )
-
-    # 9. Column-wise integer SET: a[:, indices] = v — ZIP + scatter
-    suite.run_timed_with_generator(
-        None, array_set_col_2d, arg_gen_2d(), timer=timer
-    )
-
-    # 10. Boolean mask on non-first dim: a[:, bool_mask] — nonzero + ZIP + gather
-    suite.run_timed(boolean_col_with_slice, np, ns, runs, warmup, timer=timer)
-
-    # 11. newaxis key type: a[indices, np.newaxis] — ZIP + gather
-    suite.run_timed_with_generator(
-        None, newaxis_int_get, arg_gen_1d(), timer=timer
-    )
-
-    # 12. Ellipsis key type: a[..., indices] — tests normalization vs TAKE task routing
-    suite.run_timed_with_generator(
-        None, ellipsis_int_get, arg_gen_2d(), timer=timer
-    )
-
-    # 13. Non-contiguous GET: a.T[indices] — copy before gather
-    suite.run_timed_with_generator(
-        None, noncontiguous_get, arg_gen_2d(), timer=timer
-    )
-
-    # 14. Scalar RHS + integer array key: a[indices] = scalar — scatter, no putmask
-    suite.run_timed_with_generator(
-        None, array_key_scalar_set, arg_gen_1d(), timer=timer
-    )
+from _benchmark import (
+    SIZE,
+    MicrobenchmarkSuite,
+    microbenchmark,
+    nthroot,
+    timed_loop,
+)
 
 
 class GeneralIndexingSuite(MicrobenchmarkSuite):
     name = "general_indexing"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    @microbenchmark(
+        args_to_arrays=lambda size: [
+            ("a", size),
+            ("mask", size, "bool"),
+            ("indices", size // 2, "int"),
+            ("values", size // 2),
+        ],
+        args_to_work=lambda size: size,
+    )
+    def boolean_set_array(np, size, runs, warmup, *, timer):
+        """Array assignment to boolean mask."""
+        a = np.random.random(size)
+        mask = a > 0.5
+        num_selected = int(mask.sum())
+        values = np.random.random(num_selected)
+
+        def operation():
+            a[mask] = values
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 3),
+            "num_indices": nthroot(size, 3),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (num_indices, n, n // 2)),
+        ],
+        args_to_work=lambda n, num_indices: num_indices * n * (n // 2),
+    )
+    def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
+        """Mixed indexing: integer array + slices."""
+        a = np.random.random((n, n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[indices, :, : n // 2]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    def _skip_non_contiguous_index(self):
+        if self.package == "legate":
+            from cupynumeric.runtime import runtime
+
+            if runtime.num_gpus > 4:
+                self.info(
+                    f"Skipping general_indexing::non_contiguous_indexing on "
+                    f"{runtime.num_gpus} GPUs: NCCL all2all crash above 4 GPUs"
+                )
+                return True
+        return False
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 3),
+            "num_indices": nthroot(size, 3) ** 2,
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n, n)),
+            ("idx_row", num_indices, "int"),
+            ("idx_col", num_indices, "int"),
+            ("values", (num_indices, n)),
+        ],
+        args_to_work=lambda n, num_indices: num_indices * n,
+        skip=lambda suite: suite._skip_non_contiguous_index(),
+    )
+    def non_contiguous_indexing(np, n, num_indices, runs, warmup, *, timer):
+        """Non-contiguous indexing: indices on multiple non-adjacent dimensions."""
+        a = np.random.random((n, n, n))
+        idx_row = np.random.randint(0, n, num_indices)
+        idx_col = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[idx_row, :, idx_col]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {"n": nthroot(size, 2)},
+        args_to_arrays=lambda n: [
+            ("a", (n, n)),
+            ("mask", n, "bool"),
+            ("indices", n // 2, "int"),
+            ("values", (n // 2, n)),
+        ],
+        args_to_work=lambda n: n * n,
+    )
+    def boolean_with_slice(np, n, runs, warmup, *, timer):
+        """Boolean mask on first dim with slice: a[mask, :] — nonzero + ZIP + gather."""
+        a = np.random.random((n, n))
+        mask = a[:, 0] > 0.5
+
+        def operation():
+            return a[mask, :]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        args_to_arrays=lambda size, num_indices: [
+            ("a", size),
+            ("indices", num_indices, "int"),
+            ("staging buffers", 2 * num_indices),
+            ("indices send/recv buffers", 2 * num_indices, "int"),
+            ("values", num_indices),
+        ],
+        args_to_work=lambda num_indices: num_indices,
+        plan={"num_indices": SIZE},
+    )
+    def array_get_1d(np, size, num_indices, runs, warmup, *, timer):
+        """1D array GET with integer array (like config_ints[safe_indices])."""
+        a = np.random.random(size)
+        indices = np.random.randint(0, size, num_indices)
+
+        def operation():
+            return a[indices]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        args_to_arrays=lambda size, num_indices: [
+            ("a", size),
+            ("indices", num_indices, "int"),
+            ("values", num_indices),
+        ],
+        args_to_work=lambda num_indices: num_indices,
+        plan={"num_indices": SIZE},
+    )
+    def array_set_1d(np, size, num_indices, runs, warmup, *, timer):
+        """1D array SET with integer array (like Hv[batch_indices] = values)."""
+        a = np.random.random(size)
+        indices = np.random.randint(0, size, num_indices)
+        values = np.random.random(num_indices)
+
+        def operation():
+            a[indices] = values
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_cols": nthroot(size, 2),
+        },
+        args_to_arrays=lambda n, num_cols: [
+            ("a", (n, n)),
+            ("positions", num_cols, "int"),
+        ],
+        args_to_work=lambda num_cols: num_cols,
+        # WARNING: work is sublinear in memory size, this should not be
+        # included in --rescale-by-work sequences
+        skip=True,
+    )
+    def scalar_list_set_2d(np, n, num_cols, runs, warmup, *, timer):
+        """2D assignment with scalar row + list of columns (like result[idx, list(positions)] = True)."""
+        a = np.random.random((n, n))
+        idx = n // 2
+        positions = random.sample(range(n), num_cols)
+
+        def operation():
+            a[idx, positions] = 999.0
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": nthroot(size, 2),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (n, num_indices)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def array_set_col_2d(np, n, num_indices, runs, warmup, *, timer):
+        """Column-wise integer array SET: a[:, indices] = v — ZIP + scatter."""
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, num_indices)
+        values = np.random.random((n, num_indices))
+
+        def operation():
+            a[:, indices] = values
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {"n": nthroot(size, 2)},
+        args_to_arrays=lambda n: [
+            ("a", (n, n)),
+            ("mask", n, "bool"),
+            ("indices", n // 2, "int"),
+            ("values", (n, n // 2)),
+        ],
+        args_to_work=lambda n: n * (n // 2),
+    )
+    def boolean_col_with_slice(np, n, runs, warmup, *, timer):
+        """Boolean mask on non-first dim: a[:, bool_mask] — nonzero + ZIP + gather."""
+        a = np.random.random((n, n))
+        mask = a[0, :] > 0.5
+
+        def operation():
+            return a[:, mask]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        args_to_arrays=lambda size, num_indices: [
+            ("a", size),
+            ("indices", num_indices, "int"),
+            ("values", num_indices),
+        ],
+        args_to_work=lambda num_indices: num_indices,
+        plan={"num_indices": SIZE},
+    )
+    def newaxis_int_get(np, size, num_indices, runs, warmup, *, timer):
+        """
+        Integer array GET with trailing newaxis: a[indices, np.newaxis].
+        Covers key type: newaxis; key composition: int array + newaxis (mixed).
+        Path: newaxis in key prevents TAKE task routing → ZIP + gather.
+        """
+        a = np.random.random(size)
+        indices = np.random.randint(0, size, num_indices)
+
+        def operation():
+            return a[indices, np.newaxis]  # shape: (num_indices, 1)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": nthroot(size, 2),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (n, num_indices)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def ellipsis_int_get(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Integer array GET with Ellipsis on leading axes: a[..., indices] (2D).
+        Covers key type: Ellipsis; key composition: Ellipsis + int array (mixed).
+        Semantically equivalent to a[:, indices] but tests whether Ellipsis
+        normalization routes to TAKE task or falls back to ZIP + gather.
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[..., indices]  # Ellipsis expands to slice(None) for dim 0
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": nthroot(size, 2),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (num_indices, n)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def noncontiguous_get(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Integer array GET from a non-contiguous (transposed) source array: a.T[indices].
+        Covers contiguity: F-contiguous (non-C-contiguous) source requires a copy
+        before gather can proceed.
+        """
+        a = np.random.random((n, n)).T  # F-contiguous (transposed view)
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[indices]  # gather from non-contiguous source
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        args_to_arrays=lambda size, num_indices: [
+            ("a", size),
+            ("indices", num_indices, "int"),
+        ],
+        args_to_work=lambda num_indices: num_indices,
+        plan={"num_indices": SIZE},
+    )
+    def array_key_scalar_set(np, size, num_indices, runs, warmup, *, timer):
+        """
+        Scalar RHS assignment via integer array key: a[indices] = scalar.
+        Covers RHS type: scalar with non-boolean key (no putmask path).
+        Path: ZIP task → scatter (scalar broadcast, distinct from putmask).
+        """
+        a = np.random.random(size)
+        indices = np.random.randint(0, size, num_indices)
+
+        def operation():
+            a[indices] = 0.0
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {"m": size, "n": 1000},
+        args_to_arrays=lambda m, n: [
+            ("a", (m, n)),
+            ("col_indices", m, "int"),
+            ("row_indices", m, "int"),
+            ("values", m),
+        ],
+        args_to_work=lambda m: m,
+    )
+    def take_one_per_row(np, m, n, runs, warmup, *, timer):
+        """
+        Take one element from each row (Legate-Boost pattern).
+        Pattern: A[np.arange(M), index] where index[i] selects column for row i
+        Equivalent to: np.stack([A[row, index[row]] for row in range(M)])
+        """
+        a = np.random.random((m, n))
+        col_indices = np.random.randint(0, n, m)
+        row_indices = np.arange(m)
+
+        def operation():
+            return a[row_indices, col_indices]
+
+        return timed_loop(operation, timer, runs, warmup) / runs

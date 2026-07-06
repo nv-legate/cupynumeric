@@ -139,6 +139,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None):
     parser = build_parser()
+    # TODO(tisaac): use parse_args() when test runner is fixed to stop
+    # inserting the pytest "-p no:faulthandler" flags
     args = parser.parse_known_args(argv)[0]
     size_request = SizeRequest.from_namespace(args)
 

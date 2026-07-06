@@ -27,33 +27,23 @@ The shared ``--size`` flag is interpreted per variant:
 
 from __future__ import annotations
 
-import math
+from typing import Any
 
 import numpy as host_np
 
 from _benchmark import (
-    MicrobenchmarkCall,
     MicrobenchmarkSuite,
-    benchmark_info,
+    microbenchmark,
+    nthroot,
+    random_array,
     timed_loop,
-)
-from _benchmark.sizing import (
-    SizeRequest,
-    resolve_size_by_binary_search,
-    resolve_suite_size,
 )
 
 SKINNY_OUTER_DIM = 8
 
 
-def _dtype_bytes(dtype) -> int:
-    import numpy
-
-    return numpy.dtype(dtype).itemsize
-
-
 def _square_dim(size):
-    return max(1, math.isqrt(size))
+    return nthroot(size, 2)
 
 
 def _skinny_inner_dim(size):
@@ -61,118 +51,52 @@ def _skinny_inner_dim(size):
 
 
 def _make_matrix(array_module, rows, cols, dtype):
-    return array_module.random.rand(rows, cols).astype(dtype)
+    return random_array(array_module, (rows, cols), dtype)
 
 
 def _make_vector(array_module, size, dtype):
-    return array_module.random.rand(size).astype(dtype)
+    return random_array(array_module, size, dtype)
 
 
-def _get_case_dimensions(variant, size):
+def _get_case_dimensions(variant, size) -> tuple[int, int, int]:
     if variant == "skinny_gemm":
         m = SKINNY_OUTER_DIM
-        n = SKINNY_OUTER_DIM
         k = _skinny_inner_dim(size)
-        return {"m": m, "n": n, "k": k}
+        return (m, k, m)
 
-    n = _square_dim(size)
+    m = _square_dim(size)
     if variant == "square_gemm":
-        return {"m": n, "n": n, "k": n}
+        return (m, m, m)
 
-    return {"m": n, "n": n}
-
-
-def _estimate_case_working_set_bytes(variant, dtype, size):
-    dimensions = _get_case_dimensions(variant, size)
-    itemsize = _dtype_bytes(dtype)
-
-    if variant == "skinny_gemm":
-        m = dimensions["m"]
-        n = dimensions["n"]
-        k = dimensions["k"]
-        return itemsize * (m * k + k * n + m * n)
-
-    n = dimensions["n"]
-    if variant == "square_gemm":
-        return itemsize * 3 * n * n
-
-    # gemv
-    return itemsize * (n * n + 2 * n)
+    assert variant == "gemv"
+    return (m, m, 1)
 
 
-def _estimate_case_work(variant, size):
-    dimensions = _get_case_dimensions(variant, size)
-    if variant == "skinny_gemm":
-        return 2 * dimensions["m"] * dimensions["k"] * dimensions["n"]
-    n = dimensions["n"]
-    if variant == "square_gemm":
-        return 2 * n * n * n
-    return 2 * n * n
+def _args_to_arrays(variant, dtype, size):
+    m, k, n = _get_case_dimensions(variant, size)
+    if variant == "gemv":
+        return [("A", (m, k), dtype), ("x", k, dtype), ("y", m, dtype)]
+    return [("A", (m, k), dtype), ("B", (k, n), dtype), ("C", (m, n), dtype)]
 
 
-def _resolve_case_size_from_memory_target(variant, dtype, target_bytes):
-    return resolve_size_by_binary_search(
-        target_bytes,
-        estimate_working_set_bytes=lambda size: (
-            _estimate_case_working_set_bytes(variant, dtype, size)
-        ),
-        initial_guess=8,
-    )
-
-
-def _describe_case_size(variant, dtype, size):
-    dimensions = _get_case_dimensions(variant, size)
-    lines = [f"case: gemm_gemv.{variant}.{dtype}"]
-    if variant in {"skinny_gemm", "square_gemm"}:
-        lines.append(
-            f"{variant}: "
-            f"m={dimensions['m']}, "
-            f"n={dimensions['n']}, "
-            f"k={dimensions['k']}"
-        )
-    else:
-        lines.append(f"gemv: m={dimensions['m']}, n={dimensions['n']}")
-    return lines
-
-
-def _resolve_case_sizes(size_request, variant, dtype):
-    sizes, resolutions = resolve_suite_size(
-        size_request,
-        resolve_from_target=lambda target_bytes: (
-            _resolve_case_size_from_memory_target(variant, dtype, target_bytes)
-        ),
-        estimate_working_set_bytes=lambda size: (
-            _estimate_case_working_set_bytes(variant, dtype, size)
-        ),
-        estimate_work=lambda size: _estimate_case_work(variant, size),
-        describe_size=lambda size: _describe_case_size(variant, dtype, size),
-    )
-    return sizes, tuple(resolutions or ())
+def _args_to_work(variant, size):
+    m, k, n = _get_case_dimensions(variant, size)
+    return 2 * m * k * n
 
 
 def _initialize_case(array_module, variant, size, dtype):
-    dimensions = _get_case_dimensions(variant, size)
+    m, k, n = _get_case_dimensions(variant, size)
 
-    if variant == "skinny_gemm":
-        m = dimensions["m"]
-        n = dimensions["n"]
-        k = dimensions["k"]
-        a = _make_matrix(array_module, m, k, dtype)
-        b = _make_matrix(array_module, k, n, dtype)
-        c = array_module.zeros((m, n), dtype=dtype)
-        return dimensions, (a, b, c)
+    a = _make_matrix(array_module, m, k, dtype)
 
-    n = dimensions["n"]
-    a = _make_matrix(array_module, n, n, dtype)
+    if variant == "gemv":
+        x = _make_vector(array_module, k, dtype)
+        y = array_module.zeros(m, dtype=dtype)
+        return (a, x, y)
 
-    if variant == "square_gemm":
-        b = _make_matrix(array_module, n, n, dtype)
-        c = array_module.zeros((n, n), dtype=dtype)
-        return dimensions, (a, b, c)
-
-    x = _make_vector(array_module, n, dtype)
-    y = array_module.zeros(n, dtype=dtype)
-    return dimensions, (a, x, y)
+    b = _make_matrix(array_module, k, n, dtype)
+    c = array_module.zeros((m, n), dtype=dtype)
+    return (a, b, c)
 
 
 def _get_check_tolerances(dtype):
@@ -202,9 +126,7 @@ def _check_case(variant, dtype, result, expected):
 def run_gemm_gemv_case(
     np, variant, size, runs, warmup, dtype, timer, perform_check
 ):
-    _, operands = _initialize_case(np, variant, size, dtype)
-
-    a, b, c = operands
+    a, b, c = _initialize_case(np, variant, size, dtype)
 
     def operation():
         np.matmul(a, b, out=c)
@@ -218,104 +140,23 @@ def run_gemm_gemv_case(
     return ((a.shape, b.shape), total)
 
 
-def _get_variants(variant):
-    if variant == "all":
-        return ["skinny_gemm", "square_gemm", "gemv"]
-    return [variant]
-
-
-def _get_dtypes(precision):
-    if precision == "all":
-        return ["float32", "float64"]
-    else:
-        assert precision in ["32", "64"]
-        return [f"float{precision}"]
-
-
-_INFO = {
-    "output_names": ["input shapes", "time per run (ms)"],
-    "returns_time": 1,
-}
-
-
-@benchmark_info(**_INFO)
-def skinny_gemm(np, size, runs, warmup, dtype, *, timer, perform_check):
-    return run_gemm_gemv_case(
-        np, "skinny_gemm", size, runs, warmup, dtype, timer, perform_check
+def _microbenchmark(variant: str):
+    return microbenchmark(
+        output_names=["input shapes", "time per run (ms)"],
+        returns_time=1,
+        args_to_arrays=lambda dtype, size: _args_to_arrays(
+            variant, dtype, size
+        ),
+        args_to_work=lambda size: _args_to_work(variant, size),
     )
-
-
-@benchmark_info(**_INFO)
-def square_gemm(np, size, runs, warmup, dtype, *, timer, perform_check):
-    return run_gemm_gemv_case(
-        np, "square_gemm", size, runs, warmup, dtype, timer, perform_check
-    )
-
-
-@benchmark_info(**_INFO)
-def gemv(np, size, runs, warmup, dtype, *, timer, perform_check):
-    return run_gemm_gemv_case(
-        np, "gemv", size, runs, warmup, dtype, timer, perform_check
-    )
-
-
-def run_benchmarks(suite, size_request, variant, precision, perform_check):
-    """Run GEMM/GEMV benchmarks inside the suite framework."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-
-    variants = _get_variants(variant)
-    dtypes = _get_dtypes(precision)
-    funcs = {
-        "skinny_gemm": skinny_gemm,
-        "square_gemm": square_gemm,
-        "gemv": gemv,
-    }
-    calls = []
-    resolutions = []
-    for case in variants:
-        func = funcs[case]
-        for dtype in dtypes:
-            sizes, case_resolutions = _resolve_case_sizes(
-                size_request, case, dtype
-            )
-            resolutions.extend(case_resolutions)
-            calls.extend(
-                MicrobenchmarkCall(
-                    case_id=f"gemm_gemv.{case}.{dtype}",
-                    name=case,
-                    function=func,
-                    args=(np, size, runs, warmup, dtype),
-                )
-                for size in sizes
-            )
-
-    if resolutions:
-        suite.print_size_resolution(resolutions)
-    suite.run_timed_calls(calls, timer=timer, perform_check=perform_check)
 
 
 class GemmSuite(MicrobenchmarkSuite):
     name = "gemm_gemv"
 
+    @staticmethod
     def add_suite_parser_group(parser):
         group = parser.add_argument_group("GEMM/GEMV Suite")
-        group.add_argument(
-            "--gemm-gemv-variant",
-            type=str,
-            default="all",
-            choices=["skinny_gemm", "square_gemm", "gemv", "all"],
-            help="GEMM/GEMV variant to run",
-        )
-        group.add_argument(
-            "--gemm-gemv-precision",
-            type=str,
-            default="32",
-            choices=["32", "64", "all"],
-            help="GEMM/GEMV precision in bits",
-        )
         group.add_argument(
             "--gemm-gemv-check",
             action="store_true",
@@ -324,23 +165,35 @@ class GemmSuite(MicrobenchmarkSuite):
 
     def __init__(self, config, args):
         super().__init__(config, args)
-        self.gemm_gemv_variant = args.gemm_gemv_variant
-        self.gemm_gemv_precision = args.gemm_gemv_precision
         self.gemm_gemv_check = args.gemm_gemv_check
 
     def print_config(self):
-        msg = [
-            f"variant: {self.gemm_gemv_variant}",
-            f"precision: {self.gemm_gemv_precision}",
-            f"check: {self.gemm_gemv_check}",
-        ]
+        msg = [f"check: {self.gemm_gemv_check}"]
         self.print_panel(msg, title="GEMM/GEMMV Suite")
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(
-            self,
-            size_request,
-            self.gemm_gemv_variant,
-            self.gemm_gemv_precision,
-            self.gemm_gemv_check,
+    def dtypes(self) -> list[str]:
+        return ["float32", "float64"]
+
+    def default_arguments(self) -> dict[str, Any]:
+        return {
+            **super().default_arguments(),
+            "perform_check": self.gemm_gemv_check,
+        }
+
+    @_microbenchmark("skinny_gemm")
+    def skinny_gemm(np, size, runs, warmup, dtype, *, timer, perform_check):
+        return run_gemm_gemv_case(
+            np, "skinny_gemm", size, runs, warmup, dtype, timer, perform_check
+        )
+
+    @_microbenchmark("square_gemm")
+    def square_gemm(np, size, runs, warmup, dtype, *, timer, perform_check):
+        return run_gemm_gemv_case(
+            np, "square_gemm", size, runs, warmup, dtype, timer, perform_check
+        )
+
+    @_microbenchmark("gemv")
+    def gemv(np, size, runs, warmup, dtype, *, timer, perform_check):
+        return run_gemm_gemv_case(
+            np, "gemv", size, runs, warmup, dtype, timer, perform_check
         )

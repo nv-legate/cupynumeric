@@ -22,67 +22,30 @@ Operations tested:
 on float32, float64
 """
 
-from _benchmark import (
-    MicrobenchmarkSuite,
-    benchmark_info,
-    timed_loop,
-    format_dtype,
-)
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
-
-
-# =============================================================================
-# GENERAL NaN REDUCTION BENCHMARKS: nansum(), nanmean()
-# =============================================================================
-
-
-# One float64 input plus a half-size float64 random fill buffer.
-_NANRED_BYTES_PER_ELEMENT = 12
-
-
-@benchmark_info(formats={"dtype": format_dtype, "func": lambda f: f.__name__})
-def nan_red(np, func, dtype, size, runs, warmup, *, timer):
-    """[np.nansum, np.nanmean](input_with_half_nans)."""
-
-    in_arr = np.empty(shape=(size,), dtype=dtype)
-    half_sz = size // 2
-
-    in_arr[0:half_sz] = np.random.rand(half_sz)
-    in_arr[half_sz:size] = np.nan
-
-    def operation():
-        return func(in_arr)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run general nansum(), nanmean() benchmarks."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request, bytes_per_element=_NANRED_BYTES_PER_ELEMENT
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    dtypes = [np.float32, np.float64]
-    red_types = [np.nansum, np.nanmean]
-
-    suite.run_timed(
-        nan_red, np, red_types, dtypes, sizes, runs, warmup, timer=timer
-    )
+from _benchmark import MicrobenchmarkSuite, microbenchmark, timed_loop
 
 
 class NanRedSuite(MicrobenchmarkSuite):
     name = "nanred"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    def dtypes(self):
+        return ["float32", "float64"]
+
+    @microbenchmark(
+        formats={"func": lambda f: f.__name__},
+        args_to_arrays=lambda size, dtype: [("input", size, dtype)],
+        plan=lambda suite: [
+            {"func": func} for func in [suite.np.nansum, suite.np.nanmean]
+        ],
+    )
+    def nan_red(np, func, dtype, size, runs, warmup, *, timer):
+        """[np.nansum, np.nanmean](input_with_half_nans)."""
+
+        in_arr = np.ones((size,), dtype=dtype)
+        half_sz = size // 2
+        in_arr[half_sz:size] = np.dtype(dtype).type(np.nan)
+
+        def operation():
+            return func(in_arr)
+
+        return timed_loop(operation, timer, runs, warmup) / runs

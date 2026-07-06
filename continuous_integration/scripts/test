@@ -161,7 +161,7 @@ test_cupynumeric() {
             shift;
             setup_unit_env;
             run_legate_issue;
-            LEGATE_AUTO_CONFIG=0 pytest tests/unit
+            LEGATE_AUTO_CONFIG=0 pytest tests/unit examples/_benchmark/tests
             ;;
         "cpp")
             echo "Running CPP tests..."

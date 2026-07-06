@@ -20,82 +20,14 @@ Operations tested:
 2. uniform with four bigenerator types, for float32, float64
 """
 
-from _benchmark import (
-    MicrobenchmarkSuite,
-    timed_loop,
-    benchmark_info,
-    format_dtype,
-)
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
+from typing import Any
 
-# =============================================================================
-# GENERAL RANDOM GENERATION BENCHMARKS: Uniform distribution only
-# =============================================================================
+from _benchmark import MicrobenchmarkSuite, microbenchmark, timed_loop
 
 
-# One int64/float64 output array dominates the worst-case working set.
-_RANDOM_BYTES_PER_ELEMENT = 8
-
-
-def randint(np, size, runs, warmup, *, timer):
-    """random.randint(low, high, size)."""
-
-    def operation():
-        return np.random.randint(1, 1000, size=size)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-@benchmark_info(
-    formats={"dtype": format_dtype, "bitgenerator_type": lambda x: x.__name__}
-)
-def bitgenerator(
-    np,
-    size,
-    runs,
-    warmup,
-    bitgenerator_type,
-    dtype,
-    *,
-    timer,
-    uniform_takes_dtype,
-):
-    """bitgenerator operation."""
-
-    bitgen = bitgenerator_type(seed=1729)
-    gen = np.random.Generator(bitgen)
-
-    def operation():
-        low = 1.414
-        high = 3.14
-        if uniform_takes_dtype:
-            return gen.uniform(low, high, size=size, dtype=dtype)
-        else:
-            return gen.uniform(low, high, size=size)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run general random generators benchmarks."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request, bytes_per_element=_RANDOM_BYTES_PER_ELEMENT
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    dtypes = [np.float32, np.float64]
-    uniform_takes_dtype = True
+def _bitgen_plan(suite):
     bitgen_types = []
+    np = suite.np
 
     match np.__name__:
         case "cupynumeric":
@@ -118,27 +50,64 @@ def run_benchmarks(suite, size_request):
                 np.random.Philox,
                 np.random.SFC64,
             ]
-            dtypes = [np.float64]
-            uniform_takes_dtype = False
-        case _:
-            assert False, f"Unexpected package: {np.__name__}"
-
-    suite.run_timed(randint, np, sizes, runs, warmup, timer=timer)
-    suite.run_timed(
-        bitgenerator,
-        np,
-        sizes,
-        runs,
-        warmup,
-        bitgen_types,
-        dtypes,
-        timer=timer,
-        uniform_takes_dtype=uniform_takes_dtype,
-    )
+    return [{"bitgenerator_type": bitgen_type} for bitgen_type in bitgen_types]
 
 
 class RandomSuite(MicrobenchmarkSuite):
     name = "random"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    def dtypes(self) -> list[str]:
+        if self.np.__name__ == "numpy":
+            # numpy bitgenerator only generates float64
+            return ["float64"]
+        return ["float32", "float64"]
+
+    def default_arguments(self) -> dict[str, Any]:
+        return {
+            **super().default_arguments(),
+            "uniform_takes_dtype": self.np.__name__ != "numpy",
+        }
+
+    @microbenchmark(args_to_arrays=lambda size: [("output", size, "int")])
+    def randint(np, size, runs, warmup, *, timer):
+        """random.randint(low, high, size)."""
+
+        def operation():
+            return np.random.randint(1, 1000, size=size)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        formats={"bitgenerator_type": lambda x: x.__name__},
+        # even though cupy provides a dtype argument to
+        # Generator.uniform(), memory profiling suggests
+        # that enough memory is allocated for float64, even
+        # when dtype=float32
+        args_to_arrays=lambda size: [("output", size, "float64")],
+        plan=_bitgen_plan,
+    )
+    def bitgenerator(
+        np,
+        size,
+        runs,
+        warmup,
+        bitgenerator_type,
+        dtype,
+        *,
+        timer,
+        uniform_takes_dtype,
+    ):
+        """bitgenerator operation."""
+
+        bitgen = bitgenerator_type(seed=1729)
+        gen = np.random.Generator(bitgen)
+
+        def operation():
+            low = 1.414
+            high = 3.14
+            if uniform_takes_dtype:
+                return gen.uniform(low, high, size=size, dtype=dtype)
+            else:
+                return gen.uniform(low, high, size=size)
+
+        return timed_loop(operation, timer, runs, warmup) / runs

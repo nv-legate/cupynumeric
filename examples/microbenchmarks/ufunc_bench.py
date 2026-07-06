@@ -31,14 +31,14 @@ on ufunc execution rather than output allocation.
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 import numpy as host_np
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
+from _benchmark import MicrobenchmarkSuite, microbenchmark, timed_loop
 
-# Cover two float32 inputs plus float32/int32 outputs in the heaviest cases.
-_UFUNC_BYTES_PER_ELEMENT = 16
+if TYPE_CHECKING:
+    from typing import Any
 
 
 def _float_input(array_module, size: int, *, start: float = 1.0):
@@ -46,15 +46,16 @@ def _float_input(array_module, size: int, *, start: float = 1.0):
     return (values + start) / max(size, 1)
 
 
-def _bool_input(array_module, size: int, *, offset: int):
-    values = array_module.arange(size, dtype=array_module.int32) + offset
-    return values % 2 == 0
+def _bool_input(array_module, size: int, *, step: int):
+    values = array_module.zeros(size, dtype=array_module.bool_)
+    values[:step:] = True
+    return values
 
 
-def _broadcast_shape(size: int) -> tuple[int, int]:
+def _broadcast_shape(size: int) -> dict[str, Any]:
     cols = max(1, math.isqrt(size))
     rows = max(1, size // cols)
-    return rows, cols
+    return {"rows": rows, "cols": cols}
 
 
 def _to_host(array):
@@ -79,166 +80,30 @@ def _check_equal(name: str, actual, expected) -> None:
         raise AssertionError(f"{name} mismatch")
 
 
-def unary_exp(np, size, runs, warmup, *, timer, perform_check):
-    x = _float_input(np, size)
-    out = np.empty_like(x)
-
-    def operation():
-        np.exp(x, out=out)
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected = host_np.exp(_to_host(x))
-        _check_allclose("exp", out, expected)
-    return total
+def _args_to_arrays_unary(size, dtype="float32", out_dtype=None):
+    if out_dtype is None:
+        out_dtype = dtype
+    return [("input", size, dtype), ("output", size, out_dtype)]
 
 
-def binary_add(np, size, runs, warmup, *, timer, perform_check):
-    lhs = _float_input(np, size)
-    rhs = _float_input(np, size, start=2.0)
-    out = np.empty_like(lhs)
-
-    def operation():
-        np.add(lhs, rhs, out=out)
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected = _to_host(lhs) + _to_host(rhs)
-        _check_allclose("add", out, expected)
-    return total
-
-
-def binary_add_broadcast(
-    np, rows, cols, runs, warmup, *, timer, perform_check
-):
-    lhs = _float_input(np, rows * cols).reshape((rows, cols))
-    rhs = _float_input(np, cols, start=3.0)
-    out = np.empty_like(lhs)
-
-    def operation():
-        np.add(lhs, rhs, out=out)
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected = _to_host(lhs) + _to_host(rhs)
-        _check_allclose("add_broadcast", out, expected)
-    return total
-
-
-def comparison_greater(np, size, runs, warmup, *, timer, perform_check):
-    lhs = _float_input(np, size, start=2.0)
-    rhs = _float_input(np, size, start=1.0)
-    out = np.empty(lhs.shape, dtype=np.bool_)
-
-    def operation():
-        np.greater(lhs, rhs, out=out)
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected = _to_host(lhs) > _to_host(rhs)
-        _check_equal("greater", out, expected)
-    return total
-
-
-def binary_ldexp(np, size, runs, warmup, *, timer, perform_check):
-    lhs = _float_input(np, size, start=2.0)
-    rhs = np.arange(size, dtype=np.int32) % 6
-    out = np.empty_like(lhs)
-
-    def operation():
-        np.ldexp(lhs, rhs, out=out)
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected = host_np.ldexp(_to_host(lhs), _to_host(rhs))
-        _check_allclose("ldexp", out, expected)
-    return total
-
-
-def logical_and(np, size, runs, warmup, *, timer, perform_check):
-    lhs = _bool_input(np, size, offset=0)
-    rhs = _bool_input(np, size, offset=1)
-    out = np.empty(lhs.shape, dtype=np.bool_)
-
-    def operation():
-        np.logical_and(lhs, rhs, out=out)
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected = host_np.logical_and(_to_host(lhs), _to_host(rhs))
-        _check_equal("logical_and", out, expected)
-    return total
-
-
-def multiout_frexp(np, size, runs, warmup, *, timer, perform_check):
-    x = _float_input(np, size, start=4.0)
-    mantissa = np.empty_like(x)
-    exponent = np.empty(x.shape, dtype=np.int32)
-
-    def operation():
-        np.frexp(x, out=(mantissa, exponent))
-
-    total = timed_loop(operation, timer, runs, warmup) / runs
-    if perform_check:
-        expected_mantissa, expected_exponent = host_np.frexp(_to_host(x))
-        _check_allclose("frexp_mantissa", mantissa, expected_mantissa)
-        _check_equal("frexp_exponent", exponent, expected_exponent)
-    return total
-
-
-def run_benchmarks(suite, size_request, perform_check):
-    """Run representative ufunc benchmarks."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request,
-        bytes_per_element=_UFUNC_BYTES_PER_ELEMENT,
-        describe_size=lambda resolved_size: _describe_size(
-            resolved_size, perform_check
-        ),
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    args = (np, sizes, runs, warmup)
-    kwargs = {"timer": timer, "perform_check": perform_check}
-
-    basic_ufuncs = [
-        unary_exp,
-        binary_add,
-        comparison_greater,
-        binary_ldexp,
-        logical_and,
-        multiout_frexp,
+def _args_to_arrays_binary(size, dtype="float32", out_dtype=None):
+    if out_dtype is None:
+        out_dtype = dtype
+    return [
+        ("lhs", size, dtype),
+        ("rhs", size, dtype),
+        ("output", size, out_dtype),
     ]
-
-    for f in basic_ufuncs:
-        suite.run_timed(f, *args, **kwargs)
-
-    def arg_gen_2d():
-        for size in sizes:
-            rows, cols = _broadcast_shape(size)
-            yield (np, rows, cols, runs, warmup)
-
-    suite.run_timed_with_generator(
-        None, binary_add_broadcast, arg_gen_2d(), **kwargs
-    )
-
-
-def _describe_size(size: int, perform_check: bool) -> list[str]:
-    rows, cols = _broadcast_shape(size)
-    lines = [f"broadcast_shape: {rows} x {cols}"]
-    if perform_check:
-        lines.append(
-            "note: host-side validation buffers are outside this heuristic"
-        )
-    return lines
 
 
 class UfuncSuite(MicrobenchmarkSuite):
     name = "ufunc"
+
+    def default_arguments(self) -> dict[str, Any]:
+        return {
+            **super().default_arguments(),
+            "perform_check": self.ufunc_check,
+        }
 
     @staticmethod
     def add_suite_parser_group(parser):
@@ -257,5 +122,130 @@ class UfuncSuite(MicrobenchmarkSuite):
         msg = [f"check: {self.ufunc_check}"]
         self.print_panel(msg, "Ufunc Suite")
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request, self.ufunc_check)
+    @microbenchmark(args_to_arrays=lambda size: _args_to_arrays_unary(size))
+    def unary_exp(np, size, runs, warmup, *, timer, perform_check):
+        x = _float_input(np, size)
+        out = np.empty_like(x)
+
+        def operation():
+            np.exp(x, out=out)
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected = host_np.exp(_to_host(x))
+            _check_allclose("exp", out, expected)
+        return total
+
+    @microbenchmark(args_to_arrays=lambda size: _args_to_arrays_binary(size))
+    def binary_add(np, size, runs, warmup, *, timer, perform_check):
+        lhs = _float_input(np, size)
+        rhs = _float_input(np, size, start=2.0)
+        out = np.empty_like(lhs)
+
+        def operation():
+            np.add(lhs, rhs, out=out)
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected = _to_host(lhs) + _to_host(rhs)
+            _check_allclose("add", out, expected)
+        return total
+
+    @microbenchmark(
+        size_to_args=_broadcast_shape,
+        args_to_arrays=lambda rows, cols: [
+            ("lhs", (rows, cols), "float32"),
+            ("rhs", cols, "float32"),
+            ("out", (rows, cols), "float32"),
+        ],
+    )
+    def binary_add_broadcast(
+        np, rows, cols, runs, warmup, *, timer, perform_check
+    ):
+        lhs = _float_input(np, rows * cols).reshape((rows, cols))
+        rhs = _float_input(np, cols, start=3.0)
+        out = np.empty_like(lhs)
+
+        def operation():
+            np.add(lhs, rhs, out=out)
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected = _to_host(lhs) + _to_host(rhs)
+            _check_allclose("add_broadcast", out, expected)
+        return total
+
+    @microbenchmark(
+        args_to_arrays=lambda size: _args_to_arrays_binary(
+            size, out_dtype="bool"
+        )
+    )
+    def comparison_greater(np, size, runs, warmup, *, timer, perform_check):
+        lhs = _float_input(np, size, start=2.0)
+        rhs = _float_input(np, size, start=1.0)
+        out = np.empty(lhs.shape, dtype=np.bool_)
+
+        def operation():
+            np.greater(lhs, rhs, out=out)
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected = _to_host(lhs) > _to_host(rhs)
+            _check_equal("greater", out, expected)
+        return total
+
+    @microbenchmark(
+        args_to_arrays=lambda size: _args_to_arrays_binary(size, dtype="int32")
+    )
+    def binary_ldexp(np, size, runs, warmup, *, timer, perform_check):
+        lhs = _float_input(np, size, start=2.0)
+        rhs = np.arange(size, dtype=np.int32) % 6
+        out = np.empty_like(lhs)
+
+        def operation():
+            np.ldexp(lhs, rhs, out=out)
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected = host_np.ldexp(_to_host(lhs), _to_host(rhs))
+            _check_allclose("ldexp", out, expected)
+        return total
+
+    @microbenchmark(
+        args_to_arrays=lambda size: _args_to_arrays_binary(size, dtype="bool")
+    )
+    def logical_and(np, size, runs, warmup, *, timer, perform_check):
+        lhs = _bool_input(np, size, step=2)
+        rhs = _bool_input(np, size, step=3)
+        out = np.empty(lhs.shape, dtype=np.bool_)
+
+        def operation():
+            np.logical_and(lhs, rhs, out=out)
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected = host_np.logical_and(_to_host(lhs), _to_host(rhs))
+            _check_equal("logical_and", out, expected)
+        return total
+
+    @microbenchmark(
+        args_to_arrays=lambda size: [
+            ("input", size, "float32"),
+            ("mantissa", size, "float32"),
+            ("exponent", size, "int32"),
+        ]
+    )
+    def multiout_frexp(np, size, runs, warmup, *, timer, perform_check):
+        x = _float_input(np, size, start=4.0)
+        mantissa = np.empty_like(x)
+        exponent = np.empty(x.shape, dtype=np.int32)
+
+        def operation():
+            np.frexp(x, out=(mantissa, exponent))
+
+        total = timed_loop(operation, timer, runs, warmup) / runs
+        if perform_check:
+            expected_mantissa, expected_exponent = host_np.frexp(_to_host(x))
+            _check_allclose("frexp_mantissa", mantissa, expected_mantissa)
+            _check_equal("frexp_exponent", exponent, expected_exponent)
+        return total

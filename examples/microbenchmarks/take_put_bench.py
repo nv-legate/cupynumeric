@@ -48,169 +48,124 @@ Usage:
 
 from __future__ import annotations
 
-import math
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
+from _benchmark import MicrobenchmarkSuite, microbenchmark, nthroot, timed_loop
 
 
-# PUT binding test (put_along_axis): a (n²×8) + idx (n²×0.8) + values (n²×0.8)
-# + two arange coord arrays (n²×0.8 each) + ZIP Point<2> output (n²×1.6)
-# = n²×12.8 bytes, with num_indices = n // 10.
-_PUT_BPE = 13
-
-# TAKE tests use TakeTask, which broadcasts the *full* source array on every
-# GPU along the indexed axis (`broadcast(src, axis)`).  Per-GPU peak ≈
-# source_partitioned (×8/P) + broadcast replica (×8) → ≈ ×16 globally for
-# multi-GPU, plus indices/output overhead.  The source must fit in one GPU's
-# framebuffer for the broadcast to be legal.
-#
-# Tuned for H100 (~70 GB FB) with ~30% headroom: max per-GPU peak ≤ 50 GB →
-# max V (elements globally) ≤ 6.25 × 10⁹.  BPE = 44 keeps `V × 8` ≤ 50 GB up
-# to the 256-GiB target, and scales sub-linearly above that (8 GPU runs sweep
-# to 1 TiB, which would resolve to V ≈ 24 × 10⁹ → per-GPU peak ≈ 190 GB; the
-# broadcast there is genuinely impossible on H100 and either needs an impl
-# fix or a smaller sweep).  The previous BPE of 20 was calibrated for ~150 GB
-# FB and OOMs on H100.
-_TAKE_BPE = 44
-
-
-def _describe_size(size: int) -> list[str]:
-    n = max(1, math.isqrt(size))
-    return [f"resolved_1d_elements: {size:,}", f"resolved_2d_shape: {n} x {n}"]
-
-
-def take_1d(np, size, num_indices, runs, warmup, *, timer):
-    """
-    TAKE task (1D): np.take(a, indices, axis=0) → TAKE task, no gather.
-    """
-    a = np.random.random(size)
-    indices = np.random.randint(0, size, num_indices)
-
-    def operation():
-        return np.take(a, indices, axis=0)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def take_2d(np, n, num_indices, runs, warmup, *, timer):
-    """
-    TAKE task (2D, row axis): np.take(a, indices, axis=0) → TAKE task, no gather.
-    """
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return np.take(a, indices, axis=0)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def take_along_axis(np, n, num_indices, runs, warmup, *, timer):
-    """
-    TAKE task (take_along_axis): np.take_along_axis(a, indices, axis=0) → TAKE task, no gather.
-    """
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, (num_indices, n))
-
-    def operation():
-        return np.take_along_axis(a, indices, axis=0)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def np_put(np, n, num_indices, runs, warmup, *, timer):
-    """
-    Flat put: np.put(a, flat_indices, v).
-    Current path: WRAP task + issue_scatter unconditionally.
-    Could potentially be replaced with _issue_scatter_task for num_procs == 1.
-    """
-    a = np.random.random((n, n))
-    flat_size = n * n
-    indices = np.random.randint(0, flat_size, num_indices)
-    values = np.random.random(num_indices)
-
-    def operation():
-        np.put(a, indices, values)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def put_along_axis(np, n, num_indices, runs, warmup, *, timer):
-    """
-    Put along axis: np.put_along_axis(a, idx, v, axis=0).
-    Current path: _fill_fancy_index_for_along_axis_routines
-    + N arange arrays + ZIP + issue_scatter.
-    Could potentially be replaced with a dedicated PUT task with along_axis=True.
-    """
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, (num_indices, n))
-    values = np.random.random((num_indices, n))
-
-    def operation():
-        np.put_along_axis(a, indices, values, axis=0)
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run take/put benchmarks (TAKE task for take; scatter path for put)."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes_take, resolutions_take = resolve_linear_suite_size(
-        size_request, bytes_per_element=_TAKE_BPE, describe_size=_describe_size
-    )
-    sizes_put, resolutions_put = resolve_linear_suite_size(
-        size_request, bytes_per_element=_PUT_BPE, describe_size=_describe_size
-    )
-    if resolutions_take is not None:
-        suite.print_size_resolution(resolutions_take)
-    if resolutions_put is not None:
-        suite.print_size_resolution(resolutions_put)
-
-    def arg_gen_1d():
-        for size in sizes_take:
-            n = max(1, math.isqrt(size))
-            num_indices = max(1, n // 10)
-            yield (np, size, num_indices, runs, warmup)
-
-    def arg_gen_2d_take():
-        for size in sizes_take:
-            n = max(1, math.isqrt(size))
-            num_indices = max(1, n // 10)
-            yield (np, n, num_indices, runs, warmup)
-
-    def arg_gen_2d_put():
-        for size in sizes_put:
-            n = max(1, math.isqrt(size))
-            num_indices = max(1, n // 10)
-            yield (np, n, num_indices, runs, warmup)
-
-    # TAKE task (no gather)
-    suite.run_timed_with_generator(None, take_1d, arg_gen_1d(), timer=timer)
-    suite.run_timed_with_generator(
-        None, take_2d, arg_gen_2d_take(), timer=timer
-    )
-    suite.run_timed_with_generator(
-        None, take_along_axis, arg_gen_2d_take(), timer=timer
+def _microbenchmark_2d():
+    return microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": max(1, nthroot(size, 2) // 10),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (n, num_indices)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
     )
 
-    # Put operations (scatter path)
-    suite.run_timed_with_generator(None, np_put, arg_gen_2d_put(), timer=timer)
-    suite.run_timed_with_generator(
-        None, put_along_axis, arg_gen_2d_put(), timer=timer
+
+def _microbenchmark_2d_along_axis():
+    return microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": max(1, nthroot(size, 2) // 10),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", (num_indices, n), "int"),
+            # indices work:
+            # - arange
+            # - zip output (2)
+            ("indices work", (3, num_indices, n), "int"),
+            ("values", (num_indices, n)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
     )
 
 
 class TakePutSuite(MicrobenchmarkSuite):
     name = "take_put"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    @microbenchmark(
+        size_to_args=lambda size: {"num_indices": max(1, size // 10)},
+        args_to_arrays=lambda size, num_indices: [
+            ("input", size),
+            ("indices", num_indices, "int"),
+            ("output", num_indices),
+        ],
+        args_to_work=lambda num_indices: num_indices,
+    )
+    def take_1d(np, size, num_indices, runs, warmup, *, timer):
+        """
+        TAKE task (1D): np.take(a, indices, axis=0) → TAKE task, no gather.
+        """
+        a = np.random.random(size)
+        indices = np.random.randint(0, size, num_indices)
+
+        def operation():
+            return np.take(a, indices, axis=0)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @_microbenchmark_2d()
+    def take_2d(np, n, num_indices, runs, warmup, *, timer):
+        """
+        TAKE task (2D, row axis): np.take(a, indices, axis=0) → TAKE task, no gather.
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return np.take(a, indices, axis=0)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @_microbenchmark_2d_along_axis()
+    def take_along_axis(np, n, num_indices, runs, warmup, *, timer):
+        """
+        TAKE task (take_along_axis): np.take_along_axis(a, indices, axis=0) → TAKE task, no gather.
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, (num_indices, n))
+
+        def operation():
+            return np.take_along_axis(a, indices, axis=0)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @_microbenchmark_2d()
+    def np_put(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Flat put: np.put(a, flat_indices, v).
+        Current path: WRAP task + issue_scatter unconditionally.
+        Could potentially be replaced with _issue_scatter_task for num_procs == 1.
+        """
+        a = np.random.random((n, n))
+        flat_size = n * n
+        indices = np.random.randint(0, flat_size, num_indices)
+        values = np.random.random(num_indices)
+
+        def operation():
+            np.put(a, indices, values)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @_microbenchmark_2d_along_axis()
+    def put_along_axis(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Put along axis: np.put_along_axis(a, idx, v, axis=0).
+        Current path: _fill_fancy_index_for_along_axis_routines
+        + N arange arrays + ZIP + issue_scatter.
+        Could potentially be replaced with a dedicated PUT task with along_axis=True.
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, (num_indices, n))
+        values = np.random.random((num_indices, n))
+
+        def operation():
+            np.put_along_axis(a, indices, values, axis=0)
+
+        return timed_loop(operation, timer, runs, warmup) / runs

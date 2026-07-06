@@ -338,7 +338,7 @@ def _cupy_package_details() -> str:
     return _try_conda("cupy")
 
 
-def product_args(args: tuple[Any, ...]) -> Iterable[tuple[Any, ...]]:
+def _product_args(args: tuple[Any, ...]) -> Iterable[tuple[Any, ...]]:
     """Create a generator that is a product over list arguments."""
     arg_lists = []
     for arg in args:
@@ -643,7 +643,7 @@ class BenchmarkHarness:
         """Run a function with ``info`` that overrides benchmark details attached
         to ``f`` by :py:func:`benchmark_info`.
         """
-        self.run_with_generator(info, f, product_args(args), **kwargs)
+        self.run_with_generator(info, f, _product_args(args), **kwargs)
 
     def run_timed_with_info(
         self,
@@ -656,7 +656,7 @@ class BenchmarkHarness:
         details attached to ``f`` by :py:func:`benchmark_info`.
         """
         return self.run_timed_with_generator(
-            info, f, product_args(args), **kwargs
+            info, f, _product_args(args), **kwargs
         )
 
     def run(self, f: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
@@ -709,7 +709,7 @@ def parse_with_harness(
     parser: ArgumentParser,
 ) -> tuple[Namespace, BenchmarkHarness]:
     """Convenience function for the common pattern of adding
-    BenchmarkHarness arugments to a parser, parsing, and getting
+    BenchmarkHarness arguments to a parser, parsing, and getting
     both the parsed arguments and the harness."""
     BenchmarkHarnessConfig.add_parser_group(parser, BenchmarkHarness.name)
     args = parser.parse_known_args()[0]

@@ -33,41 +33,19 @@ from __future__ import annotations
 import math
 
 from _benchmark import (
-    MicrobenchmarkCall,
     MicrobenchmarkSuite,
-    benchmark_info,
+    microbenchmark,
+    random_array,
     timed_loop,
 )
-from _benchmark.sizing import (
-    SizeRequest,
-    resolve_size_by_binary_search,
-    resolve_suite_size,
-)
 
 
-def _get_variants(variant):
-    if variant == "all":
-        return [
-            "solve-1-rhs",
-            "solve-n-rhs",
-            "batched-solve-1-rhs",
-            "batched-solve-n-rhs",
-        ]
-    return [variant]
-
-
-def _get_dtypes(precision):
-    if precision == "all":
-        return ["float32", "float64"]
-    else:
-        assert precision in ["32", "64"]
-        return [f"float{precision}"]
-
-
-def _dtype_bytes(dtype) -> int:
-    import numpy
-
-    return numpy.dtype(dtype).itemsize
+_VARIANTS = [
+    "solve-1-rhs",
+    "solve-n-rhs",
+    "batched-solve-1-rhs",
+    "batched-solve-n-rhs",
+]
 
 
 def _get_case_dimensions(variant, size):
@@ -96,67 +74,30 @@ def _get_case_dimensions(variant, size):
     return dimensions
 
 
-def _estimate_case_working_set_bytes(variant, dtype, size):
+def _args_to_arrays(variant, dtype, size):
     dimensions = _get_case_dimensions(variant, size)
     matrix_dims = dimensions["matrix_size"]
     rhs_dims = dimensions["rhs_size"]
-    dtype_bytes = _dtype_bytes(dtype)
-    matrix_elements = math.prod(matrix_dims)
-    rhs_elements = math.prod(rhs_dims)
-    return dtype_bytes * (matrix_elements + 2 * rhs_elements)
+    return [
+        ("matrix", matrix_dims, dtype),
+        ("rhs", rhs_dims, dtype),
+        ("solution", rhs_dims, dtype),
+    ]
 
 
-def _estimate_case_work(variant, size):
+def _args_to_work(variant, size):
     dimensions = _get_case_dimensions(variant, size)
     matrix_dims = dimensions["matrix_size"]
     rhs_dims = dimensions["rhs_size"]
     n = matrix_dims[-1]
+    b = 1
     k = rhs_dims[-1]
-    if variant.startswith("solve"):
-        b = 1
-        if variant.endswith("-1-rhs"):
-            k = 1
-    elif variant.startswith("batched-solve"):
+    if variant.endswith("-1-rhs"):
+        k = 1
+    if variant.startswith("batched-solve"):
         b = matrix_dims[0]
-        if variant.endswith("-1-rhs"):
-            k = 1
 
     return b * (n * n * n + n * n * k)
-
-
-def _resolve_case_size_from_memory_target(variant, dtype, target_bytes):
-    return resolve_size_by_binary_search(
-        target_bytes,
-        estimate_working_set_bytes=lambda size: (
-            _estimate_case_working_set_bytes(variant, dtype, size)
-        ),
-        initial_guess=8,
-    )
-
-
-def _describe_case_size(size, variant, dtype):
-    dimensions = _get_case_dimensions(variant, size)
-    matrix_size = " x ".join(str(dim) for dim in dimensions["matrix_size"])
-    rhs_size = " x ".join(str(dim) for dim in dimensions["rhs_size"])
-    return [
-        f"case: solve.{variant}.{dtype}",
-        f"{variant}: matrix={matrix_size}, rhs={rhs_size}",
-    ]
-
-
-def _resolve_case_sizes(size_request, variant, dtype):
-    sizes, resolutions = resolve_suite_size(
-        size_request,
-        resolve_from_target=lambda target_bytes: (
-            _resolve_case_size_from_memory_target(variant, dtype, target_bytes)
-        ),
-        estimate_working_set_bytes=lambda size: (
-            _estimate_case_working_set_bytes(variant, dtype, size)
-        ),
-        estimate_work=lambda size: _estimate_case_work(variant, size),
-        describe_size=lambda size: _describe_case_size(size, variant, dtype),
-    )
-    return sizes, tuple(resolutions or ())
 
 
 def _initialize_case(array_module, variant, size, dtype):
@@ -165,101 +106,30 @@ def _initialize_case(array_module, variant, size, dtype):
     matrix_shape = dimensions["matrix_size"]
     rhs_shape = dimensions["rhs_size"]
 
-    matrix_array = array_module.random.random(matrix_shape).astype(dtype)
-    rhs_array = array_module.random.random(rhs_shape).astype(dtype)
+    matrix_array = random_array(array_module, matrix_shape, dtype)
+    rhs_array = random_array(array_module, rhs_shape, dtype)
 
-    return dimensions, matrix_array, rhs_array
-
-
-@benchmark_info(
-    output_names=["matrix shape", "rhs shape", "time per run (ms)"],
-    returns_time=2,
-)
-def solve(np, variant, size, runs, warmup, dtype, *, timer):
-    _, matrix_array, rhs_array = _initialize_case(np, variant, size, dtype)
-
-    def operation():
-        return np.linalg.solve(matrix_array, rhs_array)
-
-    avg = timed_loop(operation, timer, runs, warmup) / runs
-    return (matrix_array.shape, rhs_array.shape, avg)
-
-
-def run_benchmarks(suite, size_request, *, variant="all", precision="64"):
-    """Run SOLVE benchmarks inside the suite framework."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    variants = _get_variants(variant)
-    dtypes = _get_dtypes(precision)
-    calls = []
-    resolutions = []
-
-    for case in variants:
-        for dtype in dtypes:
-            sizes, case_resolutions = _resolve_case_sizes(
-                size_request, case, dtype
-            )
-            resolutions.extend(case_resolutions)
-            calls.extend(
-                MicrobenchmarkCall(
-                    case_id=f"solve.{case}.{dtype}",
-                    name="solve",
-                    function=solve,
-                    args=(np, case, size, runs, warmup, dtype),
-                )
-                for size in sizes
-            )
-
-    if resolutions:
-        suite.print_size_resolution(resolutions)
-    suite.run_timed_calls(calls, timer=timer)
+    return matrix_array, rhs_array
 
 
 class SolveSuite(MicrobenchmarkSuite):
     name = "solve"
 
-    @staticmethod
-    def add_suite_parser_group(parser):
-        group = parser.add_argument_group("Solve Suite")
-        group.add_argument(
-            "--solve-variant",
-            type=str,
-            default="all",
-            choices=[
-                "solve-1-rhs",
-                "solve-n-rhs",
-                "batched-solve-1-rhs",
-                "batched-solve-n-rhs",
-                "all",
-            ],
-            help="Solve variant to run",
-        )
-        group.add_argument(
-            "--solve-precision",
-            type=str,
-            default="64",
-            choices=["32", "64", "all"],
-            help="Solve precision in bits",
-        )
+    def dtypes(self) -> list[str]:
+        return ["float32", "float64"]
 
-    def __init__(self, config, args):
-        super().__init__(config, args)
-        self.solve_variant = args.solve_variant
-        self.solve_precision = args.solve_precision
+    @microbenchmark(
+        output_names=["matrix shape", "rhs shape", "time per run (ms)"],
+        returns_time=2,
+        args_to_arrays=_args_to_arrays,
+        args_to_work=_args_to_work,
+        plan=[{"variant": variant} for variant in _VARIANTS],
+    )
+    def solve(np, variant, size, runs, warmup, dtype, *, timer):
+        matrix_array, rhs_array = _initialize_case(np, variant, size, dtype)
 
-    def print_config(self):
-        msg = [
-            f"variant: {self.solve_variant}",
-            f"precision: {self.solve_precision}",
-        ]
-        self.print_panel(msg, title="Solve Suite")
+        def operation():
+            return np.linalg.solve(matrix_array, rhs_array)
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(
-            self,
-            size_request,
-            variant=self.solve_variant,
-            precision=self.solve_precision,
-        )
+        avg = timed_loop(operation, timer, runs, warmup) / runs
+        return (matrix_array.shape, rhs_array.shape, avg)

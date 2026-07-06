@@ -53,203 +53,156 @@ Usage:
 
 from __future__ import annotations
 
-import math
+from typing import TYPE_CHECKING
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
+from _benchmark import MicrobenchmarkSuite, microbenchmark, nthroot, timed_loop
 
-
-# =============================================================================
-# OPTIMIZED PATH BENCHMARKS
-# =============================================================================
+if TYPE_CHECKING:
+    from _benchmark import ArrayDescription
 
 
-# Per-test peak bytes per resolved element (float64 = 8 bytes):
-#
-#   _BPE_9        — putmask_scalar: source array (×8) + bool mask (×1);
-#                   write is in-place so no output allocation.
-#
-#   _BPE_24       — boolean_get_1d / boolean_get_2d: AdvancedIndexingTask
-#                   allocates three same-size float64 buffers per GPU shard
-#                   — source (×8), intermediate int64 index array (×8), and
-#                   output (×8) — giving 24 B/el.  Confirmed from a crash
-#                   where the task requested 41,236,358,160 bytes
-#                   = 3 × 8 × (resolved_size / 32 GPUs).
-#
-#   _BPE_TAKE     — TakeTask broadcasts the *full* source array on every
-#                   GPU along the indexed axis (`broadcast(src, axis)`).
-#                   Per-GPU peak ≈ source_partitioned (×8/P) + broadcast
-#                   replica (×8) → ≈ ×16 globally for multi-GPU.  Used for
-#                   take-pattern benchmarks (take_2d, row_select_2d,
-#                   array_get_col_2d).  Without this they OOM on H100
-#                   (70 GB FB) at the larger `--memory-size` targets.
-_BPE_9 = 9
-_BPE_24 = 24
-_BPE_TAKE = 16
+def _indexing_arrays(a, indices, values) -> list[ArrayDescription]:
+    return [("a", a), ("indices", indices, "int"), ("values", values)]
 
 
-def _describe_size_1d(size: int) -> list[str]:
-    return [f"resolved_1d_elements: {size:,}"]
-
-
-def putmask_scalar(np, size, runs, warmup, *, timer):
-    """
-    Test putmask optimization for scalar assignment to boolean mask.
-    Path: a[bool_mask] = scalar
-    Optimization: Uses putmask() operation instead of ADVANCED_INDEXING task
-    """
-    a = np.random.random(size)
-    mask = a > 0.5
-
-    def operation():
-        a[mask] = 999.0
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def take_2d(np, n, num_indices, runs, warmup, *, timer):
-    """
-    Test TAKE task optimization for integer array indexing (2D case).
-    Path: a[integer_indices, :]
-    Optimization: Uses TAKE task (no gather)
-    """
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return a[indices, :]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def boolean_get_1d(np, size, runs, warmup, *, timer):
-    """
-    Single boolean array GET (1D).
-    Path: a[bool_mask] — ADVANCED_INDEXING task, copy_needed=False, no gather called.
-    """
-    a = np.random.random(size)
-    mask = a > 0.5
-
-    def operation():
-        return a[mask]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def boolean_get_2d(np, n, runs, warmup, *, timer):
-    """
-    Full-array boolean mask GET (2D).
-    Path: a[mask_2d] — single boolean array → ADVANCED_INDEXING task, no gather.
-    """
-    a = np.random.random((n, n))
-    mask = a > 0.5
-
-    def operation():
-        return a[mask]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
-    """
-    2D row selection: a[row_indices].
-    Path: computed_key=(row_indices,) → TAKE task check passes (1 array, ndim=2<5)
-          → TAKE task path, no gather.
-    """
-    a = np.random.random((n, n))
-    row_indices = np.random.randint(0, n, num_rows)
-
-    def operation():
-        return a[row_indices]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-def array_get_col_2d(np, n, num_indices, runs, warmup, *, timer):
-    """
-    Column-wise integer array GET: a[:, indices].
-    Path: computed_key=(slice(None), indices) → TAKE task check passes (mask_axis=1, ndim=2<5)
-          → TAKE task path, no gather.
-    """
-    a = np.random.random((n, n))
-    indices = np.random.randint(0, n, num_indices)
-
-    def operation():
-        return a[:, indices]
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run optimized advanced indexing benchmarks (NO gather/scatter)."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-
-    # Resolve problem sizes independently per test group so that --memory-size
-    # accurately bounds peak allocation for every test.
-    sizes_9, resolutions_9 = resolve_linear_suite_size(
-        size_request, bytes_per_element=_BPE_9, describe_size=_describe_size_1d
-    )
-    sizes_24, resolutions_24 = resolve_linear_suite_size(
-        size_request,
-        bytes_per_element=_BPE_24,
-        describe_size=lambda s: [
-            f"resolved_1d_elements (24 B/el): {s:,}",
-            f"resolved_2d_shape (24 B/el): {max(1, math.isqrt(s))} x "
-            f"{max(1, math.isqrt(s))}",
-        ],
-    )
-    sizes_take, _ = resolve_linear_suite_size(
-        size_request, bytes_per_element=_BPE_TAKE
-    )
-    if resolutions_9 is not None:
-        suite.print_size_resolution(resolutions_9)
-    if resolutions_24 is not None:
-        suite.print_size_resolution(resolutions_24)
-
-    # n values for 2D boolean tests.
-    ns_24 = [max(1, math.isqrt(size)) for size in sizes_24]
-
-    def arg_gen_2d_take():
-        # take_2d / row_select_2d / array_get_col_2d: per-GPU broadcast of the
-        # full source roughly doubles peak vs. partitioned source alone, so
-        # size is resolved against `_BPE_TAKE`.  num_indices = n // 10 scales
-        # with n so per-GPU work grows with --memory-size (weak scaling).
-        for size in sizes_take:
-            n = max(1, math.isqrt(size))
-            num_indices = max(1, n // 10)
-            yield (np, n, num_indices, runs, warmup)
-
-    # putmask: a[bool_mask] = scalar  — 9 B/el (a + bool mask, in-place write)
-    suite.run_timed(putmask_scalar, np, sizes_9, runs, warmup, timer=timer)
-
-    # TAKE task path: a[indices, :] (2D row GET)  — 16 B/el (broadcast)
-    suite.run_timed_with_generator(
-        None, take_2d, arg_gen_2d_take(), timer=timer
-    )
-
-    # boolean GET: AdvancedIndexingTask uses 3 same-size buffers  — 24 B/el
-    suite.run_timed(boolean_get_1d, np, sizes_24, runs, warmup, timer=timer)
-    suite.run_timed(boolean_get_2d, np, ns_24, runs, warmup, timer=timer)
-
-    # TAKE task integer GET  — 16 B/el (broadcast)
-    suite.run_timed_with_generator(
-        None, row_select_2d, arg_gen_2d_take(), timer=timer
-    )
-    suite.run_timed_with_generator(
-        None, array_get_col_2d, arg_gen_2d_take(), timer=timer
-    )
+def _boolean_mask_arrays(a, mask, indices, values) -> list[ArrayDescription]:
+    # assumes that the implementation may materialize the indices
+    # from the mask
+    return [
+        ("a", a),
+        ("mask", mask, "bool"),
+        ("indices", indices, "int"),
+        ("values", values),
+    ]
 
 
 class FastAdvancedIndexingSuite(MicrobenchmarkSuite):
     name = "advanced_indexing"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    @microbenchmark(
+        args_to_arrays=lambda size: _indexing_arrays(
+            size, size // 2, size // 2
+        )
+    )
+    def putmask_scalar(np, size, runs, warmup, *, timer):
+        """
+        Test putmask optimization for scalar assignment to boolean mask.
+        Path: a[bool_mask] = scalar
+        Optimization: Uses putmask() operation instead of ADVANCED_INDEXING task
+        """
+        a = np.random.random(size)
+        mask = a > 0.5
+
+        def operation():
+            a[mask] = 999.0
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": max(1, nthroot(size, 2) // 10),
+        },
+        args_to_arrays=lambda n, num_indices: (
+            _indexing_arrays((n, n), num_indices, (num_indices, num_indices))
+        ),
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def take_2d(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Test TAKE task optimization for integer array indexing (2D case).
+        Path: a[integer_indices, :]
+        Optimization: Uses TAKE task (no gather)
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[indices, :]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        args_to_arrays=lambda size: (
+            _boolean_mask_arrays(size, size, size // 2, size // 2)
+        )
+    )
+    def boolean_get_1d(np, size, runs, warmup, *, timer):
+        """
+        Single boolean array GET (1D).
+        Path: a[bool_mask] — ADVANCED_INDEXING task, copy_needed=False, no gather called.
+        """
+        a = np.random.random(size)
+        mask = a > 0.5
+
+        def operation():
+            return a[mask]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {"n": nthroot(size, 2, lower_bound=2)},
+        args_to_arrays=lambda n: (
+            _boolean_mask_arrays((n, n), (n, n), (n * n) // 2, (n * n) // 2)
+        ),
+    )
+    def boolean_get_2d(np, n, runs, warmup, *, timer):
+        """
+        Full-array boolean mask GET (2D).
+        Path: a[mask_2d] — single boolean array → ADVANCED_INDEXING task, no gather.
+        """
+        a = np.random.random((n, n))
+        mask = a > 0.5
+
+        def operation():
+            return a[mask]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_rows": max(1, nthroot(size, 2) // 10),
+        },
+        args_to_arrays=lambda n, num_rows: (
+            _indexing_arrays((n, n), num_rows, (num_rows, n))
+        ),
+        args_to_work=lambda n, num_rows: n * num_rows,
+    )
+    def row_select_2d(np, n, num_rows, runs, warmup, *, timer):
+        """
+        2D row selection: a[row_indices].
+        Path: computed_key=(row_indices,) → TAKE task check passes (1 array, ndim=2<5)
+              → TAKE task path, no gather.
+        """
+        a = np.random.random((n, n))
+        row_indices = np.random.randint(0, n, num_rows)
+
+        def operation():
+            return a[row_indices]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": max(1, nthroot(size, 2) // 10),
+        },
+        args_to_arrays=lambda n, num_indices: (
+            _indexing_arrays((n, n), num_indices, (n, num_indices))
+        ),
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def array_get_col_2d(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Column-wise integer array GET: a[:, indices].
+        Path: computed_key=(slice(None), indices) → TAKE task check passes (mask_axis=1, ndim=2<5)
+              → TAKE task path, no gather.
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[:, indices]
+
+        return timed_loop(operation, timer, runs, warmup) / runs

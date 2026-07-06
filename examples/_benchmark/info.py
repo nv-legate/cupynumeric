@@ -41,7 +41,7 @@ _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
 
-_INFO: str = "__cpn_benchmark_harness_info"
+INFO: str = "__cpn_benchmark_harness_info"
 
 
 _TIME: str = "time (milliseconds)"
@@ -57,7 +57,7 @@ def _format_package(np: ModuleType) -> str:
         return np.__name__
 
 
-def _create_benchmark_info(
+def create_benchmark_info(
     f: Callable[..., Any],
     name: str | None = None,
     input_names: dict[str, str] = {},
@@ -156,10 +156,10 @@ def benchmark_info(
         this_returns_time = returns_time
 
     def inner(f: Callable[_P, _R]) -> Callable[_P, _R]:
-        info = _create_benchmark_info(
+        info = create_benchmark_info(
             f, name, input_names, output_names, formats, this_returns_time
         )
-        setattr(f, _INFO, info)
+        setattr(f, INFO, info)
         return f
 
     return inner
@@ -179,8 +179,8 @@ def get_benchmark_info(f: Callable[..., Any]) -> BenchmarkInfo:
     -------
     BenchmarkInfo
     """
-    if hasattr(f, _INFO):
-        v = getattr(f, _INFO)
+    if hasattr(f, INFO):
+        v = getattr(f, INFO)
         assert isinstance(v, BenchmarkInfo)
         return v
-    return _create_benchmark_info(f)
+    return create_benchmark_info(f)

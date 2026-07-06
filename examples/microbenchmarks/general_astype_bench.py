@@ -21,61 +21,29 @@ astype()
 on float32, float64
 """
 
-from _benchmark import (
-    MicrobenchmarkSuite,
-    benchmark_info,
-    timed_loop,
-    format_dtype,
-)
-from _benchmark.sizing import SizeRequest, resolve_linear_suite_size
-
-
-# =============================================================================
-# GENERAL ASTYPE BENCHMARKS: astype
-# =============================================================================
-
-
-# Worst-case setup keeps the int64 source array and float64 cast result live.
-_ASTYPE_BYTES_PER_ELEMENT = 16
-
-
-@benchmark_info(formats={"dtype": format_dtype})
-def astype(np, dtype, size, runs, warmup, *, timer):
-    """np.astype"""
-
-    in_arr = np.random.randint(1, 1000, size=size)
-
-    def operation():
-        out_arr = in_arr.astype(dtype)
-        return out_arr
-
-    return timed_loop(operation, timer, runs, warmup) / runs
-
-
-# =============================================================================
-# MAIN BENCHMARK SUITE
-# =============================================================================
-
-
-def run_benchmarks(suite, size_request):
-    """Run general astype benchmarks."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_linear_suite_size(
-        size_request, bytes_per_element=_ASTYPE_BYTES_PER_ELEMENT
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    dtypes = [np.float32, np.float64]
-
-    suite.run_timed(astype, np, dtypes, sizes, runs, warmup, timer=timer)
+from _benchmark import MicrobenchmarkSuite, microbenchmark, timed_loop
 
 
 class AsTypeSuite(MicrobenchmarkSuite):
     name = "astype"
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(self, size_request)
+    def dtypes(self):
+        return ["float32", "float64"]
+
+    @microbenchmark(
+        args_to_arrays=lambda size, dtype: [
+            ("input", size, "int"),
+            ("output", size, dtype),
+        ]
+    )
+    def astype(np, dtype, size, runs, warmup, *, timer):
+        """np.astype"""
+
+        in_arr = np.random.randint(1, 1000, size=size)
+        dtype = np.dtype(dtype)
+
+        def operation():
+            out_arr = in_arr.astype(dtype)
+            return out_arr
+
+        return timed_loop(operation, timer, runs, warmup) / runs

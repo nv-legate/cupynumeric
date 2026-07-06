@@ -15,10 +15,17 @@
 
 from __future__ import annotations
 
+import itertools
 import math
+from typing import Any
 
-from _benchmark import MicrobenchmarkSuite, timed_loop
-from _benchmark.sizing import SizeRequest, resolve_suite_size
+from _benchmark import (
+    ArrayDescription,
+    MicrobenchmarkSuite,
+    microbenchmark,
+    random_array,
+    timed_loop,
+)
 
 """
 STREAM microbenchmark suite.
@@ -36,54 +43,14 @@ not currently lower `a[...] = b + scalar * c` as one fused backend kernel.
 SCALAR = 3.0
 
 
-def _dtype_bytes(dtype) -> int:
-    import numpy
-
-    return numpy.dtype(dtype).itemsize
-
-
-def _resolve_size_from_memory_target(
-    precision: str, contiguous: str, target_bytes: int
-) -> int:
-    itemsize = max(_dtype_bytes(d) for d in _get_dtypes(precision))
-    elements = max(1, target_bytes // (3 * itemsize))
-    if False not in _get_contiguous_modes(contiguous):
-        return elements
-
-    side = max(2, math.isqrt(elements))
-    return side * side
-
-
-def _estimate_working_set_bytes(precision: str, size: int) -> int:
-    return 3 * size * max(_dtype_bytes(d) for d in _get_dtypes(precision))
-
-
-def _describe_size(size: int, precision: str, contiguous: str) -> list[str]:
-    layouts = [
-        "contiguous" if mode else "noncontiguous"
-        for mode in _get_contiguous_modes(contiguous)
-    ]
-    lines = [
-        f"layouts: {', '.join(layouts)}",
-        f"dtypes:   {', '.join(_get_dtypes(precision))}",
-    ]
-    if False in _get_contiguous_modes(contiguous):
-        rows, cols = get_noncontiguous_shape(size)
-        lines.append(f"noncontiguous_shape: {rows} x {cols}")
-    return lines
-
-
-def get_noncontiguous_shape(size):
-    """Find a 2D factorization for transpose-based non-contiguous views."""
-    rows = math.isqrt(size)
-    while rows > 1 and size % rows != 0:
-        rows -= 1
-    if rows == 1:
-        raise ValueError(
-            "non-contiguous STREAM requires size to have a non-trivial "
-            "2D factorization"
-        )
-    return rows, size // rows
+def _args_to_arrays(
+    size: int, dtype: str, contiguous: bool
+) -> list[ArrayDescription]:
+    shape = size
+    if not contiguous:
+        n = math.isqrt(size)
+        shape = (n, n)
+    return [("a", shape, dtype), ("b", shape, dtype), ("c", shape, dtype)]
 
 
 def _to_host(array):
@@ -92,7 +59,7 @@ def _to_host(array):
     return array.get() if hasattr(array, "get") else host_np.asarray(array)
 
 
-def initialize(array_module, size, dtype, contiguous):
+def _initialize(array_module, size, dtype, contiguous):
     """Allocate contiguous or transpose-based non-contiguous arrays."""
     if contiguous:
         a = array_module.arange(1, size + 1, dtype=dtype)
@@ -100,15 +67,15 @@ def initialize(array_module, size, dtype, contiguous):
         c = array_module.full(size, 1, dtype=dtype)
         return a, b, c
 
-    shape = get_noncontiguous_shape(size)
-    rng = array_module.random.default_rng()
-    a = rng.random(shape, dtype=getattr(array_module, dtype))
+    n = math.isqrt(size)
+    shape = (n, n)
+    a = random_array(array_module, shape, dtype)
     b = array_module.full(shape, 2, dtype=dtype)
     c = array_module.full(shape, 1, dtype=dtype)
     return a.T, b.T, c.T
 
 
-def check_stream(operation, a, b, c, result):
+def _check_stream(operation, a, b, c, result):
     import numpy as host_np
 
     if operation == "copy":
@@ -124,132 +91,24 @@ def check_stream(operation, a, b, c, result):
         raise AssertionError("stream result mismatch")
 
 
-def stream(
-    np,
-    operation,
-    contiguous,
-    dtype,
-    size,
-    runs,
-    warmup,
-    *,
-    timer,
-    perform_check,
-):
-    a, b, c = initialize(np, size, dtype, contiguous)
-    check_inputs = None
-
-    if perform_check:
-        # Preserve the pre-op operands so validation still catches unexpected
-        # source-array mutations while using the actual benchmark inputs.
-        check_inputs = tuple(_to_host(array).copy() for array in (a, b, c))
-
-    def op():
-        if operation == "copy":
-            c[...] = a
-        elif operation == "mul":
-            np.multiply(c, SCALAR, out=b)
-        else:
-            np.add(a, b, out=c)
-
-    total = timed_loop(op, timer, runs, warmup) / runs
-
-    if perform_check:
-        result = b if operation == "mul" else c
-        assert check_inputs is not None
-        check_stream(operation, *check_inputs, result)
-
-    return total
-
-
-def _get_dtypes(precision):
-    if precision == "all":
-        return ["float32", "float64"]
-    else:
-        assert precision in ["32", "64"]
-        return [f"float{precision}"]
-
-
-def _get_contiguous_modes(contiguous):
-    if contiguous == "all":
-        return [True, False]
-    return [contiguous == "true"]
-
-
-def run_benchmarks(
-    suite, size_request, operation, precision, contiguous, perform_check
-):
-    """Run STREAM benchmarks inside the suite framework."""
-    np = suite.np
-    timer = suite.timer
-    runs = suite.runs
-    warmup = suite.warmup
-    sizes, resolutions = resolve_suite_size(
-        size_request,
-        resolve_from_target=lambda target_bytes: (
-            _resolve_size_from_memory_target(
-                precision, contiguous, target_bytes
-            )
-        ),
-        estimate_working_set_bytes=lambda resolved_size: (
-            _estimate_working_set_bytes(precision, resolved_size)
-        ),
-        estimate_work=lambda resolved_size: resolved_size,
-        describe_size=lambda resolved_size: _describe_size(
-            resolved_size, precision, contiguous
-        ),
-    )
-    if resolutions is not None:
-        suite.print_size_resolution(resolutions)
-
-    dtypes = _get_dtypes(precision)
-    contigs = _get_contiguous_modes(contiguous)
-    operation = "mul" if operation == "scale" else operation
-    ops = ["copy", "mul", "add"] if operation == "all" else [operation]
-
-    suite.run_timed(
-        stream,
-        np,
-        ops,
-        contigs,
-        dtypes,
-        sizes,
-        runs,
-        warmup,
-        timer=timer,
-        perform_check=perform_check,
-    )
+_OPS = ["copy", "mul", "add"]
 
 
 class StreamSuite(MicrobenchmarkSuite):
     name = "stream"
 
+    def dtypes(self) -> list[str]:
+        return ["float32", "float64"]
+
+    def default_arguments(self) -> dict[str, Any]:
+        return {
+            **super().default_arguments(),
+            "perform_check": self.stream_check,
+        }
+
     @staticmethod
     def add_suite_parser_group(parser):
         group = parser.add_argument_group("STREAM Suite")
-        group.add_argument(
-            "--stream-operation",
-            type=str,
-            default="all",
-            choices=["copy", "mul", "scale", "add", "all"],
-            help="STREAM operation to run",
-        )
-        group.add_argument(
-            "--stream-precision",
-            type=str,
-            default="32",
-            choices=["32", "64", "all"],
-            help="STREAM precision in bits",
-        )
-        group.add_argument(
-            "--stream-contiguous",
-            type=str,
-            default="all",
-            choices=["true", "false", "all"],
-            help=(
-                "STREAM layout to run; 'false' uses transpose-based non-contiguous views"
-            ),
-        )
         group.add_argument(
             "--stream-check",
             action="store_true",
@@ -258,26 +117,52 @@ class StreamSuite(MicrobenchmarkSuite):
 
     def __init__(self, config, args):
         super().__init__(config, args)
-        self.stream_operation = args.stream_operation
-        self.stream_precision = args.stream_precision
-        self.stream_contiguous = args.stream_contiguous
         self.stream_check = args.stream_check
 
     def print_config(self):
-        msg = [
-            f"operation: {self.stream_operation}",
-            f"precision: {self.stream_precision}",
-            f"contiguous: {self.stream_contiguous}",
-            f"check: {self.stream_check}",
-        ]
+        msg = [f"check: {self.stream_check}"]
         self.print_panel(msg, "STREAM Suite")
 
-    def run_suite(self, size_request: SizeRequest):
-        run_benchmarks(
-            self,
-            size_request,
-            self.stream_operation,
-            self.stream_precision,
-            self.stream_contiguous,
-            self.stream_check,
-        )
+    @microbenchmark(
+        args_to_arrays=_args_to_arrays,
+        plan=[
+            {"operation": op, "contiguous": contig}
+            for op, contig in itertools.product(_OPS, [True, False])
+        ],
+    )
+    def stream(
+        np,
+        operation,
+        contiguous,
+        dtype,
+        size,
+        runs,
+        warmup,
+        *,
+        timer,
+        perform_check,
+    ):
+        a, b, c = _initialize(np, size, dtype, contiguous)
+        check_inputs = None
+
+        if perform_check:
+            # Preserve the pre-op operands so validation still catches unexpected
+            # source-array mutations while using the actual benchmark inputs.
+            check_inputs = tuple(_to_host(array).copy() for array in (a, b, c))
+
+        def op():
+            if operation == "copy":
+                c[...] = a
+            elif operation == "mul":
+                np.multiply(c, SCALAR, out=b)
+            else:
+                np.add(a, b, out=c)
+
+        total = timed_loop(op, timer, runs, warmup) / runs
+
+        if perform_check:
+            result = b if operation == "mul" else c
+            assert check_inputs is not None
+            _check_stream(operation, *check_inputs, result)
+
+        return total
