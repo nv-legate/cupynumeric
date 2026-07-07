@@ -46,6 +46,21 @@ def _unpack_ellipsis(key: tuple[Any, ...], ndim: int) -> tuple[Any, ...]:
     return key[:idx] + to_replace + key[idx + 1 :]
 
 
+def _project_scalar(
+    store: LogicalStore, dim: int, k: int | np.integer
+) -> LogicalStore:
+    """Project ``store`` along ``dim`` at scalar index ``k``.
+
+    Removes dimension ``dim`` by selecting its ``k``-th element (NumPy-style
+    integer indexing, e.g. ``a[k]``). Negative ``k`` is wrapped relative to
+    the extent of ``dim``; bounds checking is the caller's responsibility.
+    """
+    k = int(k)
+    if k < 0:
+        k += store.shape[dim]
+    return store.project(dim, k)
+
+
 def _slice_store(k: slice, store: LogicalStore, dim: int) -> LogicalStore:
     # slice.indices() clamps to [0, size] and resolves None/negatives.
     # Legate raises for out-of-bounds stop, so we must clamp first.

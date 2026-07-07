@@ -206,19 +206,34 @@ class BoolMask(Strategy):
 
 @dataclass(frozen=True)
 class IntArraySingleAxis(Strategy):
-    """``a[:, idx]`` — one int array on axis k, ``slice(None)`` on all others.
+    """``a[:, idx]`` — one int array on one axis; all other elements are
+    ``slice(None)``, non-trivial slices, integer scalars, or ``np.newaxis``.
+
+    Before the take: scalar subscripts are projected out (``store.project``);
+    partial slices are applied as zero-copy view transforms (``_slice_store``).
+    After the take: ``store.promote`` re-inserts singleton dims at the
+    positions in ``promote_dims`` (one entry per ``np.newaxis`` in the key).
 
     Absorbs ``Take``. GET goes through the TAKE task.
     """
 
-    array: DeferredArray
+    array: DeferredArray  # post-projection/slice view (scalars and partial slices already applied)
     indices: DeferredArray
     axis: int
+    promote_dims: tuple[
+        int, ...
+    ]  # output dims to promote after the take (for np.newaxis)
 
     def execute_get(self) -> DeferredArray:
-        return self.array._advanced_indexing_using_take(
+        result = self.array._advanced_indexing_using_take(
             self.axis, self.indices
         )
+        if self.promote_dims:
+            from .deferred import DeferredArray  # circular-import guard
+
+            for dim in self.promote_dims:
+                result = DeferredArray(base=result.base.promote(dim, 1))
+        return result
 
     def execute_set(self, rhs: DeferredArray) -> None:
         # PUT-task not yet landed; add a SET arm in _lower_to_strategy when it does.

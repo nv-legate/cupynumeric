@@ -85,7 +85,7 @@ from ..linalg._solve import solve_deferred
 from ..linalg._svd import svd_deferred
 from ..runtime import runtime
 from ..settings import settings
-from ._advanced_indexing import _slice_store, _unpack_ellipsis
+from ._advanced_indexing import _project_scalar, _slice_store, _unpack_ellipsis
 from ._indexing_strategy import (
     Basic,
     BoolMask,
@@ -132,7 +132,10 @@ def _broadcastable_to(src: Sequence[int], dst: Sequence[int]) -> bool:
     """
     if len(src) > len(dst):
         return False
-    return all(s in (1, d) for s, d in zip(reversed(src), reversed(dst)))
+    # strict=False is intentional: src may be shorter than dst (checked above).
+    return all(
+        s in (1, d) for s, d in zip(reversed(src), reversed(dst), strict=False)
+    )
 
 
 # Type alias for NumPy-style indexing keys
@@ -546,48 +549,142 @@ class DeferredArray:
 
     def _can_use_take(
         self, computed_key: tuple[Any, ...]
-    ) -> tuple[bool, int, DeferredArray | None]:
+    ) -> tuple[bool, int, DeferredArray | None, DeferredArray, list[int]]:
         """
         Check if indexing can be routed through np.take.
 
-        Returns True when the key is a single 1-D integer index array on one
-        axis with slice(None) on all other axes, i.e.:
-            a[indices, :, :]   or   a[:, indices]   etc.
-        This pattern is equivalent to np.take(a, indices, axis=mask_axis) and
-        is handled by _advanced_indexing_using_take.
+        Returns True when the key has exactly one 1-D integer index array and
+        all other elements are slice(None), non-trivial slices, integer
+        scalars, or np.newaxis, e.g.:
+            a[indices, :, :]    a[:, indices]      a[0, indices]
+            a[indices, :n//2]   a[np.newaxis, indices, :]
+        Integer scalars are projected out (store.project); partial slices are
+        applied as zero-copy view transforms (_slice_store); np.newaxis entries
+        are stripped before the take and re-inserted via promote() on the
+        result.  The returned ``projected`` is the post-transformation view;
+        ``mask_axis`` is relative to that view; ``promote_dims`` lists
+        dimensions to promote in the take result for np.newaxis handling.
         """
         can_use_take_path = False
         mask_axis = -1
+        mask_pos = -1
         mask_array = None
+        promote_dims: list[int] = []
 
-        if all(dim > 0 for dim in self.shape):  # no zero-size dimensions
-            array_positions = []
+        if all(dim > 0 for dim in self.shape):
+            array_positions: list[int] = []
+            scalar_positions: list[int] = []
+            all_others_are_valid = True
 
-            # Find all positions with arrays and verify everything else is slice(None)
-            all_others_are_slices = True
             for i, element in enumerate(computed_key):
                 if isinstance(element, DeferredArray):
                     array_positions.append(i)
-                elif not (
-                    isinstance(element, slice) and element == slice(None)
+                elif element is np.newaxis:
+                    pass
+                elif isinstance(element, slice):
+                    pass
+                elif (
+                    np.isscalar(element)
+                    and isinstance(element, (int, np.integer))
+                    and not isinstance(element, (bool, np.bool_))
                 ):
-                    all_others_are_slices = False
+                    scalar_positions.append(i)
+                else:
+                    all_others_are_valid = False
                     break
 
-            # Exactly one array key, all other keys are slice(None)
-            if len(array_positions) == 1 and all_others_are_slices:
-                mask_axis = array_positions[0]
-                array_element = computed_key[mask_axis]
+            # Every key element except np.newaxis consumes one source
+            # dimension. Reject over-indexed keys (e.g. ``a[idx, :]`` on a
+            # 1-D array, or ``a[idx, :, :]`` on a 2-D array) so they fall
+            # through to General and raise "too many indices" like NumPy,
+            # instead of silently behaving like ``a[idx]``.
+            source_dims_used = sum(
+                1 for element in computed_key if element is not np.newaxis
+            )
+
+            if (
+                len(array_positions) == 1
+                and all_others_are_valid
+                and source_dims_used <= self.ndim
+            ):
+                mask_pos = array_positions[0]
+                array_element = computed_key[mask_pos]
 
                 if array_element.ndim == 1 and array_element.dtype != np.dtype(
                     bool
                 ):
-                    # Empty index arrays are fine — np.take(a, [], axis=k) returns an
-                    # empty result without a task-submission error.
+                    # Empty index arrays are fine — np.take(a, [], axis=k)
+                    # returns an empty result without a task-submission error.
                     can_use_take_path = True
                     mask_array = array_element
 
-        return can_use_take_path, mask_axis, mask_array
+                    # When a scalar and the index array are separated by any
+                    # basic-index element (slice or np.newaxis), NumPy treats
+                    # the advanced indices as non-contiguous and prepends the
+                    # advanced dims to the output
+                    # (e.g. x[1, :, idx] → (L, 3) not (3, L);
+                    #       x[1, None, idx] → (L, 1) not (1, L)).
+                    # TAKE produces the in-place shape, which disagrees
+                    # whenever there are also basic-index dims before the array
+                    # in the key.  Specifically:
+                    #  - scalar BEFORE array, separated by a basic-index →
+                    #    always unsafe (the basic-index IS before the array).
+                    #  - scalar AFTER array, separated by a basic-index →
+                    #    unsafe only when an additional basic-index precedes
+                    #    the array (e.g. x[:, idx, :, -1] → wrong; but
+                    #    x[idx, :, -1] → correct because no basic-index
+                    #    precedes the array).
+                    def _is_basic(q: int) -> bool:
+                        e = computed_key[q]
+                        return isinstance(e, slice) or e is np.newaxis
+
+                    has_basic_before_array = any(
+                        _is_basic(q) for q in range(mask_pos)
+                    )
+                    for p in scalar_positions:
+                        lo, hi = min(p, mask_pos), max(p, mask_pos)
+                        separated = any(
+                            _is_basic(q) for q in range(lo + 1, hi)
+                        )
+                        if separated and (
+                            p < mask_pos or has_basic_before_array
+                        ):
+                            can_use_take_path = False
+                            break
+
+        if can_use_take_path:
+            store = self.base
+            source_dim = 0
+            out_dim = 0
+
+            for pos, element in enumerate(computed_key):
+                if element is np.newaxis:
+                    promote_dims.append(out_dim)
+                    out_dim += 1
+                elif isinstance(element, DeferredArray):
+                    mask_axis = source_dim
+                    source_dim += 1
+                    out_dim += 1
+                elif isinstance(element, slice):
+                    if element != slice(None):
+                        store = _slice_store(element, store, source_dim)
+                    source_dim += 1
+                    out_dim += 1
+                else:  # scalar, already validated in the classification loop
+                    store = _project_scalar(store, source_dim, element)
+                    # source_dim not incremented: project removes the dim
+
+            projected: DeferredArray = DeferredArray(base=store)
+        else:
+            projected = self
+
+        return (
+            can_use_take_path,
+            mask_axis,
+            mask_array,
+            projected,
+            promote_dims,
+        )
 
     def _issue_gather_task(
         self,
@@ -1619,9 +1716,7 @@ class DeferredArray:
                     raise TypeError(
                         "Unsupported entry type passed to advanced indexing operation"
                     )
-                if k < 0:  # type: ignore [operator]
-                    k += store.shape[dim + shift]  # type: ignore [operator]
-                store = store.project(dim + shift, k)
+                store = _project_scalar(store, dim + shift, k)  # type: ignore [arg-type]
                 shift -= 1
             elif k is np.newaxis:
                 store = store.promote(dim + shift, 1)
@@ -1679,9 +1774,7 @@ class DeferredArray:
             elif isinstance(k, slice):
                 store = _slice_store(k, store, dim + shift)
             elif np.isscalar(k):
-                if k < 0:  # type: ignore [operator]
-                    k += store.shape[dim + shift]  # type: ignore [operator]
-                store = store.project(dim + shift, k)
+                store = _project_scalar(store, dim + shift, k)  # type: ignore [arg-type]
                 shift -= 1
             else:
                 assert False
@@ -1779,28 +1872,41 @@ class DeferredArray:
                 start_index=start_index,
             )
 
-        # GET path
+        # GET path — SET always returns inside the ``rhs is not None`` block
+        # above, so IntArraySingleAxis (which has no execute_set) is unreachable
+        # from the SET side.
+        assert rhs is None, (
+            "IntArraySingleAxis has no execute_set; "
+            "SET must return before this point"
+        )
         bool_strategy = self._prepare_boolean_array_indexing(key)
         if bool_strategy is not None:
             return bool_strategy
 
         # ``np.take`` fast path for ``a[indices, :, :]`` / ``a[:, indices]``.
-        # ndim > 1 keeps the 1-D gather (``a[indices]``) on the gather path.
-        if self.ndim > 1:
-            computed_key: tuple[Any, ...]
-            if isinstance(key, DeferredArray):
-                computed_key = (key,)
-            else:
-                computed_key = _unpack_ellipsis(
-                    cast(tuple[Any, ...], key), self.ndim
-                )
-            can_use_take, mask_axis, mask_array = self._can_use_take(
-                computed_key
+        # The ndim > 1 condition keeps the plain 1-D gather (``a[indices]``)
+        # on the gather path.  A 1-D array with newaxis
+        # (``a[indices, np.newaxis]``) has len(computed_key) > ndim and
+        # must be allowed through so the promote logic in _can_use_take
+        # can handle it.
+        computed_key: tuple[Any, ...]
+        if isinstance(key, DeferredArray):
+            computed_key = (key,)
+        else:
+            computed_key = _unpack_ellipsis(
+                cast(tuple[Any, ...], key), self.ndim
+            )
+        if self.ndim > 1 or len(computed_key) > self.ndim:
+            can_use_take, mask_axis, mask_array, projected, promote_dims = (
+                self._can_use_take(computed_key)
             )
             if can_use_take:
                 assert mask_array is not None
                 return IntArraySingleAxis(
-                    array=self, indices=mask_array, axis=mask_axis
+                    array=projected,
+                    indices=mask_array,
+                    axis=mask_axis,
+                    promote_dims=tuple(promote_dims),
                 )
 
         array, start_index, index_arrays, original = (

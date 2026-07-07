@@ -19,21 +19,17 @@ Tests general advanced indexing operations that GO THROUGH Legion/Legate Copy op
 - They trigger indirect copy operations via Legion runtime
 - Performance depends on Copy operation efficiency and task launch overhead
 
-Operations tested (all use gather/scatter):
+Operations tested:
 1.  Boolean mask SET (1D): a[bool_mask] = array_values
-2.  Mixed indexing (3D): a[indices, :, slice] - integer array + slices
-3.  Non-contiguous (3D): a[idx_row, :, idx_col] - indices on non-adjacent dims
-4.  Boolean with slice row (2D): a[mask, :] - boolean on first dim (nonzero + ZIP + gather)
-5.  Take one per row: a[arange(M), index] - Legate-Boost pattern (fancy 2D indexing)
-6.  1D integer array GET: a[indices] - Hamiltonian pattern
-7.  1D integer array SET: a[indices] = values - Hamiltonian pattern
-8.  2D scalar + list SET: a[idx, list(cols)] = value - Hamiltonian pattern
-9.  Column-wise integer SET (2D): a[:, indices] = v - ZIP + scatter
-10. Boolean mask on non-first dim: a[:, bool_mask] - nonzero + ZIP + gather
-11. newaxis GET: a[indices, np.newaxis] - newaxis key type forces ZIP path
-12. Ellipsis GET (2D): a[..., indices] - Ellipsis key type, tests normalization vs TAKE task routing
-13. Non-contiguous GET: a.T[indices] - F-contiguous source requires copy before gather
-14. Scalar RHS + integer array SET: a[indices] = scalar - scatter path, no putmask
+2.  Non-contiguous (3D): a[idx_row, :, idx_col] - indices on non-adjacent dims → ZIP + gather
+3.  Boolean with slice row (2D): a[mask, :] - boolean on first dim (nonzero + ZIP + gather)
+4.  Take one per row: a[arange(M), index] - Legate-Boost pattern (fancy 2D indexing)
+5.  1D integer array GET: a[indices] - Hamiltonian pattern
+6.  1D integer array SET: a[indices] = values - Hamiltonian pattern
+7.  2D scalar + list SET: a[idx, list(cols)] = value - Hamiltonian pattern
+8.  Column-wise integer SET (2D): a[:, indices] = v - ZIP + scatter
+9.  Boolean mask on non-first dim: a[:, bool_mask] - nonzero + ZIP + gather
+10. Scalar RHS + integer array SET: a[indices] = scalar - scatter path, no putmask
 
 For np.take, np.take_along_axis, np.put and np.put_along_axis, see take_put_bench.py.
 
@@ -82,28 +78,6 @@ class GeneralIndexingSuite(MicrobenchmarkSuite):
 
         def operation():
             a[mask] = values
-
-        return timed_loop(operation, timer, runs, warmup) / runs
-
-    @microbenchmark(
-        size_to_args=lambda size: {
-            "n": nthroot(size, 3),
-            "num_indices": nthroot(size, 3),
-        },
-        args_to_arrays=lambda n, num_indices: [
-            ("a", (n, n, n)),
-            ("indices", num_indices, "int"),
-            ("values", (num_indices, n, n // 2)),
-        ],
-        args_to_work=lambda n, num_indices: num_indices * n * (n // 2),
-    )
-    def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
-        """Mixed indexing: integer array + slices."""
-        a = np.random.random((n, n, n))
-        indices = np.random.randint(0, n, num_indices)
-
-        def operation():
-            return a[indices, :, : n // 2]
 
         return timed_loop(operation, timer, runs, warmup) / runs
 
@@ -270,82 +244,6 @@ class GeneralIndexingSuite(MicrobenchmarkSuite):
 
         def operation():
             return a[:, mask]
-
-        return timed_loop(operation, timer, runs, warmup) / runs
-
-    @microbenchmark(
-        args_to_arrays=lambda size, num_indices: [
-            ("a", size),
-            ("indices", num_indices, "int"),
-            ("values", num_indices),
-        ],
-        args_to_work=lambda num_indices: num_indices,
-        plan={"num_indices": SIZE},
-    )
-    def newaxis_int_get(np, size, num_indices, runs, warmup, *, timer):
-        """
-        Integer array GET with trailing newaxis: a[indices, np.newaxis].
-        Covers key type: newaxis; key composition: int array + newaxis (mixed).
-        Path: newaxis in key prevents TAKE task routing → ZIP + gather.
-        """
-        a = np.random.random(size)
-        indices = np.random.randint(0, size, num_indices)
-
-        def operation():
-            return a[indices, np.newaxis]  # shape: (num_indices, 1)
-
-        return timed_loop(operation, timer, runs, warmup) / runs
-
-    @microbenchmark(
-        size_to_args=lambda size: {
-            "n": nthroot(size, 2),
-            "num_indices": nthroot(size, 2),
-        },
-        args_to_arrays=lambda n, num_indices: [
-            ("a", (n, n)),
-            ("indices", num_indices, "int"),
-            ("values", (n, num_indices)),
-        ],
-        args_to_work=lambda n, num_indices: n * num_indices,
-    )
-    def ellipsis_int_get(np, n, num_indices, runs, warmup, *, timer):
-        """
-        Integer array GET with Ellipsis on leading axes: a[..., indices] (2D).
-        Covers key type: Ellipsis; key composition: Ellipsis + int array (mixed).
-        Semantically equivalent to a[:, indices] but tests whether Ellipsis
-        normalization routes to TAKE task or falls back to ZIP + gather.
-        """
-        a = np.random.random((n, n))
-        indices = np.random.randint(0, n, num_indices)
-
-        def operation():
-            return a[..., indices]  # Ellipsis expands to slice(None) for dim 0
-
-        return timed_loop(operation, timer, runs, warmup) / runs
-
-    @microbenchmark(
-        size_to_args=lambda size: {
-            "n": nthroot(size, 2),
-            "num_indices": nthroot(size, 2),
-        },
-        args_to_arrays=lambda n, num_indices: [
-            ("a", (n, n)),
-            ("indices", num_indices, "int"),
-            ("values", (num_indices, n)),
-        ],
-        args_to_work=lambda n, num_indices: n * num_indices,
-    )
-    def noncontiguous_get(np, n, num_indices, runs, warmup, *, timer):
-        """
-        Integer array GET from a non-contiguous (transposed) source array: a.T[indices].
-        Covers contiguity: F-contiguous (non-C-contiguous) source requires a copy
-        before gather can proceed.
-        """
-        a = np.random.random((n, n)).T  # F-contiguous (transposed view)
-        indices = np.random.randint(0, n, num_indices)
-
-        def operation():
-            return a[indices]  # gather from non-contiguous source
 
         return timed_loop(operation, timer, runs, warmup) / runs
 

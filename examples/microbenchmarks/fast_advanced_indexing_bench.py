@@ -35,6 +35,18 @@ Tests ONLY indexing paths that are already optimized (avoid gather/scatter):
 6. column GET (2D): a[:, indices] — TAKE task path (mask_axis=1, ndim=2)
    - Single integer array on non-leading axis
 
+7. mixed indexing (3D): a[indices, :, :n//2] — TAKE task path (partial slice as view transform)
+   - Integer array on axis 0; partial slice pre-applied as zero-copy store view
+
+8. newaxis GET (1D): a[indices, np.newaxis] — TAKE task path (newaxis via promote)
+   - newaxis stripped before TAKE; re-inserted via promote() after
+
+9. Ellipsis GET (2D): a[..., indices] — TAKE task path (Ellipsis normalizes to slice(None))
+   - Semantically equivalent to a[:, indices]; Ellipsis expansion handled before TAKE routing
+
+10. Non-contiguous GET (2D): a.T[indices] — TAKE task path (transposed source)
+    - F-contiguous source handled natively by TAKE task without a pre-copy
+
 These optimizations bypass gather/scatter entirely.
 
 For proposed (not-yet-implemented) optimizations and their current slow-path
@@ -204,5 +216,105 @@ class FastAdvancedIndexingSuite(MicrobenchmarkSuite):
 
         def operation():
             return a[:, indices]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 3),
+            "num_indices": nthroot(size, 3),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (num_indices, n, n // 2)),
+        ],
+        args_to_work=lambda n, num_indices: num_indices * n * (n // 2),
+    )
+    def mixed_indexing(np, n, num_indices, runs, warmup, *, timer):
+        """Mixed indexing: integer array + partial slice → TAKE task."""
+        a = np.random.random((n, n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[indices, :, : n // 2]
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": size,
+            # O(n) work: gather half the array so runtime scales with the
+            # memory touched (sqrt(size) left the work sublinear in n).
+            "num_indices": max(1, size // 2),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", n),
+            ("indices", num_indices, "int"),
+            ("values", (num_indices, 1)),
+        ],
+        args_to_work=lambda num_indices: num_indices,
+    )
+    def newaxis_int_get(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Integer array GET with trailing newaxis: a[indices, np.newaxis].
+        Path: newaxis stripped before TAKE; re-inserted via promote() after → TAKE task.
+        """
+        a = np.random.random(n)
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[indices, np.newaxis]  # shape: (num_indices, 1)
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": nthroot(size, 2),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (n, num_indices)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def ellipsis_int_get(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Integer array GET with Ellipsis on leading axes: a[..., indices] (2D).
+        Ellipsis normalizes to slice(None) via _unpack_ellipsis, then routes to
+        TAKE task — semantically identical to a[:, indices] (mask_axis=1).
+        """
+        a = np.random.random((n, n))
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[..., indices]  # Ellipsis expands to slice(None) for dim 0
+
+        return timed_loop(operation, timer, runs, warmup) / runs
+
+    @microbenchmark(
+        size_to_args=lambda size: {
+            "n": nthroot(size, 2),
+            "num_indices": nthroot(size, 2),
+        },
+        args_to_arrays=lambda n, num_indices: [
+            ("a", (n, n)),
+            ("indices", num_indices, "int"),
+            ("values", (num_indices, n)),
+        ],
+        args_to_work=lambda n, num_indices: n * num_indices,
+    )
+    def noncontiguous_get(np, n, num_indices, runs, warmup, *, timer):
+        """
+        Integer array GET from a transposed (F-contiguous) source: a.T[indices].
+        The transposed store is handled natively by the TAKE task (mask_axis=0).
+        """
+        a = np.random.random((n, n)).T  # F-contiguous (transposed view)
+        indices = np.random.randint(0, n, num_indices)
+
+        def operation():
+            return a[indices]
 
         return timed_loop(operation, timer, runs, warmup) / runs
