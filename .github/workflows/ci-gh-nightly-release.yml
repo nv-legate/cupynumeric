@@ -178,6 +178,8 @@ jobs:
 
   push_code:
     name: Nightly source release
+    # Temporarily suspend mirroring to the public repository.
+    if: ${{ false }}
     uses:
       nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@v1.50
     with:
