@@ -64,10 +64,16 @@
 //
 //   Each round runs:
 //     1) linearize_offsets_kernel — convert this round's chunk
-//        of Point<DIM> requests (per peer) into uint64 flat offsets,
-//        written into round_send_offsets at strided peer slots.
-//     2) ncclGroupStart/End — pairwise send/recv of the offsets,
-//        requester → owner. Result lands in round_recv_offsets.
+//        of Point<DIM> requests (per peer) into flat offsets,
+//        written into round_send_offsets at strided peer slots. The offset
+//        element type (OffsetT) is uint32 when every rank's partition volume
+//        fits in 32 bits (so the max offset fits in uint32), else uint64.
+//        The choice is derived identically on all ranks from the AllGathered
+//        partition rects (see compute_max_partition_volume), so no extra
+//        coordination traffic is needed.
+//     2) ncclGroupStart/End — pairwise send/recv of the offsets (ncclUint32
+//        or ncclUint64 to match OffsetT), requester → owner. Result lands in
+//        round_recv_offsets.
 //     3) pack_data_by_offset_kernel — read source data into
 //        send_staging.
 //     4) ncclGroupStart/End — pairwise send/recv of the data, in the
@@ -96,6 +102,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <limits>
 #include <numeric>
 #include <type_traits>
 #include <vector>
@@ -298,14 +305,13 @@ template <int DIM_input>
 [[nodiscard]] Buffer<LinearizedRectInfo<DIM_input>> build_linearized_rect_infos(
   const Buffer<int8_t>& source_rects, size_t num_ranks, cudaStream_t stream)
 {
-  std::vector<legate::Rect<DIM_input>> h_rects(num_ranks);
   std::vector<LinearizedRectInfo<DIM_input>> h_rect_infos(num_ranks);
-  const size_t rect_bytes = num_ranks * sizeof(legate::Rect<DIM_input>);
   const size_t info_bytes = num_ranks * sizeof(LinearizedRectInfo<DIM_input>);
 
-  CUPYNUMERIC_CHECK_CUDA(cudaMemcpyAsync(
-    h_rects.data(), source_rects.ptr(0), rect_bytes, cudaMemcpyDeviceToHost, stream));
-  CUPYNUMERIC_CHECK_CUDA(cudaStreamSynchronize(stream));
+  // `source_rects` is Z_COPY memory (pinned host, mapped to the GPU) and the
+  // producing AllGather already synchronized the stream, so it is directly
+  // host-readable here without a D2H copy.
+  const auto* h_rects = reinterpret_cast<const legate::Rect<DIM_input>*>(source_rects.ptr(0));
 
   for (size_t idx = 0; idx < num_ranks; ++idx) {
     h_rect_infos[idx].lo = h_rects[idx].lo;
@@ -319,6 +325,45 @@ template <int DIM_input>
     d_rect_infos.ptr(0), h_rect_infos.data(), info_bytes, cudaMemcpyHostToDevice, stream));
 
   return d_rect_infos;
+}
+
+// Whether the Step-3 offsets can be exchanged as uint32 instead of uint64.
+// Offsets are flat positions inside the owning rank's partition rect, so the
+// max offset any rank ever sends is `max_partition_volume - 1`; they fit in
+// uint32 iff that value is <= UINT32_MAX. Every rank sees the same AllGathered
+// `source_rects`, so this decision is identical on all ranks and needs no
+// extra coordination.
+template <int DIM_partition>
+[[nodiscard]] bool partition_offsets_fit_uint32(const Buffer<int8_t>& source_rects,
+                                                size_t num_ranks)
+{
+  // `source_rects` is Z_COPY memory (pinned host, mapped to the GPU) and the
+  // producing AllGather already synchronized the stream, so it is directly
+  // host-readable here without a D2H copy.
+  const auto* rects = reinterpret_cast<const legate::Rect<DIM_partition>*>(source_rects.ptr(0));
+
+  const uint64_t max_volume = std::transform_reduce(
+    rects,
+    rects + num_ranks,
+    uint64_t{0},
+    [](uint64_t a, uint64_t b) { return std::max(a, b); },
+    [](const legate::Rect<DIM_partition>& r) { return static_cast<uint64_t>(r.volume()); });
+  return max_volume == 0 ||
+         max_volume - 1 <= static_cast<uint64_t>(std::numeric_limits<uint32_t>::max());
+}
+
+// Maps the C++ offset element type used for the Step-3 exchange to the
+// matching NCCL datatype. Only uint32_t / uint64_t are instantiated.
+template <typename OffsetT>
+[[nodiscard]] constexpr ncclDataType_t nccl_offset_type()
+{
+  static_assert(std::is_same_v<OffsetT, uint32_t> || std::is_same_v<OffsetT, uint64_t>,
+                "all2all offset exchange only supports uint32_t or uint64_t");
+  if constexpr (std::is_same_v<OffsetT, uint32_t>) {
+    return ncclUint32;
+  } else {
+    return ncclUint64;
+  }
 }
 
 inline void compute_histogram(const int* samples,
@@ -789,13 +834,13 @@ inline void gather_round_request_positions(const uint64_t* request_positions_pee
 // Thread `idx` reads `request_positions[idx]` directly; the binary search
 // over `round_send_prefix` recovers the peer only to pick `rect_infos[peer]`
 // for the Point<DIM> -> flat-offset conversion.
-template <typename PointLoader, int DIM_input>
+template <typename PointLoader, int DIM_input, typename OffsetT>
 __global__ void linearize_offsets_kernel(PointLoader loader,
                                          const uint64_t* request_positions,
                                          const unsigned long long* round_send_prefix,
                                          int num_ranks,
                                          const LinearizedRectInfo<DIM_input>* rect_infos,
-                                         uint64_t* round_send_offsets,
+                                         OffsetT* round_send_offsets,
                                          size_t total_round_send)
 {
   const size_t idx = global_tid_1d();
@@ -809,10 +854,12 @@ __global__ void linearize_offsets_kernel(PointLoader loader,
   const legate::Point<DIM_input> point           = loader(request_positions[idx]);
   const LinearizedRectInfo<DIM_input>& rect_info = rect_infos[peer];
 
-  round_send_offsets[idx] = rect_info.linearize(point);
+  // Safe narrowing: the caller only selects OffsetT == uint32_t when every
+  // partition volume was verified to fit in 32 bits.
+  round_send_offsets[idx] = static_cast<OffsetT>(rect_info.linearize(point));
 }
 
-template <int DIM_input, typename IndexLoaderProvider>
+template <int DIM_input, typename OffsetT, typename IndexLoaderProvider>
 inline void linearize_and_exchange_offsets(TaskContext& context,
                                            const IndexLoaderProvider& index,
                                            const uint64_t* round_request_positions,
@@ -821,8 +868,8 @@ inline void linearize_and_exchange_offsets(TaskContext& context,
                                            const unsigned long long* round_send_prefix,
                                            const unsigned long long* round_recv_prefix,
                                            const LinearizedRectInfo<DIM_input>* rect_infos,
-                                           uint64_t* round_send_offsets,
-                                           uint64_t* round_recv_offsets,
+                                           OffsetT* round_send_offsets,
+                                           OffsetT* round_recv_offsets,
                                            unsigned long long total_round_send,
                                            int num_ranks,
                                            ncclComm_t* nccl_comm,
@@ -834,7 +881,7 @@ inline void linearize_and_exchange_offsets(TaskContext& context,
 
     if (index.is_dense()) {
       const auto loader = index.make_dense_loader();
-      linearize_offsets_kernel<decltype(loader), DIM_input>
+      linearize_offsets_kernel<decltype(loader), DIM_input, OffsetT>
         <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(loader,
                                                    round_request_positions,
                                                    round_send_prefix,
@@ -844,7 +891,7 @@ inline void linearize_and_exchange_offsets(TaskContext& context,
                                                    static_cast<size_t>(total_round_send));
     } else {
       const auto loader = index.make_sparse_loader();
-      linearize_offsets_kernel<decltype(loader), DIM_input>
+      linearize_offsets_kernel<decltype(loader), DIM_input, OffsetT>
         <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(loader,
                                                    round_request_positions,
                                                    round_send_prefix,
@@ -855,18 +902,28 @@ inline void linearize_and_exchange_offsets(TaskContext& context,
     }
   }
 
+  const ncclDataType_t offset_dtype = nccl_offset_type<OffsetT>();
+
   context.concurrent_task_barrier();
   CHECK_NCCL(ncclGroupStart());
   for (int i = 0; i < num_ranks; ++i) {
     const size_t send_count = round_send_counts[i];
     const size_t recv_count = round_recv_counts[i];
     if (send_count > 0) {
-      CHECK_NCCL(ncclSend(
-        round_send_offsets + round_send_prefix[i], send_count, ncclUint64, i, *nccl_comm, stream));
+      CHECK_NCCL(ncclSend(round_send_offsets + round_send_prefix[i],
+                          send_count,
+                          offset_dtype,
+                          i,
+                          *nccl_comm,
+                          stream));
     }
     if (recv_count > 0) {
-      CHECK_NCCL(ncclRecv(
-        round_recv_offsets + round_recv_prefix[i], recv_count, ncclUint64, i, *nccl_comm, stream));
+      CHECK_NCCL(ncclRecv(round_recv_offsets + round_recv_prefix[i],
+                          recv_count,
+                          offset_dtype,
+                          i,
+                          *nccl_comm,
+                          stream));
     }
   }
   CHECK_NCCL(ncclGroupEnd());
@@ -906,11 +963,11 @@ inline void linearize_and_exchange_offsets(TaskContext& context,
 // side, permutation = round_request_positions). Identical in shape to
 // main's `gather_data_by_offset_kernel` because the chunked algorithm now
 // hands each round a permutation array sized 1:1 with the staging buffer.
-template <typename DataType, int DIM>
+template <typename DataType, int DIM, typename PermT>
 __global__ void pack_data_by_offset_kernel(AccessorRO<DataType, DIM> src_acc,
                                            Pitches<DIM - 1> src_pitches,
                                            legate::Point<DIM> src_lo,
-                                           const uint64_t* permutation,
+                                           const PermT* permutation,
                                            size_t count,
                                            DataType* out)
 {
@@ -925,9 +982,9 @@ __global__ void pack_data_by_offset_kernel(AccessorRO<DataType, DIM> src_acc,
   out[idx] = src_acc[p];
 }
 
-// `static` to avoid ODR collisions across TUs that include this header.
-static __global__ void pack_data_by_offset_kernel_dense(
-  const char* src_ptr, const uint64_t* permutation, size_t count, size_t elem_size, char* out)
+template <typename PermT>
+__global__ void pack_data_by_offset_kernel_dense(
+  const char* src_ptr, const PermT* permutation, size_t count, size_t elem_size, char* out)
 {
   const size_t idx = global_tid_1d();
 
@@ -935,12 +992,13 @@ static __global__ void pack_data_by_offset_kernel_dense(
     return;
   }
 
-  copy_elements(out + idx * elem_size, src_ptr + permutation[idx] * elem_size, elem_size);
+  copy_elements(
+    out + idx * elem_size, src_ptr + static_cast<size_t>(permutation[idx]) * elem_size, elem_size);
 }
 
-template <Type::Code CODE, int DIM>
+template <Type::Code CODE, int DIM, typename PermT>
 inline void pack_values_into_buffer(const StoreView<AccessMode::Read, type_of<CODE>, DIM>& source,
-                                    const uint64_t* permutation,
+                                    const PermT* permutation,
                                     size_t count,
                                     size_t elem_size,
                                     int8_t* out_buf,
@@ -955,14 +1013,14 @@ inline void pack_values_into_buffer(const StoreView<AccessMode::Read, type_of<CO
   const size_t blocks = (count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
   if (source.is_dense()) {
-    pack_data_by_offset_kernel_dense<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-      reinterpret_cast<const char*>(source.dense_ptr),
-      permutation,
-      count,
-      elem_size,
-      reinterpret_cast<char*>(out_buf));
+    pack_data_by_offset_kernel_dense<PermT>
+      <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(reinterpret_cast<const char*>(source.dense_ptr),
+                                                 permutation,
+                                                 count,
+                                                 elem_size,
+                                                 reinterpret_cast<char*>(out_buf));
   } else {
-    pack_data_by_offset_kernel<VAL, DIM><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+    pack_data_by_offset_kernel<VAL, DIM, PermT><<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
       source.acc, source.pitches, source.lo, permutation, count, reinterpret_cast<VAL*>(out_buf));
   }
 }
@@ -1052,11 +1110,11 @@ inline void exchange_values_requester_to_owner(TaskContext& context,
 // and scatter (owner side, request_indices = round_recv_offsets). Identical
 // in shape to main's `unpack_recv_data_kernel` thanks to the round-layout
 // permutations being 1:1 with the receive buffer.
-template <typename DataType, int DIM_output>
+template <typename DataType, int DIM_output, typename PermT>
 __global__ void unpack_recv_data_kernel(AccessorRW<DataType, DIM_output> output_acc,
                                         Pitches<DIM_output - 1> output_pitches,
                                         legate::Point<DIM_output> output_lo,
-                                        const uint64_t* request_indices,
+                                        const PermT* request_indices,
                                         size_t count,
                                         const DataType* recv_data)
 {
@@ -1071,12 +1129,12 @@ __global__ void unpack_recv_data_kernel(AccessorRW<DataType, DIM_output> output_
   output_acc[p] = recv_data[idx];
 }
 
-// `static` to avoid ODR collisions across TUs that include this header.
-static __global__ void unpack_recv_data_kernel_dense(char* __restrict__ output_ptr,
-                                                     const uint64_t* request_indices,
-                                                     size_t count,
-                                                     size_t elem_size,
-                                                     const char* recv_data)
+template <typename PermT>
+__global__ void unpack_recv_data_kernel_dense(char* __restrict__ output_ptr,
+                                              const PermT* request_indices,
+                                              size_t count,
+                                              size_t elem_size,
+                                              const char* recv_data)
 {
   const size_t idx = global_tid_1d();
 
@@ -1084,14 +1142,15 @@ static __global__ void unpack_recv_data_kernel_dense(char* __restrict__ output_p
     return;
   }
 
-  copy_elements(
-    output_ptr + request_indices[idx] * elem_size, recv_data + idx * elem_size, elem_size);
+  copy_elements(output_ptr + static_cast<size_t>(request_indices[idx]) * elem_size,
+                recv_data + idx * elem_size,
+                elem_size);
 }
 
-template <Type::Code CODE, int DIM_output>
+template <Type::Code CODE, int DIM_output, typename PermT>
 inline void unpack_recv_into_output(
   const StoreView<AccessMode::Write, type_of<CODE>, DIM_output>& output,
-  const uint64_t* request_indices,
+  const PermT* request_indices,
   size_t count,
   size_t elem_size,
   const int8_t* recv_data,
@@ -1106,14 +1165,14 @@ inline void unpack_recv_into_output(
   const size_t blocks = (count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
   if (output.is_dense()) {
-    unpack_recv_data_kernel_dense<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-      reinterpret_cast<char*>(output.dense_ptr),
-      request_indices,
-      count,
-      elem_size,
-      reinterpret_cast<const char*>(recv_data));
+    unpack_recv_data_kernel_dense<PermT>
+      <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(reinterpret_cast<char*>(output.dense_ptr),
+                                                 request_indices,
+                                                 count,
+                                                 elem_size,
+                                                 reinterpret_cast<const char*>(recv_data));
   } else {
-    unpack_recv_data_kernel<VAL, DIM_output>
+    unpack_recv_data_kernel<VAL, DIM_output, PermT>
       <<<blocks, THREADS_PER_BLOCK, 0, stream>>>(output.acc,
                                                  output.pitches,
                                                  output.lo,
@@ -1334,6 +1393,7 @@ template <Type::Code CODE,
           int PACK_DIM,
           int UNPACK_DIM,
           bool IS_GATHER,
+          typename OffsetT,
           typename IndexLoaderProvider>
 void local_gather_and_exchange(
   TaskContext& context,
@@ -1366,8 +1426,8 @@ void local_gather_and_exchange(
   // same `num_ranks * max_elems_per_peer` total.
   const size_t total_slots         = static_cast<size_t>(num_ranks) * max_elems_per_peer;
   auto round_request_positions_buf = create_buffer<uint64_t>(total_slots, Memory::Kind::GPU_FB_MEM);
-  auto round_send_offsets          = create_buffer<uint64_t>(total_slots, Memory::Kind::GPU_FB_MEM);
-  auto round_recv_offsets          = create_buffer<uint64_t>(total_slots, Memory::Kind::GPU_FB_MEM);
+  auto round_send_offsets          = create_buffer<OffsetT>(total_slots, Memory::Kind::GPU_FB_MEM);
+  auto round_recv_offsets          = create_buffer<OffsetT>(total_slots, Memory::Kind::GPU_FB_MEM);
   auto send_staging = create_buffer<int8_t>(total_slots * elem_size, Memory::Kind::GPU_FB_MEM);
   auto recv_staging = create_buffer<int8_t>(total_slots * elem_size, Memory::Kind::GPU_FB_MEM);
 
@@ -1395,20 +1455,20 @@ void local_gather_and_exchange(
                                    stream);
     const uint64_t* round_request_positions = round_request_positions_buf.ptr(0);
 
-    linearize_and_exchange_offsets<DIM_input>(context,
-                                              index,
-                                              round_request_positions,
-                                              round_send_counts,
-                                              round_recv_counts,
-                                              round_send_prefix,
-                                              round_recv_prefix,
-                                              rect_infos,
-                                              round_send_offsets.ptr(0),
-                                              round_recv_offsets.ptr(0),
-                                              total_round_send,
-                                              num_ranks,
-                                              nccl_comm,
-                                              stream);
+    linearize_and_exchange_offsets<DIM_input, OffsetT>(context,
+                                                       index,
+                                                       round_request_positions,
+                                                       round_send_counts,
+                                                       round_recv_counts,
+                                                       round_send_prefix,
+                                                       round_recv_prefix,
+                                                       rect_infos,
+                                                       round_send_offsets.ptr(0),
+                                                       round_recv_offsets.ptr(0),
+                                                       total_round_send,
+                                                       num_ranks,
+                                                       nccl_comm,
+                                                       stream);
 
     // Pack permutation is 1:1 with the staging buffer thanks to the
     // round-contiguous request_positions and round-local round_recv_offsets.

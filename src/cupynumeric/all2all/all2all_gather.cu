@@ -124,17 +124,37 @@ void global_all2all_gather_impl(TaskContext& context,
                          request_positions.ptr(0),
                          stream);
 
-  local_gather_and_exchange<CODE, DIM_input, DIM_input, DIM_output, /*IS_GATHER=*/true>(
-    context,
-    index_provider,
-    request_positions.ptr(0),
-    plan,
-    partition_rect_infos.ptr(0),
-    input_view,
-    output_view,
-    sizeof(VAL),
-    nccl_comm,
-    stream);
+  // The Step-3 offsets are flat positions inside the owner's partition rect,
+  // so they fit in uint32 when every partition volume does. Every rank derives
+  // the same decision from the AllGathered rects (no extra coordination).
+  const bool use_uint32_offsets =
+    partition_offsets_fit_uint32<DIM_input>(partition_rects, num_ranks);
+
+  if (use_uint32_offsets) {
+    local_gather_and_exchange<CODE, DIM_input, DIM_input, DIM_output, /*IS_GATHER=*/true, uint32_t>(
+      context,
+      index_provider,
+      request_positions.ptr(0),
+      plan,
+      partition_rect_infos.ptr(0),
+      input_view,
+      output_view,
+      sizeof(VAL),
+      nccl_comm,
+      stream);
+  } else {
+    local_gather_and_exchange<CODE, DIM_input, DIM_input, DIM_output, /*IS_GATHER=*/true, uint64_t>(
+      context,
+      index_provider,
+      request_positions.ptr(0),
+      plan,
+      partition_rect_infos.ptr(0),
+      input_view,
+      output_view,
+      sizeof(VAL),
+      nccl_comm,
+      stream);
+  }
 }
 
 // ============================================================================

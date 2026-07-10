@@ -127,17 +127,45 @@ void global_all2all_scatter_impl(TaskContext& context,
                          request_positions.ptr(0),
                          stream);
 
-  local_gather_and_exchange<CODE, DIM_partition, DIM_local, DIM_partition, /*IS_GATHER=*/false>(
-    context,
-    index_provider,
-    request_positions.ptr(0),
-    plan,
-    partition_rect_infos.ptr(0),
-    source_view,
-    output_view,
-    sizeof(VAL),
-    nccl_comm,
-    stream);
+  // The Step-3 offsets are flat positions inside the owner's partition rect,
+  // so they fit in uint32 when every partition volume does. Every rank derives
+  // the same decision from the AllGathered rects (no extra coordination).
+  const bool use_uint32_offsets =
+    partition_offsets_fit_uint32<DIM_partition>(partition_rects, num_ranks);
+
+  if (use_uint32_offsets) {
+    local_gather_and_exchange<CODE,
+                              DIM_partition,
+                              DIM_local,
+                              DIM_partition,
+                              /*IS_GATHER=*/false,
+                              uint32_t>(context,
+                                        index_provider,
+                                        request_positions.ptr(0),
+                                        plan,
+                                        partition_rect_infos.ptr(0),
+                                        source_view,
+                                        output_view,
+                                        sizeof(VAL),
+                                        nccl_comm,
+                                        stream);
+  } else {
+    local_gather_and_exchange<CODE,
+                              DIM_partition,
+                              DIM_local,
+                              DIM_partition,
+                              /*IS_GATHER=*/false,
+                              uint64_t>(context,
+                                        index_provider,
+                                        request_positions.ptr(0),
+                                        plan,
+                                        partition_rect_infos.ptr(0),
+                                        source_view,
+                                        output_view,
+                                        sizeof(VAL),
+                                        nccl_comm,
+                                        stream);
+  }
 }
 
 // ============================================================================
