@@ -90,6 +90,15 @@ class Test_is_scalar_key:
         assert not m.is_scalar_key(key, 2)
 
 
+class Test_is_slice_assignment_key:
+    """
+    Check that a key without ellipsis must match the array dimension length.
+    """
+
+    def test_wrong_length_without_ellipsis(self) -> None:
+        assert not m.is_slice_assignment_key((0, slice(None), 1), 2)
+
+
 # ========================================================================
 # Tests for individual Checkup subclasses
 # ========================================================================
@@ -111,6 +120,13 @@ info2 = m.Diagnostic(
     description="desc2",
     reference="ref2",
 )
+
+
+class TestCheckup:
+    def test_locate_no_user_frame(self, monkeypatch) -> None:
+        monkeypatch.setattr(m, "find_last_user_frame", lambda: None)
+
+        assert MockCheckup().locate() is None
 
 
 class TestRepeatedItemOps:
@@ -192,6 +208,12 @@ class TestRepeatedSliceAccessCheck:
         for _ in range(checkup.SLICE_ASSIGN_THRESHOLD + 1):
             info = checkup.run(func, (_Ndim(3), (0, ...)), {})
         assert info is not None
+
+    def test_run_locator_none(self, monkeypatch) -> None:
+        checkup = m.RepeatedSliceAccessCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+        info = checkup.run("__getitem__", (_Ndim(2), (0, slice(None))), {})
+        assert info is None
 
 
 class TestArrayGatherCheck:
@@ -313,6 +335,37 @@ class TestBuiltinReductionCheck:
         ok_func()
         assert len(checkup._locators) == 0
 
+    def test_malformed_source_line_returns_empty(self, tmp_path) -> None:
+        source_file = tmp_path / "example.py"
+        source_file.write_text("result = min(\n    values\n)\n")
+        source = m.lookup_source(str(source_file), 1)
+
+        assert source == "result = min("
+        assert (
+            m.BuiltinReductionCheck._builtins_in_source_line(source) == set()
+        )
+
+    def test_builtin_names_none_frame(self) -> None:
+        checkup = m.BuiltinReductionCheck()
+        assert checkup._builtin_names_in_frame(None) == set()
+
+    def test_run_locator_none(self, monkeypatch) -> None:
+        checkup = m.BuiltinReductionCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+        assert checkup.run("__iter__", (), {}) is None
+
+    def test_deduplicates_repeated_builtin_call_at_same_location(
+        self, monkeypatch
+    ) -> None:
+        checkup = m.BuiltinReductionCheck()
+        fixed = m.CheckupLocator(__file__, 1, "tb")
+        monkeypatch.setattr(checkup, "locate", lambda: fixed)
+
+        monkeypatch.setattr(m, "lookup_source", lambda *_: "result = min(a)")
+
+        assert checkup.run("__iter__", (), {}) is not None
+        assert checkup.run("__iter__", (), {}) is None
+
 
 # ========================================================================
 # Tests for ALL_CHECKS, Doctor, and module-level state
@@ -430,6 +483,42 @@ class TestIterCheck:
         checkup = m.IterCheck()
         assert "__iter__" in checkup.description
         assert checkup.reference is not None
+
+
+class TestMpi4pyCheck:
+    def test_ignores_process_without_mpi4py(self, monkeypatch) -> None:
+        monkeypatch.delitem(sys.modules, "mpi4py", raising=False)
+        monkeypatch.delitem(sys.modules, "mpi4py.MPI", raising=False)
+
+        checkup = m.Mpi4pyCheck()
+
+        assert checkup.run("take", (), {}) is None
+        assert not checkup._reported
+
+    def test_ignores_mpi4py_when_user_frame_is_unavailable(
+        self, monkeypatch
+    ) -> None:
+        # All checkups drop diagnostics when there is no actionable user frame.
+        monkeypatch.setitem(sys.modules, "mpi4py", object())
+        checkup = m.Mpi4pyCheck()
+        monkeypatch.setattr(checkup, "locate", lambda: None)
+
+        assert checkup.run("take", (), {}) is None
+        assert not checkup._reported
+
+    def test_reports_once_when_mpi4py_is_imported(self, monkeypatch) -> None:
+        # Model an already-imported mpi4py module without requiring mpi4py
+        # to be installed in the test environment.
+        monkeypatch.setitem(sys.modules, "mpi4py", object())
+        checkup = m.Mpi4pyCheck()
+        fixed = m.CheckupLocator(__file__, 1, "tb")
+        monkeypatch.setattr(checkup, "locate", lambda: fixed)
+
+        info = checkup.run("take", (), {})
+
+        assert info is not None
+        assert "mpi4py is imported" in info.description
+        assert checkup.run("take", (), {}) is None
 
 
 def test_ALL_CHECKS() -> None:
