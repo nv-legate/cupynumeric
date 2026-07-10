@@ -90,10 +90,12 @@ def _fixup_version() -> str:
 
     if hasattr(_version, "get_versions"):
         return str(_version.get_versions()["version"])  # type: ignore [no-untyped-call]
-    if hasattr(_version, "__version__"):
+    if hasattr(_version, "__version__"):  # pragma: no cover - build fallback
         return str(_version.__version__)
 
-    raise RuntimeError("Failed to determine version")
+    raise RuntimeError(  # pragma: no cover - corrupted version metadata
+        "Failed to determine version"
+    )
 
 
 __version__ = _fixup_version()
