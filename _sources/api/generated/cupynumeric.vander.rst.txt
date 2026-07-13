@@ -1,0 +1,6 @@
+﻿cupynumeric.vander
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: vander
