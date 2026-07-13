@@ -14,8 +14,9 @@
 #
 
 import pytest
-from mock import MagicMock
 from pytest_mock import MockerFixture
+from unittest.mock import MagicMock
+
 
 try:
     from unit.util import powerset

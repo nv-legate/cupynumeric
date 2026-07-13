@@ -14,9 +14,10 @@
 #
 
 import pytest
-from mock import patch
 
 import cupynumeric.random._bitgenerator as m  # module under test
+
+from unittest.mock import patch
 from cupynumeric.config import BitGeneratorType
 
 
