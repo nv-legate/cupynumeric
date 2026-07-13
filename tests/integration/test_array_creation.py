@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import copy
+import importlib
 from itertools import product
 
 import numpy as np
@@ -22,6 +23,8 @@ import cupynumeric as num
 from cupynumeric.runtime import Runtime, runtime
 from cupynumeric.settings import settings
 from legate.core import get_legate_runtime, types as ty
+
+runtime_module = importlib.import_module("cupynumeric.runtime")
 
 
 def test_array():
@@ -349,6 +352,112 @@ class TestRuntimeInit:
             _ = Runtime()
         finally:
             settings.preload_cudalibs = saved_preload  # type: ignore[assignment]
+
+
+class FakeRuntimeTask:
+    def __init__(self) -> None:
+        self.scalar_args: list[tuple[object, object]] = []
+        self.executed = False
+
+    def add_scalar_arg(self, value: object, dtype: object) -> None:
+        self.scalar_args.append((value, dtype))
+
+    def execute(self) -> None:
+        self.executed = True
+
+
+class FakeLegateRuntime:
+    def __init__(self) -> None:
+        self.machine = (object(), object())
+        self.fence_count = 0
+        self.tasks: list[FakeRuntimeTask] = []
+        self.task_specs: list[tuple[object, object, object]] = []
+
+    def issue_execution_fence(self) -> None:
+        self.fence_count += 1
+
+    def create_manual_task(
+        self, library: object, opcode: object, launch_domain: object
+    ) -> FakeRuntimeTask:
+        task = FakeRuntimeTask()
+        self.tasks.append(task)
+        self.task_specs.append((library, opcode, launch_domain))
+        return task
+
+
+class TestRuntimeLifecycle:
+    def test_destroy_marks_runtime_destroyed(self) -> None:
+        runtime_instance = Runtime.__new__(Runtime)
+        runtime_instance.destroyed = False
+
+        Runtime.destroy(runtime_instance)
+
+        assert runtime_instance.destroyed is True
+
+    def test_destroy_rejects_double_destroy(self) -> None:
+        runtime_instance = Runtime.__new__(Runtime)
+        runtime_instance.destroyed = True
+
+        with pytest.raises(AssertionError):
+            Runtime.destroy(runtime_instance)
+
+    def test_shutdown_callback_calls_runtime_destroy(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeRuntime:
+            def __init__(self) -> None:
+                self.destroyed = False
+
+            def destroy(self) -> None:
+                self.destroyed = True
+
+        fake_runtime = FakeRuntime()
+        monkeypatch.setattr(runtime_module, "runtime", fake_runtime)
+
+        runtime_module._shutdown_callback()
+
+        assert fake_runtime.destroyed is True
+
+
+class TestRuntimeBitGeneratorDestroy:
+    def test_explicit_destroy_schedules_task(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_legate_runtime = FakeLegateRuntime()
+        runtime_instance = Runtime.__new__(Runtime)
+        runtime_instance.library = object()
+        runtime_instance.current_random_bitgen_zombies = (7, 11)
+        generator_id = 23
+        monkeypatch.setattr(
+            runtime_module, "legate_runtime", fake_legate_runtime
+        )
+
+        Runtime.bitgenerator_destroy(
+            runtime_instance, generator_id, disposing=False
+        )
+
+        assert fake_legate_runtime.fence_count == 1
+        assert len(fake_legate_runtime.tasks) == 1
+        assert fake_legate_runtime.task_specs == [
+            (
+                runtime_instance.library,
+                runtime_module.CuPyNumericOpCode.BITGENERATOR,
+                (len(fake_legate_runtime.machine),),
+            )
+        ]
+        task = fake_legate_runtime.tasks[0]
+        # The BITGENERATOR destroy task receives operation, generator id,
+        # generator type, seed, flags, then pending zombie generator ids.
+        assert task.scalar_args[:5] == [
+            (runtime_module.BitGeneratorOperation.DESTROY, ty.int32),
+            (generator_id, ty.int32),
+            (0, ty.uint32),
+            (0, ty.uint64),
+            (0, ty.uint32),
+        ]
+        assert task.scalar_args[5] == ((7, 11), (ty.uint32,))
+        assert runtime_instance.current_random_bitgen_zombies == ()
+        assert task.executed is True
 
 
 def test_repeat_warn_not_warn() -> None:
