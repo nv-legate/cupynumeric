@@ -185,6 +185,7 @@ def test_CuPyNumericOpCode() -> None:
         "UNIQUE_REDUCE",
         "UNLOAD_CUDALIBS",
         "UNPACKBITS",
+        "VANDER",
         "WHERE",
         "WINDOW",
         "WRAP",

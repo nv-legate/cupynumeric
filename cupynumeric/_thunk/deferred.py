@@ -3387,6 +3387,27 @@ class DeferredArray:
 
         task.execute()
 
+    def vander(self, rhs: DeferredArray, N: int, increasing: bool) -> None:
+        lhs = self.base
+        assert lhs.ndim == 2
+        # Promote the 1-D input vector (M,) to (M, N) with a broadcast column
+        # axis so that element (i, j) reads back x[i]. This lets Legate
+        # auto-partition the (M, N) output and align the input against it.
+        rhs_store = rhs.base.promote(1, N)
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.VANDER
+        )
+
+        p_lhs = task.add_output(lhs)
+        p_rhs = task.add_input(rhs_store)
+        task.add_scalar_arg(increasing, ty.bool_)
+        task.add_scalar_arg(N, ty.int64)
+
+        task.add_constraint(align(p_lhs, p_rhs))
+
+        task.execute()
+
     # Repeat elements of an array.
     def repeat(
         self, repeats: Any, axis: int, scalar_repeats: bool

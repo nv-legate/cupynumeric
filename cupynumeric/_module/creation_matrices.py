@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from .._array.array import ndarray
 from .._array.util import add_boilerplate
 from .creation_shape import empty, ones
@@ -251,3 +253,60 @@ def diagflat(v: ndarray, k: int = 0) -> ndarray:
     """
     # Flatten the input array and use diag to create the output
     return diag(v.ravel(), k=k)
+
+
+@add_boilerplate("x")
+def vander(
+    x: ndarray, N: int | None = None, increasing: bool = False
+) -> ndarray:
+    """
+    Generate a Vandermonde matrix.
+
+    The columns of the output matrix are powers of the input vector. The order
+    of the powers is determined by the `increasing` boolean argument.
+    Specifically, when `increasing` is False, the `i`-th output column is the
+    input vector raised element-wise to the power of ``N - i - 1``. Such a
+    matrix with a geometric progression in each row is named for Alexandre-
+    Theophile Vandermonde.
+
+    Parameters
+    ----------
+    x : array_like
+        1-D input array.
+    N : int, optional
+        Number of columns in the output. If `N` is not specified, a square
+        array is returned (``N = len(x)``).
+    increasing : bool, optional
+        Order of the powers of the columns. If True, the powers increase from
+        left to right, if False (the default) they are reversed.
+
+    Returns
+    -------
+    out : ndarray
+        Vandermonde matrix. If `increasing` is False, the first column is
+        ``x^(N-1)``, the second ``x^(N-2)`` and so forth. If `increasing` is
+        True, the columns are ``x^0, x^1, ..., x^(N-1)``.
+
+    See Also
+    --------
+    numpy.vander
+
+    Availability
+    --------
+    Multiple GPUs, Multiple CPUs
+    """
+    if x.ndim != 1:
+        raise ValueError("x must be a one-dimensional array or sequence.")
+    if N is None:
+        N = len(x)
+    if N < 0:
+        raise ValueError("Number of columns must be non-negative.")
+
+    result_dtype = np.promote_types(x.dtype, int)
+    # Cast up-front so the C++ task sees matching input/output value types.
+    x = x.astype(result_dtype, copy=False)
+
+    result = ndarray._from_inputs((len(x), N), dtype=result_dtype)
+    if result.size != 0:
+        result._thunk.vander(x._thunk, N, increasing)
+    return result

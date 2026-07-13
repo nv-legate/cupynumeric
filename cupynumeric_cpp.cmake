@@ -167,6 +167,7 @@ target_sources(cupynumeric PRIVATE
   src/cupynumeric/matrix/trilu.cc
   src/cupynumeric/matrix/trsm.cc
   src/cupynumeric/matrix/util.cc
+  src/cupynumeric/matrix/vander.cc
   src/cupynumeric/random/bitgenerator.cc
   src/cupynumeric/random/randutil/generator_host.cc
   src/cupynumeric/random/randutil/generator_host_straightforward.cc
@@ -244,6 +245,7 @@ if(Legion_USE_OpenMP)
     src/cupynumeric/matrix/transpose_omp.cc
     src/cupynumeric/matrix/trilu_omp.cc
     src/cupynumeric/matrix/trsm_omp.cc
+    src/cupynumeric/matrix/vander_omp.cc
     src/cupynumeric/random/rand_omp.cc
     src/cupynumeric/search/argwhere_omp.cc
     src/cupynumeric/search/nonzero_omp.cc
@@ -311,6 +313,7 @@ if(Legion_USE_CUDA)
     src/cupynumeric/matrix/transpose.cu
     src/cupynumeric/matrix/trilu.cu
     src/cupynumeric/matrix/trsm.cu
+    src/cupynumeric/matrix/vander.cu
     src/cupynumeric/random/rand.cu
     src/cupynumeric/search/argwhere.cu
     src/cupynumeric/search/nonzero.cu
