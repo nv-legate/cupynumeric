@@ -817,19 +817,28 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
           // Per-rank FBMEM terms include local request buffers, small metadata,
           // CUB temp, three round-offset buffers, and two staging buffers.
 
+          // The runtime allocates one element for each request buffer even
+          // when this rank has no requests (see request_alloc_count in the
+          // gather/scatter GPU variants).
+          const auto request_alloc_count = std::max<std::size_t>(local_index_count, 1);
           const auto local_terms =
-            aligned_size(local_index_count * sizeof(std::uint64_t), DEFAULT_ALIGNMENT) +
-            aligned_size(local_index_count * sizeof(int), DEFAULT_ALIGNMENT);
+            aligned_size(request_alloc_count * sizeof(std::uint64_t), DEFAULT_ALIGNMENT) +
+            aligned_size(request_alloc_count * sizeof(int), DEFAULT_ALIGNMENT);
           const auto staging_per_buffer =
             aligned_size(std::max(max_staging_bytes, num_ranks * elem_size), DEFAULT_ALIGNMENT);
-          // `round_request_positions` and `round_{send,recv}_offsets` are
-          // laid out as `num_ranks * max_elems_per_peer` slots, so cap by
-          // `min(num_ranks * avg_per_rank_count, max_staging_bytes / elem_size)`.
-          const auto round_offset_buf_bound = aligned_size(
-            std::min<std::size_t>(num_ranks * avg_per_rank_count,
-                                  max_staging_bytes / std::max<std::size_t>(elem_size, 1)) *
-              sizeof(std::uint64_t),
-            DEFAULT_ALIGNMENT);
+          // Match compute_max_elems_per_peer: the runtime first divides the
+          // per-buffer staging budget across ranks, then allocates
+          // num_ranks * max_elems_per_peer slots in each round buffer.
+          const auto per_peer_byte_budget =
+            std::max<std::size_t>(elem_size, max_staging_bytes / num_ranks);
+          const auto max_elems_per_peer = per_peer_byte_budget / elem_size;
+          // The mapper does not know the post-exchange global_max. The global
+          // request volume is a safe upper bound for it; avg_per_rank_count
+          // is not safe when the request distribution is skewed.
+          const auto round_slots =
+            num_ranks * std::min(static_cast<std::size_t>(global_index), max_elems_per_peer);
+          const auto round_offset_buf_bound =
+            aligned_size(round_slots * sizeof(std::uint64_t), DEFAULT_ALIGNMENT);
           // Overestimate sizeof(LinearizedRectInfo<DIM>) using the
           // largest-DIM Point + Pitches representable.
           constexpr std::size_t rect_info_bytes_max =
@@ -850,7 +859,10 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
             }
             cub_it = cub_temp_cache.emplace(cub_key, queried).first;
           }
-          const auto cub_temp_budget = cub_it->second;
+          // `compute_histogram` creates an int8 DeferredBuffer with the
+          // default 16-byte alignment. Account for the padding required
+          // before the next aligned allocation in the pool.
+          const auto cub_temp_budget = aligned_size(cub_it->second, DEFAULT_ALIGNMENT);
           const auto small_terms =
             aligned_size(num_ranks * rect_info_bytes_max, DEFAULT_ALIGNMENT) + per_rank_u64 +
             cub_temp_budget;
