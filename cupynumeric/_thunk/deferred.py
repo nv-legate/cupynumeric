@@ -1887,8 +1887,7 @@ class DeferredArray:
                 index_array = index_array._convert_future_to_regionfield()
             if lhs.base.has_scalar_storage:
                 lhs = lhs._convert_future_to_regionfield()
-            nccl_scatter = settings.use_nccl_scatter() and runtime.num_gpus > 1
-            if lhs.base.transformed and not nccl_scatter:
+            if lhs.base.transformed:
                 lhs = lhs._copy_store(lhs.base)
             if lhs.base.has_scalar_storage:
                 lhs = lhs._convert_future_to_regionfield()

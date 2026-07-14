@@ -66,6 +66,7 @@ jobs:
           - { ARCH: 'amd64', CUDA_VER: '13.0.0', PY_VER: '3.11', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
           - { ARCH: 'amd64', CUDA_VER: '13.1.0', PY_VER: '3.12', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
           - { ARCH: 'amd64', CUDA_VER: '13.2.0', PY_VER: '3.13', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
+          - { ARCH: 'amd64', CUDA_VER: '13.2.0', PY_VER: '3.14', GPU: 'l4', LINUX_VER: 'ubuntu24.04' }
           "
 
           MATRIX="$(
