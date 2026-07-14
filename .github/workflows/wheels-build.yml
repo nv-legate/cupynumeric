@@ -57,7 +57,7 @@ jobs:
         id: compute-matrix
         env:
           CUDA12_VER: "12.9.1"
-          CUDA13_VER: "13.0.0"
+          CUDA13_VER: "13.0.3"
         run: |
           set -eo pipefail
 
@@ -74,6 +74,7 @@ jobs:
           - { ARCH: 'amd64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.11' }
           - { ARCH: 'amd64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.12' }
           - { ARCH: 'amd64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.13' }
+          - { ARCH: 'amd64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.14' }
           # arm64
           - { ARCH: 'arm64', CUDA_VER: '${CUDA12_VER}', PY_VER: '3.11' }
           - { ARCH: 'arm64', CUDA_VER: '${CUDA12_VER}', PY_VER: '3.12' }
@@ -82,6 +83,7 @@ jobs:
           - { ARCH: 'arm64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.11' }
           - { ARCH: 'arm64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.12' }
           - { ARCH: 'arm64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.13' }
+          - { ARCH: 'arm64', CUDA_VER: '${CUDA13_VER}', PY_VER: '3.14' }
           "
 
           MATRIX="$(
