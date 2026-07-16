@@ -70,8 +70,6 @@ If the user does not specify which type of processor to run on, legate will use
 dependency analysis and schedule the tasks. If there are fewer than five cores
 on the machine, try reducing the number of cores (``--cpus``) passed to legate.
 
-This warning is currently expected on MacOS.
-
 How to determine available memory?
 ----------------------------------
 
