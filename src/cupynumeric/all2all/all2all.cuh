@@ -657,6 +657,60 @@ static __global__ void pack_indices_by_rank_warp(const int* target_ranks,
   packed_positions[send_offsets_per_rank[r] + j] = static_cast<uint64_t>(idx);
 }
 
+// Block-aggregated variant of the peer-major pack (same output layout as
+// pack_indices_by_rank_warp). Instead of one global atomicAdd per warp-group,
+// each block does the fine-grained ordering in shared memory and hits the
+// global `next_slot[r]` counters just once per (block, rank).
+//
+// The caller only launches this kernel when that fits in the device's per-block
+// shared memory. otherwise it falls back to pack_indices_by_rank_warp.
+static __global__ void pack_indices_by_rank_block(const int* target_ranks,
+                                                  size_t count,
+                                                  unsigned long long* next_slot,
+                                                  const unsigned long long* send_offsets_per_rank,
+                                                  int num_ranks,
+                                                  uint64_t* packed_positions)
+{
+  extern __shared__ unsigned char pack_smem[];
+  auto* s_base  = reinterpret_cast<unsigned long long*>(pack_smem);
+  auto* s_count = reinterpret_cast<int*>(s_base + num_ranks);
+
+  for (int rank = threadIdx.x; rank < num_ranks; rank += blockDim.x) {
+    s_count[rank] = 0;
+  }
+  __syncthreads();
+
+  const size_t idx = global_tid_1d();
+  const int rank   = (idx < count) ? target_ranks[idx] : -1;
+
+  // Each matched thread claims a 0-based slot within its (block, rank)
+  // group via a cheap shared-memory atomic. Order within a peer is arbitrary,
+  // matching the warp variant (downstream only needs per-peer contiguity).
+  int local_pos = -1;
+
+  if (rank >= 0) {
+    local_pos = atomicAdd(&s_count[rank], 1);
+  }
+  __syncthreads();
+
+  // Reserve this block's whole run for each rank with a single global
+  // atomicAdd, recording the returned base.
+  for (int r = threadIdx.x; r < num_ranks; r += blockDim.x) {
+    const int c = s_count[r];
+
+    s_base[r] = (c > 0) ? atomicAdd(&next_slot[r], static_cast<unsigned long long>(c)) : 0ULL;
+  }
+  __syncthreads();
+
+  // Scatter into the peer-major slot.
+  if (rank >= 0) {
+    const unsigned long long slot =
+      send_offsets_per_rank[rank] + s_base[rank] + static_cast<unsigned long long>(local_pos);
+
+    packed_positions[slot] = static_cast<uint64_t>(idx);
+  }
+}
+
 // Classify requests, exchange counts, build ShuffleDescriptor.
 //
 // Step 2a..2d only: classify each local index point's target rank,
@@ -744,9 +798,30 @@ inline void pack_request_positions(const int* target_ranks,
     cudaMemsetAsync(next_slot.ptr(0), 0, num_ranks * sizeof(unsigned long long), stream));
 
   const size_t blocks = (local_index_count + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  const size_t pack_smem_bytes =
+    static_cast<size_t>(num_ranks) * (sizeof(unsigned long long) + sizeof(int));
 
-  pack_indices_by_rank_warp<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
-    target_ranks, local_index_count, next_slot.ptr(0), send_offsets_per_rank, request_positions);
+  const auto& properties = get_device_properties();
+  const size_t max_smem  = std::max(static_cast<size_t>(properties.sharedMemPerBlock),
+                                   static_cast<size_t>(properties.sharedMemPerBlockOptin));
+
+  if (pack_smem_bytes <= max_smem) {
+    if (pack_smem_bytes > static_cast<size_t>(properties.sharedMemPerBlock)) {
+      CUPYNUMERIC_CHECK_CUDA(cudaFuncSetAttribute((const void*)pack_indices_by_rank_block,
+                                                  cudaFuncAttributeMaxDynamicSharedMemorySize,
+                                                  properties.sharedMemPerBlockOptin));
+    }
+    pack_indices_by_rank_block<<<blocks, THREADS_PER_BLOCK, pack_smem_bytes, stream>>>(
+      target_ranks,
+      local_index_count,
+      next_slot.ptr(0),
+      send_offsets_per_rank,
+      num_ranks,
+      request_positions);
+  } else {
+    pack_indices_by_rank_warp<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(
+      target_ranks, local_index_count, next_slot.ptr(0), send_offsets_per_rank, request_positions);
+  }
 }
 
 // ============================================================================
