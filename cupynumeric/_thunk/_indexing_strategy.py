@@ -27,7 +27,6 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
-import numpy as np
 from legate.core import get_legate_runtime
 
 from ..config import CuPyNumericOpCode
@@ -51,12 +50,44 @@ def _shape_mismatch_error(
     )
 
 
-def _check_broadcast_shapes(
+def _broadcasts_to(
+    src_shape: tuple[int, ...], dst_shape: tuple[int, ...]
+) -> bool:
+    """Whether an array of shape ``src_shape`` can broadcast *to* ``dst_shape``.
+
+    Assignment broadcasting is directional: the RHS must fit *into* the indexed
+    shape, not merely share some common broadcast result.  ``src`` may have
+    fewer dims; aligning from the right, each ``src`` extent must equal the
+    corresponding ``dst`` extent or be ``1``.  ``src`` may also have *more*
+    dims than ``dst`` when the excess leading extents are all ``1`` (NumPy
+    allows e.g. ``(1, 0, 3)`` to assign into ``(0, 3)``).
+    """
+    if len(src_shape) > len(dst_shape):
+        # A longer rhs broadcasts in only when its excess leading extents are
+        # all 1; a non-1 excess dim can never be dropped to fit ``dst``.
+        excess = len(src_shape) - len(dst_shape)
+        if any(s != 1 for s in src_shape[:excess]):
+            return False
+        src_shape = src_shape[excess:]
+    # strict=False is intentional: src may be shorter than dst, so the zip
+    # truncates to the shorter (right-aligned) src.
+    return all(
+        s in (1, d)
+        for s, d in zip(reversed(src_shape), reversed(dst_shape), strict=False)
+    )
+
+
+def _check_broadcasts_to(
     rhs_shape: tuple[int, ...], selection_shape: tuple[int, ...]
 ) -> None:
-    try:
-        np.broadcast_shapes(rhs_shape, selection_shape)
-    except ValueError:
+    """Validate that ``rhs`` can be assigned into a ``selection_shape`` slot.
+
+    Unlike a symmetric ``np.broadcast_shapes`` check, this is one-directional
+    (NumPy assignment semantics): e.g. an rhs of shape ``(2, 0)`` may NOT be
+    written into an indexed shape of ``(1, 0)`` even though the two share a
+    common broadcast result.
+    """
+    if not _broadcasts_to(rhs_shape, selection_shape):
         raise _shape_mismatch_error(rhs_shape, selection_shape)
 
 
@@ -130,16 +161,20 @@ class Basic(Strategy):
 
 @dataclass(frozen=True)
 class BoolMask(Strategy):
-    """``a[mask]`` — single boolean array, any leading-axis shape.
+    """Boolean array indexing with optional axis transpose.
 
-    Handles both full-shape masks (``mask.shape == a.shape``) and
-    leading-axis partial masks (``mask.shape == a.shape[:mask.ndim]``).
+    Handles:
+    - ``a[mask]``, ``a[mask, :, :]`` — mask at leading axis (``transpose_index = 0``)
+    - ``a[:, mask]``, ``a[:, mask, :]`` — 1-D mask at any single axis k
+      (``transpose_index = k``)
 
-    ``transpose_index`` is always 0 in the current implementation; it is
-    reserved for a future transpose fast-path that will split per mask shape.
+    For ``transpose_index = k > 0``, ``transformed_array`` is a view of ``array``
+    with axis k permuted to position 0.  ``execute_get`` post-transposes the result
+    back so the user sees count at position k.
 
-    execute_get → ADVANCED_INDEXING task.
-    execute_set → ADVANCED_INDEXING + scatter; PUTMASK fast path on scalar rhs.
+    execute_get → ADVANCED_INDEXING task (+ optional transpose-back).
+    execute_set → PUTMASK fast path when mask covers all dims and rhs is scalar;
+                  ADVANCED_INDEXING + scatter otherwise.
     """
 
     array: DeferredArray
@@ -148,44 +183,59 @@ class BoolMask(Strategy):
     transpose_index: int
 
     def execute_get(self) -> DeferredArray:
+        k = self.transpose_index
         if self.bool_key.size == 0 or self.transformed_array.size == 0:
             if self.transformed_array.size == 0 and self.bool_key.size != 0:
                 s = self.bool_key.nonzero()[0].size
             else:
                 s = 0
-            out_shape = (s,) + self.transformed_array.shape[
-                self.bool_key.ndim :
-            ]
+            # count belongs at position k in the user-visible output.
+            out_shape = (
+                self.array.shape[:k]
+                + (s,)
+                + self.array.shape[k + self.bool_key.ndim :]
+            )
             out = runtime.create_deferred_thunk(
                 out_shape, self.transformed_array.base.type
             )
             return out
-        return _execute_boolean_indexing_task(
+        result = _execute_boolean_indexing_task(
             self.transformed_array, self.bool_key, is_set=False
         )
+        if k > 0:
+            # ADVANCED_INDEXING returns (count, *trailing_of_transformed).
+            # Move axis 0 to position k to recover the user-visible shape.
+            perm = (
+                list(range(1, k + 1)) + [0] + list(range(k + 1, result.ndim))
+            )
+            result = result.transpose(perm)
+        return result
 
     def execute_set(self, rhs: DeferredArray) -> None:
-        if self.bool_key.size == 0:
-            # NumPy validates shape even for empty selections.
-            selection_shape = (0,) + self.transformed_array.shape[
-                self.bool_key.ndim :
-            ]
-            _check_broadcast_shapes(rhs.shape, selection_shape)
+        k = self.transpose_index
+        if self.bool_key.size == 0 or self.transformed_array.size == 0:
+            # NumPy validates shape even for empty selections; count is nonzero
+            # only when the array is zero-sized but the mask still has True elements.
+            if self.transformed_array.size == 0 and self.bool_key.size != 0:
+                s = self.bool_key.nonzero()[0].size
+            else:
+                s = 0
+            selection_shape = (
+                self.array.shape[:k]
+                + (s,)
+                + self.array.shape[k + self.bool_key.ndim :]
+            )
+            _check_broadcasts_to(rhs.shape, selection_shape)
             return
 
-        if self.transformed_array.size == 0:
-            # Zero-sized target: scatter is a no-op, but shape validation must
-            # cover the selected-count dimension too.  a.shape==(3,0) with an
-            # all-true mask selects shape (3,0); (2,0) or (4,0) rhs must raise.
-            s = self.bool_key.nonzero()[0].size
-            trailing = self.transformed_array.shape[self.bool_key.ndim :]
-            selection_shape = (s,) + trailing
-            _check_broadcast_shapes(rhs.shape, selection_shape)
-            return
-
-        # Scalar rhs fast path: putmask avoids the gather-scatter round-trip.
-        # transpose_index is always 0 in the current implementation.
-        if rhs.size == 1 and self.transpose_index == 0:
+        # Putmask fast path (avoids gather-scatter): only when the mask covers
+        # the whole target and the rhs is a genuine scalar (rhs.ndim <= 1; a
+        # size-1 (1, 1) was already rejected during strategy lowering).
+        if (
+            rhs.ndim <= 1
+            and rhs.size == 1
+            and self.bool_key.shape == self.transformed_array.shape
+        ):
             from .deferred import DeferredArray  # circular-import guard
 
             self.transformed_array.putmask(
@@ -193,12 +243,43 @@ class BoolMask(Strategy):
             )
             return
 
+        if k > 0:
+            # Scattering into the transposed view triggers an O(n²)
+            # materialization in _perform_scatter; scatter in the original
+            # array space (nonzero + ZIP) instead.
+            check_bounds = settings.bounds_check_enabled("indexing")
+            true_indices = self.bool_key.nonzero()
+            if self.array._zipscatter(
+                rhs, k, true_indices, self.array, check_bounds
+            ):
+                return
+            # Multi-GPU fused path: feed the per-dim index arrays directly into
+            # the NCCL all-to-all scatter, skipping the standalone ZIP task and
+            # its materialized Point<N> store (mirrors General.execute_set).
+            if (
+                settings.use_nccl_scatter()
+                and runtime.num_gpus > 1
+                and self.array.base.ndim > 0
+                and self.array._nccl_zipscatter(
+                    rhs, k, true_indices, self.array, check_bounds
+                )
+            ):
+                return
+            index_array = self.array._zip_indices(
+                k, true_indices, check_bounds=check_bounds
+            )
+            self.array._perform_scatter(
+                rhs, index_array, destination=self.array
+            )
+            return
+
+        # k == 0: transformed_array IS array (identity transform).
+        # ``_prepare_boolean_array_indexing`` only emits this strategy when
+        # ``transformed_array`` is a view of ``array`` (identity or transpose),
+        # so writes propagate to the original through the shared backing store.
         index_array = _execute_boolean_indexing_task(
             self.transformed_array, self.bool_key, is_set=True
         )
-        # ``_prepare_boolean_array_indexing`` only emits this strategy when
-        # ``transformed_array`` is a view of ``array`` (identity or transpose).
-        # Writes propagate to the original through the shared backing store.
         self.array._perform_scatter(
             rhs, index_array, destination=self.transformed_array
         )

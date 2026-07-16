@@ -516,7 +516,9 @@ class AdvancedIndexingCheck(Checkup):
         """
         if func in {"__getitem__", "__setitem__"}:
             key = args[1]
-            if is_true_unoptimized_advanced_indexing(key, args[0].ndim):
+            if is_true_unoptimized_advanced_indexing(
+                key, args[0].ndim, is_set=func == "__setitem__"
+            ):
                 if (locator := self.locate()) is None:
                     return None
 

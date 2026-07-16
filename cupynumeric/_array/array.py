@@ -34,7 +34,13 @@ from .._array_api import (
     _SUPPORTED_DEVICE,
     _check_device,
 )
-from .._utils.array import max_identity, min_identity, to_core_type
+from .._utils.array import (
+    _contains_scalar_boolean_index,
+    _is_scalar_boolean_index,
+    max_identity,
+    min_identity,
+    to_core_type,
+)
 from .._utils.linalg import dot_modes
 from ..config import (
     FFTDirection,
@@ -1003,6 +1009,9 @@ class ndarray:
                 operator.index(key.stop) if key.stop is not None else None,
                 operator.index(key.step) if key.step is not None else None,
             )
+        if _is_scalar_boolean_index(key):
+            key = convert_to_cupynumeric_ndarray(key)
+            return key._thunk
         if (
             key is np.newaxis
             or key is Ellipsis
@@ -1725,7 +1734,12 @@ class ndarray:
             temp._thunk.convert(value._thunk)
             value = temp
 
-        if len(value.shape) > len(self.shape):
+        original_value_ndim = value.ndim
+        key = self._convert_key(key)
+
+        if not _contains_scalar_boolean_index(key) and len(value.shape) > len(
+            self.shape
+        ):
             N = len(value.shape) - len(self.shape)
             first = value.shape[:N]
             if builtin_prod(first) == 1:
@@ -1736,8 +1750,9 @@ class ndarray:
                     f"{value.shape} into shape {self.shape}"
                 )
 
-        key = self._convert_key(key)
-        self._thunk.set_item(key, value._thunk)
+        self._thunk.set_item(
+            key, value._thunk, original_rhs_ndim=original_value_ndim
+        )
 
     def __setstate__(self, state: Any) -> None:
         """a.__setstate__(state, /)

@@ -71,6 +71,8 @@ def to_core_type(dtype: str | np.dtype[Any]) -> ty.Type:
 def is_advanced_indexing(key: Any) -> bool:
     if key is Ellipsis or key is None:  # np.newdim case
         return False
+    if _is_scalar_boolean_index(key):
+        return True
     if np.isscalar(key):
         return False
     if isinstance(key, slice):
@@ -81,7 +83,63 @@ def is_advanced_indexing(key: Any) -> bool:
     return True
 
 
-def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
+def _is_scalar_boolean_index(key: Any) -> bool:
+    """Whether ``key`` is a scalar boolean indexing component."""
+    if isinstance(key, (bool, np.bool_)):
+        return True
+    dtype = getattr(key, "dtype", None)
+    return (
+        dtype is not None
+        and np.dtype(dtype) == np.dtype(bool)
+        and getattr(key, "ndim", None) == 0
+    )
+
+
+def _contains_scalar_boolean_index(key: Any) -> bool:
+    """Whether an indexing key contains a scalar boolean component."""
+    if isinstance(key, tuple):
+        return any(_is_scalar_boolean_index(k) for k in key)
+    return _is_scalar_boolean_index(key)
+
+
+def _expand_ellipsis(key_tuple: tuple[Any, ...], ndim: int) -> tuple[Any, ...]:
+    """Expand a single ``Ellipsis`` into explicit ``slice(None)`` co-keys.
+
+    Shared by the indexing thunks and the Doctor predicate; it lives in this
+    dependency-free util so both layers can use one implementation.  Raises
+    ``ValueError`` for more than one ``Ellipsis``.
+
+    Each entry consumes one source axis except a boolean mask (one axis per
+    dimension) and ``np.newaxis`` (none), matching NumPy: ``a[..., mask2d]``
+    fills zero slices and stays the solo-mask case ``a[mask2d]``.
+    """
+    num_ellipsis = sum(k is Ellipsis for k in key_tuple)
+    if num_ellipsis == 0:
+        return key_tuple
+    if num_ellipsis > 1:
+        raise ValueError("Only a single ellipsis must be present")
+    consumed = 0
+    for k in key_tuple:
+        if k is Ellipsis or k is np.newaxis:
+            continue
+        # Scalar booleans add an advanced-index dimension without consuming
+        # a source axis.
+        if _is_scalar_boolean_index(k):
+            continue
+        dtype = getattr(k, "dtype", None)
+        if dtype is not None and dtype == np.dtype(bool):
+            consumed += getattr(k, "ndim", 1)
+        else:
+            consumed += 1
+    free_dims = ndim - consumed
+    fill = (slice(None),) * max(free_dims, 0)
+    idx = next(i for i, k in enumerate(key_tuple) if k is Ellipsis)
+    return key_tuple[:idx] + fill + key_tuple[idx + 1 :]
+
+
+def is_true_unoptimized_advanced_indexing(
+    key: Any, ndim: int, is_set: bool = False
+) -> bool:
     """
     Return True for advanced indexing patterns that use the unoptimized
     gather/scatter path.
@@ -96,12 +154,23 @@ def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
       no gather or scatter (optimized path)
     * Single integer-array, all other dims ``slice(None)``, ndim < 5
       — routed through einsum (optimized path)
+    * Single boolean array with all co-keys ``slice(None)`` (or ``Ellipsis``,
+      normalized to ``slice(None)``, so ``a[..., mask]`` == ``a[:, mask]``),
+      where the mask is on the leading axis or is 1-D —
+      ``_prepare_boolean_array_indexing`` routes through BoolMask (transpose +
+      ADVANCED_INDEXING task), no gather or scatter
 
     Returns True for:
 
-    * Boolean array alongside any co-keys (including ``slice(None)``) —
+    * Boolean array alongside non-``slice(None)`` co-keys —
       ``_prepare_boolean_array_indexing`` falls through to nonzero →
       ZIP + gather/scatter
+    * Multidimensional boolean array on a non-leading axis (e.g.
+      ``a[:, mask2d]``) — ``_prepare_boolean_array_indexing`` returns None,
+      falling through to nonzero → ZIP + gather/scatter
+    * ``is_set`` into a boolean mask on a non-leading axis (e.g.
+      ``a[:, mask] = v``) — the multi-process scalar-RHS path still runs
+      nonzero → ZIP → scatter (conservative; see body note)
     * Multiple advanced index components — ZIP + gather/scatter
     * Advanced index mixed with a non-trivial slice — gather/scatter
     * Single integer array with ndim >= 5 — einsum not applied, gather used
@@ -112,6 +181,9 @@ def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
     Args:
         key:  The index key passed to ``__getitem__`` or ``__setitem__``.
         ndim: Number of dimensions of the array being indexed.
+        is_set: True for ``__setitem__``. A non-leading boolean-mask SET
+            (``a[:, mask] = v``) is conservatively classified as unoptimized
+            (see the note in the body).
 
     Returns:
         True if the key will trigger an unoptimized gather or scatter operation.
@@ -120,6 +192,18 @@ def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
         return False
 
     key_tuple = key if isinstance(key, tuple) else (key,)
+
+    # Mirror ``_prepare_boolean_array_indexing``: expand a single Ellipsis into
+    # explicit ``slice(None)`` co-keys so ``a[..., mask]`` is classified the
+    # same as the explicit ``a[:, mask]`` spelling (both take the optimized
+    # BoolMask route).
+    if any(k is Ellipsis for k in key_tuple):
+        try:
+            key_tuple = _expand_ellipsis(key_tuple, ndim)
+        except ValueError:
+            # More than one Ellipsis is a user error; the real indexing call
+            # will raise, so don't emit a (misleading) optimization warning.
+            return False
 
     adv_components = [k for k in key_tuple if is_advanced_indexing(k)]
     non_trivial_slices = [
@@ -133,17 +217,31 @@ def is_true_unoptimized_advanced_indexing(key: Any, ndim: int) -> bool:
 
     # Exactly one advanced component from here.
     single = adv_components[0]
+    if _is_scalar_boolean_index(single):
+        # Scalar booleans lower through General (gather/scatter), not one of
+        # the optimized array-indexing paths below.
+        return True
     # Access .dtype directly — both numpy and cupynumeric arrays expose it.
     # Plain Python sequences (lists) have no .dtype and are always integer
     # indices, so treat them as non-boolean without any conversion.
     dtype = getattr(single, "dtype", None)
     if dtype is not None and dtype.kind == "b":
-        # Solo boolean array (no co-keys) → ADVANCED_INDEXING task only,
-        # no gather or scatter — this is an optimized path.
-        # Boolean array alongside any co-keys (including slice(None)) →
-        # _prepare_boolean_array_indexing falls through to nonzero →
-        # ZIP + gather/scatter.
-        return len(key_tuple) > 1
+        # Solo boolean array (no co-keys) → ADVANCED_INDEXING task only: optimized.
+        if len(key_tuple) == 1:
+            return False
+        # With co-keys, only all-slice(None) stays on the optimized BoolMask
+        # route (Ellipsis was expanded above); any other co-key falls through
+        # to nonzero + ZIP + gather/scatter.
+        bool_pos = next(i for i, k in enumerate(key_tuple) if k is single)
+        co_keys = [k for i, k in enumerate(key_tuple) if i != bool_pos]
+        if not all(isinstance(k, slice) and k == slice(None) for k in co_keys):
+            return True
+        # A non-leading mask stays optimized only when 1-D (a multidim mask
+        # there routes to None → gather/scatter). SET is conservative: a
+        # multi-process scalar-RHS ``a[:, mask] = v`` still scatters, so we
+        # over-warn until the dedicated SET task lands.
+        single_ndim = getattr(single, "ndim", None)
+        return bool_pos > 0 and (single_ndim != 1 or is_set)
 
     # Single integer-array index, all other dims slice(None).
     # cuPyNumeric uses einsum for ndim < 5: not expensive.

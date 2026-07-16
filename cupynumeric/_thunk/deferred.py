@@ -56,6 +56,9 @@ from ..lib.array_utils import normalize_axis_tuple
 from .._array.doctor import doctor
 from .._array.util import convert_to_cupynumeric_ndarray
 from .._utils.array import (
+    _contains_scalar_boolean_index,
+    _expand_ellipsis,
+    _is_scalar_boolean_index,
     is_advanced_indexing,
     max_identity,
     min_identity,
@@ -85,7 +88,7 @@ from ..linalg._solve import solve_deferred
 from ..linalg._svd import svd_deferred
 from ..runtime import runtime
 from ..settings import settings
-from ._advanced_indexing import _project_scalar, _slice_store, _unpack_ellipsis
+from ._advanced_indexing import _project_scalar, _slice_store
 from ._indexing_strategy import (
     Basic,
     BoolMask,
@@ -510,41 +513,107 @@ class DeferredArray:
     def _prepare_boolean_array_indexing(
         self, key: IndexKey
     ) -> BoolMask | None:
-        """Return a BoolMask for ``a[bool_mask]`` or ``a[(bool_mask,)]``.
+        """Return a BoolMask for boolean array indexing patterns:
 
-        Returns ``None`` for everything else — co-keys, integer arrays, and
-        multi-element tuples all fall back to ``General``.
+        - ``a[mask]`` or ``a[(mask,)]`` — single boolean array, any ndim.
+        - ``a[mask, :, :]``, ``a[:, mask]``, ``a[:, mask, :]``, etc. —
+          one 1-D boolean array at any single axis with ``slice(None)`` on
+          all remaining axes.
+
+        ``Ellipsis`` is normalized to explicit ``slice(None)`` co-keys, so
+        ``a[..., mask]`` routes here just like ``a[:, mask]`` / ``a[:, :, mask]``.
+
+        Returns ``None`` for everything else — integer arrays, multiple
+        boolean arrays, or non-slice(None) co-keys.
         """
+        bool_key: DeferredArray
+        bool_axis: int
+
+        # Expand Ellipsis into slice(None) so ``a[..., mask]`` is handled the
+        # same as an explicit all-slice key instead of falling through to
+        # General (Ellipsis is not slice(None) and would fail the co-key check).
+        if isinstance(key, tuple):
+            key = _expand_ellipsis(key, self.ndim)
+
         if isinstance(key, DeferredArray) and key.dtype == np.dtype(bool):
+            # Bare boolean array: a[mask]
             bool_key = key
-        elif (
-            isinstance(key, tuple)
-            and len(key) == 1
-            and isinstance(key[0], DeferredArray)
-            and key[0].dtype == np.dtype(bool)
-        ):
-            bool_key = key[0]
+            bool_axis = 0
+        elif isinstance(key, tuple) and 1 <= len(key) <= max(self.ndim, 1):
+            # Tuple: find exactly one boolean array; all others must be slice(None)
+            found_bool: DeferredArray | None = None
+            bool_axis = -1
+            valid = True
+            for i, elem in enumerate(key):
+                if isinstance(elem, DeferredArray) and elem.dtype == np.dtype(
+                    bool
+                ):
+                    if found_bool is not None:
+                        valid = False
+                        break
+                    found_bool = elem
+                    bool_axis = i
+                elif not (isinstance(elem, slice) and elem == slice(None)):
+                    valid = False
+                    break
+            if not valid or found_bool is None:
+                return None
+            # A boolean array at a non-leading axis must be 1-D.
+            if bool_axis > 0 and found_bool.ndim != 1:
+                return None
+            bool_key = found_bool
         else:
             return None
 
-        for i in range(bool_key.ndim):
-            if i >= self.ndim:
-                raise ValueError(
-                    f"Boolean array has {bool_key.ndim} dimensions but can't "
-                    f"index starting at position 0 in array with {self.ndim} dimensions"
+        # Shape validation
+        if bool_axis == 0:
+            # A boolean index consumes bool_key.ndim leading dims; any trailing
+            # slice(None) co-keys each consume one more. Too many total dims is
+            # an IndexError (like NumPy) -- for both the bare ``a[mask]`` and the
+            # tuple ``a[mask, :, :]`` spellings.
+            trailing = len(key) - 1 if isinstance(key, tuple) else 0
+            if bool_key.ndim + trailing > self.ndim:
+                extra = (
+                    f" with {trailing} trailing slice(s)" if trailing else ""
                 )
-            if bool_key.shape[i] != self.shape[i]:
-                raise ValueError(
-                    f"shape of the boolean index array for dimension {i} "
-                    f"doesn't match the input array shape at position {i}: "
-                    f"expected {self.shape[i]}, got {bool_key.shape[i]}"
+                raise IndexError(
+                    f"too many indices for array: array is "
+                    f"{self.ndim}-dimensional, but a "
+                    f"{bool_key.ndim}-dimensional boolean index{extra} was given"
                 )
+            # Each mask axis must match the corresponding leading axis of self.
+            # (bool_key.ndim <= self.ndim is guaranteed above, so i < self.ndim.)
+            for i in range(bool_key.ndim):
+                if bool_key.shape[i] != self.shape[i]:
+                    raise ValueError(
+                        f"shape of the boolean index array for dimension {i} "
+                        f"doesn't match the input array shape at position {i}: "
+                        f"expected {self.shape[i]}, got {bool_key.shape[i]}"
+                    )
+        else:
+            # 1-D mask at non-leading axis: size must match that axis.
+            if bool_key.shape[0] != self.shape[bool_axis]:
+                raise ValueError(
+                    f"shape of the boolean index array for dimension {bool_axis} "
+                    f"doesn't match the input array shape at position {bool_axis}: "
+                    f"expected {self.shape[bool_axis]}, got {bool_key.shape[0]}"
+                )
+
+        # Build a transposed view that places the mask axis at position 0 so
+        # that ADVANCED_INDEXING always sees the bool dimension first.
+        if bool_axis == 0:
+            transformed: DeferredArray = self
+        else:
+            perm = [bool_axis] + [
+                i for i in range(self.ndim) if i != bool_axis
+            ]
+            transformed = self.transpose(perm)
 
         return BoolMask(
             array=self,
-            transformed_array=self,
+            transformed_array=transformed,
             bool_key=bool_key,
-            transpose_index=0,
+            transpose_index=bool_axis,
         )
 
     def _can_use_take(
@@ -897,9 +966,11 @@ class DeferredArray:
             return False
 
         if value.shape != out_shape:
-            value_store = value._broadcast(out_shape)
+            value_store = value._broadcast_for_assignment(out_shape)
         else:
             value_store = value.base
+        if any(extent == 0 for extent in out_shape):
+            return True
 
         if value_store.has_scalar_storage:
             value_tmp = DeferredArray(base=value_store)
@@ -1080,8 +1151,14 @@ class DeferredArray:
         # (shape mismatch case), so materialize. Transformed stores of matching
         # shape are handled correctly by the NCCL task directly.
         if source.shape != index_array.shape:
-            broadcasted = source._broadcast(index_array.base.shape)
+            broadcasted = source._broadcast_for_assignment(
+                index_array.base.shape
+            )
+            if index_array.size == 0:
+                return
             source = source._copy_store(broadcasted)
+        elif index_array.size == 0:
+            return
         elif not use_nccl_scatter and source.base.transformed:
             source = source._copy_store(source.base)
 
@@ -1377,9 +1454,16 @@ class DeferredArray:
             # affine accessor for the (dense) index arrays under partitioning.
             # Materialize the broadcast value into a dense store first,
             # mirroring the separate ZIP + scatter in ``set_item``.
-            value_store = value._copy_store(value._broadcast(out_shape)).base
+            broadcasted = value._broadcast_for_assignment(out_shape)
         else:
-            value_store = value.base
+            broadcasted = value.base
+        if any(extent == 0 for extent in out_shape):
+            return True
+        value_store = (
+            value._copy_store(broadcasted).base
+            if value.shape != out_shape
+            else broadcasted
+        )
 
         # Materialize Future-backed value stores before the all2all task sees
         # them (mirrors ``_zipscatter``).  This is not the 0-D scalar case
@@ -1636,6 +1720,60 @@ class DeferredArray:
             or can_use_nccl_scatter
         )
 
+    def _normalize_scalar_boolean_indices(
+        self, store: LogicalStore, key: tuple[Any, ...]
+    ) -> tuple[LogicalStore, tuple[Any, ...]]:
+        """Lower scalar booleans to indices over synthetic size-one axes.
+
+        Scalar booleans are advanced indices but consume no source axis.  By
+        promoting a synthetic axis and indexing it with ``[0]`` or ``[]``, the
+        existing General path gets NumPy's advanced-index broadcasting and
+        copy semantics.  ``None`` entries are promoted in the same pass so
+        every normalized key position maps to a physical store axis before
+        transpose discovery.
+        """
+        if not _contains_scalar_boolean_index(key):
+            return store, key
+
+        axis = 0
+        normalized: list[Any] = []
+        for entry in key:
+            if entry is np.newaxis:
+                if axis > store.ndim:
+                    raise IndexError("too many indices for array")
+                store = store.promote(axis, 1)
+                normalized.append(slice(None))
+                axis += 1
+                continue
+
+            if _is_scalar_boolean_index(entry):
+                if axis > store.ndim:
+                    raise IndexError("too many indices for array")
+                store = store.promote(axis, 1)
+                if isinstance(entry, DeferredArray):
+                    bool_array = DeferredArray(base=entry.base.promote(0, 1))
+                    normalized.append(bool_array.nonzero()[0])
+                else:
+                    index = np.array(
+                        [0] if bool(entry) else [], dtype=np.int64
+                    )
+                    normalized.append(runtime.get_numpy_thunk(index))
+                axis += 1
+                continue
+
+            dtype = getattr(entry, "dtype", None)
+            width = (
+                getattr(entry, "ndim", 1)
+                if dtype is not None and np.dtype(dtype) == np.dtype(bool)
+                else 1
+            )
+            if axis + width > store.ndim:
+                raise IndexError("too many indices for array")
+            normalized.append(entry)
+            axis += width
+
+        return store, tuple(normalized)
+
     def _prepare_advanced_indexing_inputs(
         self, key: Any, is_set: bool, set_value: Any | None
     ) -> tuple[DeferredArray, int, tuple[Any, ...], DeferredArray]:
@@ -1659,7 +1797,10 @@ class DeferredArray:
         else:
             computed_key = key
         assert isinstance(computed_key, tuple)
-        computed_key = _unpack_ellipsis(computed_key, self.ndim)
+        computed_key = _expand_ellipsis(computed_key, self.ndim)
+        store, computed_key = self._normalize_scalar_boolean_indices(
+            store, computed_key
+        )
 
         # the index where the first index_array is passed to the [] operator
         start_index = -1
@@ -1765,7 +1906,7 @@ class DeferredArray:
 
     def _get_view(self, key: tuple[Any, ...]) -> DeferredArray:
         # key is guaranteed to be a tuple by ndarray._convert_key() before reaching _get_view()
-        key = _unpack_ellipsis(key, self.ndim)
+        key = _expand_ellipsis(key, self.ndim)
         store = self.base
         shift = 0
         for dim, k in enumerate(key):
@@ -1780,6 +1921,26 @@ class DeferredArray:
                 assert False
 
         return DeferredArray(base=store)
+
+    def _broadcast_for_assignment(
+        self, shape: NdShape | Shape
+    ) -> LogicalStore:
+        """Broadcast an assignment RHS to the indexed selection shape.
+
+        NumPy assignment permits excess leading singleton dimensions on the
+        RHS.  This is deliberately narrower than ``broadcast_to`` semantics,
+        so keep the normalization local to assignment paths.
+        """
+        source = self
+        if source.ndim > len(shape):
+            excess = source.ndim - len(shape)
+            if any(extent != 1 for extent in source.shape[:excess]):
+                raise ValueError(
+                    "could not broadcast input array from shape "
+                    f"{source.shape} into shape {tuple(shape)}"
+                )
+            source = source.squeeze(tuple(range(excess)))
+        return source._broadcast(shape)
 
     def _broadcast(self, shape: NdShape | Shape) -> LogicalStore:
         result = self.base
@@ -1824,7 +1985,10 @@ class DeferredArray:
     # ----- Strategy lowering & per-path executors --------------------------
 
     def _lower_to_strategy(
-        self, key: IndexKey, rhs: DeferredArray | None = None
+        self,
+        key: IndexKey,
+        rhs: DeferredArray | None = None,
+        original_rhs_ndim: int | None = None,
     ) -> Strategy:
         """Lower an indexing key into a ``Strategy`` instance.
 
@@ -1835,6 +1999,9 @@ class DeferredArray:
             return Basic(array=self, key=cast(tuple[Any, ...], key))
 
         if rhs is not None:
+            rhs_ndim = (
+                rhs.ndim if original_rhs_ndim is None else original_rhs_ndim
+            )
             # Used in two places below: bool-strategy override and 0-D rhs promotion.
             zipscatter_eligible = runtime.num_procs == 1 and self.base.ndim > 0
 
@@ -1842,10 +2009,24 @@ class DeferredArray:
             # (integer arrays, mixed tuples, etc.).
             bool_strategy = self._prepare_boolean_array_indexing(key)
             if bool_strategy is not None:
+                is_scalar_bool = bool_strategy.bool_key.ndim == 0
+                if (
+                    bool_strategy.bool_key.shape
+                    == bool_strategy.transformed_array.shape
+                    and rhs_ndim > 1
+                ):
+                    raise TypeError(
+                        "NumPy boolean array indexing assignment requires a "
+                        "0 or 1-dimensional input, input has "
+                        f"{rhs_ndim} dimensions"
+                    )
                 # Boolean mask SET: use BoolMask in all cases except
                 # single-GPU non-scalar rhs, where General's fused zipscatter
-                # is faster.
-                if not (zipscatter_eligible and rhs.size > 1):
+                # is faster. Scalar booleans always use General because they
+                # index a synthetic axis and increase the output rank.
+                if not is_scalar_bool and not (
+                    zipscatter_eligible and rhs.size > 1
+                ):
                     return bool_strategy
 
             # General path: integer-array keys, and boolean mask on single-GPU
@@ -1879,9 +2060,23 @@ class DeferredArray:
             "IntArraySingleAxis has no execute_set; "
             "SET must return before this point"
         )
+        # Boolean mask GET routing:
+        #  - Full-cover mask (bare a[mask] / a[mask2d], no trailing co-keys):
+        #    ADVANCED_INDEXING alone gives the result, no gather -> BoolMask on
+        #    every tier (the path bare forms used on main).
+        #  - Residual-gather mask (a[mask, :], a[:, mask], a[..., mask]): needs
+        #    a gather -> BoolMask on multi-proc, but on a single proc General's
+        #    fused zipgather is faster, so fall through (see the PR body).
         bool_strategy = self._prepare_boolean_array_indexing(key)
         if bool_strategy is not None:
-            return bool_strategy
+            is_scalar_bool = bool_strategy.bool_key.ndim == 0
+            if not is_scalar_bool:
+                full_cover = (
+                    bool_strategy.transpose_index == 0
+                    and bool_strategy.bool_key.ndim == self.ndim
+                )
+                if full_cover or runtime.num_procs != 1:
+                    return bool_strategy
 
         # ``np.take`` fast path for ``a[indices, :, :]`` / ``a[:, indices]``.
         # The ndim > 1 condition keeps the plain 1-D gather (``a[indices]``)
@@ -1893,7 +2088,7 @@ class DeferredArray:
         if isinstance(key, DeferredArray):
             computed_key = (key,)
         else:
-            computed_key = _unpack_ellipsis(
+            computed_key = _expand_ellipsis(
                 cast(tuple[Any, ...], key), self.ndim
             )
         if self.ndim > 1 or len(computed_key) > self.ndim:
@@ -1924,12 +2119,16 @@ class DeferredArray:
     def get_item(self, key: IndexKey) -> DeferredArray:
         return self._lower_to_strategy(key).execute_get()
 
-    def set_item(self, key: IndexKey, value: Any) -> None:
+    def set_item(
+        self, key: IndexKey, value: Any, original_rhs_ndim: int | None = None
+    ) -> None:
         assert self.dtype == value.dtype
         # copy if a self-copy might overlap
         if is_advanced_indexing(key):
             value = value._copy_if_overlapping(self)
-        self._lower_to_strategy(key, rhs=value).execute_set(value)
+        self._lower_to_strategy(
+            key, rhs=value, original_rhs_ndim=original_rhs_ndim
+        ).execute_set(value)
 
     def broadcast_to(self, shape: NdShape) -> DeferredArray:
         return DeferredArray(base=self._broadcast(shape))

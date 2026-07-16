@@ -14,7 +14,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import legate.core.types as ty
 import numpy as np
@@ -28,22 +28,6 @@ if TYPE_CHECKING:
 
 
 legate_runtime = get_legate_runtime()
-
-
-def _unpack_ellipsis(key: tuple[Any, ...], ndim: int) -> tuple[Any, ...]:
-    num_ellipsis = sum(k is Ellipsis for k in key)
-
-    if num_ellipsis == 0:
-        return key
-    elif num_ellipsis > 1:
-        raise ValueError("Only a single ellipsis must be present")
-
-    num_newaxes = sum(k is np.newaxis for k in key)
-
-    free_dims = ndim - (len(key) - num_newaxes - num_ellipsis)
-    to_replace = (slice(None),) * free_dims
-    idx = next(i for i, k in enumerate(key) if k is Ellipsis)
-    return key[:idx] + to_replace + key[idx + 1 :]
 
 
 def _project_scalar(

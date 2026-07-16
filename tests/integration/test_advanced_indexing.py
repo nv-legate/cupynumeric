@@ -1360,10 +1360,37 @@ class TestBoolMaskSetArrayRhs:
         a_num[num.array(mask_np)] = num.array(b_np)
         assert np.array_equal(a_np, a_num)
 
+    def test_bool_on_leading_axis_tuple_key(self, dtype: np.dtype) -> None:
+        # a[mask, :] = b — BoolMask(transpose_index=0), tuple key form.
+        rng = np.random.default_rng(108)
+        a_np = rng.integers(0, 100, size=(10, 6)).astype(dtype)
+        mask_np = rng.random(10) < 0.5
+        n_true = int(mask_np.sum())
+        b_np = rng.integers(-50, 50, size=(n_true, 6)).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[mask_np, :] = b_np
+        a_num[num.array(mask_np), :] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
+    def test_bool_on_trailing_axis(self, dtype: np.dtype) -> None:
+        # a[:, mask] = b — BoolMask(transpose_index=1), 2-D column SET.
+        # k>0 fix: nonzero + ZIP scatter in original space (no transposed-view
+        # materialization).
+        rng = np.random.default_rng(109)
+        a_np = rng.integers(0, 100, size=(10, 8)).astype(dtype)
+        mask_np = rng.random(8) < 0.5
+        n_true = int(mask_np.sum())
+        b_np = rng.integers(-50, 50, size=(10, n_true)).astype(dtype)
+
+        a_num = num.array(a_np.copy())
+        a_np[:, mask_np] = b_np
+        a_num[:, num.array(mask_np)] = num.array(b_np)
+        assert np.array_equal(a_np, a_num)
+
     def test_bool_on_middle_axis(self, dtype: np.dtype) -> None:
         # a[:, mask, :] = b — bool with slice(None) co-keys.
-        # Bool with co-keys → _prepare_boolean_array_indexing returns None;
-        # General handles it (ADVANCED_INDEXING via nonzero + scatter).
+        # Routes through BoolMask (transpose axis 1 to front, scatter back).
         rng = np.random.default_rng(105)
         a_np = rng.integers(0, 100, size=(4, 8, 3)).astype(dtype)
         mask_np = rng.random(8) < 0.5
@@ -1441,6 +1468,26 @@ def test_bool_set_dtype_conversion_scalar_rhs() -> None:
     assert np.array_equal(a_np, a_num)
 
 
+def test_bool_col_set_scalar_rhs() -> None:
+    """a[:, mask] = scalar — BoolMask k=1 SET with scalar rhs.
+
+    k>0 fix: nonzero + ZIP scatter in original array space avoids the
+    O(n²) transposed-view materialization that ``_perform_scatter``
+    previously triggered for transformed destinations.
+    """
+    rng = np.random.default_rng(202)
+    a_np = rng.integers(0, 100, size=(12, 10)).astype(np.float64)
+    mask_np = np.array(
+        [True, False, True, True, False, False, True, False, True, False]
+    )
+    scalar = 0.0
+
+    a_num = num.array(a_np.copy())
+    a_np[:, mask_np] = scalar
+    a_num[:, num.array(mask_np)] = scalar
+    assert np.array_equal(a_np, a_num)
+
+
 def test_int_index_scatter_0d_rhs() -> None:
     """``a[indices] = scalar_0d`` via General scatter with a 0-D rhs.
 
@@ -1504,6 +1551,308 @@ def test_boolean_array_dimension_mismatch() -> None:
     # All arrays are DeferredArray since eager mode removed
     with pytest.raises(ValueError, match="Boolean array has .* dimensions"):
         _ = arr[:, bool_idx]
+
+
+def test_bool_leading_mask_too_many_dims_raises() -> None:
+    # (mask2d, :, :) on a 3-D array indexes 2 + 2 = 4 dims > 3 -> IndexError,
+    # like NumPy. Pins the hoisted too-many-dims guard in
+    # _prepare_boolean_array_indexing (the bool-on-leading-axis path).
+    arr = num.arange(24).reshape(2, 3, 4)
+    mask2d = num.ones((2, 3), dtype=bool)
+    with pytest.raises(IndexError):
+        _ = arr[mask2d, :, :]
+
+
+def test_bare_bool_mask_too_many_dims_raises() -> None:
+    # Bare a[mask3d] on a 2-D array now raises IndexError like the (mask3d,)
+    # tuple spelling and NumPy (previously raised ValueError).
+    arr = num.arange(12).reshape(3, 4)
+    mask3d = num.ones((3, 4, 2), dtype=bool)
+    with pytest.raises(IndexError):
+        _ = arr[mask3d]
+
+
+def test_bool_ellipsis_matches_numpy() -> None:
+    # a[..., mask] must behave exactly like a[:, mask] — Ellipsis is normalized
+    # to slice(None) co-keys in _prepare_boolean_array_indexing.
+    np_a = np.arange(12, dtype=np.float64).reshape(3, 4)
+    num_a = num.array(np_a)
+    np_mask = np.array([True, False, True, False])
+    num_mask = num.array(np_mask)
+
+    # GET
+    assert np.array_equal(np_a[..., np_mask], np.array(num_a[..., num_mask]))
+
+    # SET (scalar rhs)
+    np_a2, num_a2 = np_a.copy(), num.array(np_a.copy())
+    np_a2[..., np_mask] = -1.0
+    num_a2[..., num_mask] = -1.0
+    assert np.array_equal(np_a2, np.array(num_a2))
+
+
+def test_bool_ellipsis_multidim_mask_matches_numpy() -> None:
+    # a[..., mask2d] == a[mask2d] (NumPy): a same-rank 2-D mask consumes both
+    # axes, so the Ellipsis fills zero slices (not a[:, mask2d], which is an
+    # IndexError).  Pins the multidimensional-mask branch of _expand_ellipsis.
+    np_a = np.arange(6).reshape(2, 3)
+    num_a = num.array(np_a)
+    np_mask = np.array([[True, False, True], [False, True, False]])
+    num_mask = num.array(np_mask)
+
+    assert np.array_equal(np_a[..., np_mask], np.array(num_a[..., num_mask]))
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [True, False, np.bool_(True), np.bool_(False)],
+    ids=["py_true", "py_false", "np_true", "np_false"],
+)
+def test_bool_scalar_get_matches_numpy(flag: bool | np.bool_) -> None:
+    np_a = np.arange(24).reshape(2, 3, 4)
+    num_a = num.array(np_a)
+
+    keys = [
+        flag,
+        (..., flag),
+        (slice(None), flag),
+        (None, flag),
+        (flag, None),
+        (0, flag),
+    ]
+    for key in keys:
+        np_result = np_a[key]
+        num_result = num_a[key]
+        assert np_result.shape == num_result.shape
+        assert np.array_equal(np_result, np.array(num_result))
+
+
+def test_bool_scalar_get_returns_copy() -> None:
+    source = num.arange(6).reshape(2, 3)
+    result = source[True]
+    result[...] = -1
+    assert np.array_equal(np.array(source), np.arange(6).reshape(2, 3))
+
+
+@pytest.mark.parametrize("flag", [True, False], ids=["true", "false"])
+def test_bool_scalar_mixed_advanced_get(flag: bool) -> None:
+    np_a = np.arange(24).reshape(2, 3, 4)
+    num_a = num.array(np_a)
+    np_idx = np.array([0])
+    num_idx = num.array(np_idx)
+
+    key_pairs = [
+        ((flag, np_idx), (flag, num_idx)),
+        ((np_idx, flag), (num_idx, flag)),
+        ((slice(None), flag, np_idx), (slice(None), flag, num_idx)),
+        ((flag, slice(None), np_idx), (flag, slice(None), num_idx)),
+    ]
+    for np_key, num_key in key_pairs:
+        np_result = np_a[np_key]
+        num_result = num_a[num_key]
+        assert np_result.shape == num_result.shape
+        assert np.array_equal(np_result, np.array(num_result))
+
+
+def test_false_scalar_mixed_advanced_broadcast_error() -> None:
+    np_a = np.arange(24).reshape(2, 3, 4)
+    num_a = num.array(np_a)
+    np_idx = np.array([0, 1])
+    num_idx = num.array(np_idx)
+
+    with pytest.raises(IndexError):
+        _ = np_a[False, np_idx]
+    with pytest.raises((IndexError, ValueError)):
+        _ = num_a[False, num_idx]
+
+
+@pytest.mark.parametrize("flag", [True, False], ids=["true", "false"])
+def test_bool_0d_array_get_matches_numpy(flag: bool) -> None:
+    np_a = np.arange(6).reshape(2, 3)
+    num_a = num.array(np_a)
+    np_key = np.array(flag)
+    num_key = num.array(flag)
+
+    np_idx = np.array([0])
+    num_idx = num.array(np_idx)
+    key_pairs = (
+        (np_key, num_key),
+        ((..., np_key), (..., num_key)),
+        ((np_key, np_idx), (num_key, num_idx)),
+    )
+    for np_index, num_index in key_pairs:
+        np_result = np_a[np_index]
+        num_result = num_a[num_index]
+        assert np_result.shape == num_result.shape
+        assert np.array_equal(np_result, np.array(num_result))
+
+
+@pytest.mark.parametrize("flag", [True, False], ids=["true", "false"])
+def test_bool_scalar_set_result_shaped_rhs(flag: bool) -> None:
+    np_a = np.arange(6).reshape(2, 3)
+    num_a = num.array(np_a)
+    key = (..., flag)
+    rhs = np.arange(np_a[key].size).reshape(np_a[key].shape)
+
+    np_a[key] = rhs
+    num_a[key] = num.array(rhs)
+    assert np.array_equal(np_a, np.array(num_a))
+
+
+def test_bool_scalar_set_excess_leading_singleton() -> None:
+    np_a = np.arange(6).reshape(2, 3)
+    num_a = num.array(np_a)
+    key = (..., True)
+    selection_shape = np_a[key].shape
+    rhs = np.arange(np.prod(selection_shape)).reshape((1,) + selection_shape)
+
+    np_a[key] = rhs
+    num_a[key] = num.array(rhs)
+    assert np.array_equal(np_a, np.array(num_a))
+
+
+@pytest.mark.parametrize("flag", [True, False], ids=["true", "false"])
+def test_bool_scalar_set_excess_leading_non_singleton_raises(
+    flag: bool,
+) -> None:
+    np_a = np.arange(6).reshape(2, 3)
+    num_a = num.array(np_a)
+    key = (..., flag)
+    selection_shape = np_a[key].shape
+    rhs_shape = (2,) + selection_shape[:-1] + (1,)
+
+    with pytest.raises(ValueError):
+        np_a[key] = np.ones(rhs_shape)
+    with pytest.raises(ValueError):
+        num_a[key] = num.ones(rhs_shape)
+
+
+@pytest.mark.parametrize("flag", [True, False], ids=["true", "false"])
+def test_bool_0d_array_set_result_shaped_rhs(flag: bool) -> None:
+    np_a = np.arange(6).reshape(2, 3)
+    num_a = num.array(np_a)
+    np_key = np.array(flag)
+    num_key = num.array(flag)
+    rhs = np.arange(np_a[np_key].size).reshape(np_a[np_key].shape)
+
+    np_a[np_key] = rhs
+    num_a[num_key] = num.array(rhs)
+    assert np.array_equal(np_a, np.array(num_a))
+
+
+@pytest.mark.parametrize("flag", [True, False], ids=["true", "false"])
+def test_bool_scalar_indexes_0d_array(flag: bool) -> None:
+    # Use distinct input scalars because scalar futures may be cached by value.
+    initial = 7 if flag else 5
+    np_a = np.array(initial)
+    num_a = num.array(initial)
+
+    np_result = np_a[flag]
+    num_result = num_a[flag]
+    assert np_result.shape == num_result.shape
+    assert np.array_equal(np_result, np.array(num_result))
+
+    rhs = np.arange(np_result.size).reshape(np_result.shape)
+    np_a[flag] = rhs
+    num_a[flag] = num.array(rhs)
+    assert np.array_equal(np_a, np.array(num_a))
+
+
+def test_bool_col_set_empty_selection_broadcast() -> None:
+    # k > 0 empty-selection SET (a[:, empty_mask] = rhs): assignment
+    # broadcasting is directional, so the RHS must broadcast *to* the indexed
+    # shape (1, 0). rhs (2, 0) shares a symmetric broadcast result with (1, 0)
+    # but cannot broadcast into it, so NumPy — and cuPyNumeric — must raise.
+    arr = num.ones((1, 0))
+    mask = num.zeros((0,), dtype=bool)  # empty mask over the size-0 axis
+
+    # valid: scalar and (1, 0) rhs broadcast into (1, 0) -> no-op
+    arr[:, mask] = 5
+    arr[:, mask] = num.ones((1, 0))
+
+    # invalid: (2, 0) cannot broadcast to (1, 0) — matches NumPy's ValueError.
+    np_arr = np.ones((1, 0))
+    np_mask = np.zeros((0,), dtype=bool)
+    with pytest.raises(ValueError):
+        np_arr[:, np_mask] = np.ones((2, 0))
+    with pytest.raises(ValueError):
+        arr[:, mask] = num.ones((2, 0))
+
+
+def test_bool_whole_mask_set_requires_low_rank_rhs() -> None:
+    # A whole-array boolean mask selects a 1-D run, so NumPy requires a 0- or
+    # 1-D rhs and raises for a size-1 but multi-dim rhs like (1, 1) instead of
+    # silently scattering.  Pins the rank guard before strategy selection.
+    np_a = np.arange(6).reshape(2, 3)
+    np_mask = np.array([[True, False, True], [False, True, False]])
+    num_mask = num.array(np_mask)
+
+    # valid: scalar and matching 1-D rhs broadcast/assign as NumPy does.
+    np_a2, num_a2 = np_a.copy(), num.array(np_a.copy())
+    np_a2[np_mask] = 7
+    num_a2[num_mask] = 7
+    np_a2[np_mask] = np.array([10, 20, 30])
+    num_a2[num_mask] = num.array([10, 20, 30])
+    assert np.array_equal(np_a2, np.array(num_a2))
+
+    # invalid: size-1 but 2-D rhs -> raises like NumPy (a 0/1-D input is
+    # required for a whole-mask assignment).
+    with pytest.raises((TypeError, ValueError)):
+        np_a.copy()[np_mask] = np.ones((1, 1))
+    with pytest.raises((TypeError, ValueError)):
+        num.array(np_a.copy())[num_mask] = num.ones((1, 1))
+
+
+@pytest.mark.parametrize(
+    "mask, rhs_shape",
+    [
+        ([True, True], (1, 2)),
+        ([True, False], (1, 1)),
+        ([False, False], (1, 0)),
+    ],
+    ids=["general", "putmask", "empty"],
+)
+def test_bool_whole_mask_set_checks_pre_squeeze_rank(
+    mask: list[bool], rhs_shape: tuple[int, ...]
+) -> None:
+    np_a = np.zeros(2)
+    num_a = num.zeros(2)
+    np_mask = np.array(mask)
+    num_mask = num.array(mask)
+
+    with pytest.raises(TypeError):
+        np_a[np_mask] = np.ones(rhs_shape)
+    with pytest.raises(TypeError):
+        num_a[num_mask] = num.ones(rhs_shape)
+
+
+def test_int_array_set_keeps_leading_singleton_broadcast() -> None:
+    np_a = np.zeros(2)
+    num_a = num.zeros(2)
+    np_idx = np.array([0, 1])
+    num_idx = num.array(np_idx)
+    rhs = np.ones((1, 2))
+
+    np_a[np_idx] = rhs
+    num_a[num_idx] = num.array(rhs)
+    assert np.array_equal(np_a, np.array(num_a))
+
+
+def test_bool_set_empty_selection_excess_leading_singleton() -> None:
+    # A (2, 0) leading mask selects shape (0, 3) from a rank-3 target.  Keeping
+    # target and RHS ranks equal prevents public preprocessing from squeezing
+    # the RHS, so this reaches the excess-leading-singleton branch directly.
+    np_a = np.ones((2, 0, 3))
+    num_a = num.array(np_a)
+    np_mask = np.zeros((2, 0), dtype=bool)
+    num_mask = num.array(np_mask)
+
+    # both the exact (0, 3) and the excess-leading-singleton (1, 0, 3) assign
+    # (as empty no-ops) without raising, matching NumPy.
+    np_a[np_mask] = np.ones((0, 3))
+    num_a[num_mask] = num.ones((0, 3))
+    np_a[np_mask] = np.ones((1, 0, 3))
+    num_a[num_mask] = num.ones((1, 0, 3))
+    assert np.array_equal(np_a, np.array(num_a))
 
 
 def test_advanced_indexing_dimension_mismatch() -> None:
