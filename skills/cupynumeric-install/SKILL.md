@@ -2,7 +2,7 @@
 name: cupynumeric-install
 description: Install and verify cuPyNumeric for Python — requirements, commands, verification. Source builds are out of scope.
 license: CC-BY-4.0 OR Apache-2.0
-compatibility: linux-x86_64, linux-aarch64, darwin-aarch64, wsl-x86_64
+compatibility: linux-x86_64, linux-aarch64, wsl-x86_64
 metadata:
   author: "NVIDIA Corporation <legate@nvidia.com>"
   version: "2.0.0"
@@ -36,8 +36,8 @@ Confirm these system requirements before recommending any install:
 
 - **GPU**: Compute Capability ≥ 7.0 (Volta+). CPU-only also supported.
 - **CUDA**: 12.2+.
-- **OS**: Linux (x86_64 / aarch64), macOS aarch64 (pip wheels only), Windows via WSL.
-- **Python**: 3.11 through 3.14 on Linux; 3.11 through 3.13 on macOS aarch64.
+- **OS**: Linux (x86_64 / aarch64), Windows via WSL.
+- **Python**: 3.11 through 3.14
 - **conda**: ≥ 24.1 (conda path only).
 - **Package manager**: conda (upstream-recommended) or pip. If neither is present, bootstrap one first (see Instructions).
 
