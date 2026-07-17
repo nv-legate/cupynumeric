@@ -53,7 +53,7 @@ x : array_like
 out : ndarray, or None, optional
     A location into which the result is stored. If provided, it must have
     a shape that the inputs broadcast to. If not provided or None,
-    a freshly-allocated array is returned. A tuple (possible only as a
+    a freshly allocated array is returned. A tuple (possible only as a
     keyword argument) must have length equal to the number of outputs.
 where : array_like, optional
     This condition is broadcast over the input. At locations where the
@@ -90,7 +90,7 @@ x : array_like
 out : tuple[ndarray or None], or None, optional
     A location into which the result is stored. If provided, it must have
     a shape that the inputs broadcast to. If not provided or None,
-    a freshly-allocated array is returned. A tuple (possible only as a
+    a freshly allocated array is returned. A tuple (possible only as a
     keyword argument) must have length equal to the number of outputs.
 where : array_like, optional
     This condition is broadcast over the input. At locations where the
@@ -129,7 +129,7 @@ x1, x2 : array_like
 out : ndarray, None, or tuple[ndarray or None], optional
     A location into which the result is stored. If provided, it must have
     a shape that the inputs broadcast to. If not provided or None,
-    a freshly-allocated array is returned. A tuple (possible only as a
+    a freshly allocated array is returned. A tuple (possible only as a
     keyword argument) must have length equal to the number of outputs.
 where : array_like, optional
     This condition is broadcast over the input. At locations where the
@@ -975,7 +975,7 @@ class binary_ufunc(ufunc[BinaryOpCode]):
             of the input array if no output array is provided.
         out : ndarray, None, or tuple of ndarray and None, optional
             A location into which the result is stored. If not provided or
-            None, a freshly-allocated array is returned. For consistency with
+            None, a freshly allocated array is returned. For consistency with
             ``ufunc.__call__``, if given as a keyword, this may be wrapped in a
             1-element tuple.
         keepdims : bool, optional

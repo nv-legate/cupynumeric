@@ -144,8 +144,9 @@ def real_if_close(a: ndarray, tol: float = 100) -> ndarray:
     Returns
     -------
     out : ndarray
-        If a is real, the type of a is used for the output. If a has complex
-        elements, the returned type is float.
+        If `a` is real, the type of `a` is used for the output. If `a` has
+        complex elements whose imaginary parts are close to zero, the returned
+        type is float; otherwise, `a` is returned unchanged.
 
     See Also
     --------
