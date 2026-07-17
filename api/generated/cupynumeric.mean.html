@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cupynumeric.mean &#8212; NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b)</title>
+    <title>cupynumeric.mean &#8212; NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../../_static/documentation_options.js?v=67b966e2"></script>
+    <script src="../../_static/documentation_options.js?v=5811e033"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -139,11 +139,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640)</p>
   
 </a></div>
     
@@ -257,11 +257,11 @@
       
     
     
-    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
-    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640)</p>
   
 </a>
 
@@ -1017,18 +1017,18 @@ expected output, but the type will be cast if necessary.</p></li>
 in the result as dimensions with size one. With this option,
 the result will broadcast correctly against the input array.</p>
 <p>If the default value is passed, then <cite>keepdims</cite> will not be
-passed through to the <cite>mean</cite> method of sub-classes of
+passed through to the <cite>mean</cite> method of subclasses of
 <cite>ndarray</cite>, however any non-default value will be.  If the
-sub-class’ method does not implement <cite>keepdims</cite> any
-exceptions will be raised.</p>
+subclass’s method does not implement <cite>keepdims</cite>, an
+exception will be raised.</p>
 </p></li>
 <li><p><strong>where</strong> (<em>array_like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Elements to include in the mean.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>m</strong> – If <cite>out is None</cite>, returns a new array of the same dtype a above
-containing the mean values, otherwise a reference to the output
-array is returned.</p>
+<dd class="field-even"><p><strong>m</strong> – If <cite>out is None</cite>, returns a new array containing the mean values with
+the computed dtype (<cite>float64</cite> for integer inputs by default).
+Otherwise, a reference to the output array is returned.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="../_ndarray.html#cupynumeric.ndarray" title="cupynumeric.ndarray">ndarray</a></p>

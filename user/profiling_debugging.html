@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Advanced Topics in cuPyNumeric (Profiling &amp; Debugging) &#8212; NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b)</title>
+    <title>Advanced Topics in cuPyNumeric (Profiling &amp; Debugging) &#8212; NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640)</title>
   
   
   
@@ -44,7 +44,7 @@
 
 
 
-    <script src="../_static/documentation_options.js?v=67b966e2"></script>
+    <script src="../_static/documentation_options.js?v=5811e033"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -139,11 +139,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640)</p>
   
 </a></div>
     
@@ -257,11 +257,11 @@
       
     
     
-    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
-    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640) - Home"/>
   
   
-    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+89.gafba829b)</p>
+    <p class="title logo__title">NVIDIA cuPyNumeric (26.07.00.dev+91.gcabe3640)</p>
   
 </a>
 
@@ -1228,8 +1228,8 @@ while long solid blocks indicate fewer, larger tasks (better utilization).</p>
 <section id="what-this-shows">
 <h5>What this shows<a class="headerlink" href="#what-this-shows" title="Link to this heading">#</a></h5>
 <p>User’s compute tasks, computations, and data movement on main CPU worker
-cores. Long, solid bars means a few large tasks/operations (good). Dense
-“bar-code” slivers means many tiny tasks (bad). This is where you read task
+cores. Long, solid bars mean a few large tasks/operations (good). Dense
+“barcode” slivers mean many tiny tasks (bad). This is where you read task
 time and spot idle gaps between tasks.</p>
 <a class="reference internal image-reference" href="../_images/Inefficient_CPU2.png"><img alt="Inefficient CPU profiler timeline with many tiny tasks" src="../_images/Inefficient_CPU2.png" style="width: 90%;" />
 </a>
@@ -1254,7 +1254,7 @@ element-wise operations (<code class="docutils literal notranslate"><span class=
 flat, low amplitude reflects the <code class="docutils literal notranslate"><span class="pre">CHUNK</span> <span class="pre">=</span> <span class="pre">4096</span></code> loop breaking work into
 thousands of short slices, so cores never fully saturate. In the worker lanes
 (c2-c9), this appears as a few early long, dark bars for the big operations,
-then dense “bar-code” slivers across many cores for the rest of the run. Each
+then dense “barcode” slivers across many cores for the rest of the run. Each
 sliver is a tiny task from the slice loop. This fragmentation is bad: it
 reduces sustained CPU utilization, increases context switching, and hurts cache
 locality, so time shifts from steady computation to orchestrating tiny tasks.</p>
@@ -1422,7 +1422,7 @@ forces its own DMA operation.</p>
 <col style="width: 100.0%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><strong>What would good look like?</strong> A handful of short, tall bursts around the major steps: write once into             <code class="docutils literal notranslate"><span class="pre">z</span></code>, do a single masked overwrite for the condition, then perform two whole-array threshold updates.             Between bursts the baseline stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid bars        instead of bar-code slivers.</p></td>
+<tr class="row-odd"><td><p><strong>What would good look like?</strong> A handful of short, tall bursts around the major steps: write once into             <code class="docutils literal notranslate"><span class="pre">z</span></code>, do a single masked overwrite for the condition, then perform two whole-array threshold updates.             Between bursts the baseline stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid bars        instead of barcode slivers.</p></td>
 </tr>
 </tbody>
 </table>

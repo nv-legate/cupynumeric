@@ -16,8 +16,6 @@
                 "## Learning Outcomes\n",
                 "This example teaches how to compute the solution for systems of equations in two variables using NumPy. There are two equations, $f_{1}(x,y)$ and $f_{2}(x, y)$, with two variables each, $x$ and $y$. We seek to find a solution that satisfies these two equations using Newton's method. To understand Newton's method in multiple dimensions, please see [this](https://wiki.math.ntnu.no/_media/tma4125/2017v/newton.pdf) note by Markus Grasmair.\n",
                 "\n",
-                "The example also teaches how to interpret a warning from cuPyNumeric when the import statement is changed from importing numpy to importing cuPyNumeric.\n",
-                "\n",
                 "---"
             ]
         },
@@ -97,25 +95,9 @@
             "id": "136e1298-9af2-4fc3-9b1a-a56afbd54d7a",
             "metadata": {},
             "source": [
-                "Setup an iterative loop that updates an initial guess $x_{k} =  x_{k-1} - {[\\mathbf{J}(x_{k})]}^{-1} \\cdot \\mathbf{f}(x_{k})$\\\n",
+                "Set up an iterative loop that updates an initial guess $x_{k+1} = x_{k} - {[\\mathbf{J}(x_{k})]}^{-1} \\cdot \\mathbf{f}(x_{k})$\\\n",
                 "To compute the inverse of the matrix, $\\mathbf{J}$, we use the `inv` API from NumPy's `linalg` package, and to determine when to terminate the loop, \\\n",
                 "we compute the L2 norm of the difference in solution between two iterations and check if it is less than a specified tolerance."
-            ]
-        },
-        {
-            "cell_type": "markdown",
-            "id": "a91752f1-5ca8-44dd-9a26-525cdf87ab51",
-            "metadata": {},
-            "source": [
-                "When you switch the import statement from importing to importing cupynumeric, you might see a warning like this:\n",
-                "\n",
-                "---\n",
-                "\n",
-                "*RuntimeWarning: cuPyNumeric has not implemented inv and is falling back to canonical NumPy. You may notice significantly decreased performance for this function call.*\n",
-                "\n",
-                "---\n",
-                "\n",
-                "This means that cuPyNumeric has not implemented the `linalg.inv` API and is falling back to NumPy's implementation. This means that the API would be *eagerly* executed using NumPy's single-threaded implementation. If the API was intended to be invoked from a GPU, the data will get transferred from the GPU to the CPU before the API is executed. This can have performance implications, as indicated by the warning."
             ]
         },
         {
@@ -177,7 +159,7 @@
                 "We see that the solution has converged to $(x, y) = (-2, 3)$ which satisfies both equations in 7 iterations\n",
                 "\n",
                 "The problem can be cast such that the computation of inverse is substituted by a linear solve, as shown below:\\\n",
-                "$x_{k} =  x_{k-1} - x_{k}^{*}$\\\n",
+                "$x_{k+1} = x_{k} - x_{k}^{*}$\\\n",
                 "$x_{k}^{*} = {[\\mathbf{J}(x_{k})]}^{-1} \\cdot \\mathbf{f}(x_{k})$\n",
                 "\n",
                 "And $x_{k}^{*} $ is solution to the system of equation defined as ${\\mathbf{J}(x_{k})}~ x_{k}^{*} = \\mathbf{f}(x_{k})$\n",
