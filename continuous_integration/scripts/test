@@ -7,8 +7,7 @@ quiet_legate_conda_retry() {
 setup_env() {
     set -euo pipefail
 
-    . conda-dnld-utils
-    setup_conda_channel;
+    conda config --set channel_priority strict
     export DEBIAN_FRONTEND=non-interactive
 
     # Run package updates and install packages
@@ -29,7 +28,7 @@ setup_env() {
         -y
         -n legate
         -c "${ARTIFACTS_DIR}/conda-build/cupynumeric"
-        -c "https://conda.anaconda.org/${CONDA_CHANNEL}/label/${CONDA_LABEL}"
+        -c "${ARTIFACTS_DIR}/conda-build/legate"
         -c conda-forge
         legate
         cupynumeric

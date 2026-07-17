@@ -16,12 +16,13 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      ref-sha:
-        description: 'The Full-commit SHA to checkout. Default=HEAD'
-        required: false
-        default: ''
       ci-verbose:
         description: 'Print full CI diagnostics and uncapped artifact summaries'
+        required: false
+        type: boolean
+        default: false
+      publish-packages:
+        description: 'Publish successful package builds to Anaconda'
         required: false
         type: boolean
         default: false
@@ -50,13 +51,10 @@ jobs:
     with:
       build-type: nightly
       platform: ${{ matrix.platform }}
-      ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
       build-has-tests: true
       cuda-version: "12.9.0"
-      refname: ${{ github.ref_name }}
-      default-branch: ${{ github.event.repository.default_branch }}
       ci-verbose: ${{ github.event_name == 'workflow_dispatch' && inputs.ci-verbose || false }}
     secrets: inherit
 
@@ -81,13 +79,11 @@ jobs:
     with:
       build-type: nightly
       platform: ${{ matrix.platform }}
-      ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
       build-has-tests: false
       cuda-version: "12.9.0"
-      refname: ${{ github.ref_name }}
-      default-branch: ${{ github.event.repository.default_branch }}
+      publish-packages: ${{ github.event_name == 'workflow_dispatch' && inputs.publish-packages || false }}
       ci-verbose: ${{ github.event_name == 'workflow_dispatch' && inputs.ci-verbose || false }}
     secrets: inherit
 
@@ -112,13 +108,10 @@ jobs:
     with:
       build-type: nightly
       platform: ${{ matrix.platform }}
-      ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
       build-has-tests: true
       cuda-version: "13.0.0"
-      refname: ${{ github.ref_name }}
-      default-branch: ${{ github.event.repository.default_branch }}
       ci-verbose: ${{ github.event_name == 'workflow_dispatch' && inputs.ci-verbose || false }}
     secrets: inherit
 
@@ -143,13 +136,11 @@ jobs:
     with:
       build-type: nightly
       platform: ${{ matrix.platform }}
-      ref-sha: ${{ github.event.inputs.ref-sha }}
       python-version: ${{ matrix.python-version }}
       target-device: ${{ matrix.target-device }}
       build-has-tests: false
       cuda-version: "13.0.0"
-      refname: ${{ github.ref_name }}
-      default-branch: ${{ github.event.repository.default_branch }}
+      publish-packages: ${{ github.event_name == 'workflow_dispatch' && inputs.publish-packages || false }}
       ci-verbose: ${{ github.event_name == 'workflow_dispatch' && inputs.ci-verbose || false }}
     secrets: inherit
 
@@ -168,10 +159,10 @@ jobs:
       ./.github/workflows/gh-build-docs.yml
     with:
       platform: ${{ matrix.platform }}
-      ref-sha: ${{ github.event.inputs.ref-sha }}
       target-device: ${{ matrix.target-device }}
       build-mode: ${{ matrix.build-mode }}
       build-type: nightly
+      python-version: "3.14"
       upload-docs-to-gh-pages: true
       ci-verbose: ${{ github.event_name == 'workflow_dispatch' && inputs.ci-verbose || false }}
     secrets: inherit
@@ -181,7 +172,7 @@ jobs:
     # Temporarily suspend mirroring to the public repository.
     if: ${{ false }}
     uses:
-      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@v1.50
+      nv-legate/legate-gh-ci/.github/workflows/gh-push-code.yml@v1.51
     with:
       runs-on: linux-amd64-cpu4
       source-repo: "${{ github.repository_owner }}/cupynumeric.internal"

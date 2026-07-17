@@ -37,16 +37,15 @@
             versioningTemplate: "conda",
         },
         {
-            // Track the latest nightly upload-success branch and update git_tag.
+            // Track the configured nightly artifact-ready ref and update git_tag.
             customType: "regex",
             datasourceTemplate: "git-refs",
             depNameTemplate: "Legate",
-            description: "Update Legate git_tag from nightly-uploaded-main",
+            description: "Update Legate git_tag from nightly_artifact_ref",
             managerFilePatterns: ["/cmake/versions\\.json$/"],
             matchStrings: [
-                '"git_tag"\\s*:\\s*"(?<currentDigest>[0-9a-f]{40})"',
+                '"git_tag"\\s*:\\s*"(?<currentDigest>[0-9a-f]{40})"[\\s\\S]*?"nightly_artifact_ref"\\s*:\\s*"(?<currentValue>[^"]+)"',
             ],
-            currentValueTemplate: "nightly-uploaded-main",
             packageNameTemplate: "https://github.com/nv-legate/legate.internal.git",
         },
     ],
@@ -159,7 +158,7 @@
             matchDatasources: ["git-refs"],
             matchManagers: ["custom.regex"],
             prBodyNotes: [
-                "This PR updates the pinned git SHA from nightly-uploaded-main.",
+                "This PR updates the pinned git SHA from the configured nightly artifact-ready ref.",
                 "Please review and run targeted tests as needed.",
             ],
         },

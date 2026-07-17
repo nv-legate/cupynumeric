@@ -1,13 +1,13 @@
 {
     "packages": {
         "legate": {
-            "always_download": false,
-            "anaconda_label": "main",
-            "artifact_name": "${{ inputs.platform }}-${{ inputs.build-type }}-<<repo>>-python${{ inputs.python-version }}-${{ inputs.target-device }}-release-with_tests-${{ inputs.network }}-<<git_tag>>",
+            "artifact_name": "<<platform>>-<<build_type>>-<<repo>>-python<<python_version>>-<<target_device>>-release-with_tests-<<network>>-cuda<<cuda_major>>-<<git_tag>>",
             "artifact_workflow": "ci-gh.yml",
+            "cpu_artifact_cuda_major": "13",
             "git_shallow": false,
-            "git_tag": "b83d960f5a56b3ab23bb38764ef7d84526663072",
+            "git_tag": "e57d8ea8eadd0de0b481560d6fbe0d2f07034e70",
             "git_url": "git@github.com:nv-legate/legate.internal.git",
+            "nightly_artifact_ref": "nightly-artifacts-main",
             "nightly_workflow": "ci-gh-nightly-release.yml",
             "org": "nv-legate",
             "repo": "legate.internal",

@@ -37,6 +37,7 @@ jobs:
       target-device: ${{ matrix.target-device }}
       build-mode: ${{ matrix.build-mode }}
       build-type: ci
+      python-version: "3.14"
       upload-docs-to-gh-pages: false
     secrets: inherit
 
