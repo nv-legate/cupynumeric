@@ -277,7 +277,7 @@ def eigh(a: ndarray, UPLO: str = "L") -> tuple[ndarray, ...]:
     a : (..., M, M) array_like
         Matrices for which the eigenvalues and right eigenvectors will be
         computed, at least dimension 2.
-    UPLO {'L', 'U'}, optional
+    UPLO : {'L', 'U'}, optional
         Specifies whether the calculation is done with the lower triangular
         part of a ('L', default) or the upper triangular part ('U').
         Irrespective of this value only the real parts of the diagonal will
@@ -343,7 +343,7 @@ def eigvalsh(a: ndarray, UPLO: str = "L") -> ndarray:
     a : (..., M, M) array_like
         Matrices for which the eigenvalues will be computed, at least
         dimension 2.
-    UPLO {'L', 'U'}, optional
+    UPLO : {'L', 'U'}, optional
         Specifies whether the calculation is done with the lower triangular
         part of a ('L', default) or the upper triangular part ('U').
         Irrespective of this value only the real parts of the diagonal will

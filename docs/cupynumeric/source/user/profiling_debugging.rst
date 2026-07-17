@@ -293,8 +293,8 @@ What this shows
 """""""""""""""
 
 User’s compute tasks, computations, and data movement on main CPU worker
-cores. Long, solid bars means a few large tasks/operations (good). Dense
-“bar-code” slivers means many tiny tasks (bad). This is where you read task
+cores. Long, solid bars mean a few large tasks/operations (good). Dense
+“barcode” slivers mean many tiny tasks (bad). This is where you read task
 time and spot idle gaps between tasks.
 
 .. image:: ../_images/profiling_debugging/Inefficient_CPU2.png
@@ -329,7 +329,7 @@ element-wise operations (``z = x + y``, ``z_alt = x*y + 1.0``). The subsequent
 flat, low amplitude reflects the ``CHUNK = 4096`` loop breaking work into
 thousands of short slices, so cores never fully saturate. In the worker lanes
 (c2-c9), this appears as a few early long, dark bars for the big operations,
-then dense “bar-code” slivers across many cores for the rest of the run. Each
+then dense “barcode” slivers across many cores for the rest of the run. Each
 sliver is a tiny task from the slice loop. This fragmentation is bad: it
 reduces sustained CPU utilization, increases context switching, and hurts cache
 locality, so time shifts from steady computation to orchestrating tiny tasks.
@@ -516,7 +516,7 @@ forces its own DMA operation.
    :widths: 100
    :header-rows: 0
 
-   * - **What would good look like?** A handful of short, tall bursts around the major steps: write once into             ``z``, do a single masked overwrite for the condition, then perform two whole-array threshold updates.             Between bursts the baseline stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid bars        instead of bar-code slivers.
+   * - **What would good look like?** A handful of short, tall bursts around the major steps: write once into             ``z``, do a single masked overwrite for the condition, then perform two whole-array threshold updates.             Between bursts the baseline stays quiet, utility lanes are mostly idle, and CPU lanes show long, solid bars        instead of barcode slivers.
 
 6) Dependent Partitioning (dp)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

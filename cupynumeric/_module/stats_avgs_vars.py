@@ -202,10 +202,10 @@ def mean(
         the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be
-        passed through to the `mean` method of sub-classes of
+        passed through to the `mean` method of subclasses of
         `ndarray`, however any non-default value will be.  If the
-        sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
+        subclass's method does not implement `keepdims`, an
+        exception will be raised.
 
     where : array_like of bool, optional
         Elements to include in the mean.
@@ -213,9 +213,9 @@ def mean(
     Returns
     -------
     m : ndarray
-        If `out is None`, returns a new array of the same dtype a above
-        containing the mean values, otherwise a reference to the output
-        array is returned.
+        If `out is None`, returns a new array containing the mean values with
+        the computed dtype (`float64` for integer inputs by default).
+        Otherwise, a reference to the output array is returned.
 
     See Also
     --------

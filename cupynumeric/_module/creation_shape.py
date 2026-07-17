@@ -245,7 +245,7 @@ def eye(
     Returns
     -------
     I : ndarray
-      An array  of shape (N, M) where all elements are equal to zero, except
+      An array of shape (N, M) where all elements are equal to zero, except
       for the `k`-th diagonal, whose values are equal to one.
 
     See Also

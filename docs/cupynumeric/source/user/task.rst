@@ -235,7 +235,7 @@ Histogram problem
 =================
 
 Histogram computation involves counting how many data points fall into
-specific bins, This is useful in tasks like statistical analysis and
+specific bins. This is useful in tasks like statistical analysis and
 image processing. In this example, Legate and cuPyNumeric are used to compute a
 histogram in parallel, with a key focus on the ``broadcast`` constraint.
 Broadcasting ensures that the histogram array is not split across

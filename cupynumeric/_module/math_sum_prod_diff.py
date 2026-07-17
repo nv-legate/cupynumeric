@@ -86,10 +86,10 @@ def prod(
         will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be
-        passed through to the `prod` method of sub-classes of
+        passed through to the `prod` method of subclasses of
         `ndarray`, however any non-default value will be.  If the
-        sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
+        subclass's method does not implement `keepdims`, an
+        exception will be raised.
     initial : scalar, optional
         The starting value for this product. See `~cupynumeric.ufunc.reduce`
         for details.
@@ -170,10 +170,10 @@ def sum(
         the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be
-        passed through to the `sum` method of sub-classes of
+        passed through to the `sum` method of subclasses of
         `ndarray`, however any non-default value will be.  If the
-        sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
+        subclass's method does not implement `keepdims`, an
+        exception will be raised.
     initial : scalar, optional
         Starting value for the sum. See `~cupynumeric.ufunc.reduce` for
         details.
@@ -341,7 +341,7 @@ def nancumprod(
 ) -> ndarray:
     """
     Return the cumulative product of the elements along a given axis treating
-    Not a Numbers (NaNs) as one. The cumulative product does not change when
+    NaN values as one. The cumulative product does not change when
     NaNs are encountered and leading NaNs are replaced by ones.
 
     Ones are returned for slices that are all-NaN or empty.
@@ -616,10 +616,10 @@ def nanmin(
         the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be
-        passed through to the `amin` method of sub-classes of
+        passed through to the `amin` method of subclasses of
         `ndarray`, however any non-default value will be.  If the
-        sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
+        subclass's method does not implement `keepdims`, an
+        exception will be raised.
 
     initial : scalar, optional
         The maximum value of an output element. Must be present to allow
@@ -712,10 +712,10 @@ def nanmax(
         the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be
-        passed through to the `amax` method of sub-classes of
+        passed through to the `amax` method of subclasses of
         `ndarray`, however any non-default value will be.  If the
-        sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
+        subclass's method does not implement `keepdims`, an
+        exception will be raised.
 
     initial : scalar, optional
         The minimum value of an output element. Must be present to allow
@@ -781,7 +781,7 @@ def nanprod(
 ) -> ndarray:
     """
     Return the product of array elements over a given axis treating
-    Not a Numbers (NaNs) as ones.
+    NaN values as ones.
 
     One is returned for slices that are all-NaN or empty.
 
@@ -812,10 +812,10 @@ def nanprod(
         will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be
-        passed through to the `prod` method of sub-classes of
+        passed through to the `prod` method of subclasses of
         `ndarray`, however any non-default value will be.  If the
-        sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
+        subclass's method does not implement `keepdims`, an
+        exception will be raised.
     initial : scalar, optional
         The starting value for this product. See `~cupynumeric.ufunc.reduce`
         for details.
@@ -877,7 +877,7 @@ def nansum(
 ) -> ndarray:
     """
     Return the sum of array elements over a given axis treating
-    Not a Numbers (NaNs) as zero.
+    NaN values as zero.
 
     Zero is returned for slices that are all-NaN or empty.
 
@@ -978,7 +978,7 @@ def diff(
         Values to prepend or append to `a` along axis prior to
         performing the difference.  Scalar values are expanded to
         arrays with length 1 in the direction of axis and the shape
-        of the input array in along all other axes.  Otherwise the
+        of the input array along all other axes.  Otherwise the
         dimension and shape must match `a` except along axis.
 
     Returns
