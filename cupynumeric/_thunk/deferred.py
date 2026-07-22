@@ -5565,26 +5565,46 @@ class DeferredArray:
         # the source, so use the Layer-C dispatch directly.
         self._dispatch_gather(self.base, src.base, indirect.base)
 
+    def histogram_no_weight(
+        self, src: DeferredArray, bins: DeferredArray
+    ) -> None:
+        src_array = src
+        bins_array = bins
+        dst_array = self
+        assert len(src_array.shape) == 1 and src_array.size > 0
+        assert dst_array.ndim == 1
+
+        dst_array.fill(np.array(0, dst_array.dtype))
+
+        task = legate_runtime.create_auto_task(
+            self.library, CuPyNumericOpCode.HISTOGRAM_NOWEIGHT
+        )
+        p_dst = task.add_reduction(dst_array.base, ReductionOpKind.ADD)
+        task.add_input(src_array.base)
+        p_bins = task.add_input(bins_array.base)
+
+        task.add_constraint(broadcast(p_bins))
+        task.add_constraint(broadcast(p_dst))
+
+        task.execute()
+
     # Perform a histogram operation on the array
-    def histogram(
+    # TODO(amberhassaan): break up into three cases. histogram_even,
+    # histogram_range, histogram_weighted
+    def histogram_weighted(
         self, src: DeferredArray, bins: DeferredArray, weights: DeferredArray
     ) -> None:
         weight_array = weights
         src_array = src
         bins_array = bins
         dst_array = self
-        assert src_array.size > 0
+        assert len(src_array.shape) == 1 and src_array.size > 0
         assert dst_array.ndim == 1
-        assert (
-            (len(src_array.shape) == 1)
-            and (len(weight_array.shape) == 1)
-            and (src_array.size == weight_array.size)
-        )
 
         dst_array.fill(np.array(0, dst_array.dtype))
 
         task = legate_runtime.create_auto_task(
-            self.library, CuPyNumericOpCode.HISTOGRAM
+            self.library, CuPyNumericOpCode.HISTOGRAM_WEIGHTED
         )
         p_dst = task.add_reduction(dst_array.base, ReductionOpKind.ADD)
         p_src = task.add_input(src_array.base)

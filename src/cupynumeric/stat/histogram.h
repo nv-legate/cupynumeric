@@ -20,17 +20,29 @@
 
 namespace cupynumeric {
 
-struct HistogramArgs {
-  legate::PhysicalStore result;
-  legate::PhysicalStore src;
-  legate::PhysicalStore bins;
-  legate::PhysicalStore weights;
-};
-
-class HistogramTask : public CuPyNumericTask<HistogramTask> {
+class HistogramNoWeightTask : public CuPyNumericTask<HistogramNoWeightTask> {
  public:
   static inline const auto TASK_CONFIG =
-    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_HISTOGRAM}};
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_HISTOGRAM_NOWEIGHT}};
+
+  static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+  static constexpr auto OMP_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+  static constexpr auto GPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
+
+ public:
+  static void cpu_variant(legate::TaskContext context);
+#if LEGATE_DEFINED(LEGATE_USE_OPENMP)
+  static void omp_variant(legate::TaskContext context);
+#endif
+#if LEGATE_DEFINED(LEGATE_USE_CUDA)
+  static void gpu_variant(legate::TaskContext context);
+#endif
+};
+
+class HistogramWeightedTask : public CuPyNumericTask<HistogramWeightedTask> {
+ public:
+  static inline const auto TASK_CONFIG =
+    legate::TaskConfig{legate::LocalTaskID{CUPYNUMERIC_HISTOGRAM_WEIGHTED}};
 
   static constexpr auto CPU_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);
   static constexpr auto OMP_VARIANT_OPTIONS = legate::VariantOptions{}.with_has_allocations(true);

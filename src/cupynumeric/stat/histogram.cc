@@ -34,21 +34,40 @@ namespace cupynumeric {
 using namespace legate;
 
 template <Type::Code CODE>
-struct HistogramImplBody<VariantKind::CPU, CODE> {
+struct HistogramNoWeightImplBody<VariantKind::CPU, CODE> {
   TaskContext context;
-  explicit HistogramImplBody(TaskContext context) : context(context) {}
+  explicit HistogramNoWeightImplBody(TaskContext context) : context(context) {}
 
   using VAL = type_of<CODE>;
 
-  // for now, it has been decided to hardcode these types:
-  //
-  using BinType    = double;
-  using WeightType = double;
+  template <typename BinType, typename WeightType>
+  void operator()(const AccessorRO<VAL, 1>& src,
+                  const Rect<1>& src_rect,
+                  const AccessorRO<BinType, 1>& bins,
+                  const Rect<1>& bins_rect,
+                  const AccessorRD<SumReduction<WeightType>, true, 1>& result,
+                  const Rect<1>& result_rect) const
+  {
+    auto exe_pol = thrust::host;
 
-  // in the future we might relax relax that requirement,
-  // but complicate dispatching:
-  //
-  // template <typename BinType = VAL, typename WeightType = VAL>
+    detail::histogram_no_weight_thrust(
+      exe_pol, src, src_rect, bins, bins_rect, result, result_rect);
+  }
+};
+
+/*static*/ void HistogramNoWeightTask::cpu_variant(TaskContext context)
+{
+  histogram_impl_type_dispatch(context, HistogramNoWeightImpl<VariantKind::CPU>{context});
+}
+
+template <Type::Code CODE>
+struct HistogramWeightedImplBody<VariantKind::CPU, CODE> {
+  TaskContext context;
+  explicit HistogramWeightedImplBody(TaskContext context) : context(context) {}
+
+  using VAL = type_of<CODE>;
+
+  template <typename BinType, typename WeightType>
   void operator()(const AccessorRO<VAL, 1>& src,
                   const Rect<1>& src_rect,
                   const AccessorRO<BinType, 1>& bins,
@@ -60,20 +79,21 @@ struct HistogramImplBody<VariantKind::CPU, CODE> {
   {
     auto exe_pol = thrust::host;
 
-    detail::histogram_wrapper(
+    detail::histogram_weighted_thrust(
       exe_pol, src, src_rect, bins, bins_rect, weights, weights_rect, result, result_rect);
   }
 };
 
-/*static*/ void HistogramTask::cpu_variant(TaskContext context)
+/*static*/ void HistogramWeightedTask::cpu_variant(TaskContext context)
 {
-  histogram_template<VariantKind::CPU>(context);
+  histogram_impl_type_dispatch(context, HistogramWeightedImpl<VariantKind::CPU>{context});
 }
 
 namespace  // unnamed
 {
 const auto cupynumeric_reg_task_ = []() -> char {
-  HistogramTask::register_variants();
+  HistogramNoWeightTask::register_variants();
+  HistogramWeightedTask::register_variants();
   return 0;
 }();
 }  // namespace

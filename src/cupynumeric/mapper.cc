@@ -520,7 +520,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     case CUPYNUMERIC_SCATTER: {
       return 0;
     }
-    case CUPYNUMERIC_HISTOGRAM: {
+    case CUPYNUMERIC_HISTOGRAM_NOWEIGHT: [[fallthrough]];
+    case CUPYNUMERIC_HISTOGRAM_WEIGHTED: {
       if (memory_kind == legate::mapping::StoreTarget::ZCMEM) {
         return 0;
       }
@@ -556,8 +557,8 @@ std::optional<std::size_t> CuPyNumericMapper::allocation_pool_size(
     case CUPYNUMERIC_MGRID: {
       return 0;
     }
-    case CUPYNUMERIC_MP_QR:
-    case CUPYNUMERIC_MP_POTRF:
+    case CUPYNUMERIC_MP_QR: [[fallthrough]];
+    case CUPYNUMERIC_MP_POTRF: [[fallthrough]];
     case CUPYNUMERIC_MP_SOLVE: {
       switch (memory_kind) {
         case legate::mapping::StoreTarget::FBMEM: [[fallthrough]];

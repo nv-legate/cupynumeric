@@ -25,9 +25,10 @@ from .._array.util import add_boilerplate
 from .._array.util import convert_to_cupynumeric_ndarray
 from ..types import SortSide
 from .creation_data import asarray
-from .creation_shape import ones, zeros
+from .creation_shape import zeros
 from .math_extrema import amax, amin
 from .ssc_searching import searchsorted
+from .._ufunc import nextafter
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -246,12 +247,6 @@ def histogram(
 
         result_type = weights.dtype
         weights_array = weights.astype(np.dtype(np.float64))
-    else:
-        # case weights == None cannot be handled inside _thunk.histogram,
-        # bc/ of hist ndarray inputs(), below;
-        # needs to be handled here:
-        #
-        weights_array = ones(x.shape, dtype=np.dtype(np.float64))
 
     if x.size == 0:
         return (
@@ -259,16 +254,31 @@ def histogram(
             bins_array.astype(bins_orig_type),
         )
 
-    hist = ndarray._from_inputs((num_intervals,), dtype=weights_array.dtype)
-    hist._thunk.histogram(
-        x._thunk, bins_array._thunk, weights=weights_array._thunk
-    )
+    if weights is not None:
+        hist = ndarray._from_inputs(
+            (num_intervals,), dtype=weights_array.dtype
+        )
+        hist._thunk.histogram_weighted(
+            x._thunk, bins_array._thunk, weights=weights_array._thunk
+        )
+    else:
+        # NOTE(amberhassaan): cub treats the upper limit of the last bin as
+        # exclusive while numpy expects this upper limit to be treated as
+        # inclusive, so that values == max-value can be counted. So, we up the
+        # upper limit of the last bin by the smallest amount to account for this.
+        end = bins_array[-1]
+        bins_array[-1] = nextafter(end, end + 1)
+        hist = ndarray(shape=(num_intervals,), dtype=result_type)
+        hist._thunk.histogram_no_weight(x._thunk, bins_array._thunk)
+        # restore the last index to original value
+        bins_array[-1] = end
 
     # handle (density = True):
     #
     if density:
         result_type = np.dtype(np.float64)
-        hist /= sum(hist)
+        hist = hist.astype(np.float64)
+        hist /= hist.sum()
         hist /= bins_array[1:] - bins_array[:-1]
 
     return hist.astype(result_type), bins_array.astype(bins_orig_type)
@@ -491,10 +501,10 @@ def histogramdd(
         any_missing = np.any([r is None for r in ranges_all])
 
         lower_b_array: ndarray | None = None
-        higher_b_array: ndarray | None = None
+        upper_b_array: ndarray | None = None
         if any_missing:
             lower_b_array = coords.min(axis=0)
-            higher_b_array = coords.max(axis=0)
+            upper_b_array = coords.max(axis=0)
 
         for index_dim, num_edges_dim, range_dim in zip(
             _builtin_range(0, num_dims), bins_all, ranges_all
@@ -506,17 +516,17 @@ def histogramdd(
                         "`ranges` must be None or pairs of increasing values."
                     )
                 lower_b = range_dim[0]
-                higher_b = range_dim[1]
+                upper_b = range_dim[1]
             else:
                 lower_b = float(cast(ndarray, lower_b_array)[index_dim])
-                higher_b = float(cast(ndarray, higher_b_array)[index_dim])
+                upper_b = float(cast(ndarray, upper_b_array)[index_dim])
 
-            step = (higher_b - lower_b) / num_edges_dim
+            step = (upper_b - lower_b) / num_edges_dim
 
             dims = int(num_edges_dim)  # type: ignore [call-overload]
             ks = _builtin_range(dims)
             bins_array = convert_to_cupynumeric_ndarray(
-                [lower_b + k * step for k in ks] + [higher_b]
+                [lower_b + k * step for k in ks] + [upper_b]
             ).astype(np.float64)
 
             bins_set.append(bins_array)
