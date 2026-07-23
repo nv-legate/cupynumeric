@@ -101,6 +101,10 @@ class TestSort(object):
             res_num = num.sort(arr_num, axis=axis, kind=sort_type)
             assert np.array_equal(res_num, res_np)
 
+    @pytest.mark.skip(
+        reason="[severe] hang: sort intermittently deadlocks (stuck NCCL collective) "
+        "on multi-GPU for small non-degenerate 2-D arrays (cupynumeric#781)"
+    )
     @pytest.mark.parametrize("size", SIZES)
     def test_arr_basic_axis(self, size):
         arr_np = np.random.randint(-100, 100, size)
@@ -112,6 +116,10 @@ class TestSort(object):
             arr_num_copy.sort(axis=axis)
             assert np.array_equal(arr_np_copy, arr_num_copy)
 
+    @pytest.mark.skip(
+        reason="[severe] hang: sort intermittently deadlocks (stuck NCCL collective) "
+        "on multi-GPU for small non-degenerate 2-D arrays (cupynumeric#781)"
+    )
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
     def test_arr_basic_axis_sort(self, size, sort_type):
@@ -124,6 +132,10 @@ class TestSort(object):
             arr_num_copy.sort(axis=axis, kind=sort_type)
             assert np.array_equal(arr_np_copy, arr_num_copy)
 
+    @pytest.mark.skip(
+        reason="[severe] hang: sort intermittently deadlocks (stuck NCCL collective) "
+        "on multi-GPU for small non-degenerate 2-D arrays (cupynumeric#781)"
+    )
     @pytest.mark.parametrize("size", SIZES)
     def test_compare_arr_axis(self, size):
         arr_num = num.random.randint(-100, 100, size)
@@ -133,6 +145,10 @@ class TestSort(object):
             arr_num_copy.sort(axis=axis)
             assert np.array_equal(res_num, arr_num_copy)
 
+    @pytest.mark.skip(
+        reason="[severe] hang: sort intermittently deadlocks (stuck NCCL collective) "
+        "on multi-GPU for small non-degenerate 2-D arrays (cupynumeric#781)"
+    )
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
     def test_compare_arr_axis_sort(self, size, sort_type):
@@ -169,6 +185,10 @@ class TestSort(object):
             res_num = num.sort(arr_num, axis=axis, kind=sort_type)
             assert np.array_equal(res_num, res_np)
 
+    @pytest.mark.skip(
+        reason="[severe] hang: sort intermittently deadlocks (stuck NCCL collective) "
+        "on multi-GPU for small non-degenerate 2-D arrays (cupynumeric#781)"
+    )
     @pytest.mark.parametrize("size", SIZES)
     @pytest.mark.parametrize("sort_type", SORT_TYPES)
     def test_compare_complex_arr_axis_sort(self, size, sort_type):
