@@ -281,6 +281,48 @@ def test_tuple_pop() -> None:
     assert tuple_pop(tup, 3) == (1, 2, 3)
 
 
+def test_add_boilerplate_name_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    labels = []
+
+    def fake_profiling_wrapper(func, label):
+        labels.append(label)
+        return func
+
+    monkeypatch.setattr(m, "profiling_wrapper", fake_profiling_wrapper)
+
+    @m.add_boilerplate(name="cupynumeric.coverage.explicit")
+    def func():
+        return "ok"
+
+    assert labels == ["cupynumeric.coverage.explicit"]
+    assert func() == "ok"
+
+
+def test_maybe_convert_to_np_ndarray_converts_cupynumeric_array(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from cupynumeric._array.array import ndarray
+
+    array = object.__new__(ndarray)
+    expected = object()
+
+    def fake_array(self):
+        assert self is array
+        return expected
+
+    monkeypatch.setattr(ndarray, "__array__", fake_array)
+
+    assert m.maybe_convert_to_np_ndarray(array) is expected
+
+
+def test_maybe_convert_to_np_ndarray_keeps_non_array() -> None:
+    obj = object()
+
+    assert m.maybe_convert_to_np_ndarray(obj) is obj
+
+
 if __name__ == "__main__":
     import sys
 
