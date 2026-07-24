@@ -43,6 +43,17 @@ class TestUfuncKindAndRepr:
         r = repr(add_ufunc)
         assert isinstance(r, str)
 
+    def test_ufunc_types_ntypes_and_profile_name(self) -> None:
+        from cupynumeric._ufunc.math import add as add_ufunc
+        from cupynumeric._ufunc.ufunc import _ufunc_profile_name
+
+        types = add_ufunc.types
+
+        assert isinstance(types, list)
+        assert len(types) == add_ufunc.ntypes
+        assert all("->" in signature for signature in types)
+        assert _ufunc_profile_name(add_ufunc) == "cupynumeric.add"
+
 
 class TestUfuncNativeBridgeGuardrail:
     def test_public_ufuncs_do_not_use_native_array_bridge(
@@ -122,6 +133,17 @@ class TestUfuncPrepareOperandsErrors:
             np.add(a_np, b_np, out_np_1, out=out_np_2)
         with pytest.raises(TypeError, match=msg):
             num.add(a, b, out1, out=out2)
+
+    def test_unary_call_full_out_positional_and_kw(self) -> None:
+        from cupynumeric._ufunc.math import negative as negative_ufunc
+
+        x = num.array([1, 2, 3], dtype=np.int32)
+        out1 = num.empty_like(x)
+        out2 = num.empty_like(x)
+
+        msg = r"cannot specify 'out' as both a positional and keyword argument"
+        with pytest.raises(TypeError, match=msg):
+            negative_ufunc._call_full(x, out1, out=out2)
 
     def test_wrong_out_tuple_len(self) -> None:
         a_np = np.array([1, 2, 3], dtype=np.int32)
@@ -267,6 +289,15 @@ class TestUfuncCastingBehavior:
 
 
 class TestUfuncUnaryAndMultiout:
+    def test_unary_call_full_wrong_argcount(self) -> None:
+        from cupynumeric._ufunc.math import negative as negative_ufunc
+
+        with pytest.raises(
+            TypeError,
+            match=r"negative\(\) takes from 1 to 2 positional arguments",
+        ):
+            negative_ufunc._call_full()
+
     def test_unary_resolve_dtype_no_match(self) -> None:
         # unary_ufunc.__call__ bypasses _resolve_dtype in cupynumeric, so call
         # _call_full to exercise the resolution path.
@@ -378,7 +409,139 @@ class TestUfuncUnaryAndMultiout:
             ValueError,
             match=r"The 'out' tuple must have exactly one entry per ufunc output",
         ):
+            num.frexp(x, out=mant_out)
+
+        with pytest.raises(
+            ValueError,
+            match=r"The 'out' tuple must have exactly one entry per ufunc output",
+        ):
             num.frexp(x, out=(mant_out,))
+
+
+class TestThunkCoverage:
+    class FakeThunk:
+        def __init__(self) -> None:
+            self.unary_ops = []
+            self.unary_reductions = []
+            self.converts = []
+
+        def unary_op(self, *args, **kwargs) -> None:
+            self.unary_ops.append((args, kwargs))
+
+        def unary_reduction(self, *args, **kwargs) -> None:
+            self.unary_reductions.append((args, kwargs))
+
+        def convert(self, thunk) -> None:
+            self.converts.append(thunk)
+
+    class FakeArray:
+        def __init__(
+            self, shape: tuple[int, ...], dtype: np.dtype | type
+        ) -> None:
+            self.shape = shape
+            self.dtype = np.dtype(dtype)
+            self.ndim = len(shape)
+            self._thunk = TestThunkCoverage.FakeThunk()
+
+        def astype(
+            self, dtype: np.dtype | type
+        ) -> TestThunkCoverage.FakeArray:
+            return TestThunkCoverage.FakeArray(self.shape, dtype)
+
+    @staticmethod
+    def _patch_from_inputs(monkeypatch):
+        from cupynumeric._array.array import ndarray
+
+        created = []
+
+        def fake_from_inputs(
+            shape: tuple[int, ...], dtype: np.dtype | type
+        ) -> TestThunkCoverage.FakeArray:
+            result = TestThunkCoverage.FakeArray(shape, dtype)
+            created.append(result)
+            return result
+
+        monkeypatch.setattr(
+            ndarray, "_from_inputs", staticmethod(fake_from_inputs)
+        )
+        return created
+
+    def test_invalid_where_thunk_rejected(self) -> None:
+        from cupynumeric._array.thunk import get_where_thunk
+
+        with pytest.raises(
+            RuntimeError, match=r"should have converted this earlier"
+        ):
+            get_where_thunk(object(), (2,))
+
+    def test_complex_absolute_output_dtype(self, monkeypatch) -> None:
+        from cupynumeric._array.thunk import perform_unary_op
+        from cupynumeric.config import UnaryOpCode
+
+        self._patch_from_inputs(monkeypatch)
+        x64 = self.FakeArray((1,), np.complex64)
+        x128 = self.FakeArray((1,), np.complex128)
+
+        result64 = perform_unary_op(UnaryOpCode.ABSOLUTE, x64)
+        result128 = perform_unary_op(UnaryOpCode.ABSOLUTE, x128)
+
+        assert result64.shape == x64.shape
+        assert result128.shape == x128.shape
+        assert result64.dtype == np.dtype(np.float32)
+        assert result128.dtype == np.dtype(np.float64)
+
+    def test_unary_op_rejects_non_broadcastable_output(self) -> None:
+        from cupynumeric._array.thunk import perform_unary_op
+        from cupynumeric.config import UnaryOpCode
+
+        x = self.FakeArray((2, 3), np.float32)
+        out = self.FakeArray((3,), np.float32)
+
+        with pytest.raises(ValueError, match=r"non-broadcastable output"):
+            perform_unary_op(UnaryOpCode.ABSOLUTE, x, out=out)
+
+    def test_non_decomposable_reduce_rejects_dtype(self) -> None:
+        from cupynumeric._array.thunk import perform_unary_reduction
+        from cupynumeric.config import UnaryRedCode
+
+        x = self.FakeArray((3,), np.int64)
+
+        with pytest.raises(TypeError, match=r"Cannot override dtype"):
+            perform_unary_reduction(
+                UnaryRedCode.ARGMAX, x, dtype=np.dtype(np.int64)
+            )
+
+    def test_generic_reduction_uses_out_dtype(self, monkeypatch) -> None:
+        from cupynumeric._array.thunk import perform_unary_reduction
+        from cupynumeric.config import UnaryRedCode
+
+        self._patch_from_inputs(monkeypatch)
+        x = self.FakeArray((3,), np.float32)
+        out = self.FakeArray((), np.float64)
+
+        result = perform_unary_reduction(
+            UnaryRedCode.SUM_SQUARES, x, axis=None, out=out
+        )
+
+        assert result is out
+        assert result.shape == ()
+        assert result.dtype == np.dtype(np.float64)
+
+    def test_generic_reduction_uses_task_accum_dtype(
+        self, monkeypatch
+    ) -> None:
+        from cupynumeric._array.thunk import perform_unary_reduction
+        from cupynumeric.config import UnaryRedCode
+
+        self._patch_from_inputs(monkeypatch)
+        x = self.FakeArray((3,), np.float32)
+
+        result = perform_unary_reduction(
+            UnaryRedCode.SUM_SQUARES, x, axis=None
+        )
+
+        assert result.shape == ()
+        assert result.dtype == np.dtype(np.float32)
 
 
 class TestUfuncBinaryResolution:
