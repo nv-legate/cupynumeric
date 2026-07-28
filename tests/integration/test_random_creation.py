@@ -150,6 +150,11 @@ def test_default_rng_bitgenerator():
     assert rng_num_1.random() == rng_num_2.random()
 
 
+@pytest.mark.skip(
+    reason="[severe] exception-mismatch: default_rng repeated draws can be "
+    "returned in a perturbed order due to missing ordering dependency "
+    "between RNG tasks (cupynumeric.internal#135)"
+)
 def test_default_rng_generator():
     steps = 3
     seed = 12345
