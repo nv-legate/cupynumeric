@@ -21,9 +21,9 @@ metadata:
 
 # Parallel sharded data -> cupynumeric load
 
-**Why this skill exists.** cupynumeric mirrors NumPy's array API,
-including `cupynumeric.load` for a single `.npy` file. Beyond that,
-file *loading* lives in Legate, not cupynumeric:
+**Why this skill exists.** cupynumeric mirrors NumPy's array API, including
+`cupynumeric.load` for a single `.npy` file. Beyond that, file *loading* lives
+in Legate, not cupynumeric:
 
 | Format | Built-in loader |
 |---|---|

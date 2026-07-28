@@ -53,7 +53,7 @@ Follow these steps in order: confirm the prerequisites, ask the scoping question
 
 ### Bootstrap — install a package manager first
 
-If neither `conda` nor `pip` is available, install one. **Provide the command and the docs link; do not run it** — `curl | bash` requires user trust.
+If neither `conda` nor `pip` is available, install one. **Provide the command and the docs link; do not run it**.
 
 #### Recommended: Miniforge (full conda, conda-forge default)
 
@@ -169,7 +169,10 @@ wait "$WORKLOAD"
 rm -rf "$TMPDIR_GPU"
 ```
 
-Expect `memory.used` in the GiB range across most samples and non-trivial `utilization.gpu` in several. If both stay at baseline across every sample, the GPU variant is not installed — check `conda list cupynumeric` for `*_gpu` (not `*_cpu`).
+Expect `memory.used` in the GiB range across most samples and non-trivial
+`utilization.gpu` in several. If both stay at baseline across every sample, the
+GPU variant is not installed — check `conda list cupynumeric` for `*_gpu` (not
+`*_cpu`).
 
 #### Deeper recipes
 
