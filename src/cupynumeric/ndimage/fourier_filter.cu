@@ -46,9 +46,9 @@ static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   }
 
   const Point<DIM> p                            = pitches.unflatten(idx, lo);
-  const double factor                           = fourier_filter_factor<DIM>(p, rect, params);
+  const VAL factor                              = fourier_filter_factor<VAL, DIM>(p, rect, params);
   const VAL in                                  = *(input + (p - rect.lo).dot(input_strides));
-  *(output + (p - rect.lo).dot(output_strides)) = in * static_cast<VAL>(factor);
+  *(output + (p - rect.lo).dot(output_strides)) = in * factor;
 }
 
 template <typename VAL, int DIM>

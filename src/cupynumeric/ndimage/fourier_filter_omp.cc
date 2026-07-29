@@ -39,9 +39,9 @@ struct NdimageFourierFilterImplBody<VariantKind::OMP, VAL, DIM> {
 
 #pragma omp parallel for schedule(static)
     for (size_t idx = 0; idx < volume; ++idx) {
-      const Point<DIM> p  = pitches.unflatten(idx, rect.lo);
-      const double factor = fourier_filter_factor<DIM>(p, rect, params);
-      output[p]           = input[p] * static_cast<VAL>(factor);
+      const Point<DIM> p = pitches.unflatten(idx, rect.lo);
+      const VAL factor   = fourier_filter_factor<VAL, DIM>(p, rect, params);
+      output[p]          = input[p] * factor;
     }
   }
 };

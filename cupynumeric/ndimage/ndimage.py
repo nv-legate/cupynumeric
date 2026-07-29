@@ -287,6 +287,13 @@ def batched_convolve(
     return output
 
 
+def _complex_dtype_for_shift(dtype: np.dtype[Any]) -> np.dtype[Any]:
+    if dtype == np.float32 or dtype == np.float64:
+        # scipy.ndimage.fourier_shift() returns complex128 for both dtypes
+        return np.dtype(np.complex128)
+    return dtype
+
+
 def _normalize_fourier_sequence(
     sigma: float | Sequence[float], ndim: int
 ) -> tuple[float, ...]:
@@ -327,8 +334,15 @@ def _fourier_filter(
     axis = normalize_axis_index(axis, input.ndim)
     sigmas = _normalize_fourier_sequence(sigma, input.ndim)
 
+    if filter_id == FourierFilterType.Shift:
+        result_dtype = _complex_dtype_for_shift(input.dtype)
+        if input.dtype != result_dtype:
+            input = input.astype(result_dtype)
+    else:
+        result_dtype = input.dtype
+
     if output is None:
-        output = ndarray._from_inputs(shape=input.shape, dtype=input.dtype)
+        output = ndarray._from_inputs(shape=input.shape, dtype=result_dtype)
     else:
         check_writeable(output)
         if not (
@@ -341,10 +355,19 @@ def _fourier_filter(
             raise ValueError(
                 f"output shape of {output.shape} does not match input shape {input.shape}"
             )
-        if output.dtype != input.dtype:
-            raise TypeError(
-                f"output dtype {output.dtype} does not match input dtype {input.dtype}"
+        if output.dtype != result_dtype:
+            if filter_id == FourierFilterType.Shift and not np.issubdtype(
+                np.dtype(output.dtype), np.complexfloating
+            ):
+                raise TypeError(
+                    f"output dtype {output.dtype} must be a complex subtype."
+                )
+            temp = ndarray._from_inputs(output.shape, dtype=result_dtype)
+            temp._thunk.ndimage_fourier_filter(
+                input._thunk, sigmas, int(n), int(axis), int(filter_id.value)
             )
+            output._thunk.convert(temp._thunk)
+            return output
 
     output._thunk.ndimage_fourier_filter(
         input._thunk, sigmas, int(n), int(axis), int(filter_id.value)
@@ -456,4 +479,108 @@ def fourier_uniform(
     """
     return _fourier_filter(
         FourierFilterType.Uniform, input, size, n, axis, output
+    )
+
+
+@add_boilerplate("input", "output")
+def fourier_shift(
+    input: ndarray,
+    shift: float | Sequence[float],
+    n: int = -1,
+    axis: int = -1,
+    output: ndarray | None = None,
+) -> ndarray:
+    """
+    Multidimensional Fourier shift filter.
+
+    The input array is multiplied by the Fourier transform corresponding to a
+    spatial-domain shift. The input is expected to already be in the frequency
+    domain, such as the result of an FFT.
+
+    Parameters
+    ----------
+    input : array_like
+        Input array in the Fourier domain.
+    shift : scalar or sequence of scalars
+        Amount of shift, in pixels, to apply in the spatial domain. A scalar
+        value applies the same shift to every axis. A sequence must contain one
+        value per input dimension.
+    n : int, optional
+        If nonnegative, ``input`` is treated as the result of a real FFT along
+        ``axis``, and ``n`` is the original real-domain length before the FFT.
+        If negative, ``input`` is treated as the result of a complex FFT.
+        Default is -1.
+    axis : int, optional
+        Axis of the real transform when ``n`` is nonnegative. Default is -1.
+    output : ndarray, optional
+        If provided, the result of filtering the input is placed in this array.
+
+    Returns
+    -------
+    ndarray
+        The shifted Fourier-domain array. This is ``output`` when an output
+        array is provided; otherwise it is a newly allocated array.
+
+    Availability
+    ------------
+    Single GPU, Multi GPU
+
+    See Also
+    --------
+    scipy.ndimage.fourier_shift
+    """
+    return _fourier_filter(
+        FourierFilterType.Shift, input, shift, n, axis, output
+    )
+
+
+@add_boilerplate("input", "output")
+def fourier_ellipsoid(
+    input: ndarray,
+    size: float | Sequence[float],
+    n: int = -1,
+    axis: int = -1,
+    output: ndarray | None = None,
+) -> ndarray:
+    """
+    Multidimensional ellipsoid Fourier filter.
+
+    The input array is multiplied by the Fourier transform of an ellipsoid
+    filter. The input is expected to already be in the frequency domain, such
+    as the result of an FFT.
+
+    Parameters
+    ----------
+    input : array_like
+        Input array in the Fourier domain.
+    size : scalar or sequence of scalars
+        Size of the ellipsoid filter. A scalar value applies the same filter
+        size to every axis. A sequence must contain one value per input
+        dimension.
+    n : int, optional
+        If nonnegative, ``input`` is treated as the result of a real FFT along
+        ``axis``, and ``n`` is the original real-domain length before the FFT.
+        If negative, ``input`` is treated as the result of a complex FFT.
+        Default is -1.
+    axis : int, optional
+        Axis of the real transform when ``n`` is nonnegative. Default is -1.
+    output : ndarray, optional
+        If provided, the result of filtering the input is placed in this array.
+
+    Returns
+    -------
+    ndarray
+        The filtered Fourier-domain array. This is ``output`` when an output
+        array is provided; otherwise it is a newly allocated array.
+
+    Availability
+    ------------
+    Single GPU, Multi GPU
+
+    See Also
+    --------
+    scipy.ndimage.fourier_ellipsoid
+    """
+    return _fourier_filter(
+        FourierFilterType.Ellipsoid, input, size, n, axis, output
     )

@@ -20,6 +20,10 @@
 
 #include <cuda/std/cmath>
 
+#if defined(__CUDA_ARCH__)
+#include <cuda_runtime.h>
+#endif
+
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -37,10 +41,38 @@ using namespace legate;
 template <VariantKind KIND, typename VAL, int DIM>
 struct NdimageFourierFilterImplBody;
 
+LEGATE_HOST_DEVICE inline double cyl_bessel_j1(double x)
+{
+#if defined(__CUDA_ARCH__)
+  return jn(1, x);
+#else
+  return std::cyl_bessel_j(1.0, x);
+#endif
+}
+
 template <int DIM>
-LEGATE_HOST_DEVICE inline double fourier_filter_factor(const Point<DIM>& p,
-                                                       const Rect<DIM>& rect,
-                                                       const NdimageFourierFilterParams params)
+LEGATE_HOST_DEVICE inline double ellipsoid_radial_formula(double r)
+{
+  if (r == 0.0) {
+    return 1.0;
+  }
+
+  if constexpr (DIM == 1) {
+    return cuda::std::sin(r) / r;
+  } else if constexpr (DIM == 2) {
+    return 2.0 * cyl_bessel_j1(r) / r;
+  } else if constexpr (DIM == 3) {
+    return 3.0 * (cuda::std::sin(r) - r * cuda::std::cos(r)) / (r * r * r);
+  } else {
+    LEGATE_ABORT("Fourier ellipsoid only supports 1D, 2D, and 3D inputs.");
+    return 0.0;
+  }
+}
+
+template <typename VAL, int DIM>
+LEGATE_HOST_DEVICE inline VAL fourier_filter_factor(const Point<DIM>& p,
+                                                    const Rect<DIM>& rect,
+                                                    const NdimageFourierFilterParams params)
 {
   FourierFilterType filter_tid = static_cast<FourierFilterType>(params.filter_type);
 
@@ -72,19 +104,56 @@ LEGATE_HOST_DEVICE inline double fourier_filter_factor(const Point<DIM>& p,
       return fourier_factor_dispatcher(p, rect, params, factor_func);
     }
     case FourierFilterType::Shift: {
-      // cannot throw from device code...
-      //
-      LEGATE_ABORT("Not yet implemented.");
+      double phase = 0.0;
+
+      for (int dim = 0; dim < DIM; ++dim) {
+        const int64_t extent = params.extents[dim];
+        if (extent <= 1) {
+          continue;
+        }
+
+        const bool real_fft_axis = params.n >= 0 && dim == params.axis;
+        const double shape =
+          real_fft_axis ? static_cast<double>(params.n) : static_cast<double>(extent);
+
+        const double k =
+          real_fft_axis ? static_cast<double>(p[dim]) : fft_frequency<DIM>(p, dim, extent);
+
+        phase += params.sigmas[dim] * k / shape;  // sigmas interpreted as shifts
+      }
+
+      const double theta = -2.0 * M_PI * phase;
+
+      if constexpr (legate::is_complex_type<VAL>::value) {
+        return VAL{cuda::std::cos(theta), cuda::std::sin(theta)};
+      } else {
+        return static_cast<VAL>(cuda::std::cos(theta));
+      }
     }
     case FourierFilterType::Ellipsoid: {
-      // cannot throw from device code...
-      //
-      LEGATE_ABORT("Not yet implemented.");
+      double r2 = 0.0;
+
+      for (int dim = 0; dim < DIM; ++dim) {
+        const int64_t extent = params.extents[dim];
+
+        const bool real_fft_axis = params.n >= 0 && dim == params.axis;
+        const double shape =
+          real_fft_axis ? static_cast<double>(params.n) : static_cast<double>(extent);
+
+        const double k =
+          real_fft_axis ? static_cast<double>(p[dim]) : fft_frequency<DIM>(p, dim, extent);
+
+        const double q = M_PI * params.sigmas[dim] / shape;  // sigmas interpreted as sizes
+        const double x = q * k;
+        r2 += x * x;
+      }
+
+      return static_cast<VAL>(ellipsoid_radial_formula<DIM>(cuda::std::sqrt(r2)));
     }
     default: {
       // cannot throw from device code...
       //
-      LEGATE_ABORT("Not yet implemented.");
+      LEGATE_ABORT("Unknown Fourier filter type.");
     }
   }
 }

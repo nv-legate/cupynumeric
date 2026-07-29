@@ -33,9 +33,9 @@ struct NdimageFourierFilterImplBody<VariantKind::CPU, VAL, DIM> {
                   const NdimageFourierFilterParams params) const
   {
     for (PointInRectIterator<DIM> it(rect); it.valid(); ++it) {
-      const Point<DIM> p  = *it;
-      const double factor = fourier_filter_factor<DIM>(p, rect, params);
-      output[p]           = input[p] * static_cast<VAL>(factor);
+      const Point<DIM> p = *it;
+      const VAL factor   = fourier_filter_factor<VAL, DIM>(p, rect, params);
+      output[p]          = input[p] * factor;
     }
   }
 };

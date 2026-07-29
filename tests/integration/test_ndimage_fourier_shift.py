@@ -27,13 +27,15 @@ scipy_ndimage = pytest.importorskip("scipy.ndimage")
 
 SHAPES = [(1,), (7,), (8,), (5, 6), (6, 5), (4, 5, 6), (3, 4, 5, 6)]
 
-SIZES = [0.0, 0.5, 2.0, (0.5, 1.0), (0.0, 1.0, 2.0), (0.5, 1.0, 1.5, 2.0)]
+SHIFTS = [0.0, 0.5, 2.0, (0.5, 1.0), (0.0, 1.0, 2.0), (0.5, 1.0, 1.5, 2.0)]
 
 REAL_FFT_N = [-1, 0, 1, 2, 5, 8, 11]
 
 
-def _valid_sizes(ndim):
-    return [size for size in SIZES if np.ndim(size) == 0 or len(size) == ndim]
+def _valid_shifts(ndim):
+    return [
+        shift for shift in SHIFTS if np.ndim(shift) == 0 or len(shift) == ndim
+    ]
 
 
 def _make_input(shape, dtype):
@@ -56,14 +58,14 @@ def _assert_allclose(actual, expected, *, n):
     "dtype", [np.float32, np.float64, np.complex64, np.complex128]
 )
 @pytest.mark.parametrize("shape", SHAPES)
-def test_fourier_uniform_complex_fft_all_axes(dtype, shape):
+def test_fourier_shift_complex_fft_all_axes(dtype, shape):
     ndim = len(shape)
     image_tf_np = np.fft.fftn(_make_input(shape, dtype)).astype(dtype)
     image_tf_num = num.asarray(image_tf_np)
 
-    for size in _valid_sizes(ndim):
-        expected = scipy_ndimage.fourier_uniform(image_tf_np, size, n=-1)
-        actual = num.ndimage.fourier_uniform(image_tf_num, size, n=-1)
+    for shift in _valid_shifts(ndim):
+        expected = scipy_ndimage.fourier_shift(image_tf_np, shift, n=-1)
+        actual = num.ndimage.fourier_shift(image_tf_num, shift, n=-1)
         _assert_allclose(actual, expected, n=-1)
 
 
@@ -71,21 +73,21 @@ def test_fourier_uniform_complex_fft_all_axes(dtype, shape):
     "dtype", [np.float32, np.float64, np.complex64, np.complex128]
 )
 @pytest.mark.parametrize("shape", SHAPES)
-def test_fourier_uniform_real_fft_axis_modes(dtype, shape):
+def test_fourier_shift_real_fft_axis_modes(dtype, shape):
     ndim = len(shape)
     image_tf_np = np.fft.fftn(_make_input(shape, dtype)).astype(dtype)
     image_tf_num = num.array(image_tf_np)
 
     for axis, n in product(range(-ndim, ndim), REAL_FFT_N):
-        expected = scipy_ndimage.fourier_uniform(
+        expected = scipy_ndimage.fourier_shift(
             image_tf_np, 2.0, n=n, axis=axis
         )
-        actual = num.ndimage.fourier_uniform(image_tf_num, 2.0, n=n, axis=axis)
+        actual = num.ndimage.fourier_shift(image_tf_num, 2.0, n=n, axis=axis)
         _assert_allclose(actual, expected, n=n)
 
 
 @pytest.mark.parametrize("shape", [(7,), (5, 6), (4, 5, 6)])
-def test_fourier_uniform_matches_rfft_convention(shape):
+def test_fourier_shift_matches_rfft_convention(shape):
     image_np = np.arange(np.prod(shape), dtype=np.float64).reshape(shape)
     ndim = len(shape)
 
@@ -94,89 +96,87 @@ def test_fourier_uniform_matches_rfft_convention(shape):
         image_tf_num = num.array(image_tf_np)
         n = shape[axis]
 
-        expected = scipy_ndimage.fourier_uniform(
+        expected = scipy_ndimage.fourier_shift(
             image_tf_np, 1.25, n=n, axis=axis
         )
-        actual = num.ndimage.fourier_uniform(
-            image_tf_num, 1.25, n=n, axis=axis
-        )
+        actual = num.ndimage.fourier_shift(image_tf_num, 1.25, n=n, axis=axis)
         _assert_allclose(actual, expected, n=n)
 
 
 @pytest.mark.parametrize("shape", [(1,), (1, 5), (5, 1), (1, 4, 1)])
-def test_fourier_uniform_singleton_dimensions(shape):
+def test_fourier_shift_singleton_dimensions(shape):
     image_tf_np = _make_input(shape, np.complex128)
     image_tf_num = num.array(image_tf_np)
 
-    size = tuple(float(i + 1) for i in range(len(shape)))
-    expected = scipy_ndimage.fourier_uniform(image_tf_np, size)
-    actual = num.ndimage.fourier_uniform(image_tf_num, size)
+    shift = tuple(float(i + 1) for i in range(len(shape)))
+    expected = scipy_ndimage.fourier_shift(image_tf_np, shift)
+    actual = num.ndimage.fourier_shift(image_tf_num, shift)
 
     _assert_allclose(actual, expected, n=-1)
 
 
 @pytest.mark.parametrize("shape", [(8,), (5, 6), (4, 5, 6)])
-@pytest.mark.parametrize("size", [0.0, (0.0,), 100.0])
-def test_fourier_uniform_corner_sizes(shape, size):
-    if np.ndim(size) != 0 and len(size) != len(shape):
-        size = (0.0,) * len(shape)
+@pytest.mark.parametrize("shift", [0.0, (0.0,), 100.0])
+def test_fourier_shift_corner_shifts(shape, shift):
+    if np.ndim(shift) != 0 and len(shift) != len(shape):
+        shift = (0.0,) * len(shape)
 
     image_tf_np = _make_input(shape, np.complex128)
     image_tf_num = num.array(image_tf_np)
 
-    expected = scipy_ndimage.fourier_uniform(image_tf_np, size)
-    actual = num.ndimage.fourier_uniform(image_tf_num, size)
+    expected = scipy_ndimage.fourier_shift(image_tf_np, shift)
+    actual = num.ndimage.fourier_shift(image_tf_num, shift)
 
     _assert_allclose(actual, expected, n=-1)
 
 
-def test_fourier_uniform_output_argument():
+def test_fourier_shift_output_argument():
     image_tf_np = _make_input((5, 6), np.complex128)
     image_tf_num = num.array(image_tf_np)
 
     output = num.empty_like(image_tf_num)
-    result = num.ndimage.fourier_uniform(image_tf_num, 2.0, output=output)
+    result = num.ndimage.fourier_shift(image_tf_num, 2.0, output=output)
 
-    expected = scipy_ndimage.fourier_uniform(image_tf_np, 2.0)
+    expected = scipy_ndimage.fourier_shift(image_tf_np, 2.0)
 
     assert result is output
     _assert_allclose(output, expected, n=-1)
 
 
-@pytest.mark.parametrize("bad_size", [(1.0, 2.0), (1.0, 2.0, 3.0)])
-def test_fourier_uniform_bad_size_length(bad_size):
+@pytest.mark.parametrize("bad_shift", [(1.0, 2.0), (1.0, 2.0, 3.0)])
+def test_fourier_shift_bad_shift_length(bad_shift):
     image_tf = num.ones((4,), dtype=np.complex128)
 
     with pytest.raises(RuntimeError):
-        num.ndimage.fourier_uniform(image_tf, bad_size)
+        num.ndimage.fourier_shift(image_tf, bad_shift)
 
 
 @pytest.mark.parametrize("axis", [-4, 3])
-def test_fourier_uniform_bad_axis(axis):
+def test_fourier_shift_bad_axis(axis):
     image_tf = num.ones((4, 5, 6), dtype=np.complex128)
 
     with pytest.raises((ValueError, np.exceptions.AxisError)):
-        num.ndimage.fourier_uniform(image_tf, 2.0, n=4, axis=axis)
+        num.ndimage.fourier_shift(image_tf, 2.0, n=4, axis=axis)
 
 
 @pytest.mark.parametrize(
     "dtype", [np.float32, np.float64, np.complex64, np.complex128]
 )
-def test_fourier_uniform_0d_input(dtype):
+def test_fourier_shift_0d_input(dtype):
     arr = num.array(np.array(1, dtype=dtype))
 
     with pytest.raises(RuntimeError, match="input must have rank > 0"):
-        num.ndimage.fourier_uniform(arr, 1.0)
+        num.ndimage.fourier_shift(arr, 1.0)
 
 
 @pytest.mark.parametrize(
     "dtype", [np.bool_, np.int8, np.int16, np.int32, np.int64, np.uint64]
 )
-def test_fourier_uniform_unsupported_dtype(dtype):
+def test_fourier_shift_unsupported_dtype(dtype):
     arr = num.ones((8,), dtype=dtype)
 
     with pytest.raises(RuntimeError, match=r"input dtype .* not supported\."):
-        num.ndimage.fourier_uniform(arr, 1.0)
+        num.ndimage.fourier_shift(arr, 1.0)
 
 
 if __name__ == "__main__":

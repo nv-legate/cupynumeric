@@ -41,8 +41,10 @@ def _valid_sigmas(ndim):
 def _make_input(shape, dtype):
     rng = np.random.default_rng(1729 + len(shape) + sum(shape))
     real = rng.random(shape)
-    imag = rng.random(shape)
-    return (real + 1j * imag).astype(dtype)
+    if np.issubdtype(np.dtype(dtype), np.complexfloating):
+        imag = rng.random(shape)
+        return (real + 1j * imag).astype(dtype)
+    return real.astype(dtype)
 
 
 def _assert_allclose(actual, expected, *, n):
