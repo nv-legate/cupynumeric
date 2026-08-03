@@ -32,6 +32,11 @@ aliases are listed in the matching functional API sections.
    astype
    isdtype
    matrix_transpose
+   unique_all
+   unique_counts
+   unique_inverse
+   unique_values
+   vecdot
 
 .. autoclass:: ArrayNamespaceInfo
 

@@ -1,0 +1,6 @@
+﻿cupynumeric.unique\_inverse
+===========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: unique_inverse

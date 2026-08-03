@@ -1,0 +1,6 @@
+﻿cupynumeric.unique\_values
+==========================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: unique_values

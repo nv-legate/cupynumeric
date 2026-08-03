@@ -1,0 +1,6 @@
+﻿cupynumeric.linalg.vecdot
+=========================
+
+.. currentmodule:: cupynumeric.linalg
+
+.. autofunction:: vecdot

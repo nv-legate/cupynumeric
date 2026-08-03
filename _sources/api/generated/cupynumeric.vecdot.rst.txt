@@ -1,0 +1,6 @@
+﻿cupynumeric.vecdot
+==================
+
+.. currentmodule:: cupynumeric
+
+.. autofunction:: vecdot

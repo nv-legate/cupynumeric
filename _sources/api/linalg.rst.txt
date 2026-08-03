@@ -13,6 +13,7 @@ Matrix and vector products
 
    dot
    vdot
+   linalg.vecdot
    inner
    outer
    matmul
