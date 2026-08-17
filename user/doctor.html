@@ -1054,7 +1054,7 @@ improving the code.</p>
 <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span>
 <span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done. total =&quot;</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Done. total ="</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This runs correctly with NumPy. However, it contains several patterns that
@@ -1083,7 +1083,7 @@ will not scale well with cuPyNumeric.</p>
 <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span>
 <span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done. total =&quot;</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Done. total ="</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1099,35 +1099,35 @@ will not scale well with cuPyNumeric.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>!!! cuPyNumeric Doctor reported issues !!!
 
 - issue: multiple scalar item accesses repeated on the same line
-  detected on: line 12 of file &#39;main.py&#39;:
+  detected on: line 12 of file 'main.py':
 
     x[i, j] = y[i, j] * 2.0
 
   refer to: https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-array-based-operations-avoid-loops-with-indexing
 
 - issue: iterating over a cuPyNumeric array with __iter__ is slow; use vectorized operations instead
-  detected on: line 15 of file &#39;main.py&#39;:
+  detected on: line 15 of file 'main.py':
 
     total = sum(sum(x))
 
   refer to: https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-array-based-operations-avoid-loops-with-indexing
 
 - issue: multiple scalar item accesses repeated on the same line
-  detected on: line 15 of file &#39;main.py&#39;:
+  detected on: line 15 of file 'main.py':
 
     total = sum(sum(x))
 
   refer to: https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-array-based-operations-avoid-loops-with-indexing
 
 - issue: use of nonzero can be slow in cuPyNumeric
-  detected on: line 18 of file &#39;main.py&#39;:
+  detected on: line 18 of file 'main.py':
 
     indices = np.nonzero(y &gt; 0.5)
 
   refer to: https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-boolean-masks-avoid-advanced-indexing
 
 - issue: use of advanced indexing can be slow in cuPyNumeric
-  detected on: line 19 of file &#39;main.py&#39;:
+  detected on: line 19 of file 'main.py':
 
     x[indices] = 0.0
 
@@ -1165,7 +1165,7 @@ ref:<cite>practices</cite> as a guide, rewrite the script with array-based opera
 <span class="n">cond</span> <span class="o">=</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
 <span class="n">x</span><span class="p">[</span><span class="n">cond</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done. total =&quot;</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Done. total ="</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1190,14 +1190,14 @@ could trigger multiple warnings, as seen in the example above:</p>
 </div>
 <p>creates multiple warnings due to how the python built-in function <code class="docutils literal notranslate"><span class="pre">sum</span></code> is implemented.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>- issue: iterating over a cuPyNumeric array with __iter__ is slow; use vectorized operations instead
-  detected on: line 15 of file &#39;main.py&#39;:
+  detected on: line 15 of file 'main.py':
 
     total = sum(sum(x))
 
   refer to: https://docs.nvidia.com/cupynumeric/latest/user/practices.html#use-array-based-operations-avoid-loops-with-indexing
 
 - issue: multiple scalar item accesses repeated on the same line
-  detected on: line 15 of file &#39;main.py&#39;:
+  detected on: line 15 of file 'main.py':
 
     total = sum(sum(x))
 

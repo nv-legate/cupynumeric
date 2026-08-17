@@ -1029,7 +1029,7 @@ Please refer to the <a class="reference external" href="https://github.com/NVIDI
     <span class="nb">print</span><span class="p">(</span><span class="n">out_arr</span><span class="p">)</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1101,7 +1101,7 @@ through the <code class="docutils literal notranslate"><span class="pre">--size<
 <p>The following example shows how to define a task function that performs the SAXPY operation.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">)),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">"x"</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">"y"</span><span class="p">,</span> <span class="s2">"z"</span><span class="p">)),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">saxpy_task</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">OutputArray</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span>
@@ -1154,7 +1154,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <span class="c1"># [saxpy-start]</span>
 <span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">)),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">"x"</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">"y"</span><span class="p">,</span> <span class="s2">"z"</span><span class="p">)),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">saxpy_task</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">OutputArray</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span>
@@ -1170,9 +1170,9 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run SAXPY operation.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Run SAXPY operation."</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of input arrays&quot;</span>
+        <span class="s2">"--size"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Size of input arrays"</span>
     <span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
@@ -1196,10 +1196,10 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">rt</span><span class="o">.</span><span class="n">issue_execution_fence</span><span class="p">()</span>
     <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time elapsed for saxpy: </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> milliseconds&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Time elapsed for saxpy: </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> milliseconds"</span><span class="p">)</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1301,7 +1301,7 @@ the <code class="docutils literal notranslate"><span class="pre">--size</span></
 <p>The following example defines a histogram task function that computes a local histogram and accumulates the results into a global <code class="docutils literal notranslate"><span class="pre">hist</span></code> array using a reduction.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">broadcast</span><span class="p">(</span><span class="s2">&quot;hist&quot;</span><span class="p">),),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">broadcast</span><span class="p">(</span><span class="s2">"hist"</span><span class="p">),),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">histogram_task</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">hist</span><span class="p">:</span> <span class="n">ReductionArray</span><span class="p">[</span><span class="n">ADD</span><span class="p">],</span> <span class="n">N_bins</span><span class="p">:</span> <span class="nb">int</span>
@@ -1364,7 +1364,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <span class="c1"># [histogram-start]</span>
 <span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">broadcast</span><span class="p">(</span><span class="s2">&quot;hist&quot;</span><span class="p">),),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">broadcast</span><span class="p">(</span><span class="s2">"hist"</span><span class="p">),),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">histogram_task</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">hist</span><span class="p">:</span> <span class="n">ReductionArray</span><span class="p">[</span><span class="n">ADD</span><span class="p">],</span> <span class="n">N_bins</span><span class="p">:</span> <span class="nb">int</span>
@@ -1381,9 +1381,9 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run Histogram operation.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Run Histogram operation."</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Size of input arrays&quot;</span>
+        <span class="s2">"--size"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Size of input arrays"</span>
     <span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
@@ -1408,11 +1408,11 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 
     <span class="nb">print</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time elapsed for histogram : </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> milliseconds&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Time elapsed for histogram : </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> milliseconds"</span>
     <span class="p">)</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1515,7 +1515,7 @@ alignment for performing matrix multiplication.</p></li>
 <p>The following example shows a task function that performs matrix multiplication with aligned partitions across input and output arrays.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">)),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">"C"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">"C"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">)),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">matmul_task</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">C</span><span class="p">:</span> <span class="n">ReductionArray</span><span class="p">[</span><span class="n">ADD</span><span class="p">],</span> <span class="n">A</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">B</span><span class="p">:</span> <span class="n">InputArray</span>
@@ -1562,7 +1562,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <span class="c1"># [matmul-start]</span>
 <span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">)),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">"C"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">),</span> <span class="n">align</span><span class="p">(</span><span class="s2">"C"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">)),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">matmul_task</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">C</span><span class="p">:</span> <span class="n">ReductionArray</span><span class="p">[</span><span class="n">ADD</span><span class="p">],</span> <span class="n">A</span><span class="p">:</span> <span class="n">InputArray</span><span class="p">,</span> <span class="n">B</span><span class="p">:</span> <span class="n">InputArray</span>
@@ -1579,16 +1579,16 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run Matrix multiplication operation&quot;</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Run Matrix multiplication operation"</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of rows in matrix A and C&quot;</span>
+        <span class="s2">"-m"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Number of rows in matrix A and C"</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;-k&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">75</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of columns in A / rows in B&quot;</span>
+        <span class="s2">"-k"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">75</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Number of columns in A / rows in B"</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of columns in matrix B and C&quot;</span>
+        <span class="s2">"-n"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Number of columns in matrix B and C"</span>
     <span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
@@ -1619,10 +1619,10 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">rt</span><span class="o">.</span><span class="n">issue_execution_fence</span><span class="p">()</span>
     <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time elapsed for matmul: </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Time elapsed for matmul: </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> seconds"</span><span class="p">)</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1688,7 +1688,7 @@ unpartitioned.</p>
 <section id="id21">
 <h3>Main function<a class="headerlink" href="#id21" title="Link to this heading">#</a></h3>
 <p>The following code block initializes inputs and performs a GPU-accelerated batched 2D Fast Fourier Transform.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)))</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)))</span>
 
     <span class="n">A_cpn</span> <span class="o">=</span> <span class="n">cpn</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cpn</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
     <span class="n">B_cpn</span> <span class="o">=</span> <span class="n">cpn</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">101</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">cpn</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
@@ -1709,7 +1709,7 @@ running the script</p>
 <p>The following example defines a task that computes a batched 2D FFT over input data using <code class="docutils literal notranslate"><span class="pre">align</span></code> and <code class="docutils literal notranslate"><span class="pre">broadcast</span></code> constraints.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">&quot;dst&quot;</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">),</span> <span class="n">broadcast</span><span class="p">(</span><span class="s2">&quot;src&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">"dst"</span><span class="p">,</span> <span class="s2">"src"</span><span class="p">),</span> <span class="n">broadcast</span><span class="p">(</span><span class="s2">"src"</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">fft2d_batched_gpu</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">OutputStore</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">InputStore</span>
@@ -1768,7 +1768,7 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 <span class="c1"># [fft-start]</span>
 <span class="nd">@task</span><span class="p">(</span>
     <span class="n">variants</span><span class="o">=</span><span class="p">(</span><span class="n">VariantCode</span><span class="o">.</span><span class="n">CPU</span><span class="p">,</span> <span class="n">VariantCode</span><span class="o">.</span><span class="n">GPU</span><span class="p">),</span>
-    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">&quot;dst&quot;</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">),</span> <span class="n">broadcast</span><span class="p">(</span><span class="s2">&quot;src&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))),</span>
+    <span class="n">constraints</span><span class="o">=</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="s2">"dst"</span><span class="p">,</span> <span class="s2">"src"</span><span class="p">),</span> <span class="n">broadcast</span><span class="p">(</span><span class="s2">"src"</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))),</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">fft2d_batched_gpu</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">TaskContext</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">OutputStore</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">InputStore</span>
@@ -1785,17 +1785,17 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run FFT operation&quot;</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Run FFT operation"</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--shape&quot;</span><span class="p">,</span>
+        <span class="s2">"--shape"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;128,256,256&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Shape of the array in the format D1,D2,D3&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">"128,256,256"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Shape of the array in the format D1,D2,D3"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="c1"># [input-section]</span>
-    <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)))</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)))</span>
 
     <span class="n">A_cpn</span> <span class="o">=</span> <span class="n">cpn</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cpn</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
     <span class="n">B_cpn</span> <span class="o">=</span> <span class="n">cpn</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">101</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">cpn</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
@@ -1814,11 +1814,11 @@ can be run with the <code class="docutils literal notranslate"><span class="pre"
     <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 
     <span class="nb">print</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time elapsed for batched fft: </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> milliseconds&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Time elapsed for batched fft: </span><span class="si">{</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> milliseconds"</span>
     <span class="p">)</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>

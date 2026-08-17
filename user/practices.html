@@ -1108,7 +1108,7 @@ the latter could incur additional communication that might be undesirable for
 performance.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupynumeric</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="c1"># Not recommended: don&#39;t use nonzero to get indices</span>
+<span class="c1"># Not recommended: don't use nonzero to get indices</span>
 <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
 <span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
 
@@ -1330,7 +1330,7 @@ in one API.</p>
 
 <span class="c1"># Not Recommended for arrays</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">bar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># doesn&#39;t work</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">bar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># doesn't work</span>
 
 <span class="c1"># Recommended (1): Use array-based operations</span>
 <span class="n">cond</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span>
@@ -1408,7 +1408,7 @@ here.</p>
             <span class="k">break</span>
 
 <span class="c1"># This could potentially be updated one iteration before the</span>
-<span class="c1"># convergence check, but that&#39;s not done here</span>
+<span class="c1"># convergence check, but that's not done here</span>
 <span class="n">x_prev</span> <span class="o">=</span> <span class="n">x_current</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </pre></div>
 </div>

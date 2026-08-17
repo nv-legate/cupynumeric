@@ -1038,7 +1038,7 @@ array([[1., 0., 0., ..., 0., 0., 0.],
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Because of Legate&#39;s deferred execution model, legate.timing should be used instead</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Because of Legate's deferred execution model, legate.timing should be used instead</span>
 <span class="c1"># of standard Python datetime utilities. Python datetime.now would return the time</span>
 <span class="c1"># a task is *scheduled*, not necessarily the time a task finishes executing.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">legate.timing</span><span class="w"> </span><span class="kn">import</span> <span class="n">time</span>
@@ -1057,7 +1057,7 @@ array([[1., 0., 0., ..., 0., 0., 0.],
     <span class="n">n</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">flops</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">/</span> <span class="mi">3</span>
     <span class="n">total</span> <span class="o">=</span> <span class="p">(</span><span class="n">stop</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1000.0</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed Time: </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> ms (</span><span class="si">{</span><span class="p">(</span><span class="n">flops</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="si">:</span><span class="s2">0.2</span><span class="si">}</span><span class="s2"> GOP/s)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Elapsed Time: </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> ms (</span><span class="si">{</span><span class="p">(</span><span class="n">flops</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="si">:</span><span class="s2">0.2</span><span class="si">}</span><span class="s2"> GOP/s)"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">result</span>
 </pre></div>

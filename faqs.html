@@ -1018,11 +1018,11 @@ that may make usage simpler.</p>
 the Legate runtime is falling back to using NumPy’s implementation which will
 be single-threaded execution and can lead to decreased performance for that
 function call.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[0 - 7f0524da9740]    0.000028 {4}{threads}: reservation (&#39;dedicated worker (generic) #1&#39;) cannot be satisfied
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[0 - 7f0524da9740]    0.000028 {4}{threads}: reservation ('dedicated worker (generic) #1') cannot be satisfied
 </pre></div>
 </div>
 <p>or</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[0 - 7fe90fa7d740]    0.000029 {4}{threads}: reservation (&#39;utility proc 1d00000000000001&#39;) cannot be satisfied
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[0 - 7fe90fa7d740]    0.000029 {4}{threads}: reservation ('utility proc 1d00000000000001') cannot be satisfied
 </pre></div>
 </div>
 <p>This indicates that the runtime was unable to pin threads onto available cores,

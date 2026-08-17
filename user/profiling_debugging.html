@@ -1054,7 +1054,7 @@ srun<span class="w"> </span>-N<span class="w"> </span><span class="m">2</span><s
 </div>
 <p>Similarly, a program can be run via the <code class="docutils literal notranslate"><span class="pre">LEGATE_CONFIG</span></code> environment
 variable:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">LEGATE_CONFIG</span><span class="o">=</span><span class="s2">&quot;--cpus 8 --sysmem 4000 --profile&quot;</span><span class="w"> </span>python<span class="w"> </span>./myprog.py
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">LEGATE_CONFIG</span><span class="o">=</span><span class="s2">"--cpus 8 --sysmem 4000 --profile"</span><span class="w"> </span>python<span class="w"> </span>./myprog.py
 </pre></div>
 </div>
 <p><strong>3.) After a run completes, in the directory you ran the command you’ll see:</strong></p>
@@ -1087,10 +1087,10 @@ legate_prof/
 wget<span class="w"> </span>https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
 
 <span class="c1"># Install into home</span>
-bash<span class="w"> </span>Miniforge3-Linux-x86_64.sh<span class="w"> </span>-b<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/miniforge3&quot;</span>
+bash<span class="w"> </span>Miniforge3-Linux-x86_64.sh<span class="w"> </span>-b<span class="w"> </span>-p<span class="w"> </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/miniforge3"</span>
 
 <span class="c1"># Load Conda into current shell</span>
-<span class="nb">source</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/miniforge3/etc/profile.d/conda.sh&quot;</span>
+<span class="nb">source</span><span class="w"> </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/miniforge3/etc/profile.d/conda.sh"</span>
 
 <span class="c1"># Configure future shells</span>
 conda<span class="w"> </span>init<span class="w"> </span>bash
@@ -1107,7 +1107,7 @@ conda<span class="w"> </span>activate<span class="w"> </span>legate
 runs separated to avoid name/file clashes:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copy legate_*.prof file(s) for CPU, single-GPU, Multi-GPU, or Multi-Node</span>
 scp<span class="w"> </span>-r<span class="w"> </span>&lt;USER&gt;@&lt;REMOTE_HOST&gt;:&lt;REMOTE_RUN_DIR&gt;/legate_*.prof<span class="w"> </span><span class="se">\</span>
-<span class="w">      </span><span class="s2">&quot;&lt;LOCAL_DIR&gt;/&lt;FOLDER_NAME&gt;/name_of_run&quot;</span>
+<span class="w">      </span><span class="s2">"&lt;LOCAL_DIR&gt;/&lt;FOLDER_NAME&gt;/name_of_run"</span>
 </pre></div>
 </div>
 <p><strong>6.) In local machine, use the following command to open files with the profile
@@ -2223,7 +2223,7 @@ first; else, consider prefetching/other mitigation techniques.</p></li>
 sizes by memory &amp; rank.</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># legate --show-config</span>
-<span class="c1"># print the pools you&#39;d use.. &quot;&amp;&amp;&quot; ..then run the repro with verbose OOM info:</span>
+<span class="c1"># print the pools you'd use.. "&amp;&amp;" ..then run the repro with verbose OOM info:</span>
 legate<span class="w"> </span>--cpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--gpus<span class="w"> </span><span class="m">0</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">40</span><span class="w"> </span>--show-config<span class="w"> </span><span class="se">\</span>
 <span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">LEGATE_TEST</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>legate<span class="w"> </span>--cpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--gpus<span class="w"> </span><span class="m">0</span><span class="w"> </span>--sysmem<span class="w"> </span><span class="m">40</span><span class="w"> </span>--provenance<span class="w"> </span>oom.py
 </pre></div>
@@ -2365,12 +2365,12 @@ before the band; the channel/transfer lanes are quiet during kernels.</p>
         <span class="bp">self</span><span class="p">,</span> <span class="n">low_offsets</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
         <span class="n">high_offsets</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Inform cuPyNumeric that this array will be used in a stencil computation.</span>
 
 <span class="sd">    This allocates space for “ghost” elements ahead of time, rather than</span>
 <span class="sd">    discovering the full extent incrementally, avoiding intermediate copies.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </pre></div>
 </div>
 <section id="what-it-does">
@@ -2523,7 +2523,7 @@ change Legate’s reserved pool sizes (<code class="docutils literal notranslate
 <code class="docutils literal notranslate"><span class="pre">--zcmem</span></code>). It just makes more room inside those pools for the next phase.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1) Drop references</span>
 <span class="n">big</span> <span class="o">=</span> <span class="kc">None</span>                <span class="c1"># break the reference</span>
-<span class="k">if</span> <span class="s1">&#39;big&#39;</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">():</span> <span class="k">del</span> <span class="n">big</span>
+<span class="k">if</span> <span class="s1">'big'</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">():</span> <span class="k">del</span> <span class="n">big</span>
 <span class="n">cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>             <span class="c1"># if you stored big arrays in dicts/lists/closures</span>
 
 <span class="c1"># 2) Reclaim cyclic garbage</span>
@@ -2564,7 +2564,7 @@ automatically moved back to the GPU later, if necessary for an operation.</p>
 <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span>
 <span class="n">c</span> <span class="o">=</span> <span class="n">b</span> <span class="o">+</span> <span class="mi">2</span>
 
-<span class="c1"># Offload &#39;c&#39; (or any large array you won&#39;t need on GPU immediately) to host RAM:</span>
+<span class="c1"># Offload 'c' (or any large array you won't need on GPU immediately) to host RAM:</span>
 <span class="n">offload_to</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">StoreTarget</span><span class="o">.</span><span class="n">SYSMEM</span><span class="p">)</span>   <span class="c1"># evicts any GPU copies and keeps only a host copy</span>
 
 <span class="c1"># Continue your pipeline; GPU copies will be re-created only if/when needed</span>
@@ -2723,12 +2723,12 @@ required. Replace temporaries with in-place ops and drop unneeded references:</p
 <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,))</span>
 <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,))</span>
 
-<span class="c1"># stage, then drop &#39;a&#39; to reduce the live set (C.1 + C.2)</span>
+<span class="c1"># stage, then drop 'a' to reduce the live set (C.1 + C.2)</span>
 <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span>
 <span class="n">a</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
 
-<span class="c1"># avoid creating &#39;c&#39; and &#39;d&#39; instances: in-place updates</span>
+<span class="c1"># avoid creating 'c' and 'd' instances: in-place updates</span>
 <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">b</span><span class="p">)</span>   <span class="c1"># replaces: c = b + 2</span>
 <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">b</span><span class="p">)</span>   <span class="c1"># replaces: d = c + 3</span>
 
