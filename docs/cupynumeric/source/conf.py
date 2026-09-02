@@ -15,16 +15,14 @@
 
 from os import getenv
 
-import cupynumeric
-
 SWITCHER_PROD = "https://docs.nvidia.com/cupynumeric/switcher.json"
 SWITCHER_DEV = "http://localhost:8000/switcher.json"
 JSON_URL = SWITCHER_DEV if getenv("SWITCHER_DEV") == "1" else SWITCHER_PROD
 
 ANNOTATE = getenv("LEGATE_ANNOTATION_DOCS") == "1"
 
-# This is the "YY.MM" version string that we want users to see
-BASE_VERSION = ".".join(cupynumeric.__version__.split(".", 2)[:2])
+# This final documentation snapshot always displays the supported release line.
+BASE_VERSION = "26.06"
 
 # make sure BASE VERSION is formatted as expected
 _yy, _mm = BASE_VERSION.split(".")
@@ -37,14 +35,7 @@ project = "NVIDIA cuPyNumeric"
 copyright = "2024, NVIDIA"
 author = "NVIDIA Corporation"
 
-if "dev" in cupynumeric.__version__ or "rc" in cupynumeric.__version__:
-    # for dev/rc versions just use the entire version with everything, and
-    # add it to the page title as well, for easy recognition
-    version = release = cupynumeric.__version__
-    project += f" ({cupynumeric.__version__})"
-else:
-    # otherwise, we actually only want the YY.MM to be visible for releases
-    version = release = BASE_VERSION
+version = release = BASE_VERSION
 
 # -- General configuration ---------------------------------------------------
 
@@ -80,6 +71,11 @@ html_static_path = ["_static"]
 html_theme = "nvidia_sphinx_theme"
 
 html_theme_options = {
+    "announcement": (
+        "This project has reached end of life and is no longer maintained or "
+        "supported. The final supported release is 26.06.01. This "
+        "documentation is retained for historical reference."
+    ),
     "switcher": {
         "json_url": JSON_URL,
         "navbar_start": ["navbar-logo", "version-switcher"],
