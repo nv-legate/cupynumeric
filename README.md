@@ -15,9 +15,13 @@ limitations under the License.
 
 -->
 
-[![Build Nightly release package](https://github.com/nv-legate/cupynumeric.internal/actions/workflows/ci-gh-nightly-release.yml/badge.svg)](https://github.com/nv-legate/cupynumeric.internal/actions/workflows/ci-gh-nightly-release.yml)
-
 # cuPyNumeric
+
+> [!IMPORTANT]
+> cuPyNumeric has reached end of life and is no longer maintained or
+> supported. The final supported release is `v26.06.01`. No further releases,
+> fixes, or support are planned. Existing packages and documentation remain
+> available for historical reference.
 
 cuPyNumeric is a high-performance array computing library that implements the
 NumPy API on top of the Legate framework. It enables you to run existing NumPy
@@ -29,11 +33,11 @@ to a single GPU, and up to thousands of GPUs across multiple nodes.
 
 ## Installation
 
-Pre-built cuPyNumeric packages are available from
+Existing pre-built cuPyNumeric packages remain available from
 [conda](https://docs.conda.io/projects/conda/en/latest/index.html) on the
 [legate channel](https://anaconda.org/legate/cupynumeric) and from
 [PyPI](https://pypi.org/project/nvidia-cupynumeric/). See
-https://docs.nvidia.com/cupynumeric/latest/installation.html for details about
+https://docs.nvidia.com/cupynumeric/26.06/installation.html for details about
 different install configurations, or building cuPyNumeric from source.
 
 📌 **Note**
@@ -44,18 +48,7 @@ through WSL.
 ## Documentation
 
 The cuPyNumeric documentation can be found
-[here](https://docs.nvidia.com/cupynumeric).
-
-## Contributing
-
-See the discussion on contributing in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Contact
-
-For technical questions about cuPyNumeric and Legate-based tools, please visit
-the [community discussion forum](https://github.com/nv-legate/discussion).
-
-If you have other questions, please contact us at legate(at)nvidia.com.
+[here](https://docs.nvidia.com/cupynumeric/26.06/).
 
 ## Note
 
