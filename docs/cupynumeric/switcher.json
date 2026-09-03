@@ -49,10 +49,5 @@
         "preferred": true,
         "url": "https://docs.nvidia.com/cupynumeric/26.06/",
         "version": "26.06"
-    },
-    {
-        "name": "dev",
-        "url": "https://nv-legate.github.io/cupynumeric/",
-        "version": "dev"
     }
 ]
