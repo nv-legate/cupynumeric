@@ -19,7 +19,7 @@ limitations under the License.
 
 > [!IMPORTANT]
 > cuPyNumeric has reached end of life and is no longer maintained or
-> supported. The final supported release is `v26.06.01`. No further releases,
+> supported. The final release is `v26.06.01`. No further releases,
 > fixes, or support are planned. Existing packages and documentation remain
 > available for historical reference.
 
