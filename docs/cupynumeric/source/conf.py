@@ -21,7 +21,7 @@ JSON_URL = SWITCHER_DEV if getenv("SWITCHER_DEV") == "1" else SWITCHER_PROD
 
 ANNOTATE = getenv("LEGATE_ANNOTATION_DOCS") == "1"
 
-# This final documentation snapshot always displays the supported release line.
+# This final documentation snapshot always displays the final release line.
 BASE_VERSION = "26.06"
 
 # make sure BASE VERSION is formatted as expected
@@ -73,7 +73,7 @@ html_theme = "nvidia_sphinx_theme"
 html_theme_options = {
     "announcement": (
         "This project has reached end of life and is no longer maintained or "
-        "supported. The final supported release is 26.06.01. This "
+        "supported. The final release is 26.06.01. This "
         "documentation is retained for historical reference."
     ),
     "switcher": {
