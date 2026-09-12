@@ -35,7 +35,10 @@ def get_non_nan_unary_red_code(
     is disallowed, which is currently complex64 and complex128.
     """
 
-    assert unary_red_code in _EQUIVALENT_NON_NAN_OPS
+    if unary_red_code not in _EQUIVALENT_NON_NAN_OPS:
+        raise ValueError(
+            f"Unsupported unary reduction code: {unary_red_code}"
+        )
 
     # complex datatype is not supported
     if kind == "c":
