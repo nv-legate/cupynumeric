@@ -21,7 +21,22 @@ limitations under the License.
 > cuPyNumeric has reached end of life and is no longer maintained or
 > supported. The final release is `v26.06.01`. No further releases,
 > fixes, or support are planned. Existing packages and documentation remain
-> available for historical reference.
+> available for historical reference, but we do not recommend starting new
+> projects with cuPyNumeric.
+> 
+> Consider one of the following alternatives for multi-GPU/multi-node
+> array computing:
+> * [nvmath-python](https://docs.nvidia.com/cuda/nvmath-python/latest/overview.html),
+>   in particular the
+>   [nvmath.distributed module](https://docs.nvidia.com/cuda/nvmath-python/latest/distributed-apis/distribution.html)
+> * [CuPy](https://cupy.dev) combined with
+>   [mpi4py](https://mpi4py.readthedocs.io/en/stable/) or
+>   [Dask Array](https://docs.dask.org/en/latest/how-to/selecting-the-collection-backend.html)
+>   & [Dask-CUDA](https://docs.nvidia.com/dask-cuda/latest/)
+> * [JAX](https://jax.dev), in particular the
+>   [multi-controller module](https://docs.jax.dev/en/latest/501/multiprocess.html)
+> * [PyTorch](https://pytorch.org), in particular the
+>   [torch.distributed module](https://docs.pytorch.org/docs/stable/distributed)
 
 cuPyNumeric is a high-performance array computing library that implements the
 NumPy API on top of the Legate framework. It enables you to run existing NumPy
