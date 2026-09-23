@@ -128,7 +128,7 @@ jobs:
           echo "legate_prefix=${legate_prefix}" >> "${GITHUB_ENV}"
 
       - name: Build the wheel
-        uses: pypa/cibuildwheel@294735312765b09d24a2fbec22660ce817587d55  # v4.1.0
+        uses: pypa/cibuildwheel@e090b81e30c4d855ea63bf4b6e59204c09a101ae  # v4.2.1
         with:
           package-dir: ./scripts/build/python/cupynumeric/
           output-dir: wheelhouse
